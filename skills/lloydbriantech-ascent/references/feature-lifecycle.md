@@ -2,7 +2,7 @@
 
 > How a feature traverses the nine roles from intake to observed-in-production. [ADR-001](../../../docs/framework/DECISIONS/ADR-001-single-parent-skill.md) defines the role mental model; [ARCHITECTURE.md Layer 2](../../../docs/framework/ARCHITECTURE.md#layer-2--parent-skill) describes the skill's role-routing structure.
 
-This document covers the **happy path only** — the linear flow when a feature is well-scoped and no exceptions occur. Escalations, mid-flight pivots, dead-end branches, and recovery patterns belong to [role-delivery-lead.md](role-delivery-lead.md) (lands in Chunk 5 of Phase 1).
+This document covers the **happy path only** — the linear flow when a feature is well-scoped and no exceptions occur. Escalations, mid-flight pivots, dead-end branches, and recovery patterns belong to [role-delivery-lead.md](role-delivery-lead.md).
 
 ## The lifecycle at a glance
 
@@ -108,7 +108,7 @@ If no row matches, the feature is single-role. Most features touch 2-4 roles.
 
 ## What this doc doesn't cover
 
-This document is the happy path. The following are out of scope and belong to `role-delivery-lead.md` (lands in Chunk 5 of Phase 1):
+This document is the happy path. The following are out of scope and belong to `role-delivery-lead.md`:
 
 - Escalations when a stage blocks
 - Cross-phase features (when a feature spans two phase gates)

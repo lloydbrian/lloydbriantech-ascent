@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent` — the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 0 — Foundation
-**Version:** 0.1.0-alpha
+**Phase:** Phase 1 — Parent skill skeleton (complete)
+**Version:** 0.2.0
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 

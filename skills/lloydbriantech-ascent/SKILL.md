@@ -41,7 +41,7 @@ ASCENT defines four modes per [ADR-003](../../docs/framework/DECISIONS/ADR-003-a
 | `migrate` | User passes `--migrate` flag | Bring an existing non-ASCENT project up to ASCENT standards |
 | `bootstrap` | Slug is `ascent-starter` and meta is a placeholder | Slug substitution after `gh repo create --template` |
 
-The canonical mode-detection schema is in [ADR-003](../../docs/framework/DECISIONS/ADR-003-ascent-meta-marker.md). The phase-protocol contract that governs how modes interact with phase gates is in [references/PHASE-PROTOCOL.md](references/PHASE-PROTOCOL.md).
+The canonical mode-detection schema is in ADR-003. The phase-protocol contract that governs how modes interact with phase gates is in [references/PHASE-PROTOCOL.md](references/PHASE-PROTOCOL.md).
 
 ## The nine roles
 

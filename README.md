@@ -104,6 +104,20 @@ Every scaffolded project ships with **14 baseline** project-embedded skills plus
 
 See [`docs/framework/ARCHITECTURE.md`](docs/framework/ARCHITECTURE.md) for the intent/cadence taxonomy.
 
+## Documentation by persona
+
+ASCENT documentation is segmented by reader. The canonical persona→entry-point mapping lives in [`skills/lloydbriantech-ascent/references/audience-mapping.md`](skills/lloydbriantech-ascent/references/audience-mapping.md). Brief summary:
+
+| Persona | Needs | Entry point |
+|---|---|---|
+| **Architect** | Mental model, decisions, rationale | `ARCHITECTURE.md` → `DECISIONS/INDEX.md` |
+| **Developer** | Backend layering, observability hooks, test conventions | `PHILOSOPHY.md` → `role-developer.md` |
+| **Operator** | Make-target catalog, runbooks, healthcheck semantics | `make help` (lands per scaffolded project) |
+| **Contributor** | PR conventions, commit format, ADR template, contribution bar | `CONTRIBUTING.md` |
+| **Learner** | Why ASCENT, what it provides, where it's heading | `PHILOSOPHY.md` → `ROADMAP.md` |
+
+See `audience-mapping.md` for full per-persona detail — what each doesn't need, path-depth bounds, and how to add new personas.
+
 ## Documentation map
 
 | If you want to... | Read |

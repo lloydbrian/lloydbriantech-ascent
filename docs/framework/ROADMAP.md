@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Phase 0 — Foundation, v0.1.0-alpha, May 14, 2026.
+**Current state:** Phase 1 — Parent skill skeleton complete, v0.2.0, May 15, 2026. Phase 2 awaiting signal.
 
 ---
 
@@ -28,20 +28,20 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
 
 **Goal:** Ship the parent skill `lloydbriantech-ascent` with role-routing logic and the reference modules each role consumes. The skill won't yet scaffold anything; it can answer questions about ASCENT and route to roles.
 
-**Status:** ⏸️ Awaiting signal
+**Status:** ✅ Complete (May 15, 2026)
 
 **Exit criteria:**
 
-- [ ] `skills/lloydbriantech-ascent/SKILL.md` with frontmatter and role-routing logic
-- [ ] `skills/lloydbriantech-ascent/references/` populated with reference modules:
+- [x] `skills/lloydbriantech-ascent/SKILL.md` with frontmatter and role-routing logic
+- [x] `skills/lloydbriantech-ascent/references/` populated with reference modules:
   - `role-delivery-lead.md`, `role-architect.md`, `role-ui-ux-designer.md`, `role-developer.md`, `role-data-engineer.md`, `role-ai-engineer.md`, `role-tester.md`, `role-devops.md`, `role-cybersecurity.md`
   - `ASCENT-INVARIANTS.md`, `MAKE-NAMING.md`, `SLUG-CONVENTIONS.md`, `PHASE-PROTOCOL.md`, `ENV-DISCIPLINE.md`, `ADR-TEMPLATE.md`
   - `feature-lifecycle.md`, `observability-contract.md`, `writing-style.md`, `doc-architecture.md`, `audience-mapping.md`, `external-services-integration.md`
-- [ ] Root `Makefile` and `make/` directory with the SDLC-sectioned help working
-- [ ] `make qa-skill-frontmatter` validates every SKILL.md
-- [ ] `make qa-links` validates internal links
-- [ ] Skill can answer "what role handles X?" correctly for representative prompts
-- [ ] No scaffolding yet — the skill can talk but not yet write files
+- [x] Root `Makefile` and `make/` directory with the SDLC-sectioned help working
+- [x] `make qa-skill-frontmatter` validates every SKILL.md
+- [x] `make qa-links` validates internal links
+- [x] Skill can answer "what role handles X?" correctly for representative prompts
+- [x] No scaffolding yet — the skill can talk but not yet write files
 
 **Version on completion:** v0.2.0
 
@@ -51,7 +51,7 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
 
 **Goal:** Author the substantive baseline content for every file the architect role emits. After this phase, the architect role's scaffold mode can produce a working project.
 
-**Status:** ⏸️ Awaiting Phase 1 completion
+**Status:** ⏸️ Awaiting signal
 
 **Exit criteria:**
 
