@@ -1,0 +1,97 @@
+# lloydbriantech-ascent .gitignore
+#
+# Conventions:
+#   - .env files are NEVER committed; .env.example is the committed template
+#   - Editor scratch files and OS artifacts stay local
+#   - Build artifacts and dependencies are reproducible from source
+#   - When in doubt, ignore it and add an explicit allowlist entry if needed
+
+# ─── Environment ──────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+!.env.example
+
+# ─── Python ───────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+*.egg-info/
+dist/
+build/
+
+# ─── Node ─────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm/
+.yarn/cache/
+.yarn/install-state.gz
+.yarn/build-state.yml
+.parcel-cache/
+
+# ─── Build artifacts ──────────────────────────────────────────────────────
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+/tmp/
+/scratch/
+.cache/
+
+# ─── Test results ─────────────────────────────────────────────────────────
+artifacts/test-results/
+coverage/
+.nyc_output/
+
+# ─── OS artifacts ─────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ─── Editor scratch ───────────────────────────────────────────────────────
+*~
+*.swp
+*.swo
+*.bak
+\#*\#
+.\#*
+.idea/
+*.iml
+.vscode/*.log
+.vscode/.history/
+
+# ─── ASCENT-specific ──────────────────────────────────────────────────────
+# Scaffolded sample projects under tools/scratch/ (used during development)
+tools/scratch/
+# Generated starter repo working dir (CI builds this; never edit directly)
+build/starter/
+# Eval scenario outputs (regenerated each run)
+tests/output/
+
+# ─── Container engine artifacts ───────────────────────────────────────────
+# Only relevant when this repo eventually builds container images (Phase 6+)
+.podman/
+.docker/

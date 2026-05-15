@@ -1,0 +1,25 @@
+{
+  "//": "Recommended VS Code extensions for working on the ASCENT framework.",
+  "//": "VS Code prompts users to install these when the workspace is opened.",
+  "recommendations": [
+    "anthropic.claude-code",
+    "yzhang.markdown-all-in-one",
+    "DavidAnson.vscode-markdownlint",
+    "bierner.markdown-mermaid",
+    "redhat.vscode-yaml",
+    "EditorConfig.EditorConfig",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "GitHub.vscode-github-actions",
+    "GitHub.vscode-pull-request-github",
+    "eamodio.gitlens",
+    "streetsidesoftware.code-spell-checker",
+    "ms-vscode.makefile-tools",
+    "timonwong.shellcheck",
+    "foxundermoon.shell-format"
+  ],
+  "unwantedRecommendations": []
+}

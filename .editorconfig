@@ -1,0 +1,46 @@
+# EditorConfig — https://editorconfig.org
+#
+# Consistent indentation, line endings, and final newlines across every
+# editor without each developer having to configure their own.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Python uses 4-space indents per PEP 8
+[*.py]
+indent_size = 4
+
+# Makefiles require literal tabs
+[{Makefile,*.mk,GNUmakefile}]
+indent_style = tab
+indent_size = 4
+
+# Shell scripts use 2-space indents per Google Shell Style Guide
+[*.sh]
+indent_size = 2
+
+# JSON is 2-space (default) but enforced explicitly
+[*.json]
+indent_size = 2
+
+# YAML is 2-space, no trailing whitespace ever
+[*.{yml,yaml}]
+indent_size = 2
+trim_trailing_whitespace = true
+
+# Markdown allows trailing whitespace (it's significant for line breaks)
+# but we still want consistent indentation
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# Git commit messages have specific line-length conventions
+[COMMIT_EDITMSG]
+max_line_length = 72

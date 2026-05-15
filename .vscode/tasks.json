@@ -1,0 +1,55 @@
+{
+  "//": "VS Code tasks for working on the ASCENT framework.",
+  "//": "Phase 0 has no Makefile yet — these tasks are skeletons that exercise",
+  "//": "the structure-check workflow locally so you don't push broken structure.",
+  "//": "Phase 1+ adds real make-target wrappers.",
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Validate repo structure (Phase 0)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "echo 'Checking required files...' && for f in README.md CLAUDE.md CHANGELOG.md CONTRIBUTING.md LICENSE LICENSE-MIT LICENSE-APACHE .gitignore .editorconfig; do [ -f \"$f\" ] && echo \"  ✓ $f\" || echo \"  ✗ MISSING: $f\"; done && echo 'Checking framework docs...' && for f in docs/framework/PRINCIPLES.md docs/framework/PHILOSOPHY.md docs/framework/SCOPE.md docs/framework/ROADMAP.md docs/framework/ARCHITECTURE.md docs/framework/DECISIONS/INDEX.md; do [ -f \"$f\" ] && echo \"  ✓ $f\" || echo \"  ✗ MISSING: $f\"; done"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "List all ADRs",
+      "type": "shell",
+      "command": "ls",
+      "args": ["-1", "docs/framework/DECISIONS/"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Check for broken internal Markdown links",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "broken=0; while IFS=: read -r file link; do target=\"${link%%#*}\"; [ -z \"$target\" ] && continue; dir=\"$(dirname \"$file\")\"; resolved=\"$dir/$target\"; if [ ! -e \"$resolved\" ]; then echo \"  ✗ $file → $link\"; broken=$((broken+1)); fi; done < <(grep -rEon '\\]\\(([^)]+)\\)' --include='*.md' . 2>/dev/null | sed -E 's|^([^:]+):[0-9]+:\\]\\(([^)]+)\\).*|\\1:\\2|' | grep -v 'http://\\|https://\\|mailto:' || true); echo \"\"; if [ \"$broken\" -gt 0 ]; then echo \"✗ $broken broken links\"; exit 1; else echo \"✓ All internal links resolve\"; fi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}

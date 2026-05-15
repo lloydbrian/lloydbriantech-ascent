@@ -1,0 +1,128 @@
+# Skill validation workflow
+#
+# Runs on every PR and push to main. Validates:
+#   - SKILL.md frontmatter is valid YAML and matches the schema
+#   - All internal links resolve
+#   - Reference modules referenced by skills exist
+#   - Template assets render with sample slug input
+#   - INTENT-MAP.md is consistent with the project-embedded skills present
+#
+# This file is the Phase 0 placeholder. The real validation logic arrives
+# in Phase 1 when the skill itself ships. The placeholder runs a self-check
+# to confirm the repo structure is intact so the workflow is exercised
+# from Day 1.
+
+name: validate-skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  structure-check:
+    name: Repository structure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Confirm required files exist
+        run: |
+          set -euo pipefail
+          required=(
+            README.md
+            CLAUDE.md
+            CHANGELOG.md
+            CONTRIBUTING.md
+            LICENSE
+            LICENSE-MIT
+            LICENSE-APACHE
+            .gitignore
+            .editorconfig
+            docs/framework/PRINCIPLES.md
+            docs/framework/PHILOSOPHY.md
+            docs/framework/SCOPE.md
+            docs/framework/ROADMAP.md
+            docs/framework/ARCHITECTURE.md
+            docs/framework/DECISIONS/INDEX.md
+          )
+          missing=0
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "  ✗ missing: $f"
+              missing=$((missing+1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo ""
+            echo "✗ Repository structure check failed: $missing required files missing"
+            exit 1
+          fi
+          echo "✓ All required Phase 0 files present"
+
+      - name: Confirm ADR-001 through ADR-007 exist
+        run: |
+          set -euo pipefail
+          for n in 001 002 003 004 005 006 007; do
+            count=$(ls docs/framework/DECISIONS/ADR-${n}-*.md 2>/dev/null | wc -l)
+            if [ "$count" -ne 1 ]; then
+              echo "  ✗ ADR-${n}: expected exactly 1 file, found ${count}"
+              exit 1
+            fi
+          done
+          echo "✓ All Phase 0 ADRs present"
+
+  link-check:
+    name: Internal links
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify internal Markdown links resolve
+        run: |
+          set -euo pipefail
+          # Extract all relative Markdown links and verify each target exists.
+          # Skips external (http://, https://) links — those are checked by a
+          # separate workflow that runs on cron, not on every PR.
+          broken=0
+          while IFS=: read -r file link; do
+            # Strip anchors (#section); link target is everything before #
+            target="${link%%#*}"
+            [ -z "$target" ] && continue
+            # Resolve target relative to file's directory
+            dir="$(dirname "$file")"
+            resolved="$dir/$target"
+            if [ ! -e "$resolved" ]; then
+              echo "  ✗ $file → $link (resolved as $resolved)"
+              broken=$((broken+1))
+            fi
+          done < <(
+            grep -rEon '\]\(([^)]+)\)' --include='*.md' . 2>/dev/null \
+              | sed -E 's|^([^:]+):[0-9]+:\]\(([^)]+)\).*|\1:\2|' \
+              | grep -v 'http://\|https://\|mailto:' || true
+          )
+          if [ "$broken" -gt 0 ]; then
+            echo ""
+            echo "✗ $broken broken internal links"
+            exit 1
+          fi
+          echo "✓ All internal links resolve"
+
+  skill-frontmatter:
+    name: Skill frontmatter (Phase 1+)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: hashFiles('skills/**/SKILL.md') != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate frontmatter
+        run: |
+          echo "(Phase 1+ — skill frontmatter validation runs here)"
+          echo "(Implementation lands with the first SKILL.md commit)"

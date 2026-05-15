@@ -1,0 +1,71 @@
+# Release workflow
+#
+# Triggered on tag push (v*.*.*). At Phase 0 this just creates a GitHub
+# release with the CHANGELOG entry for the tagged version. Phase 6 expands
+# this to also:
+#   - Package the skill as a .skill archive
+#   - Generate the lloydbriantech-ascent-starter repo from the skill
+#   - Push the starter as a force-update to its own repo
+#   - Attach release artifacts (.skill archive, starter tarball) to the release
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-alpha'
+      - 'v*.*.*-beta'
+      - 'v*.*.*-rc*'
+
+jobs:
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for CHANGELOG extraction
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF#refs/tags/}"
+          version="${tag#v}"
+          # Extract the section for this version from CHANGELOG.md.
+          # Format: ## [VERSION] — YYYY-MM-DD ... up to the next ## heading.
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { capture=1; print; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "✗ No CHANGELOG entry found for version $version"
+            echo "  Add an entry under ## [$version] in CHANGELOG.md before tagging"
+            exit 1
+          fi
+          echo "notes_file=/tmp/release-notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ steps.notes.outputs.notes_file }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+
+  build-starter:
+    name: Build and publish starter (Phase 6+)
+    runs-on: ubuntu-latest
+    needs: release
+    if: false  # Disabled until Phase 6 — enable when tools/build-starter.sh exists
+    steps:
+      - name: Placeholder
+        run: |
+          echo "(Phase 6+ — starter repo generation runs here)"
+          echo "(Generates lloydbriantech-ascent-starter from skills/lloydbriantech-ascent)"
+          echo "(Force-pushes to lloydbrian/lloydbriantech-ascent-starter with matching tag)"

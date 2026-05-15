@@ -1,0 +1,98 @@
+{
+  "//": "Workspace settings for the ASCENT framework repo.",
+  "//": "These complement .editorconfig — VS Code reads both.",
+
+  "editor.formatOnSave": true,
+  "editor.rulers": [80, 100],
+  "editor.renderWhitespace": "boundary",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/node_modules": true,
+    "**/.DS_Store": true
+  },
+  "files.associations": {
+    "*.mk": "makefile",
+    "Makefile.*": "makefile",
+    ".env.example": "properties"
+  },
+
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    },
+    "files.trimTrailingWhitespace": false
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.tabSize": 4,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll": "explicit"
+    }
+  },
+  "[makefile]": {
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format",
+    "editor.tabSize": 2
+  },
+
+  "markdownlint.config": {
+    "default": true,
+    "MD013": false,
+    "MD024": { "siblings_only": true },
+    "MD033": false,
+    "MD041": false
+  },
+
+  "cSpell.words": [
+    "ASCENT",
+    "ascent",
+    "lloydbrian",
+    "lloydbriantech",
+    "openclaw",
+    "adr",
+    "ADRs",
+    "frontmatter",
+    "kebab",
+    "podman",
+    "scaffolded",
+    "Fargate",
+    "Vite",
+    "dockerignore",
+    "claudeignore",
+    "healthz",
+    "dogfoods",
+    "telcos",
+    "agentic"
+  ],
+
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
+  },
+
+  "git.alwaysSignOff": false,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.openRepositoryInParentFolders": "never"
+}
