@@ -26,7 +26,7 @@ The persona definitions below are the canonical resource. The README's persona t
 
 **Needs:** Backend layering rules. Observability hooks (per [observability-contract.md](observability-contract.md)). Test conventions. The lifecycle a feature traverses (per [feature-lifecycle.md](feature-lifecycle.md)).
 
-**Entry point:** `README.md` → [`docs/framework/PHILOSOPHY.md`](../../../docs/framework/PHILOSOPHY.md) → `references/role-developer.md` (lands in Chunk 5 of Phase 1)
+**Entry point:** `README.md` → [`docs/framework/PHILOSOPHY.md`](../../../docs/framework/PHILOSOPHY.md) → [`references/role-developer.md`](role-developer.md) (lands in Chunk 5 of Phase 1)
 
 **Path depth:** 3 clicks max.
 

@@ -59,23 +59,23 @@ The skill routes intent across nine non-overlapping roles. Each owns a slice of 
 | devops | Infra, CI/CD, AWS, distribution, observability collection, release engineering |
 | cybersecurity | Security baseline, threat modeling, secrets, hardening, compliance |
 
-Per-role detail lives in `references/role-<name>.md` modules (land in Chunk 5 of Phase 1).
+Per-role detail lives in `references/role-<name>.md` modules.
 
 ## Reference modules
 
 The skill loads reference modules on demand based on the engaged role(s) and the task at hand. The full module set:
 
-**Roles (9)** — land in Chunk 5 of Phase 1:
+**Roles (9):**
 
-- `references/role-delivery-lead.md`
-- `references/role-architect.md`
-- `references/role-ui-ux-designer.md`
-- `references/role-developer.md`
-- `references/role-data-engineer.md`
-- `references/role-ai-engineer.md`
-- `references/role-tester.md`
-- `references/role-devops.md`
-- `references/role-cybersecurity.md`
+- [references/role-delivery-lead.md](references/role-delivery-lead.md)
+- [references/role-architect.md](references/role-architect.md)
+- [references/role-ui-ux-designer.md](references/role-ui-ux-designer.md)
+- [references/role-developer.md](references/role-developer.md)
+- [references/role-data-engineer.md](references/role-data-engineer.md)
+- [references/role-ai-engineer.md](references/role-ai-engineer.md)
+- [references/role-tester.md](references/role-tester.md)
+- [references/role-devops.md](references/role-devops.md)
+- [references/role-cybersecurity.md](references/role-cybersecurity.md)
 
 **Protocols and conventions (6):**
 
