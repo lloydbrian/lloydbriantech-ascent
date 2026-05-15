@@ -2,7 +2,7 @@
 
 > How a feature traverses the nine roles from intake to observed-in-production. [ADR-001](../../../docs/framework/DECISIONS/ADR-001-single-parent-skill.md) defines the role mental model; [ARCHITECTURE.md Layer 2](../../../docs/framework/ARCHITECTURE.md#layer-2--parent-skill) describes the skill's role-routing structure.
 
-This document covers the **happy path only** — the linear flow when a feature is well-scoped and no exceptions occur. Escalations, mid-flight pivots, dead-end branches, and recovery patterns belong to `role-delivery-lead.md` (lands in Chunk 5 of Phase 1).
+This document covers the **happy path only** — the linear flow when a feature is well-scoped and no exceptions occur. Escalations, mid-flight pivots, dead-end branches, and recovery patterns belong to [role-delivery-lead.md](role-delivery-lead.md) (lands in Chunk 5 of Phase 1).
 
 ## The lifecycle at a glance
 
@@ -32,11 +32,11 @@ The architect reads the intake, designs the change, and writes an ADR if the dec
 
 The architect engages specialists *before* committing to an approach:
 
-- `role-data-engineer.md` if schema or query changes
-- `role-ai-engineer.md` if prompt or eval changes
-- `role-ui-ux-designer.md` if customer-facing surface changes
-- `role-devops.md` if infra or deploy-pipeline changes
-- `role-cybersecurity.md` if auth, secrets, or egress changes
+- [role-data-engineer.md](role-data-engineer.md) if schema or query changes
+- [role-ai-engineer.md](role-ai-engineer.md) if prompt or eval changes
+- [role-ui-ux-designer.md](role-ui-ux-designer.md) if customer-facing surface changes
+- [role-devops.md](role-devops.md) if infra or deploy-pipeline changes
+- [role-cybersecurity.md](role-cybersecurity.md) if auth, secrets, or egress changes
 
 The design's deliverable is the smallest artifact that fully specifies the change. Sometimes that's three sentences. Sometimes it's an ADR plus a sequence diagram. Match the artifact to the change.
 
