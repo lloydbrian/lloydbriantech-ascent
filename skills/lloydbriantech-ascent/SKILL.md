@@ -86,14 +86,14 @@ The skill loads reference modules on demand based on the engaged role(s) and the
 - [references/ENV-DISCIPLINE.md](references/ENV-DISCIPLINE.md)
 - [references/ADR-TEMPLATE.md](references/ADR-TEMPLATE.md)
 
-**Practices and style (6)** — land in Chunk 4 of Phase 1:
+**Practices and style (6):**
 
-- `references/feature-lifecycle.md`
-- `references/observability-contract.md`
-- `references/writing-style.md`
-- `references/doc-architecture.md`
-- `references/audience-mapping.md`
-- `references/external-services-integration.md`
+- [references/feature-lifecycle.md](references/feature-lifecycle.md)
+- [references/observability-contract.md](references/observability-contract.md)
+- [references/writing-style.md](references/writing-style.md)
+- [references/doc-architecture.md](references/doc-architecture.md)
+- [references/audience-mapping.md](references/audience-mapping.md)
+- [references/external-services-integration.md](references/external-services-integration.md)
 
 Once each module exists, the inline-code references above are converted to markdown links via surgical edits in the corresponding chunk's PR.
 
