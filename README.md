@@ -60,9 +60,11 @@ make dev-up
 ```bash
 gh repo clone lloydbrian/lloydbriantech-ascent ~/Developer/repositories/lloydbriantech-ascent
 cd ~/Developer/repositories/lloydbriantech-ascent
-./tools/install.sh
-# → Symlinks the skill into ~/.claude/skills/
+make install
+# → Symlinks skills/lloydbriantech-ascent/ into ~/.claude/skills/
 ```
+
+Run `make uninstall` to remove the symlink. `make help` shows the full operator vocabulary.
 
 ## The nine roles
 
