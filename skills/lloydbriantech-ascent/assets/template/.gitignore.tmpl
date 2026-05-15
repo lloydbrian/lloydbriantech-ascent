@@ -1,0 +1,50 @@
+# <<PROJECT_TITLE>> .gitignore
+
+# ─── Environment ──────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+!.env.example
+
+# ─── Node ─────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+.npm/
+.yarn/
+
+# ─── Build artifacts ──────────────────────────────────────────────────────
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# ─── Test results ─────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── Database ─────────────────────────────────────────────────────────────
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/
+
+# ─── OS artifacts ─────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+Desktop.ini
+
+# ─── Editor ───────────────────────────────────────────────────────────────
+.idea/
+*.swp
+*.swo
+*~
+.vscode/*.log
+.vscode/.history/
+
+# ─── Container engine artifacts ───────────────────────────────────────────
+.podman/
+.docker/

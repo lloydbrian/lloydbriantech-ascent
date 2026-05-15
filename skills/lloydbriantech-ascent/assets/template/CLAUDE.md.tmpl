@@ -1,0 +1,75 @@
+# CLAUDE.md — Working in <<PROJECT_TITLE>>
+
+> **For Claude (and humans) working on this project.** Read this before opening any file.
+
+---
+
+## Project identity
+
+**Project:** `<<PROJECT_SLUG>>` — <<PROJECT_TITLE>>
+**Repository:** `<<GH_REPO>>`
+**Phase:** Phase 0 — Foundation
+**Version:** 0.1.0
+**Owner:** <<BRAND>>
+**Scaffolded:** <<SCAFFOLD_DATE>> with ASCENT v<<FRAMEWORK_VERSION>>
+
+## Architecture
+
+<<PROJECT_TITLE>> uses ASCENT conventions:
+
+- **Backend:** Node.js 22+, Express, SQLite-WAL; layered as `routes → controllers → services → storage`
+- **Frontend:** React + Vite
+- **Container engine:** Podman (preferred) / Docker (fallback) via `$(ENGINE)` auto-detection
+- **Operator vocabulary:** `make help` shows the full target list; `make dev-up` boots the stack
+
+## Working conventions
+
+### Commits
+
+- **Conventional Commits** format: `<type>(<scope>): <subject>`
+- Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`
+- Subject in imperative mood, lowercase, no trailing period
+
+### Branches
+
+- `main` is always shippable
+- Feature branches: `feat/<scope>-<description>`
+- Fix branches: `fix/<scope>-<description>`
+
+### Phase gates
+
+Phase transitions follow ASCENT's phase-gated delivery protocol:
+
+1. Verify all exit criteria for the current phase
+2. Update `CHANGELOG.md` with the phase summary
+3. Tag the release
+4. Wait for the literal **"Proceed with Phase N+1"** signal
+5. Update `.ascent-meta.json` phase field
+
+### Environment variables
+
+All environment variables use the `<<ENV_PREFIX>>_` prefix. The `.env` file is gitignored and dockerignored. `.env.example` is the committed schema with empty defaults only — never `REPLACE_ME`.
+
+### Key paths
+
+```
+backend/               Express server (routes → controllers → services → storage)
+frontend/              React + Vite client
+nginx/                 Reverse proxy configs (dev / prod / dist)
+make/                  Operator vocabulary (.mk files)
+docs/architecture/     ADRs and architectural documentation
+docs/delivery/         Phase plans and delivery records
+.claude/skills/        Project-embedded Claude skills
+```
+
+## Runtime
+
+- **Start:** `make dev-up` → http://localhost:3001/healthz
+- **Stop:** `make dev-down` (graceful SIGTERM + 15s grace)
+- **Tests:** `make test-all`
+- **Status:** `make dev-status`
+
+## What not to edit
+
+- `docs/architecture/decisions/ADR-*.md` — immutable once accepted
+- `.ascent-meta.json` — managed by the framework; manual edits may break mode detection

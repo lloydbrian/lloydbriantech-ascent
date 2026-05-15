@@ -1,0 +1,73 @@
+# <<PROJECT_TITLE>>
+
+> Brief project description goes here.
+
+**Version:** <<PROJECT_VERSION>> · **License:** MIT OR Apache-2.0
+
+---
+
+## Quick start
+
+```bash
+# Start the development stack
+make dev-up
+
+# Verify the stack is running
+curl http://localhost:3001/healthz
+# → {"status":"ok"}
+
+# Check dev environment state
+make dev-status
+```
+
+## Architecture
+
+<<PROJECT_TITLE>> follows the ASCENT engineering framework (v<<FRAMEWORK_VERSION>>). Key patterns:
+
+- **Containerization-first** — the development environment is the container
+- **Make as operator vocabulary** — every operation has a `make` target
+- **Backend layering** — `routes → controllers → services → storage`
+- **Phase-gated delivery** — numbered phases with explicit go-signals
+
+See [`docs/architecture/decisions/INDEX.md`](docs/architecture/decisions/INDEX.md) for architectural decisions.
+
+## Development
+
+| Command | What it does |
+|---|---|
+| `make dev-up` | Start the dev stack (backend + frontend + nginx + db) |
+| `make dev-down` | Stop the dev stack with graceful shutdown |
+| `make dev-status` | Full dev environment status check |
+| `make dev-logs` | Tail container logs |
+| `make test-all` | Run all test suites |
+| `make qa` | Run all quality checks (lint + typecheck + structure) |
+| `make help` | Show the full SDLC-sectioned operator vocabulary |
+
+## Documentation
+
+| If you want to... | Read |
+|---|---|
+| Understand the architecture | [`docs/architecture/decisions/INDEX.md`](docs/architecture/decisions/INDEX.md) |
+| See the delivery plan | `docs/delivery/PHASE-PLAN.md` |
+| Run tests | `make test-all` |
+| Deploy to production | `make aws-ecs-deploy-prod` (see `docs/operations/DEPLOYMENT-RUNBOOK.md`) |
+
+## Project metadata
+
+| Field | Value |
+|---|---|
+| Project slug | `<<PROJECT_SLUG>>` |
+| Package name | `<<PROJECT_PKG>>` |
+| GitHub | [`<<GH_REPO>>`](https://github.com/<<GH_REPO>>) |
+| Container labels | `project=<<PROJECT_LABEL>>` |
+| Framework | ASCENT v<<FRAMEWORK_VERSION>> |
+| Scaffolded | <<SCAFFOLD_DATE>> |
+
+## License
+
+Dual-licensed under either of:
+
+- Apache License, Version 2.0 ([`LICENSE-APACHE`](LICENSE-APACHE))
+- MIT License ([`LICENSE-MIT`](LICENSE-MIT))
+
+at your option.
