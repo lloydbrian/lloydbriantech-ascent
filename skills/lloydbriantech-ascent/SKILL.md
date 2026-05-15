@@ -41,7 +41,7 @@ ASCENT defines four modes per [ADR-003](../../docs/framework/DECISIONS/ADR-003-a
 | `migrate` | User passes `--migrate` flag | Bring an existing non-ASCENT project up to ASCENT standards |
 | `bootstrap` | Slug is `ascent-starter` and meta is a placeholder | Slug substitution after `gh repo create --template` |
 
-The canonical mode-detection schema is in [ADR-003](../../docs/framework/DECISIONS/ADR-003-ascent-meta-marker.md). The phase-protocol contract that governs how modes interact with phase gates is in `references/PHASE-PROTOCOL.md` (lands in Chunk 3 of Phase 1).
+The canonical mode-detection schema is in [ADR-003](../../docs/framework/DECISIONS/ADR-003-ascent-meta-marker.md). The phase-protocol contract that governs how modes interact with phase gates is in [references/PHASE-PROTOCOL.md](references/PHASE-PROTOCOL.md).
 
 ## The nine roles
 
@@ -77,14 +77,14 @@ The skill loads reference modules on demand based on the engaged role(s) and the
 - `references/role-devops.md`
 - `references/role-cybersecurity.md`
 
-**Protocols and conventions (6)** — land in Chunk 3 of Phase 1:
+**Protocols and conventions (6):**
 
-- `references/ASCENT-INVARIANTS.md`
-- `references/MAKE-NAMING.md`
-- `references/SLUG-CONVENTIONS.md`
-- `references/PHASE-PROTOCOL.md`
-- `references/ENV-DISCIPLINE.md`
-- `references/ADR-TEMPLATE.md`
+- [references/ASCENT-INVARIANTS.md](references/ASCENT-INVARIANTS.md)
+- [references/MAKE-NAMING.md](references/MAKE-NAMING.md)
+- [references/SLUG-CONVENTIONS.md](references/SLUG-CONVENTIONS.md)
+- [references/PHASE-PROTOCOL.md](references/PHASE-PROTOCOL.md)
+- [references/ENV-DISCIPLINE.md](references/ENV-DISCIPLINE.md)
+- [references/ADR-TEMPLATE.md](references/ADR-TEMPLATE.md)
 
 **Practices and style (6)** — land in Chunk 4 of Phase 1:
 
@@ -105,4 +105,4 @@ Per [ADR-001](../../docs/framework/DECISIONS/ADR-001-single-parent-skill.md), th
 
 ## Examples
 
-`[STUB — 8 to 12 representative prompts with expected role selections land in Chunk 6 of Phase 1]`
+`[STUB — at least 10 representative prompts with expected role selections land in Chunk 6 of Phase 1]`
