@@ -10,6 +10,16 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Added
+
+- `.github/SECURITY.md` — vulnerability disclosure policy
+- `.github/CODE_OF_CONDUCT.md` — concise community expectations
+- `.github/CODEOWNERS` — automatic PR review assignment
+
+### Changed
+
+- Repository visibility flipped from private to public for the duration of development (originally planned for v1.0)
+
 ### Planned
 
 - Phase 1 — Parent skill SKILL.md, reference modules, role routing

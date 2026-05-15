@@ -1,0 +1,24 @@
+# CODEOWNERS — automatic PR review assignment
+#
+# Lines from this file determine who is requested for review when someone
+# opens a pull request that modifies code matching the patterns below.
+# The last matching pattern wins.
+#
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default — every PR pings the owner
+* @lloydbrian
+
+# Framework documentation and architecture — extra-careful review zone
+/docs/framework/                  @lloydbrian
+/docs/framework/PRINCIPLES.md     @lloydbrian
+/docs/framework/PHILOSOPHY.md     @lloydbrian
+/docs/framework/DECISIONS/        @lloydbrian
+
+# License files — only the owner can change licensing
+/LICENSE                          @lloydbrian
+/LICENSE-MIT                      @lloydbrian
+/LICENSE-APACHE                   @lloydbrian
+
+# CI workflows — security-sensitive, owner-only changes
+/.github/workflows/               @lloydbrian
