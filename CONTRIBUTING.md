@@ -49,6 +49,26 @@ Mismatched versions are a CI failure.
 
 ---
 
+## Cross-linking in reference modules
+
+Reference modules under `skills/lloydbriantech-ascent/references/` form a navigable document map. Each module is internally self-sufficient but cross-links to siblings, ADRs, and framework documents where the topic naturally branches.
+
+The rules:
+
+1. **First mention per module gets linked.** Subsequent mentions of the same target stay as code spans or plain text. This keeps prose readable while ensuring every referenced document is one click away.
+2. **Link to sibling modules** in `references/` when mentioned in another reference module — within a reference module, the link text and the relative target are typically identical (e.g., visible text `ENV-DISCIPLINE.md`, target `ENV-DISCIPLINE.md`).
+3. **Link to ADRs** once per module (first mention), at `../../../docs/framework/DECISIONS/ADR-NNN-<slug>.md`.
+4. **Link to `docs/framework/` documents** once per module (first mention of PRINCIPLES.md, ARCHITECTURE.md, ROADMAP.md, etc.), at `../../../docs/framework/<doc>.md`.
+5. **Don't link to files outside the framework** — no GitHub URLs, no third-party sources, no external library docs.
+6. **Don't link `make/*.mk` files, scripts, or code paths** — those stay as inline-code spans. The path is documentation in itself.
+7. **Don't link skill mentions** (e.g., `` `ascent-self-audit` ``) — their SKILL.md files live in scaffolded projects, not in this repo.
+
+Header citation links (the 1–2 authoritative links at the top of each module under a `> ` blockquote) are exempt from the first-mention rule — they're provenance metadata, not in-flow references.
+
+Forward references to modules that haven't yet landed stay as code spans until the target exists. Promotion to a markdown link happens as a surgical edit in the chunk's PR that introduces the target.
+
+---
+
 ## How to propose a contribution
 
 ### For small fixes (typos, broken links, single-file improvements)

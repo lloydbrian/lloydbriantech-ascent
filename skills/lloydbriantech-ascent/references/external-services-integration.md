@@ -2,7 +2,7 @@
 
 > Pattern guidance for integrating external services (Anthropic, OpenAI, AWS, Stripe, Twilio, etc.). [PRINCIPLES.md §5](../../../docs/framework/PRINCIPLES.md#5-env-discipline) is authoritative for the secrets aspect.
 
-This module defines the **pattern every external service integration follows**. Specific vendors are not covered here — vendor-specific guidance (prompt caching for Anthropic, presigned URLs for S3, webhook signing for Stripe) lives in the relevant role module. AI providers: [role-ai-engineer.md](role-ai-engineer.md) (lands in Chunk 5 of Phase 1). AWS services: [role-devops.md](role-devops.md). Auth providers and rotation: [role-cybersecurity.md](role-cybersecurity.md).
+This module defines the **pattern every external service integration follows**. Specific vendors are not covered here — vendor-specific guidance (prompt caching for Anthropic, presigned URLs for S3, webhook signing for Stripe) lives in the relevant role module. AI providers: [role-ai-engineer.md](role-ai-engineer.md). AWS services: [role-devops.md](role-devops.md). Auth providers and rotation: [role-cybersecurity.md](role-cybersecurity.md).
 
 ## The pattern
 
