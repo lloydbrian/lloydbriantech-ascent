@@ -84,8 +84,13 @@ Desktop.ini
 .vscode/.history/
 
 # ─── ASCENT-specific ──────────────────────────────────────────────────────
-# Scaffolded sample projects under tools/scratch/ (used during development)
-tools/scratch/
+# Scaffolded sample projects under tools/scratch/ (used during development).
+# The directory contains throwaway scaffold outputs (gitignored); only the
+# scaffold scripts and documentation are tracked.
+tools/scratch/*
+!tools/scratch/scaffold-hello-world.sh
+!tools/scratch/README.md
+!tools/scratch/SMOKE-TEST-LOG.md
 # Generated starter repo working dir (CI builds this; never edit directly)
 build/starter/
 # Eval scenario outputs (regenerated each run)
