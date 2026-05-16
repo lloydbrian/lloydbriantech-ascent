@@ -1,0 +1,87 @@
+# <<PROJECT_TITLE>> — development compose configuration.
+#
+# Start: make dev-up | Stop: make dev-down | Status: make dev-status
+#
+# Services: backend (Express :3001), frontend (Vite :3000), nginx (:8080)
+# All resources carry labels: project=<<PROJECT_LABEL>> for cleanup (Principle 9).
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: <<CONTAINER_DEV>>-backend
+    image: <<IMAGE_DEV>>-backend
+    labels:
+      project: <<PROJECT_LABEL>>
+    ports:
+      - "3001:3001"
+    environment:
+      - <<INSIDE_CONTAINER_MARKER>>=1
+      - <<ENV_PREFIX>>_PORT=3001
+      - <<ENV_PREFIX>>_HOST=0.0.0.0
+      - <<ENV_PREFIX>>_NODE_ENV=development
+      - <<ENV_PREFIX>>_LOG_LEVEL=debug
+      - <<ENV_PREFIX>>_DB_URL=file:./data/<<PROJECT_SLUG>>.sqlite
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - <<VOLUME_DATA>>:/app/data
+    networks:
+      - <<NETWORK_NAME>>
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3001/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: <<CONTAINER_DEV>>-frontend
+    image: <<IMAGE_DEV>>-frontend
+    labels:
+      project: <<PROJECT_LABEL>>
+    ports:
+      - "3000:3000"
+    environment:
+      - <<INSIDE_CONTAINER_MARKER>>=1
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - <<NETWORK_NAME>>
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: <<CONTAINER_DEV>>-nginx
+    labels:
+      project: <<PROJECT_LABEL>>
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - <<NETWORK_NAME>>
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  <<NETWORK_NAME>>:
+    name: <<NETWORK_NAME>>
+    labels:
+      project: <<PROJECT_LABEL>>
+
+volumes:
+  <<VOLUME_DATA>>:
+    name: <<VOLUME_DATA>>
+    labels:
+      project: <<PROJECT_LABEL>>

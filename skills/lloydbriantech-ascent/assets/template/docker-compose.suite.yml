@@ -1,0 +1,32 @@
+# <<PROJECT_TITLE>> — test suite compose configuration.
+#
+# Runs tests inside containers for CI and local validation.
+# Usage: $(ENGINE) compose -f docker-compose.yml -f docker-compose.suite.yml \
+#                          run --rm test-runner
+#
+# Extends the dev composition with a test-runner service that has
+# access to the backend network and a separate test database.
+# All labels inherited from base — engine-clean-project finds test resources.
+
+services:
+  test-runner:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: <<CONTAINER_DEV>>-test
+    labels:
+      project: <<PROJECT_LABEL>>
+    environment:
+      - <<INSIDE_CONTAINER_MARKER>>=1
+      - <<ENV_PREFIX>>_NODE_ENV=test
+      - <<ENV_PREFIX>>_LOG_LEVEL=debug
+      - <<ENV_PREFIX>>_DB_URL=file:./data/<<PROJECT_SLUG>>-test.sqlite
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - <<NETWORK_NAME>>
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: ["npm", "test"]
