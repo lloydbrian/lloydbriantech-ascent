@@ -1,0 +1,40 @@
+# <<PROJECT_TITLE>> .dockerignore
+# Production images must not contain secrets, tests, docs, or dev tooling.
+
+# ─── Secrets ──────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ─── Version control ─────────────────────────────────────────────────────
+.git
+.gitignore
+
+# ─── Node development ────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ─── Tests and coverage ──────────────────────────────────────────────────
+coverage/
+.nyc_output/
+tests/
+
+# ─── Build artifacts ─────────────────────────────────────────────────────
+dist/
+.cache/
+
+# ─── Documentation ───────────────────────────────────────────────────────
+docs/
+*.md
+LICENSE*
+
+# ─── Editor and OS ───────────────────────────────────────────────────────
+.idea/
+.DS_Store
+.vscode/
+
+# ─── Claude skills ───────────────────────────────────────────────────────
+.claude/
+.claudeignore
