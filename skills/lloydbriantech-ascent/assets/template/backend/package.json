@@ -1,0 +1,26 @@
+{
+  "name": "<<PROJECT_PKG>>",
+  "version": "<<PROJECT_VERSION>>",
+  "description": "<<PROJECT_TITLE>> — backend service",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "better-sqlite3": "11.7.0",
+    "express": "4.21.2",
+    "pino": "9.6.0",
+    "pino-http": "10.4.0",
+    "uuid": "11.1.0"
+  },
+  "devDependencies": {
+    "vitest": "3.2.1"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "ascent_framework_version": "<<FRAMEWORK_VERSION>>"
+}
