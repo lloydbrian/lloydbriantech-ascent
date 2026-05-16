@@ -1,0 +1,55 @@
+# <<PROJECT_TITLE>> — production compose overrides.
+#
+# Extends docker-compose.yml with production-optimized settings.
+# Usage: $(ENGINE) compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Key differences from dev:
+#   - Multi-stage build targeting 'production' stage (smaller, hardened images)
+#   - No bind mounts — code baked into image
+#   - restart: always (not unless-stopped)
+#   - info-level logging (not debug)
+#   - Frontend service builds static assets; nginx serves them from the image
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: <<CONTAINER_PROD>>-backend
+    image: <<IMAGE_PROD>>-backend
+    labels:
+      project: <<PROJECT_LABEL>>
+    environment:
+      - <<INSIDE_CONTAINER_MARKER>>=1
+      - <<ENV_PREFIX>>_NODE_ENV=production
+      - <<ENV_PREFIX>>_LOG_LEVEL=info
+    volumes:
+      - <<VOLUME_DATA>>:/app/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3001/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: <<CONTAINER_PROD>>-frontend
+    image: <<IMAGE_PROD>>-frontend
+    labels:
+      project: <<PROJECT_LABEL>>
+    volumes: []
+    restart: always
+
+  nginx:
+    container_name: <<CONTAINER_PROD>>-nginx
+    labels:
+      project: <<PROJECT_LABEL>>
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: always

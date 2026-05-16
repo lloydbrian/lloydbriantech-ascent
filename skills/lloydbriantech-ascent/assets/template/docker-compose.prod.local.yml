@@ -1,0 +1,24 @@
+# <<PROJECT_TITLE>> — local production testing overrides.
+#
+# Tests production images on the developer's machine via Podman/Docker.
+# Usage: $(ENGINE) compose -f docker-compose.yml -f docker-compose.prod.yml \
+#                          -f docker-compose.prod.local.yml up -d
+#
+# Differences from remote production:
+#   - Ports exposed to localhost (not just internal network)
+#   - Uses .env file instead of Secrets Manager / SSM
+#   - SQLite data volume remains for local inspection
+#
+# All labels inherited from base compose file — engine-clean-project
+# will find these resources.
+
+services:
+  backend:
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+
+  nginx:
+    ports:
+      - "8080:80"
