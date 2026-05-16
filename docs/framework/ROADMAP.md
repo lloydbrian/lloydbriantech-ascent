@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Phase 1 — Parent skill skeleton complete, v0.2.0, May 15, 2026. Phase 2 awaiting signal.
+**Current state:** Phase 2 — Template assets complete, v0.3.0, May 16, 2026. Phase 3 awaiting signal.
 
 ---
 
@@ -51,11 +51,11 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
 
 **Goal:** Author the substantive baseline content for every file the architect role emits. After this phase, the architect role's scaffold mode can produce a working project.
 
-**Status:** ⏸️ Awaiting signal
+**Status:** ✅ Complete (May 16, 2026)
 
 **Exit criteria:**
 
-- [ ] `skills/lloydbriantech-ascent/assets/template/` contains:
+- [x] `skills/lloydbriantech-ascent/assets/template/` contains:
   - Root files: README.md.tmpl, CLAUDE.md.tmpl, CHANGELOG.md.tmpl, LICENSE files, .gitignore, .dockerignore, .env.example, .claudeignore
   - Makefile + 8 child .mk files (dev, dev-status, test, quality, security, validate, podman, infra, docs)
   - docker-compose family (yml, prod.yml, prod.local.yml, dist.yml, suite.yml)
@@ -64,9 +64,9 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
   - frontend/ skeleton with working Vite shell
   - 7 always-emitted ADRs + INDEX.md template
   - 9 baseline project-embedded skill SKILL.md scaffolds + INTENT-MAP.md
-- [ ] Every template file uses slug placeholders consistently
-- [ ] A test scaffold of a hello-world project using these templates runs `make dev-up` successfully
-- [ ] No `// TODO` files — every file ships substantive content
+- [x] Every template file uses slug placeholders consistently
+- [x] A test scaffold of a hello-world project using these templates runs `make dev-up` successfully
+- [x] No `// TODO` files — every file ships substantive content
 
 **Version on completion:** v0.3.0
 
@@ -76,7 +76,7 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
 
 **Goal:** Author the SKILL.md files for all 14 baseline project-embedded skills and the 8 conditional ones. Each skill is invocable inside a scaffolded project.
 
-**Status:** ⏸️ Awaiting Phase 2 completion
+**Status:** ⏸️ Awaiting signal
 
 **Exit criteria:**
 
