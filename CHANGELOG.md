@@ -12,7 +12,6 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Phase 2 — Template assets (substantive baseline content)
 - Phase 3 — Project-embedded skills (22 SKILL.md scaffolds)
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5 — Test harness with three eval scenarios
@@ -20,6 +19,110 @@ Dates are in **America/New_York** timezone.
 - Phase 7 — First production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.3.0] — 2026-05-16
+
+**Phase 2 — Template assets.** The substantive baseline content for every file the architect role emits at scaffold time. After this phase, a project scaffolded from these templates produces a working stack: `make dev-up` boots backend + frontend + nginx; the layered API serves CRUD operations; observability emits per contract; tests pass.
+
+### Added
+
+#### Root template files (Chunk 1)
+
+- `assets/template/` directory established with README.md.tmpl, CLAUDE.md.tmpl, CHANGELOG.md.tmpl, .ascent-meta.json.tmpl, LICENSE files, .gitignore.tmpl, .dockerignore.tmpl, .env.example, .claudeignore.tmpl, .editorconfig
+- `make qa-template-placeholders` validator: validates every `<<PLACEHOLDER>>` token against the canonical 20-name set
+- `FRAMEWORK_VERSION` bumped to 0.3.0 (lockstep); `<<PROJECT_VERSION>>` added as 20th canonical placeholder
+
+#### Make framework (Chunk 2)
+
+- Project-level Makefile + 9 child `.mk` files using SDLC section order META · DEV · TEST · QA · SEC · VALIDATE · DOCS · INFRA
+- Real targets: `make help`, `make version`, `make status`, `make dev-up`/`dev-down`/`dev-logs`/`dev-shell`/`dev-restart`/`dev-clean`, `make dev-status`/`dev-status-quick`, `make engine-clean-project`/`engine-clean-images`/`engine-clean-volumes`
+- 17 stub targets across 6 `.mk` files using project-level `[STUB] implement when <context>` convention
+
+#### Container topology (Chunk 3)
+
+- docker-compose family: dev (base), prod (overrides), prod.local (local testing), dist (standalone), suite (test runner)
+- nginx/ skeleton: dev (Vite proxy + HMR), prod (static + security headers + caching), dist (standalone)
+- Backend healthcheck enables `depends_on: condition: service_healthy` for nginx
+- All resources labeled `project=<<PROJECT_LABEL>>` per Principle 9
+
+#### Backend skeleton (Chunk 4)
+
+- Working `server.js` with Express + structured logging + graceful shutdown (SIGTERM + 15s drain)
+- Full `routes → controllers → services → storage` layering with `/api/items` GET + POST
+- `/healthz` (liveness, no DB) + `/readyz` (readiness, DB + schema check) — deliberately differentiated
+- SQLite-WAL via `better-sqlite3` with migration runner (~30 lines, no library dependency)
+- Middleware: request-id (W3C TraceContext extraction), pino-http logger, error handler (sanitized in prod)
+- Observability: structured logger, trace utilities, metrics counter scaffold
+- Multi-stage Dockerfile (builder + production + development) with `build-base python3` for native compilation
+- Vitest test file (3 tests) proving the runner works
+- Pinned dependencies (no `^` or `~`): express 4.21.2, better-sqlite3 11.7.0, pino 9.6.0
+
+#### Frontend skeleton (Chunk 5)
+
+- Vite + React 19 shell with working `/api/items` integration (GET list + POST form)
+- Three-stage Dockerfile (builder + production + development) with development as last stage (compose default)
+- `server.host: '0.0.0.0'` in vite.config.js + package.json dev script (Vite-in-Docker gotcha prevented)
+- Plain CSS styling (system-ui font, minimal, not opinionated about framework)
+
+#### Project ADRs (Chunk 6)
+
+- 7 always-emitted project-level ADRs using canonical template (Context, Decision, Alternatives, Consequences, Cost implications)
+- ADR-001 Container-first, ADR-002 Backend layering, ADR-003 Make vocabulary, ADR-004 SQLite-WAL, ADR-005 JSON logging, ADR-006 Dual licensing, ADR-007 Phase-gated delivery
+- INDEX.md with supersession documentation ("ADR-008 supersedes ADR-004 for projects choosing Postgres")
+- Cross-reference graph: ADR-002→001, ADR-004→002, ADR-005→001, ADR-007→003
+
+#### Embedded skills (Chunk 7)
+
+- 9 baseline `ascent-*` project-embedded skill scaffolds at substantive-scaffold standard
+- Structural enforcement (5 read-only): ascent-self-audit (umbrella), ascent-layering-check, ascent-env-audit, ascent-observability-check, ascent-delivery-status
+- Authoring assistance (4 write-capable): ascent-adr-write, ascent-doc-stub, ascent-make-target, ascent-feature-intake
+- INTENT-MAP.md: intent→skill table with cadence column (per-commit, daily, per-feature, per-decision, per-deploy)
+
+#### Smoke test (Chunk 8)
+
+- `tools/scratch/scaffold-hello-world.sh` — one-shot scaffold script (cp + sed substitution)
+- `tools/scratch/SMOKE-TEST-LOG.md` — durable verification evidence (14/14 steps PASS)
+- 5 template bugs found and fixed during smoke test (documented in log)
+
+### Changed
+
+- Framework version: 0.2.0 → 0.3.0
+- `ROADMAP.md`: Phase 2 marked ✅ complete; Phase 3 marked ⏸️ awaiting signal
+- `CLAUDE.md` phase status: Phase 1 complete → Phase 2 complete
+- `.gitignore`: `tools/scratch/` pattern adjusted to allow tracking scaffold scripts while ignoring outputs
+- Backend Dockerfile: added development stage (last) + `npm ci` → `npm install` (lockfile not required at scaffold time)
+- Frontend Dockerfile: `npm ci` → `npm install` (same lockfile fix)
+- `docker-compose.yml`: backend data volume changed from named to bind mount for dev (host-visible for dev-status)
+
+### Decided
+
+- **Substantive-scaffold standard** for embedded skills: Frontmatter + Header + Inputs/Outputs + Operational-logic paragraph + Examples pointer + Anti-patterns paragraph. Phase 3 fills in full decision trees.
+- **5+4 split** for project-embedded skills: 5 read-only audit/check + 4 write-capable authoring assistance
+- **SQLite-WAL as default database** (ADR-004) with documented supersession path to Postgres when projects outgrow it
+- **Three-stage Dockerfile pattern** (builder + production + development) with development as last stage = compose default
+- **Backend healthcheck + nginx `service_healthy` dependency** closes the `make dev-up` → immediately ready gap
+- **Container-first dependency management** — host `npm install` removed from scaffold; container handles deps per Principle 1
+- **`npm install` over `npm ci` in Dockerfiles** — templates ship without lockfiles; `npm install` generates them at build time
+
+### Deferred
+
+- 22 additional project-embedded skill scaffolds (5 baseline remaining + 7 specialized + 8 conditional) — Phase 3
+- Production scaffolding script (`scaffold.py`, `bootstrap.py`, `enhance.py`, `migrate.py`) — Phase 4
+- Phase 4 carry-forward: how `scaffold.py` handles host Node version compatibility (container-only vs hybrid vs host-aware)
+- Eval test scenarios — Phase 5
+- Starter repo generation tooling — Phase 6
+- First production project scaffolded from ASCENT — Phase 7
+
+### Statistics
+
+- 8 PRs (#9–#16) across 8 chunks of Phase 2 work
+- 75+ template files scanned by `make qa-template-placeholders`; 165 unique placeholder names validated against canonical 20-name set
+- 10 SKILL.md files validated by `make qa-skill-frontmatter` (1 parent + 9 embedded)
+- 293 internal markdown links validated by `make qa-links` across 57 files
+- 1 functional exit criterion met: 14/14 smoke test steps PASS (first in framework history)
+- 5 template bugs found and fixed during smoke test (durable evidence in `tools/scratch/SMOKE-TEST-LOG.md`)
 
 ---
 
@@ -169,6 +272,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
-[Unreleased]: https://github.com/lloydbrian/lloydbriantech-ascent/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/lloydbrian/lloydbriantech-ascent/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.3.0
 [0.2.0]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.2.0
 [0.1.0-alpha]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.1.0-alpha
