@@ -1,6 +1,6 @@
 # ASCENT Principles
 
-The fourteen invariants that define an ASCENT project. These are not aspirations or recommendations — they are the conditions that must hold for a project to be considered ASCENT-compliant.
+The fifteen invariants that define an ASCENT project. These are not aspirations or recommendations — they are the conditions that must hold for a project to be considered ASCENT-compliant.
 
 If a project breaks any of these invariants, either the project is broken or the principle has been deliberately superseded by a project-level ADR. The framework provides the default; the project retains the right to override with explicit justification.
 
@@ -106,6 +106,12 @@ The README and overall doc structure organize content by audience — Architects
 
 **Why:** Universal documentation is documentation no one reads. Persona-segmented documentation is documentation that finds its reader.
 
+## 15. Session resumption
+
+Project state is durable, machine-readable, and inspected on every session start. ASCENT projects capture two layers of state: `docs/delivery/session-state.md` for transient working state and `docs/delivery/working-memory.md` for accumulating decisions. When a new session begins in a scaffolded project, Claude reads these artifacts before responding to the user's first prompt — and refuses to claim prior context that isn't grounded in them.
+
+**Why:** Long projects span dozens of sessions. Without durable state, each new session pays an orientation tax — re-explaining context, re-deriving decisions, re-discovering blockers. The protocol eliminates this class of waste by making "where we left off" an explicit, machine-readable artifact rather than something Claude is asked to remember.
+
 ---
 
 ## How the principles relate to the framework
@@ -126,6 +132,7 @@ The README and overall doc structure organize content by audience — Architects
 | 12 — Graceful shutdown | Server stub includes SIGTERM handler; `dev-down` sends SIGTERM with grace period |
 | 13 — `dev-status` family | `make/dev-status.mk`; row-by-row deep-dive commands; context-aware Next Actions |
 | 14 — Persona-segmented docs | README's role-segmented tables; `ascent-persona-coverage` skill; doc-architecture reference |
+| 15 — Session resumption | `session-state.md` + `working-memory.md` artifacts; `make session-snapshot`; `session-protocol.md` reference module |
 
 ## When a principle is broken
 

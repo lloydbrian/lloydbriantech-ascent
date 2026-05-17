@@ -11,7 +11,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRAMEWORK_NAME    := lloydbriantech-ascent
-FRAMEWORK_VERSION := 0.3.0
+FRAMEWORK_VERSION := 0.3.1
 
 export FRAMEWORK_NAME
 export FRAMEWORK_VERSION

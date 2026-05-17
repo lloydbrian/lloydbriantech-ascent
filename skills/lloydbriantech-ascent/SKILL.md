@@ -6,7 +6,7 @@ description: >-
   questions about ASCENT's conventions, principles, or nine engineering roles
   (delivery-lead, architect, ui-ux-designer, developer, data-engineer,
   ai-engineer, tester, devops, cybersecurity).
-version: 0.3.0
+version: 0.3.1
 allowed-tools:
   - Read
   - Grep
