@@ -1,0 +1,32 @@
+# docs/delivery/ — Delivery state for <<PROJECT_TITLE>>
+
+This directory holds the project's delivery state: session resumption artifacts, phase plans, and working memory.
+
+## Session resumption (per ASCENT Principle §15)
+
+Two artifacts capture project state across sessions:
+
+- **`session-state.md`** — transient working state (current focus, blockers, next actions). Gitignored. Overwritten each time `make session-snapshot` runs. Represents "where we are right now."
+- **`working-memory.md`** — accumulating decisions (resolved choices, adopted patterns, rejected patterns). Git-tracked. Append-only. Represents "what we've decided."
+
+### Quick reference
+
+| Command | Effect |
+|---|---|
+| `make session-snapshot` | Writes current state to `session-state.md` + archives to `snapshots/` |
+| `make session-resume` | Prints both files with MISSING/EMPTY/STALE/FRESH classification |
+
+### How Claude uses these
+
+On every new session, Claude reads both files before responding. The protocol:
+
+- **FRESH** (modified within 7 days): resume from this state
+- **STALE** (>7 days): read but ask for confirmation
+- **MISSING or EMPTY**: start fresh, no prior context assumed
+
+See `session-protocol.md` in the framework's reference modules for the full protocol specification.
+
+## Other delivery artifacts
+
+- **`snapshots/`** — timestamped archive of session-state snapshots (git-tracked history of session boundaries)
+- **`PHASE-PLAN.md`** — phase exit criteria and feature tracking (created per `ascent-feature-intake`)
