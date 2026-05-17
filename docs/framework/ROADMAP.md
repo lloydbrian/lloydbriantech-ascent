@@ -72,11 +72,23 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
 
 ---
 
+### v0.3.1 — Session resumption protocol
+
+**Status:** In progress
+
+Adds Principle §15 (session resumption) and the artifacts/protocol that operationalize it. The framework now treats session resumption as a first-class concern: `session-state.md` for transient working state, `working-memory.md` for accumulating decisions, `make session-snapshot` for user-prompted capture, and `session-protocol.md` as the authoritative reference module.
+
+Skill-level implementations (`ascent-delivery-status` reads state; `ascent-feature-intake` writes state) land in Phase 3.
+
+---
+
 ## Phase 3 — Project-embedded skills
 
 **Goal:** Author the SKILL.md files for all 14 baseline project-embedded skills and the 8 conditional ones. Each skill is invocable inside a scaffolded project.
 
 **Status:** ⏸️ Awaiting signal
+
+Note: §15 implementation extends `ascent-delivery-status` (read session state) and `ascent-feature-intake` (write to working memory) — covered as part of Phase 3 skill implementation work.
 
 **Exit criteria:**
 
