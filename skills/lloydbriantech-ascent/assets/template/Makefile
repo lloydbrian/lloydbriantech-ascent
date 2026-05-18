@@ -23,6 +23,7 @@ include make/security.mk
 include make/validate.mk
 include make/docs.mk
 include make/infra.mk
+include make/session.mk
 
 .PHONY: help version status
 

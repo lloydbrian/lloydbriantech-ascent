@@ -13,6 +13,29 @@
 **Owner:** <<BRAND>>
 **Scaffolded:** <<SCAFFOLD_DATE>> with ASCENT v<<FRAMEWORK_VERSION>>
 
+## Session resumption protocol
+
+On every new session in this project, read these files before responding:
+
+1. **Read `docs/delivery/session-state.md`** — transient working state (current focus, blockers, next actions)
+2. **Read `docs/delivery/working-memory.md`** — accumulating decisions (resolved choices, adopted patterns)
+
+Handle file states per `session-protocol.md`:
+
+- **MISSING or EMPTY:** "No prior session state found — starting fresh."
+- **STALE (>7 days):** "Session state is from [date] — confirm this is still current."
+- **FRESH:** "Resuming from: [summary]. Confirm or correct before we proceed."
+
+Commitments:
+
+- **Source citations** — prefix quoted state with "from session-state.md:" or "from working-memory.md:" so the user can verify against the file
+- **Refuse confabulation** — if information isn't in these files, say "I don't have prior state for this" rather than guessing from conversation patterns
+- **Present the summary** — synthesize a one-paragraph resumption before proceeding with the user's first prompt
+
+Verification: run `make session-resume` to see exactly what Claude reads. The command prints both files with their classification (MISSING/EMPTY/STALE/FRESH) and full contents. Citation-by-filename + `make session-resume` together form the honest verification chain — the user can always confirm that what Claude claims matches what the files contain.
+
+Capture: run `make session-snapshot` before closing a session or switching context.
+
 ## Architecture
 
 <<PROJECT_TITLE>> uses ASCENT conventions:
