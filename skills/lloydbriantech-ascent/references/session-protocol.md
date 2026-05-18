@@ -123,9 +123,9 @@ The framework's commitment: Claude never claims to know something from a prior s
 ## Cross-references
 
 - [PRINCIPLES.md §15](../../../docs/framework/PRINCIPLES.md#15-session-resumption) — the framework commitment this protocol operationalizes
-- `docs/delivery/session-state.md` — transient state artifact (template lands in v0.3.1 Chunk 2)
-- `docs/delivery/working-memory.md` — accumulating decisions artifact (template lands in v0.3.1 Chunk 2)
-- `make session-snapshot` — primary capture mechanism (template lands in v0.3.1 Chunk 2)
-- `make session-resume` — verification mechanism (template lands in v0.3.1 Chunk 2)
+- `docs/delivery/session-state.md` — transient state artifact (gitignored; overwritten each snapshot)
+- `docs/delivery/working-memory.md` — accumulating decisions artifact (git-tracked; append-only)
+- `make session-snapshot` — primary capture mechanism (writes session-state.md + archives to snapshots/)
+- `make session-resume` — verification mechanism (classifies + displays both files)
 - [ascent-delivery-status](../assets/template/.claude/skills/ascent-delivery-status/SKILL.md) — Phase 3 extension: reads session state into status synthesis
 - [ascent-feature-intake](../assets/template/.claude/skills/ascent-feature-intake/SKILL.md) — Phase 3 extension: appends locked acceptance criteria to working-memory

@@ -41,7 +41,7 @@ Synthesizes <<PROJECT_TITLE>>'s delivery state: current phase, exit-criteria che
 
 ## Operational logic
 
-The skill reads `.ascent-meta.json` for the current phase identifier, then locates the phase plan to extract exit criteria. Each criterion is checked against the project's current state — file existence checks, test-passing status, documentation presence. The output surfaces what's done, what's pending, and what action would close the most criteria. When [ascent-feature-intake](../ascent-feature-intake/SKILL.md) produces new work items, delivery-status will surface them as outstanding. The full decision tree for criteria-checking heuristics lands in Phase 3.
+The skill reads `.ascent-meta.json` for the current phase identifier, then locates the phase plan to extract exit criteria. Each criterion is checked against the project's current state — file existence checks, test-passing status, documentation presence. The output surfaces what's done, what's pending, and what action would close the most criteria. When [ascent-feature-intake](../ascent-feature-intake/SKILL.md) produces new work items, delivery-status will surface them as outstanding. Per §15 (session resumption), the skill also reads `docs/delivery/session-state.md` for the current focus and blockers, and `docs/delivery/working-memory.md` for accumulated decisions — incorporating both into the status synthesis so the "where are we?" answer includes session-level context, not just phase-level progress. The full decision tree for criteria-checking heuristics lands in Phase 3.
 
 ## Examples
 

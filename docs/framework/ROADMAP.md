@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Phase 2 — Template assets complete, v0.3.0, May 16, 2026. Phase 3 awaiting signal.
+**Current state:** Phase 2 — Template assets complete, v0.3.1, May 17, 2026. Phase 3 awaiting signal.
 
 ---
 
@@ -74,11 +74,11 @@ The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit e
 
 ### v0.3.1 — Session resumption protocol
 
-**Status:** In progress
+**Status:** ✅ Complete (May 17, 2026)
 
 Adds Principle §15 (session resumption) and the artifacts/protocol that operationalize it. The framework now treats session resumption as a first-class concern: `session-state.md` for transient working state, `working-memory.md` for accumulating decisions, `make session-snapshot` for user-prompted capture, and `session-protocol.md` as the authoritative reference module.
 
-Skill-level implementations (`ascent-delivery-status` reads state; `ascent-feature-intake` writes state) land in Phase 3.
+Skill scaffold extensions: `ascent-delivery-status` reads session state; `ascent-feature-intake` writes to working memory. Full skill implementations land in Phase 3.
 
 ---
 

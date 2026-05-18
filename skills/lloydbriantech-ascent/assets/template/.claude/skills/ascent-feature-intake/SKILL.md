@@ -39,7 +39,7 @@ Structures a new feature request into the delivery-lead's intake format: concret
 
 ## Operational logic
 
-The skill interviews the requestor to extract testable acceptance criteria from vague descriptions. "We need user accounts" becomes "User with valid credentials sees the dashboard within 2 seconds; invalid credentials show a clear error; failed attempts are rate-limited to 5/minute." Each criterion is evaluated for testability — if it can't be verified by a test or observation, it's refined until it can. The skill identifies which roles engage (per the feature-lifecycle Stage 2 trigger table) and estimates scope relative to prior features. The full interview-protocol decision tree lands in Phase 3.
+The skill interviews the requestor to extract testable acceptance criteria from vague descriptions. "We need user accounts" becomes "User with valid credentials sees the dashboard within 2 seconds; invalid credentials show a clear error; failed attempts are rate-limited to 5/minute." Each criterion is evaluated for testability — if it can't be verified by a test or observation, it's refined until it can. The skill identifies which roles engage (per the feature-lifecycle Stage 2 trigger table) and estimates scope relative to prior features. Per §15 (session resumption), when acceptance criteria are locked, the skill appends them as dated entries to `docs/delivery/working-memory.md` — making feature decisions durable across sessions so they aren't re-litigated on resume. The full interview-protocol decision tree lands in Phase 3.
 
 ## Examples
 
