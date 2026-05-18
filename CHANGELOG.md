@@ -22,6 +22,66 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.3.1] — 2026-05-17
+
+**Session resumption protocol.** ASCENT now treats session resumption as a first-class concern. Long projects span dozens of sessions; this patch makes "where we left off" an explicit, machine-readable artifact rather than something Claude is asked to remember.
+
+### Added
+
+#### Framework commitments (Chunk 1)
+
+- Principle §15: Session resumption — project state is durable, machine-readable, and inspected on every session start
+- `session-protocol.md` reference module — the authoritative specification: four file states (MISSING/EMPTY/STALE/FRESH), 6-step resumption protocol, capture discipline, verification mechanism
+- ROADMAP v0.3.1 entry between Phase 2 (complete) and Phase 3 (awaiting signal)
+
+#### Template artifacts (Chunk 2)
+
+- `docs/delivery/` directory with README, `working-memory.md` (git-tracked, accumulating), `session-state.md` (gitignored, transient), `snapshots/` archive
+- `make session-snapshot` — captures current state to `session-state.md` + archives to `snapshots/YYYY-MM-DD-HHMM.md`. Reads git state and `.ascent-meta.json` automatically; prompts for human-judgment fields.
+- `make session-resume` — displays both files with MISSING/EMPTY/STALE/FRESH classification. The verification mechanism: shows exactly what Claude reads on session start.
+- `CLAUDE.md.tmpl` protocol section — what Claude reads on session start: file-state handling, source-citation commitment, confabulation refusal, verification via `make session-resume`
+- `.gitignore.tmpl` updated: `docs/delivery/session-state.md` gitignored (transient); `working-memory.md` stays tracked
+- `make/session.mk` with `SHELL := /bin/bash` pinned for `local` variable support
+
+#### Skill scaffold extensions (Chunk 3)
+
+- `ascent-delivery-status` operational-logic paragraph extended: reads `session-state.md` for current focus + `working-memory.md` for accumulated decisions into status synthesis
+- `ascent-feature-intake` operational-logic paragraph extended: writes locked acceptance criteria as dated entries to `working-memory.md`
+
+### Changed
+
+- Framework version: 0.3.0 → 0.3.1
+- Principles count: 14 → 15
+- ROADMAP.md: v0.3.1 ✅ complete; Phase 3 status note about §15 skill extensions
+- CLAUDE.md (framework): v0.3.1 complete
+- `session-protocol.md` cross-references: stale "template lands in v0.3.1 Chunk 2" suffixes replaced with substantive descriptions (templates now exist)
+
+### Decided
+
+- **Four-state file classification** (MISSING/EMPTY/STALE/FRESH) — eliminates ambiguity; truly-empty scaffold ships as EMPTY by design
+- **Dual-write architecture** — `session-state.md` (current state, overwritten) + `snapshots/YYYY-MM-DD-HHMM.md` (history, git-tracked)
+- **`session-state.md` gitignored, `working-memory.md` tracked** — transient vs accumulating concerns separated cleanly
+- **No make target aliases** — `make session-snapshot` is canonical; `make session-checkpoint` was considered and dropped (Principle 2: one name per operation)
+- **Citation-by-filename + `make session-resume`** — the honest verification chain; Claude refuses to confabulate prior context not grounded in the files
+- **`session-state.md.tmpl` ships truly empty** (title only) — classifies as EMPTY on session start until first `make session-snapshot` populates it; avoids ambiguity between EMPTY and FRESH states
+
+### Deferred
+
+- Full `ascent-delivery-status` skill implementation reading session state into synthesis — Phase 3
+- Full `ascent-feature-intake` skill implementation writing locked criteria to working memory — Phase 3
+- Automatic-on-commit capture (git hook integration) — Phase 3 design discussion
+- Claude-judgment-based capture during sessions (recognizing decision-moments) — Phase 3 design discussion
+- `.ascent-meta.json` extension for configurable staleness threshold — currently hardcoded at 7 days
+
+### Statistics
+
+- 3 PRs (#18, #19, #20) across 3 chunks of v0.3.1 work
+- 1 new principle (§15) + 1 new reference module + 5 new template files + 4 surgical template edits + 2 skill scaffold extensions + 4 stale-suffix cleanups
+- 80 files / 167 placeholder names validated by `make qa-template-placeholders`
+- 298 internal markdown links validated by `make qa-links` across 58 files
+
+---
+
 ## [0.3.0] — 2026-05-16
 
 **Phase 2 — Template assets.** The substantive baseline content for every file the architect role emits at scaffold time. After this phase, a project scaffolded from these templates produces a working stack: `make dev-up` boots backend + frontend + nginx; the layered API serves CRUD operations; observability emits per contract; tests pass.
@@ -272,7 +332,8 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
-[Unreleased]: https://github.com/lloydbrian/lloydbriantech-ascent/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/lloydbrian/lloydbriantech-ascent/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.3.1
 [0.3.0]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.3.0
 [0.2.0]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.2.0
 [0.1.0-alpha]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.1.0-alpha
