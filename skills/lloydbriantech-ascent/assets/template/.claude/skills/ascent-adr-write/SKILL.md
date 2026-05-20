@@ -50,7 +50,7 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 **Action on PASS:** Read INDEX.md, extract the highest ADR number from the table rows, and compute the next number (zero-padded to 3 digits: 008, 042, 100). Report: "Next available ADR number: ADR-NNN."
 
-**Action on FAIL:** No INDEX.md means no ADR directory structure. Report: "docs/architecture/decisions/INDEX.md not found — creating ADR directory structure." Create `docs/architecture/decisions/` and a seed INDEX.md with the header row. Set next number to 001.
+**Action on FAIL:** No INDEX.md means no ADR directory structure. Report: "docs/architecture/decisions/INDEX.md not found — creating ADR directory structure." Create `docs/architecture/decisions/` and a seed INDEX.md with the five-column header: `| # | Title | Status | Date | Summary |` followed by the separator row `|---|---|---|---|---|`. Set next number to 001.
 
 ### Step 2 — Validate title and derive slug
 

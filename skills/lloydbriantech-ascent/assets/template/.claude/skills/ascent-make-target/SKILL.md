@@ -17,7 +17,7 @@ allowed-tools:
 
 # ascent-make-target
 
-Proposes correctly-named make targets per the the `MAKE-NAMING` reference module convention and places them in the right `.mk` file. Prevents naming violations (aliases, abbreviations, wrong section, camelCase) before they accumulate into vocabulary drift. Write-capable: uses Write for new `.mk` files and Edit to append targets to existing `.mk` files with section-aware placement.
+Proposes correctly-named make targets per the `MAKE-NAMING` reference module convention and places them in the right `.mk` file. Prevents naming violations (aliases, abbreviations, wrong section, camelCase) before they accumulate into vocabulary drift. Write-capable: uses Write for new `.mk` files and Edit to append targets to existing `.mk` files with section-aware placement.
 
 ## When this skill engages
 
