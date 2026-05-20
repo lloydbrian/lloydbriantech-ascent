@@ -256,6 +256,12 @@ ASCENT is currently a single-author framework (Lloyd D., `lloydbriantech`). Cont
 
 Phase 3 established a cluster-based PR discipline: each cluster of related skills ships as a single reviewed PR with behavior-verifying test scripts, full validator passes, and a review packet before merge. This discipline carries forward for future contributions.
 
+## Support
+
+ASCENT is free and open-source under the MIT/Apache-2.0 dual license. If the framework has saved you time on a project, support is appreciated but never expected:
+
+☕ [buymeacoffee.com/lloydbriantech](https://buymeacoffee.com/lloydbriantech)
+
 ## License
 
 Dual-licensed under either of:
