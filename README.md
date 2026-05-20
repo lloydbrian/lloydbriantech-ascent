@@ -144,7 +144,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the phase plan.
 
 ## Contributing
 
-ASCENT is currently a single-author framework (Lloyd Brian Dela Cruz, `lloydbriantech`). Contributions, suggestions, and bug reports are welcome via [GitHub issues](https://github.com/lloydbrian/lloydbriantech-ascent/issues). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution model, versioning approach, and review bar.
+ASCENT is currently a single-author framework (Lloyd D., `lloydbriantech`). Contributions, suggestions, and bug reports are welcome via [GitHub issues](https://github.com/lloydbrian/lloydbriantech-ascent/issues). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution model, versioning approach, and review bar.
 
 ## License
 
