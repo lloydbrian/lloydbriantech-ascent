@@ -1,8 +1,8 @@
 # ASCENT-INVARIANTS
 
-> Runtime restatement of the 15 framework invariants. [PRINCIPLES.md](../../../docs/framework/PRINCIPLES.md) in the meta-repo is authoritative if this file drifts from it.
+> Runtime restatement of the 16 framework invariants. [PRINCIPLES.md](../../../docs/framework/PRINCIPLES.md) in the meta-repo is authoritative if this file drifts from it.
 
-The 15 invariants every ASCENT project must satisfy. Each is load-bearing; none is optional. Violations are either fixed or formally superseded by a project-level ADR titled `ADR-NNN-supersede-principle-N`.
+The 16 invariants every ASCENT project must satisfy. Each is load-bearing; none is optional. Violations are either fixed or formally superseded by a project-level ADR titled `ADR-NNN-supersede-principle-N`.
 
 ---
 
@@ -127,6 +127,16 @@ The 15 invariants every ASCENT project must satisfy. Each is load-bearing; none 
 **Why:** Context that exists only in conversation history is lost when sessions end. The session resumption protocol makes prior state explicit, durable, and machine-readable.
 
 **Surfaces in:** `make session-snapshot` and `make session-resume` targets; the `ascent-reflect` skill (interview-based capture); the `session-protocol.md` reference module; the four-state file classification (MISSING / EMPTY / STALE / FRESH) used by delivery-status, feature-intake, standup, handoff, and onboard.
+
+---
+
+## 16. Behavior verification, not documentation grep
+
+**Rule:** Tests verify behavior through mechanical stand-ins and controlled fixtures, asserting on what the code actually produces rather than on what the documentation claims. A test that pattern-matches SKILL.md prose for expected keywords is a documentation check, not a behavior test.
+
+**Why:** Documentation-grep tests are tautological — they pass when the prose says the right thing, regardless of whether the logic produces the right output. This class of false-positive test masks real defects when implementation drifts from documentation.
+
+**Surfaces in:** All 28 skill test scripts under `tests/skills/`; the mechanical stand-in functions (`classify_file`, `compute_next_adr`, `composite_stance`, `check_pragma`, etc.) that reimplement skill logic for controlled-fixture testing; the `make test-skills` aggregator that runs the full suite.
 
 ---
 

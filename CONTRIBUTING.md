@@ -148,6 +148,62 @@ Be respectful. Engage with substance, not personality. Disagreements are resolve
 
 ---
 
+## Lessons codified from Phase 3
+
+Three workflow disciplines emerged from Phase 3's implementation of 28 skills across 8 clusters. They are codified here as contribution guidance for future phases. See [`docs/framework/RETROSPECTIVES/PHASE-3.md`](docs/framework/RETROSPECTIVES/PHASE-3.md) for the narrative account of how each discipline emerged.
+
+### Cluster-based contribution discipline
+
+When a phase delivers multiple related artifacts, group them into clusters and ship each cluster as a single reviewed PR. The cluster is the unit of review — one proposal, one implementation, one review packet, one merge.
+
+**The workflow:**
+
+1. **Propose** — surface design decisions as lettered questions (Decision A, Decision B, etc.) with options and rationale. Wait for approval before implementation.
+2. **Implement** — build all artifacts in the cluster on a feature branch.
+3. **Review packet** — before pushing, ship a review packet containing:
+   - Verbatim file content for every new or modified file (not summaries, not "read the file" placeholders)
+   - Validator outputs (`make qa-skill-frontmatter`, `make qa-links`, `make qa-template-placeholders`)
+   - Confirmations checklist naming each design decision by letter and confirming it landed
+4. **Pre-push spot-check** — run validators locally, run tests locally, export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend (not before — Cluster 2's stale-file incident established this discipline).
+5. **Push and PR** — open the PR with a substantive description capturing architectural decisions, validator output, and phase-progress update.
+
+**What this does NOT prescribe:** Cluster size, skill count per cluster, or PR description format. The discipline is about the propose → approve → implement → review → push flow. Phase 4 clusters may be larger or smaller than Phase 3 clusters.
+
+### Cross-cutting artifact verification
+
+Some artifacts are updated across multiple PRs or phases. When a plan claims a file will be updated, the implementation must actually touch that file. Phase 3 identified two instances where this discipline failed:
+
+- **INTENT-MAP.md** — every Cluster 1-8 proposal stated INTENT-MAP would gain rows; none of the 8 PRs updated it. The gap compounded across 8 PRs and was caught only in the closing chunk.
+- **ASCENT-INVARIANTS.md** — v0.3.1 introduced Principle §15 but did not update ASCENT-INVARIANTS.md from "fourteen" to "fifteen." The catch-up landed in v0.4.0's closing chunk.
+
+**The cross-cutting files that need verification:**
+
+- `INTENT-MAP.md` — when skills are added or renamed
+- `ASCENT-INVARIANTS.md` — when principles are added or changed
+- `PRINCIPLES.md` — when principles are added (including the relate-to-framework table)
+- `README.md` — when skill counts, version, or phase status change
+- `CHANGELOG.md` — when a release ships
+
+**The verification mechanism:** Run `make qa-claimed-vs-actual PLAN=<plan-file>` against the phase plan at the closing chunk. The validator checks that every artifact path claimed in the plan's artifact catalog table exists in the repo. It does not verify content — only structural existence.
+
+**When to run:** At the closing chunk of each phase or release, not at every PR. Per-PR verification is optional but recommended when the PR touches cross-cutting files.
+
+### Phase-plan discipline
+
+Commit a durable plan before implementation begins. Reference the plan by section number in PRs. Append amendments to the plan rather than rewriting it.
+
+**The practice:**
+
+1. **Commit the plan first.** The plan is a separate PR that merges before any implementation work. It contains: artifact inventory, design decisions, chunk breakdown, exit criteria, and out-of-scope clarifications.
+2. **Reference by section number.** Implementation PRs cite the plan: "Per §6 Cluster 4 scope, ~920 lines estimated." This prevents re-litigation of decisions already captured in the plan.
+3. **Append amendments, never rewrite.** If the plan's estimates or decisions change during implementation, capture the change as an amendment at the bottom of the plan document. The original text is preserved as a comparison baseline.
+
+**What this does NOT prescribe:** Plan length, section structure, or level of detail. Phase 3's plan was ~500 lines across 10 sections because the work was inventory-heavy (28 skills). A future phase plan may be lighter if the work is more design-driven. The discipline is about committing a durable reference and working against it, not about matching a template.
+
+Phase 3's retrospective dogfoods this discipline: [`PHASE-3-RETRO-PLAN.md`](docs/framework/PHASE-3-RETRO-PLAN.md) commits before any retrospective content, and Chunks 1-3 reference it by section number.
+
+---
+
 ## License of contributions
 
 By contributing, you agree your contributions are dual-licensed under the same terms as the project itself: MIT OR Apache-2.0 at the consumer's option. This matches the Rust ecosystem convention and is stated formally in [ADR-006](docs/framework/DECISIONS/ADR-006-dual-licensing.md).

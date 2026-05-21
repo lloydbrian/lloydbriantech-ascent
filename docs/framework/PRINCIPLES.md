@@ -1,6 +1,6 @@
 # ASCENT Principles
 
-The fifteen invariants that define an ASCENT project. These are not aspirations or recommendations — they are the conditions that must hold for a project to be considered ASCENT-compliant.
+The sixteen invariants that define an ASCENT project. These are not aspirations or recommendations — they are the conditions that must hold for a project to be considered ASCENT-compliant.
 
 If a project breaks any of these invariants, either the project is broken or the principle has been deliberately superseded by a project-level ADR. The framework provides the default; the project retains the right to override with explicit justification.
 
@@ -114,6 +114,16 @@ Project state is durable, machine-readable, and inspected on every session start
 
 **Why:** Long projects span dozens of sessions. Without durable state, each new session pays an orientation tax — re-explaining context, re-deriving decisions, re-discovering blockers. The protocol eliminates this class of waste by making "where we left off" an explicit, machine-readable artifact rather than something Claude is asked to remember.
 
+## 16. Behavior verification, not documentation grep
+
+Tests verify behavior through mechanical stand-ins and controlled fixtures, asserting on what the code actually produces rather than on what the documentation claims. A behavior test constructs a controlled input, runs the logic (or a mechanical stand-in that reimplements the logic), and asserts on the output. A documentation-grep test pattern-matches the SKILL.md for expected keywords — it passes when the prose is right, not when the logic is right.
+
+**Why:** A test that passes because the SKILL.md contains the right keywords — rather than because the logic produces the right output — is not actually testing anything. Documentation-grep tests are tautological: they verify that the documentation says what the test expects it to say, which masks real defects when implementation drifts from documentation. Phase 3's Cluster 2 rework established this boundary after standup, delivery-status, and feature-intake tests were rewritten from documentation-grep to mechanical stand-ins.
+
+**What this rules out:** Tests that pattern-match SKILL.md prose for expected keywords without exercising the underlying logic. Tests that pass when the documentation says the right thing regardless of what the implementation does.
+
+**What this still allows:** Documentation validators (like `qa-skill-frontmatter`) that verify documentation structure rather than behavior — these are documentation checks, not behavior tests. The principle governs what a behavior test must do, not whether structural validators exist.
+
 ---
 
 ## How the principles relate to the framework
@@ -135,6 +145,7 @@ Project state is durable, machine-readable, and inspected on every session start
 | 13 — `dev-status` family | `make/dev-status.mk`; row-by-row deep-dive commands; context-aware Next Actions |
 | 14 — Persona-segmented docs | README's role-segmented tables; `ascent-persona-coverage` skill; doc-architecture reference |
 | 15 — Session resumption | `session-state.md` + `working-memory.md` artifacts; `make session-snapshot`; `session-protocol.md` reference module |
+| 16 — Behavior verification | All 28 skill test scripts; mechanical stand-in discipline established in Phase 3 Cluster 2; `ascent-self-audit` structural checks complement (not replace) behavior tests |
 
 ## When a principle is broken
 
