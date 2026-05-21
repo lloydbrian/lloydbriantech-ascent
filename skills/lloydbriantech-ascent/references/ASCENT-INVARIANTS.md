@@ -1,8 +1,8 @@
 # ASCENT-INVARIANTS
 
-> Runtime restatement of the 14 framework invariants. [PRINCIPLES.md](../../../docs/framework/PRINCIPLES.md) in the meta-repo is authoritative if this file drifts from it.
+> Runtime restatement of the 15 framework invariants. [PRINCIPLES.md](../../../docs/framework/PRINCIPLES.md) in the meta-repo is authoritative if this file drifts from it.
 
-The 14 invariants every ASCENT project must satisfy. Each is load-bearing; none is optional. Violations are either fixed or formally superseded by a project-level ADR titled `ADR-NNN-supersede-principle-N`.
+The 15 invariants every ASCENT project must satisfy. Each is load-bearing; none is optional. Violations are either fixed or formally superseded by a project-level ADR titled `ADR-NNN-supersede-principle-N`.
 
 ---
 
@@ -117,6 +117,16 @@ The 14 invariants every ASCENT project must satisfy. Each is load-bearing; none 
 **Why:** Universal documentation is documentation no one reads.
 
 **Surfaces in:** README role-segmented tables; the `ascent-persona-coverage` skill; the `audience-mapping.md` practice module.
+
+---
+
+## 15. Session resumption
+
+**Rule:** Transient working state (`session-state.md`) and accumulated decisions (`working-memory.md`) persist across sessions via explicit capture. Session-state is gitignored and overwritten each snapshot; working-memory is git-tracked and append-only.
+
+**Why:** Context that exists only in conversation history is lost when sessions end. The session resumption protocol makes prior state explicit, durable, and machine-readable.
+
+**Surfaces in:** `make session-snapshot` and `make session-resume` targets; the `ascent-reflect` skill (interview-based capture); the `session-protocol.md` reference module; the four-state file classification (MISSING / EMPTY / STALE / FRESH) used by delivery-status, feature-intake, standup, handoff, and onboard.
 
 ---
 

@@ -12,13 +12,130 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Phase 3 — Project-embedded skills (22 SKILL.md scaffolds)
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5 — Test harness with three eval scenarios
 - Phase 6 — Starter repo generation tooling
 - Phase 7 — First production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.0] — 2026-05-20
+
+**Phase 3 — Project-embedded skills.** Implements all 28 project-embedded skills that keep a scaffolded project disciplined as it grows. Each skill has gated-step operational logic, a corresponding bash test script with mechanical stand-in verification, and documented cross-skill relationships. The skills are organized across 8 implementation clusters, each shipped as a reviewed PR with behavior-verifying tests, full validator passes, and a review packet before merge.
+
+### Added
+
+#### Cluster 1 — Foundation (4 skills)
+
+- `ascent-self-audit` — umbrella audit composing 3 sub-checks + 12 direct invariant checks (281 lines)
+- `ascent-layering-check` — validates backend import graph: routes → controllers → services → storage
+- `ascent-env-audit` — validates .env discipline: gitignored, empty defaults, code-reads match schema
+- `ascent-observability-check` — validates logger, trace context, healthchecks, lifecycle events
+- 4 test scripts with trap-based cleanup and per-test fixture subdirectories
+
+#### Cluster 2 — Delivery (3 skills)
+
+- `ascent-delivery-status` — surfaces current phase, exit-criteria progress, recommended next actions; §15 four-state integration
+- `ascent-feature-intake` — decomposes requests into testable acceptance criteria; appends to working-memory.md per §15
+- `ascent-standup` — summarizes recent activity into standup format; 24-hour default window
+- 3 test scripts with §15 four-state classification stand-ins
+
+#### Cluster 3 — Authoring (3 skills)
+
+- `ascent-adr-write` — guides ADR creation with interview, numbering, INDEX.md update; atomic write (both or neither)
+- `ascent-doc-stub` — generates persona-targeted documentation skeletons with provenance comments
+- `ascent-make-target` — proposes correctly-named make targets with section-aware Edit placement
+- 3 test scripts; write-tool boundary discipline established (valid paths only, never overwrite without confirmation, write as final step)
+
+#### Cluster 4 — Health checks (5 skills)
+
+- `ascent-data-health` — validates SQLite-WAL config: WAL mode, foreign keys, migration tracking, migration ordering
+- `ascent-doc-sweep` — validates doc freshness: persona provenance, orphaned refs, 30-day stale TODO markers
+- `ascent-dependency-health` — static package.json analysis: pinned versions, engines, traceability, unused deps
+- `ascent-adr-conformance` — deeper ADR analysis: section completeness, INDEX sync, supersession bidirectionality, status consistency
+- `ascent-skills-doctor` — validates skill collection: frontmatter, INTENT-MAP sync, cross-references, allowed-tools honesty
+- 5 test scripts; sibling-not-component pattern introduced (skills read shared sources, no runtime invocation)
+
+#### Cluster 5 — Lifecycle (3 skills)
+
+- `ascent-reflect` — end-of-session interview capture; writes session-state.md (overwrite) + working-memory.md (append) per §15
+- `ascent-handoff` — progressive-depth HANDOFF.md: "Where to start" / "Project state" / "Project conventions"
+- `ascent-onboard` — read-only "first hour" walkthrough; detects project maturity from state
+- 3 test scripts; detect-don't-ask pattern introduced (onboard detects project maturity from state); shared-artifact data flow through §15 layer
+
+#### Cluster 6 — Quality gates (2 skills)
+
+- `ascent-qa` — surface-level quality gate across 5 areas with conditional sub-skill recommendations (hybrid pattern introduced)
+- `ascent-release-readiness` — pre-release validation: CHANGELOG, version consistency, clean tree, branch, tag uniqueness
+- 2 test scripts; detect-don't-ask pattern reinforced from Cluster 5
+
+#### Cluster 7 — Security/cost conditional (4 skills)
+
+- `ascent-security-audit` — point-in-time: 5 static checks (env scope, credentials, privilege, headers, URLs)
+- `ascent-sec-posture` — current-stance summary: severity classification, coverage gaps (drift detection deferred)
+- `ascent-cost-posture` — cloud-generic cost discipline: resource declarations, retention docs, IaC presence
+- `ascent-vitality` — activity/momentum signals: commits 14d, work items 30d, CHANGELOG 60d
+- 4 test scripts; enumerate/summarize sibling pattern reinforced from Cluster 4 at 1:1 fan-in
+
+#### Cluster 8 — Advanced conditional (4 skills)
+
+- `ascent-health` — composite stance summarizer at 1:4 fan-in over Cluster 4 enumerators (baseline-deep, 196 lines)
+- `ascent-ai-evals` — validates eval scenario structure and prompt-test coverage; no-ops when absent
+- `ascent-design-system-audit` — validates token consistency and hardcoded values; no-ops on plain CSS
+- `ascent-persona-coverage` — validates persona entry points and 3-click depth limit per §14
+- 4 test scripts; enumerate/summarize generalized to 1:4 fan-in; detect-don't-ask for conditional skills
+
+#### Test framework
+
+- `assets/template/tests/skills/` directory with 28 bash test scripts
+- `make test-skills` aggregator with per-skill `SKILL=<name>` filter
+- Per-test fixture subdirectories at `.fixtures/<skill>/<scenario>/`
+- Trap-based cleanup discipline across all 28 tests
+- Behavior verification via mechanical stand-ins (not documentation-grep)
+
+### Changed
+
+- Framework version: 0.3.1 → 0.4.0
+- INTENT-MAP.md: expanded from 9-skill routing table to full 28-skill table with intent mappings and cadences
+- README.md: skill count "10 implemented, 18 in progress" → "all 28 implemented"; version badge 0.3.1 → 0.4.0
+- ASCENT-INVARIANTS.md: updated "fourteen" → "fifteen"; added §15 Session resumption section
+
+### Decided
+
+- **Four architectural patterns** established and propagated across Phase 3:
+  - Sibling pattern: introduced in Cluster 4 (adr-conformance, skills-doctor as siblings to self-audit); reinforced in Cluster 5 (reflect, handoff, onboard share §15 artifacts) and Cluster 7 (security-audit and sec-posture as siblings)
+  - Hybrid pattern: introduced in Cluster 6 (ascent-qa self-executes surface checks, conditionally recommends sub-skills)
+  - Detect-don't-ask: introduced in Cluster 5 (onboard detects project maturity from state); reinforced in Cluster 6 (release-readiness detects meta-repo vs scaffolded context)
+  - Enumerate/summarize sub-pattern: introduced as a sub-pattern of sibling in Cluster 4 (adr-conformance enumerates, self-audit §7 summarizes); reinforced at 1:1 fan-in in Cluster 7 (security-audit enumerates, sec-posture summarizes); generalized to 1:4 fan-in in Cluster 8 (ascent-health summarizes across 4 Cluster 4 enumerators)
+- **Cluster-based PR discipline** (established Cluster 1, refined through Cluster 8): each cluster ships as a single reviewed PR with behavior-verifying tests, full validator passes, review packet, pre-push spot-check
+- **Behavior verification via mechanical stand-ins**, not documentation-grep — established discipline through all 28 tests
+- **Lean-tier target at middle of range (~125 lines)**, not floor — calibrated from Cluster 5 observation
+- **Conditional skill framing**: 7 of 28 skills ship as conditional. Single-sentence boilerplate announces Phase 4 scaffolder will gate inclusion; until then, skills exit gracefully when subsystem is absent
+- **Composite stance definitions** (ascent-health): mutually exclusive classification ladder — Strong / Partial / Moderate / Weak — with not-assessed as honest partial coverage
+
+### Deferred to v0.4.x and beyond
+
+- Hardening of 14 specialized/conditional skills to baseline-deep depth
+- Routing verification (real-use testing)
+- Performance profiling
+- True two-file atomicity for ascent-reflect (temp-file + rename)
+- Drift detection for ascent-sec-posture (requires storage mechanism)
+- npm audit / SBOM / CVE database for ascent-dependency-health and ascent-security-audit
+- Conditional skill inclusion mechanism (Phase 4 scaffolder)
+- Smoke-test extension to invoke `make test-skills` (requires scaffolded project context)
+- License revisit (dual MIT/Apache-2.0 vs alternatives)
+
+### Statistics
+
+- 9 PRs across Phase 3 (Cluster 0 planning + Clusters 1-8 implementation)
+- 28 SKILL.md files (14 baseline-deep, 14 specialized-lean)
+- 28 bash test scripts with mechanical stand-in verification
+- 368 internal markdown links validated by `make qa-links`
+- 212 placeholder names validated by `make qa-template-placeholders`
+- 4 architectural patterns established and propagated
+- 8 implementation clusters, each shipping as a reviewed PR
 
 ---
 

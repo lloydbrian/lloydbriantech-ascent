@@ -2,10 +2,10 @@
 
 > An opinionated engineering framework that takes a project from idea to running stack in under two minutes, then keeps it disciplined as it grows.
 
-![Version](https://img.shields.io/badge/version-0.3.1-blue)
+![Version](https://img.shields.io/badge/version-0.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)
 ![Principles](https://img.shields.io/badge/principles-15-orange)
-![Status](https://img.shields.io/badge/status-Phase%203%20in%20progress-yellow)
+![Status](https://img.shields.io/badge/status-Phase%203%20complete-brightgreen)
 
 ---
 
@@ -178,7 +178,7 @@ Every scaffolded project ships with **28 project-embedded skills** across two ti
 
 `ascent-data-health` · `ascent-doc-sweep` · `ascent-dependency-health` · `ascent-adr-conformance` · `ascent-skills-doctor` · `ascent-qa` · `ascent-release-readiness` · `ascent-security-audit` · `ascent-sec-posture` · `ascent-cost-posture` · `ascent-vitality` · `ascent-ai-evals` · `ascent-design-system-audit` · `ascent-persona-coverage`
 
-**Implementation status (Phase 3 in progress):** 10 of 28 skills are implemented with full gated-step operational logic and passing test scripts. The remaining 18 are being implemented across Clusters 4-8 per [`docs/framework/PHASE-3-PLAN.md`](docs/framework/PHASE-3-PLAN.md). Each cluster ships as a reviewed PR with behavior-verifying test scripts.
+**Implementation status:** All 28 skills implemented across 8 clusters per [`docs/framework/PHASE-3-PLAN.md`](docs/framework/PHASE-3-PLAN.md). Each cluster shipped as a reviewed PR with behavior-verifying test scripts. 14 baseline-deep skills (~200-250 lines each) and 14 specialized-lean skills (~100-150 lines each).
 
 ## Session resumption
 
@@ -219,7 +219,7 @@ See `audience-mapping.md` for full per-persona detail — what each doesn't need
 
 ## Status and roadmap
 
-ASCENT has shipped **4 releases** across 3 completed phases:
+ASCENT has shipped **5 releases** across 4 completed phases:
 
 | Phase | Version | Date | What shipped |
 |---|---|---|---|
@@ -227,8 +227,9 @@ ASCENT has shipped **4 releases** across 3 completed phases:
 | Phase 1 — Parent skill | v0.2.0 | May 15, 2026 | SKILL.md with routing logic, 22 reference modules, Makefile tree |
 | Phase 2 — Template assets | v0.3.0 | May 16, 2026 | Full scaffolded project template, 14-step smoke test |
 | v0.3.1 — Session resumption | v0.3.1 | May 17, 2026 | Principle §15, session-protocol.md, make session-snapshot/resume |
+| Phase 3 — Skills | v0.4.0 | May 20, 2026 | 28 project-embedded skills, 28 test scripts, 4 architectural patterns |
 
-**Currently:** Phase 3 — Project-embedded skills (v0.4.0 target). 10 of 28 skills implemented across 3 clusters (Foundation, Delivery, Authoring). 5 clusters remaining.
+**Currently:** Phase 3 complete. Phase 4 — Scaffolding scripts — awaiting signal.
 
 **Next:** Phase 4 — Scaffolding scripts (the skill actually writes files). Phase 5 — Test harness with evals. Phase 6 — Starter repo generation. Phase 7 — First production project.
 

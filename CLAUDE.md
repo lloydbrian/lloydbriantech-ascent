@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent` — the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 2 — Template assets (complete); v0.3.1 complete
-**Version:** 0.3.1
+**Phase:** Phase 3 — Project-embedded skills (complete); v0.4.0
+**Version:** 0.4.0
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
