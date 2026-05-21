@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Phase 2 — Template assets complete, v0.3.1, May 17, 2026. Phase 3 awaiting signal.
+**Current state:** Phase 3 — Project-embedded skills complete, v0.4.0, May 20, 2026. Phase 4 awaiting signal.
 
 ---
 
@@ -84,20 +84,20 @@ Skill scaffold extensions: `ascent-delivery-status` reads session state; `ascent
 
 ## Phase 3 — Project-embedded skills
 
-**Goal:** Author the SKILL.md files for all 14 baseline project-embedded skills and the 8 conditional ones. Each skill is invocable inside a scaffolded project.
+**Goal:** Author the SKILL.md files for all 14 baseline project-embedded skills and the 14 specialized/conditional ones. Each skill is invocable inside a scaffolded project.
 
-**Status:** ⏸️ Awaiting signal
+**Status:** ✅ Complete (May 20, 2026)
 
-Note: §15 implementation extends `ascent-delivery-status` (read session state) and `ascent-feature-intake` (write to working memory) — covered as part of Phase 3 skill implementation work.
+Note: §15 implementation extends `ascent-delivery-status` (read session state) and `ascent-feature-intake` (write to working memory) — covered as part of Phase 3 skill implementation work. The `.claude/commands/` slash-command files are deferred to Phase 4: the scaffolder is responsible for generating them when producing a scaffolded project, since they're project-level artifacts rather than parent-skill artifacts. Phase 3 ships the 28 skills they invoke. See [`PHASE-3-PLAN.md`](PHASE-3-PLAN.md) for the full 28-skill implementation plan across 8 clusters.
 
 **Exit criteria:**
 
-- [ ] 14 baseline ascent-* SKILL.md files authored with substantive content
-- [ ] 8 conditional ascent-* SKILL.md files authored
-- [ ] `.claude/commands/` slash-command files (one per skill)
-- [ ] INTENT-MAP.md populated with all 22 skills, intent classification, cadence guidance
-- [ ] Each skill's `allowed-tools` is minimal and explicit
-- [ ] `ascent-skills-doctor` can self-check the skill collection inside a scaffolded project
+- [x] 14 baseline ascent-* SKILL.md files authored with substantive content
+- [x] 14 specialized/conditional ascent-* SKILL.md files authored
+- [ ] `.claude/commands/` slash-command files (one per skill) — deferred to Phase 4 (scaffolder generates these)
+- [x] INTENT-MAP.md populated with all 28 skills, intent classification, cadence guidance
+- [x] Each skill's `allowed-tools` is minimal and explicit
+- [x] `ascent-skills-doctor` can self-check the skill collection inside a scaffolded project
 
 **Version on completion:** v0.4.0
 
@@ -107,7 +107,7 @@ Note: §15 implementation extends `ascent-delivery-status` (read session state) 
 
 **Goal:** Ship the executable scripts that perform scaffold, enhance, and migrate operations. Until this phase, the skill describes what to do; in this phase, it actually does it.
 
-**Status:** ⏸️ Awaiting Phase 3 completion
+**Status:** ⏸️ Awaiting signal
 
 **Exit criteria:**
 

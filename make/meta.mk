@@ -8,7 +8,7 @@ version:  ## META: Print framework version
 status:  ## META: Show framework state at a glance
 	@printf "Framework:    %s\n" "$(FRAMEWORK_NAME)"
 	@printf "Version:      %s\n" "$(FRAMEWORK_VERSION)"
-	@printf "Phase:        1 complete (v0.2.0); Phase 2 in progress\n"
+	@printf "Phase:        3 complete (v0.4.0); Phase 4 awaiting signal\n"
 	@printf "Branch:       %s\n" "$$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf '(not a git repo)')"
 	@printf "Commit:       %s\n" "$$(git rev-parse --short HEAD 2>/dev/null || printf '(no commits)')"
 	@if [ -L "$(HOME)/.claude/skills/$(FRAMEWORK_NAME)" ]; then \
