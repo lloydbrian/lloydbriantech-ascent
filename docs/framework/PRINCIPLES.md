@@ -6,6 +6,8 @@ If a project breaks any of these invariants, either the project is broken or the
 
 The principles are numbered for reference. The numbering is not a priority order — every principle is load-bearing.
 
+Patterns — recurring interaction shapes that emerged from Phase 3's skill implementation — are documented separately in [`patterns.md`](../../skills/lloydbriantech-ascent/references/patterns.md). Patterns are descriptive conventions; principles are invariants.
+
 ---
 
 ## 1. Containerization-first
