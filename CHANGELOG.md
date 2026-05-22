@@ -21,6 +21,59 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.1] — 2026-05-21
+
+**Phase 3 retrospective.** Captures the 5 durable lessons from Phase 3 as framework artifacts: cluster-based PR discipline, four architectural patterns, process-leak class detection, behavior verification as Principle §16, and phase-plan discipline. Matches the v0.3.1 precedent — focused patch adding framework discipline between phase releases.
+
+### Added
+
+- Principle §16: Behavior verification, not documentation grep (`PRINCIPLES.md` + `ASCENT-INVARIANTS.md`)
+- Patterns reference module (`skills/lloydbriantech-ascent/references/patterns.md`) formalizing 4 architectural patterns with concrete Phase 3 examples
+- `RETROSPECTIVES/` directory established; first entry `PHASE-3.md` (~167 lines) narrates the 5 lessons in present-narrative voice
+- 3 `CONTRIBUTING.md` sections under "Lessons codified from Phase 3" heading: cluster-based discipline, cross-cutting artifact verification, phase-plan discipline
+- `make/qa-claimed-vs-actual.sh` validator (structural file-existence check against plan's artifact catalog)
+- `make qa-claimed-vs-actual` target wired into `make/qa.mk`
+
+### Changed
+
+- Framework version: 0.4.0 → 0.4.1
+- `PRINCIPLES.md`: 15 → 16 principles; relate-to-framework table row added for §16; 2-sentence pointer to `patterns.md` added to introductory framing
+- `ASCENT-INVARIANTS.md`: "fifteen" → "sixteen"; §16 section added
+- README badge: principles-15 → principles-16
+
+### Decided
+
+- **Phase retrospectives as a first-class surface.** `RETROSPECTIVES/` directory established as durable record of phase lessons. `PHASE-3.md` is the template for future phase retros: present-narrative voice, per-lesson "what this establishes" sections, named-skill sparsity, almost-went-wrong stories anchored to specific PRs.
+- **Patterns library separate from principles library.** Patterns are descriptive shapes that emerged from practice (sibling, hybrid, detect-don't-ask, enumerate/summarize); principles are invariants. `patterns.md` serves a different role than `PRINCIPLES.md` — referenced for design choices, not audited for compliance.
+- **Behavior verification as Principle §16.** The documentation-grep-is-not-a-test boundary established in Phase 3 Cluster 2 codifies as a framework invariant. Principle does not prescribe a specific test framework — behavior verification through mechanical stand-ins is the discipline; bash, Vitest, or other runners can implement it.
+- **Structural-only verification for cross-cutting artifacts.** `qa-claimed-vs-actual` catches "file claimed in plan but absent in repo" — the exact failure mode from Phase 3's INTENT-MAP gap. It does NOT catch "file exists but content edit is missing" — that semantic check is deferred to v0.4.x or later. The validator's first useful run (Chunk 2) demonstrated both: it caught one genuine leak (quality.mk vs qa.mk path discrepancy in the plan) AND correctly reported PASS for 4 files that existed but had not yet received their Chunk 3 edits. Both results are the validator working as designed.
+- **Phase-plan discipline generalizes from phase-scale to retro-scale.** `PHASE-3-RETRO-PLAN.md` (~196 lines, 3 implementation chunks) applied the same discipline as `PHASE-3-PLAN.md` (~500 lines, 8 implementation chunks). The self-test appendix documents what the smaller-scope application revealed.
+- **Pattern emergence is retrospective, not designed.** None of the four patterns were named in `PHASE-3-PLAN.md`. Patterns emerged from specific design decisions and were recognized as recurring shapes only after multiple clusters applied them. Future phases should expect new patterns to emerge in the same order — design first, name second.
+
+### Deferred to v0.4.x and beyond
+
+- Semantic verification for cross-cutting artifacts (does file content match plan's intent?)
+- Per-skill design retrospectives (phase-level retro only in v0.4.1)
+- Pattern formalization for Phase 4 design (patterns.md is descriptive, not prescriptive)
+- Phase 4 work itself (clean separation; Phase 4 opens against v0.4.1 baseline)
+- Hardening of 14 specialized/conditional skills to baseline-deep depth (remains from v0.4.0 Deferred; not addressed in v0.4.1)
+- License revisit — dual MIT/Apache-2.0 vs alternatives (remains from v0.4.0 Deferred; not addressed in v0.4.1)
+
+### Statistics
+
+- 4 PRs across v0.4.1 (Chunk 0 planning + Chunks 1-3 implementation)
+- 5 lessons codified as 16 artifacts
+- 1 new principle (§16) bringing total to 16
+- 1 new reference module (patterns.md)
+- 1 new RETROSPECTIVES/ surface
+- 3 new CONTRIBUTING.md sections
+- 1 new validator (qa-claimed-vs-actual)
+- 383 internal markdown links validated by `make qa-links`
+- 212 placeholder names validated by `make qa-template-placeholders`
+- qa-claimed-vs-actual self-test: 14 PASS / 1 FAIL (plan-path discrepancy documented in appendix) / 1 SKIP
+
+---
+
 ## [0.4.0] — 2026-05-20
 
 **Phase 3 — Project-embedded skills.** Implements all 28 project-embedded skills that keep a scaffolded project disciplined as it grows. Each skill has gated-step operational logic, a corresponding bash test script with mechanical stand-in verification, and documented cross-skill relationships. The skills are organized across 8 implementation clusters, each shipped as a reviewed PR with behavior-verifying tests, full validator passes, and a review packet before merge.

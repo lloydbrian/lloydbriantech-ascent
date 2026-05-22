@@ -194,3 +194,43 @@ All criteria are mechanically verifiable:
 ---
 
 *This document is the durable record of the Phase 3 retrospective's design decisions. Implementation chunks reference it by section number. Changes during implementation are captured as amendments at the bottom of this document, not by rewriting the original plan.*
+
+---
+
+## Appendix — Self-test observations
+
+Added as part of Chunk 3 closing (May 21, 2026). Records what the plan-discipline approach revealed when applied at retrospective scope (~196-line plan, 3 implementation chunks, 4 PRs) versus the Phase 3 implementation scope (~500-line plan, 8 implementation clusters, 9 PRs).
+
+### Observation 1 — Line-count estimates over-projected
+
+The plan estimated PHASE-3.md (retrospective narrative) at 350-450 lines; actual landed at 167 lines (~45% of estimate). The plan estimated patterns.md at 180-200 lines; actual landed at 124 lines (~65% of estimate). Both artifacts are substantively complete — approved in review before implementation. The estimates over-projected because the prose was denser than anticipated; each paragraph carried more content per line than the estimate assumed.
+
+**Lesson for Phase 4:** Anchor plan estimates on substantive completeness (does the artifact contain the required sections with real content?), not line-count targets. Line counts are useful for scoping work effort but should not be quality gates.
+
+### Observation 2 — Plan-path discrepancy class
+
+PHASE-3-RETRO-PLAN.md §2 artifact #12 specified destination `make/quality.mk`. The actual destination is `make/qa.mk` — the file where existing qa-skill-frontmatter, qa-links, and qa-template-placeholders targets live. The qa-claimed-vs-actual validator caught this as 1 FAIL in Chunk 2's first run.
+
+The plan's original text is preserved per the "append amendments, never rewrite" discipline. The FAIL is honest: the plan's path was wrong; the actual file is at `make/qa.mk`; this appendix documents the gap.
+
+**Lesson for Phase 4:** When a plan references a specific file path, verify the path exists in the repo before committing the plan. The qa-claimed-vs-actual validator can catch this class of gap — run it against the plan as a pre-merge check for Chunk 0 (planning), not just Chunk N (closing).
+
+### Observation 3 — Structural-only validator limitation confirmed
+
+At end of Chunk 2, the qa-claimed-vs-actual validator reported 14 PASS / 1 FAIL / 1 SKIP. Four of the 14 PASS results were for files that existed on main but had not yet received their Chunk 3 content edits (README.md badge, CHANGELOG.md v0.4.1 entry, ROADMAP.md v0.4.1 entry, Makefile + SKILL.md version bump). The validator correctly reported file-existence; it did not (and cannot) verify that the specific content edit claimed in the plan had landed.
+
+This is the structural-vs-semantic constraint working exactly as specified in §3 Lesson 3. The validator catches "file claimed in plan but absent in repo" (the INTENT-MAP class). It does not catch "file exists but content edit is missing."
+
+**Lesson for Phase 4:** Structural verification is necessary but not sufficient. The closing-chunk human PR review becomes the de-facto semantic check — eyeballing whether the README badge changed, the CHANGELOG has its entry, the version string updated. For Phase 4, build the closing-chunk review with this division of labor in mind: qa-claimed-vs-actual catches the absent-file class; the human reviewer catches the absent-content class. Each is necessary; neither alone is sufficient.
+
+### Observation 4 — Chunk-size variance was self-correcting
+
+The plan estimated Chunk 1 at the largest volume (narrative + patterns: ~530-650 lines), Chunk 2 at moderate volume (~250-350 lines), and Chunk 3 at smallest (~150 lines). Actual insertions per PR:
+
+- Chunk 1 (PR #35): 293 insertions (3 files: PHASE-3.md 167, patterns.md 124, PRINCIPLES.md +2)
+- Chunk 2 (PR #36): 177 insertions (5 files)
+- Chunk 3 (this PR): ~150 lines estimated
+
+Chunks 1 and 2 came in 45-50% under their estimates. Yet Chunk 3 (the closing chunk) maintains roughly its planned size because closing-chunk work is constrained by fixed-shape artifacts (CHANGELOG entry, ROADMAP entry, badge, version bump, appendix) — there is a natural floor to what those artifacts must contain regardless of how concise the prose is.
+
+**Lesson for Phase 4:** Implementation chunks have flexible line-count floors (substantive completeness governs); closing chunks have rigid line-count shapes (fixed-shape artifacts dictate volume). Plan estimates should reflect this asymmetry — loose ranges for implementation, tighter targets for closing.

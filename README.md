@@ -4,7 +4,7 @@
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)
-![Principles](https://img.shields.io/badge/principles-15-orange)
+![Principles](https://img.shields.io/badge/principles-16-orange)
 ![Status](https://img.shields.io/badge/status-Phase%203%20complete-brightgreen)
 
 ---
