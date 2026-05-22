@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Phase 3 — Project-embedded skills complete, v0.4.0, May 20, 2026. Phase 4 awaiting signal.
+**Current state:** Phase 3 retrospective complete, v0.4.1, May 21, 2026. Phase 4 awaiting signal.
 
 ---
 
@@ -100,6 +100,14 @@ Note: §15 implementation extends `ascent-delivery-status` (read session state) 
 - [x] `ascent-skills-doctor` can self-check the skill collection inside a scaffolded project
 
 **Version on completion:** v0.4.0
+
+---
+
+### v0.4.1 — Phase 3 retrospective
+
+**Status:** ✅ Complete (May 21, 2026)
+
+Captures the 5 durable lessons from Phase 3 as framework artifacts: cluster-based PR discipline, four architectural patterns, process-leak class detection, behavior verification as Principle §16, and phase-plan discipline. Matches the v0.3.1 precedent — focused patch adding framework discipline between phase releases. See [`CHANGELOG.md`](../../CHANGELOG.md) for delivery record and [`RETROSPECTIVES/PHASE-3.md`](RETROSPECTIVES/PHASE-3.md) for the narrative account.
 
 ---
 
