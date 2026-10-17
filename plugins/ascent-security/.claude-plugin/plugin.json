@@ -1,0 +1,12 @@
+{
+  "name": "ascent-security",
+  "version": "0.1.0",
+  "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers and production URLs, plus a security-auditor agent. Generated from the ASCENT framework's template skills.",
+  "author": {
+    "name": "lloydbriantech"
+  },
+  "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["security", "env", "secrets", "nginx", "containers", "ascent"]
+}

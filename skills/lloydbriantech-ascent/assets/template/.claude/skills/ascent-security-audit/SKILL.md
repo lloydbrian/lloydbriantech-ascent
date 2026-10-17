@@ -12,14 +12,13 @@ allowed-tools:
   - Read
   - Grep
   - Glob
-  - Bash
 ---
 
 # ascent-security-audit
 
 Point-in-time security check that enumerates specific findings across 5 security surfaces. Each finding is independently actionable — a developer can fix one without understanding the others. This is static file-based analysis; runtime security assessment (CVE scanning, SBOM generation, OWASP ZAP) is deferred to v0.4.x.
 
-This is a sibling skill to [ascent-sec-posture](../ascent-sec-posture/SKILL.md). security-audit enumerates point-in-time findings; sec-posture summarizes the project's overall security stance. Neither invokes the other — they share security-relevant project sources as data. For the §5 env-discipline check that [ascent-self-audit](../ascent-self-audit/SKILL.md) includes, see that skill's Step 2 (which delegates to [ascent-env-audit](../ascent-env-audit/SKILL.md)). This skill checks broader security surfaces beyond env discipline.
+This is a sibling skill to [ascent-sec-posture](../ascent-sec-posture/SKILL.md). security-audit enumerates point-in-time findings; sec-posture summarizes the project's overall security stance. Neither invokes the other — they share security-relevant project sources as data. For the §5 env-discipline check that [ascent-self-audit](../ascent-self-audit/SKILL.md) includes, see that skill's Step 2, which applies the same checks as [ascent-env-audit](../ascent-env-audit/SKILL.md). This skill checks broader security surfaces beyond env discipline.
 
 ## When this skill engages
 
@@ -31,10 +30,42 @@ This is a sibling skill to [ascent-sec-posture](../ascent-sec-posture/SKILL.md).
 ## Inputs
 
 - **`.gitignore`** — must list `.env`
-- **`backend/`, `frontend/` source files** — scanned for credential patterns
-- **`docker-compose.yml`, `docker-compose.prod.yml`** — container privilege checks
-- **`backend/Dockerfile`** — scanned for credential leaks and privilege escalation
-- **`nginx/nginx.prod.conf`** (optional) — security header validation
+- **Source code** — scanned for credential patterns
+- **Compose files and Dockerfiles** — container privilege checks
+- **nginx config** (optional) — security header validation
+
+## Locating sources
+
+Detect, don't ask. For each surface, use the first locations that exist and say in the report which ones were used:
+
+- **Source code:** `backend/`, `frontend/`, `server/`, `src/`, `app/`, `api/`, skipping `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/`
+- **Compose files:** `*compose*.yml` or `*compose*.yaml` at the project root or one directory down
+- **Dockerfiles:** any `Dockerfile*` outside the skipped directories
+- **nginx config:** `*.conf` files under an `nginx/` directory, or `nginx*.conf` anywhere; when several exist, assess the one whose name contains `prod` first
+
+A surface with no matching files is reported as **not assessed**, never as a failure. This is what lets the skill run in projects that were not scaffolded by ASCENT.
+
+## Severity
+
+Every finding carries a severity from this table. [ascent-sec-posture](../ascent-sec-posture/SKILL.md) uses the identical table, so both skills rate the same finding the same way.
+
+<!-- severity-table:start — keep identical in ascent-security-audit and ascent-sec-posture (checked by make test-plugins) -->
+| Finding | Severity |
+|---|---|
+| `.env` not ignored by `.gitignore` (including no `.gitignore` at all) | High |
+| `.env` committed to git, now or in history | High |
+| A Dockerfile copies `.env` into an image | High |
+| Hardcoded credential pattern in source | High |
+| Privileged container, added capabilities, host networking or a mounted Docker socket | High |
+| `.env` not ignored by `.dockerignore` | Medium |
+| `.env.example` ships a value or a `REPLACE_ME`-style placeholder | Medium |
+| Missing required security header, including headers dropped by a block's own `add_header` | Medium |
+| `http://` external URL in a production config | Medium |
+| A variable read in code is not declared in `.env.example` | Low |
+| No `.env.example` (no secrets inventory) | Low |
+| Only a deprecated header present (e.g. `X-XSS-Protection`) | Info |
+| HSTS not set where TLS is not terminated in this nginx ("verify at the TLS terminator") | Info |
+<!-- severity-table:end -->
 
 ## Outputs
 
@@ -47,23 +78,30 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 ### Step 1 — Env-file scope
 
-**Condition:** `.gitignore` exists and contains `.env` (or a pattern matching `.env`).
+**Condition:** `.gitignore` exists and has a line that ignores the file `.env` itself: `.env`, `/.env`, `*.env`, `**/.env` or `.env*`. Lines such as `.env.local` or `.envrc` do not count.
 
 **Action on PASS:** Report "Env-file scope — PASS. .env is gitignored."
 
-**Action on FAIL:** Report "Env-file scope — FAIL. .env is not in .gitignore — secrets may be committed."
+**Action on FAIL (High):** Report "Env-file scope — FAIL (High). .env is not ignored — secrets may be committed." A missing `.gitignore` is this same High finding, not a coverage gap.
 
 ### Step 2 — Hardcoded credentials
 
-**Condition:** Scan all files under `backend/` and `frontend/` (excluding `node_modules/`, `dist/`, `.git/`) for credential patterns: `API_KEY=`, `SECRET=`, `PASSWORD=`, `TOKEN=`, `aws_access_key_id`, `aws_secret_access_key`, and base64-encoded strings in assignment context (e.g., `key = "dGVzdA=="`).
+**Condition:** Scan the source code (see Locating sources) for credential patterns:
+
+- **secret assignments:** a key whose name contains `api_key`/`apiKey`, `secret`, `password`/`passwd`, `token`, `private_key`, `access_key` or `client_secret` (so `SECRET_KEY`, `JWT_SECRET_KEY` and `db_PASSWORD` count), followed by `:` or `=` and either a quoted literal (`"…"`, `'…'` or `` `…` ``) of 8 or more characters with no spaces, or an unquoted value of 8 or more characters running to the end of the line (YAML, `.properties`, `.env`-style)
+- **cloud keys:** strings shaped like `AKIA` followed by 16 capitals or digits
+
+Not findings (skip them): values that read from the environment (`process.env…`, `os.environ…`, `getenv(…)`, `ENV[…]`, `$VAR`, `${VAR}`), empty values, `true`/`false`/`null`, plain numbers, and quoted strings containing spaces (labels, i18n text). Skip `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/` by directory.
+
+Known limits: secrets shorter than 8 characters, values split across lines, and secrets in binary files are not detected. Locale files can still produce false positives; confirm before acting.
 
 **Action on PASS:** Report "Hardcoded credentials — PASS. No credential patterns detected."
 
-**Action on WARNING:** List each finding with file:line. "Hardcoded credentials — WARNING. [N] potential credential(s) found. Verify these are not real secrets." False positives are possible (test fixtures, documentation examples).
+**Action on FAIL (High):** List each finding as `file:line — <rule>` (`hardcoded secret` or `cloud access key`), one line per `file:line` even if both rules match. **Never print the matched value or the matched line** — a real key in the report is a second leak. Example: "Hardcoded credentials — FAIL (High). backend/routes/pay.js:4 — hardcoded secret. Verify and move it to the environment." False positives are possible (test fixtures, documentation examples); say so, but keep the High rating until a person has confirmed it.
 
 ### Step 3 — Container privilege
 
-**Condition:** Scan `docker-compose.yml`, `docker-compose.prod.yml`, and all Dockerfiles for `privileged: true`, `--cap-add`, `SYS_ADMIN`, `SYS_PTRACE`.
+**Condition:** Scan compose files and Dockerfiles (see Locating sources), ignoring commented lines, for `privileged: true` (quoted or not), `cap_add:`, `--cap-add`, `SYS_ADMIN`, `SYS_PTRACE`, `network_mode: host` and a mounted `/var/run/docker.sock`.
 
 **Action on PASS:** Report "Container privilege — PASS. No privileged containers or capability escalation."
 
@@ -71,17 +109,25 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 ### Step 4 — Nginx security headers
 
-**Condition:** `nginx/nginx.prod.conf` exists.
+**Condition:** an nginx config was found (see Locating sources).
 
-**Action on PASS (file exists):** Verify the 4 baseline headers are present: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`. Report each missing header.
+**Action (config found):** Every `server` block must end up with the 5 required headers: `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options` (a CSP containing `frame-ancestors` also satisfies this one) and `Referrer-Policy`. Work out what each block actually sends using nginx's inheritance rule: **a block (`http`, `server`, `location` or `if`) that declares any `add_header` of its own inherits none from its parent.** Count `add_header`, `more_set_headers` and headers in `include`d files; ignore commented-out lines; match header names exactly (`Content-Security-Policy-Report-Only` enforces nothing and does not count).
 
-**Action on SKIP (no nginx config):** Report "Nginx security headers — SKIP (no nginx/nginx.prod.conf)."
+- Report each header a server lacks as Medium: "MISSING Content-Security-Policy (server line 12)".
+- Report each `server`, `location` or `if` block whose own `add_header` drops required headers it would otherwise inherit as Medium: "DROPPED location line 30 — adds Cache-Control and drops the inherited security headers".
+- If the server has no TLS here (no `listen … ssl` and no `ssl_certificate`), report a missing `Strict-Transport-Security` as Info: "verify at the TLS terminator".
+- `X-XSS-Protection` is deprecated and not required. If it is the only protective header a server sends, report it as Info.
+- Skip servers that only redirect (`return 301`/`302`/`307`/`308`) and files with no `server` block (snippets).
+
+Known limit: a `{` or `}` inside a quoted value confuses block counting; say so if the config contains one.
+
+**Action on SKIP (no nginx config):** Report "Nginx security headers — not assessed (no nginx config found)."
 
 ### Step 5 — Production URL schemes
 
-**Condition:** Scan production-facing files (`docker-compose.prod.yml`, `nginx.prod.conf`, `.env.example`) for `http://` URLs.
+**Condition:** Scan production-facing files (production compose files, the production nginx config, `.env.example`) for `http://` URLs.
 
-Exclude: `http://localhost`, `http://127.0.0.1`, `http://backend` (internal service references).
+Exclude: `localhost`, `127.0.0.1` and `[::1]`; single-label hostnames with no dot (internal service names such as `http://backend` or `http://app:3000`); and XML namespace URIs (`xmlns="http://…"`). A dotted name such as `http://backend.example.com` is external and is reported.
 
 **Action on PASS:** Report "Production URLs — PASS. No unencrypted external URLs."
 
@@ -101,16 +147,16 @@ ascent-security-audit: 5/5 checks passing
   Env-file scope         PASS (.env gitignored)
   Hardcoded credentials  PASS (no patterns detected)
   Container privilege    PASS (no escalation)
-  Nginx security headers PASS (4/4 headers present)
+  Nginx security headers PASS (5/5 headers in every server, no block drops them)
   Production URLs        PASS (no unencrypted external URLs)
 ```
 
-### Example 2 — Committed .env detected
+### Example 2 — .env not ignored
 
 **Skill output:**
 ```
 ascent-security-audit: 4/5 checks passing (1 failure)
-  Env-file scope         FAIL — .env not in .gitignore
+  Env-file scope         FAIL (High) — .env not ignored by .gitignore
   ...
 ```
 

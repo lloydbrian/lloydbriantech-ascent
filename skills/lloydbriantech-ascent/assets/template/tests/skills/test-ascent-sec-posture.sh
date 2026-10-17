@@ -29,12 +29,14 @@ assert_fail() {
 classify_severity() {
   local finding_type="$1"
   case "$finding_type" in
-    env_not_gitignored|hardcoded_credentials|privileged_container)
+    env_not_gitignored|env_committed|dockerfile_copies_env|hardcoded_credentials|privileged_container)
       echo "high" ;;
-    missing_security_header|http_in_production)
+    env_not_dockerignored|env_example_value|missing_security_header|http_in_production)
       echo "medium" ;;
-    missing_env_example)
+    undeclared_env_var|missing_env_example)
       echo "low" ;;
+    deprecated_header_only|hsts_not_terminated_here)
+      echo "info" ;;
     *)
       echo "unknown" ;;
   esac
@@ -42,46 +44,72 @@ classify_severity() {
 
 # Reusable: check surface assessability (matches skill Step 1 logic)
 check_surface_assessable() {
-  local surface="$1"
-  local fixture_dir="$2"
+  local surface="$1" d="$2" x
   case "$surface" in
-    env_scope)      [ -f "$fixture_dir/.gitignore" ] ;;
-    credentials)    [ -d "$fixture_dir/backend" ] ;;
-    container)      [ -f "$fixture_dir/docker-compose.yml" ] ;;
-    nginx)          [ -f "$fixture_dir/nginx/nginx.prod.conf" ] ;;
-    secret_inventory) [ -f "$fixture_dir/.env.example" ] ;;
+    env_scope|secret_inventory)
+      return 0 ;;   # always assessable: absence is itself a finding
+    credentials)
+      for x in backend frontend server src app api; do [ -d "$d/$x" ] && return 0; done; return 1 ;;
+    container)
+      [ -n "$(find "$d" -maxdepth 2 \( -name '*compose*.yml' -o -name '*compose*.yaml' -o -name 'Dockerfile*' \) -not -path '*/node_modules/*' 2>/dev/null | head -1)" ] ;;
+    nginx)
+      [ -n "$(find "$d" \( -path '*/nginx/*.conf' -o -name 'nginx*.conf' \) -not -path '*/node_modules/*' -exec grep -l 'server[[:space:]]*{' {} + 2>/dev/null | head -1)" ] ;;
   esac
 }
 
-# Test 1: Severity classification — high vs medium vs low
+# Reusable: posture rating (skill Step 4) — first matching rule wins.
+# posture_rating HIGH MEDIUM CRITICAL_GAPS
+posture_rating() {
+  if [ "$1" -gt 0 ]; then echo "weak"
+  elif [ "$2" -eq 0 ] && [ "$3" -eq 0 ]; then echo "strong"
+  else echo "moderate"; fi
+}
+
+# Test 1: Severity classification — every row of the shared table
 cleanup
 mkdir -p "$FIXTURES_DIR"
-SEV_HIGH=$(classify_severity "hardcoded_credentials")
-SEV_MED=$(classify_severity "missing_security_header")
-SEV_LOW=$(classify_severity "missing_env_example")
-if [ "$SEV_HIGH" = "high" ] && [ "$SEV_MED" = "medium" ] && [ "$SEV_LOW" = "low" ]; then
-  assert_pass "severity classification: credentials=high, missing header=medium, no .env.example=low"
+GOT=""
+for t in env_not_gitignored env_committed dockerfile_copies_env hardcoded_credentials privileged_container env_not_dockerignored env_example_value missing_security_header http_in_production undeclared_env_var missing_env_example deprecated_header_only hsts_not_terminated_here; do
+  GOT="$GOT $t=$(classify_severity "$t")"
+done
+WANT=" env_not_gitignored=high env_committed=high dockerfile_copies_env=high hardcoded_credentials=high privileged_container=high env_not_dockerignored=medium env_example_value=medium missing_security_header=medium http_in_production=medium undeclared_env_var=low missing_env_example=low deprecated_header_only=info hsts_not_terminated_here=info"
+if [ "$GOT" = "$WANT" ]; then
+  assert_pass "severity classification matches the shared table (5 high, 4 medium, 2 low, 2 info)"
 else
-  assert_fail "severity: high=$SEV_HIGH, med=$SEV_MED, low=$SEV_LOW"
+  assert_fail "severity:$GOT
+  want:$WANT"
 fi
 
-# Test 2: Coverage gap detection — nginx missing → not assessed
+# Test 2: Coverage — a non-ASCENT layout (src/, compose.yaml) is assessed; nginx
+# absent is a gap; .gitignore and .env.example are always assessable
 cleanup
-mkdir -p "$FIXTURES_DIR/backend"
-printf '.env\n' > "$FIXTURES_DIR/.gitignore"
-echo "services:" > "$FIXTURES_DIR/docker-compose.yml"
-printf 'PORT=\n' > "$FIXTURES_DIR/.env.example"
-# nginx config intentionally NOT created → coverage gap
+mkdir -p "$FIXTURES_DIR/src"
+echo "services:" > "$FIXTURES_DIR/compose.yaml"
+# nginx config, .gitignore and .env.example intentionally NOT created
 NGINX_ASSESSABLE=true
 check_surface_assessable "nginx" "$FIXTURES_DIR" || NGINX_ASSESSABLE=false
 ENV_ASSESSABLE=false
 check_surface_assessable "env_scope" "$FIXTURES_DIR" && ENV_ASSESSABLE=true
 CONTAINER_ASSESSABLE=false
 check_surface_assessable "container" "$FIXTURES_DIR" && CONTAINER_ASSESSABLE=true
-if [ "$NGINX_ASSESSABLE" = false ] && [ "$ENV_ASSESSABLE" = true ] && [ "$CONTAINER_ASSESSABLE" = true ]; then
-  assert_pass "coverage gap: nginx=not assessable (gap), env_scope=assessable, container=assessable"
+CRED_ASSESSABLE=false
+check_surface_assessable "credentials" "$FIXTURES_DIR" && CRED_ASSESSABLE=true
+mkdir -p "$FIXTURES_DIR/nginx"; printf 'gzip on;\n' > "$FIXTURES_DIR/nginx/gzip.conf"
+SNIPPET_ASSESSABLE=true
+check_surface_assessable "nginx" "$FIXTURES_DIR" || SNIPPET_ASSESSABLE=false
+if [ "$NGINX_ASSESSABLE" = false ] && [ "$ENV_ASSESSABLE" = true ] && [ "$CONTAINER_ASSESSABLE" = true ] && \
+   [ "$CRED_ASSESSABLE" = true ] && [ "$SNIPPET_ASSESSABLE" = false ]; then
+  assert_pass "coverage: src/ and compose.yaml assessed; nginx (and a snippet-only nginx dir) a gap; env scope always assessable"
 else
-  assert_fail "gaps: nginx=$NGINX_ASSESSABLE (want false), env=$ENV_ASSESSABLE (want true), container=$CONTAINER_ASSESSABLE (want true)"
+  assert_fail "gaps: nginx=$NGINX_ASSESSABLE (false) env=$ENV_ASSESSABLE (true) container=$CONTAINER_ASSESSABLE (true) creds=$CRED_ASSESSABLE (true) snippet=$SNIPPET_ASSESSABLE (false)"
+fi
+
+# Test 3: Posture rating — the rules cover every case and Low/Info never change it
+R1=$(posture_rating 1 0 0); R2=$(posture_rating 0 0 0); R3=$(posture_rating 0 1 0); R4=$(posture_rating 0 0 1)
+if [ "$R1" = "weak" ] && [ "$R2" = "strong" ] && [ "$R3" = "moderate" ] && [ "$R4" = "moderate" ]; then
+  assert_pass "posture: any High=weak, clean=strong, one Medium=moderate, critical gap=moderate"
+else
+  assert_fail "posture: high=$R1 (weak) clean=$R2 (strong) medium=$R3 (moderate) gap=$R4 (moderate)"
 fi
 
 # Summary

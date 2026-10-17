@@ -90,6 +90,21 @@ make install
 
 Run `make uninstall` to remove the symlink. `make help` shows the full operator vocabulary.
 
+### Using ASCENT skills as plugins (any repository, no scaffold)
+
+Some ASCENT skills also ship as Claude Code plugins that work in any repository, scaffolded or not. They work in the Claude Code CLI, the VS Code extension and Cowork:
+
+```
+/plugin marketplace add lloydbrian/lloydbriantech-ascent
+/plugin install ascent-security@lloydbriantech-ascent
+```
+
+| Plugin | Contents |
+|---|---|
+| [`ascent-security`](plugins/ascent-security/README.md) | `env-audit`, `security-audit` and `sec-posture` skills, plus a read-only `security-auditor` agent |
+
+Plugin skills are generated from the template skills by `make plugins` and checked by `make test-plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)).
+
 ## How it works
 
 ```mermaid

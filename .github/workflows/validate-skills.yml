@@ -8,6 +8,8 @@
 #                          links, template placeholders
 #       make test-skills   renders the template, runs all 28 skill tests
 #       make test-mutants  named negative controls; any survivor fails
+#       make test-plugins  plugin drift, names, read-only agents (ADR-009);
+#                          'claude plugin validate' runs locally, SKIPs in CI
 #
 # Not yet checked here: INTENT-MAP phrase sync (review responsibility),
 # eval scenarios (Phase 5).
@@ -141,3 +143,6 @@ jobs:
 
       - name: Negative controls
         run: make test-mutants
+
+      - name: Plugin gate
+        run: make test-plugins

@@ -19,7 +19,7 @@ M14-health-stale-todo	tests/skills/test-ascent-health.sh	s/\[ "\$age" -gt 30 ] &
 M15-docsweep-threshold	tests/skills/test-ascent-doc-sweep.sh	s/local threshold_days=30/local threshold_days=31/	test-ascent-doc-sweep.sh	doc-sweep stale-TODO threshold drifts from 30 to 31 days
 M16-reflect-append	tests/skills/test-ascent-reflect.sh	s/{ print e }//	test-ascent-reflect.sh	reflect stops appending the new working-memory decision
 M17-intake-append	tests/skills/test-ascent-feature-intake.sh	s/{ print e }//	test-ascent-feature-intake.sh	feature-intake stops writing the dated working-memory entry
-M18-severity-high	tests/skills/test-ascent-sec-posture.sh	s/env_not_gitignored|hardcoded_credentials|privileged_container)/env_not_gitignored|privileged_container)/	test-ascent-sec-posture.sh	hardcoded credentials stop being rated high
+M18-severity-high	tests/skills/test-ascent-sec-posture.sh	s/|hardcoded_credentials|/|/	test-ascent-sec-posture.sh	hardcoded credentials stop being rated high
 M19-routes-services	tests/skills/test-ascent-layering-check.sh	s/(services|storage)/(storage)/	test-ascent-layering-check.sh	routes importing services is no longer a violation
 M20-controller-storage	tests/skills/test-ascent-layering-check.sh	/sed "s|^|controller/s/storage\/" "\$f"/NEVER\/" "$f"/	test-ascent-layering-check.sh	controllers importing storage is no longer a violation
 M21-gitignore-dropped	tests/skills/test-ascent-env-audit.sh	/\.gitignore")" -ge 1/s/-ge 1/-ge 0/	test-ascent-env-audit.sh	.env missing from .gitignore is no longer flagged
@@ -28,3 +28,21 @@ M23-docsweep-all-orphans	tests/skills/test-ascent-doc-sweep.sh	s/if \[ ! -f "\$T
 M24-sessionmk-stale-days	make/session.mk	s/STALE_DAYS=7/STALE_DAYS=30/	test-ascent-standup.sh	the SHIPPED session-resume classifier's threshold drifts from 7 to 30 days
 M25-doctor-trigger	tests/skills/test-ascent-skills-doctor.sh	s/"Use when "\*|"Use for "\*) : ;;/*) : ;;/	test-ascent-skills-doctor.sh	skills-doctor stops flagging descriptions without a trigger
 M26-selfaudit-empty-phase	tests/skills/test-ascent-self-audit.sh	s/"\[^"]+"' "\$d\/.ascent-meta.json"/"' "$d\/.ascent-meta.json"/	test-ascent-self-audit.sh	§8 accepts an empty phase value
+M27-object-secret-pattern	tests/skills/test-ascent-security-audit.sh	s/|secret|/|/	test-ascent-security-audit.sh	keys named like SECRET_KEY are no longer found
+M28-secret-value-printed	tests/skills/test-ascent-security-audit.sh	/CRED_SAFE" || true; } | cut -d: -f1/s/cut -d: -f1/cat/	test-ascent-security-audit.sh	credential findings print the matched line, value included
+M29-location-drop-ignored	tests/skills/test-ascent-security-audit.sh	s/if (drop) print/if (0) print/	test-ascent-security-audit.sh	blocks that drop inherited security headers are no longer flagged
+M30-csp-not-required	tests/skills/test-ascent-security-audit.sh	s/^REQUIRED_HEADERS="Content-Security-Policy /REQUIRED_HEADERS="/	test-ascent-security-audit.sh	Content-Security-Policy is no longer required
+M31-xss-only-accepted	tests/skills/test-ascent-security-audit.sh	s/if (nmiss == want && xss\[b\])/if (0)/	test-ascent-security-audit.sh	an X-XSS-Protection-only server is no longer flagged
+M32-posture-old-rule	tests/skills/test-ascent-sec-posture.sh	s/elif \[ "\$2" -eq 0 ]/elif [ "$2" -le 1 ]/	test-ascent-sec-posture.sh	one Medium finding still rates the posture strong
+M33-deprecated-as-medium	tests/skills/test-ascent-sec-posture.sh	/deprecated_header_only|/{n;s/info/medium/;}	test-ascent-sec-posture.sh	a deprecated-only header is rated Medium instead of Info
+M34-inheritance-merged	tests/skills/test-ascent-security-audit.sh	s/if (hasown\[b\]) eff\[b, h\] = ((b, h) in own) ? 1 : 0/if (hasown[b] \&\& ((b, h) in own)) eff[b, h] = 1/	test-ascent-security-audit.sh	nginx inheritance merges parent headers instead of replacing them
+M35-commented-headers-count	tests/skills/test-ascent-security-audit.sh	s/s = strip(\$0); o/s = $0; o/	test-ascent-security-audit.sh	commented-out add_header lines count as present
+M36-report-only-counts	tests/skills/test-ascent-security-audit.sh	s/gsub(\/\["\\047\]\/, "", name); name = tolower(name)$/gsub(\/["\\047]\/, "", name); name = tolower(name); sub(\/-report-only$\/, "", name)/	test-ascent-security-audit.sh	Content-Security-Policy-Report-Only counts as a CSP
+M37-tls-always-assumed	tests/skills/test-ascent-security-audit.sh	s/if (h == "strict-transport-security" && !tls\[b\])/if (0)/	test-ascent-security-audit.sh	servers without TLS are told HSTS is missing instead of verify-at-terminator
+M38-include-ignored	tests/skills/test-ascent-security-audit.sh	s/while ((getline l2 < f) > 0) scan(strip(l2), b)/f = f/	test-ascent-security-audit.sh	headers in included snippets are ignored
+M39-redirect-not-exempt	tests/skills/test-ascent-security-audit.sh	s/if (type\[b\] == "server" && !redirect\[b\])/if (type[b] == "server")/	test-ascent-security-audit.sh	redirect-only servers are held to the header rules
+M40-gitignore-near-miss	tests/skills/test-ascent-security-audit.sh	/^  \[ -f "\$gitignore" \]/s/grep -qE .*/grep -q '\\.env' "$gitignore"/	test-ascent-security-audit.sh	.env.local or .envrc counts as ignoring .env
+M41-docker-sock-missed	tests/skills/test-ascent-security-audit.sh	s#|/var/run/docker[^"]*##	test-ascent-security-audit.sh	a mounted Docker socket is no longer flagged
+M42-false-positive-filter-off	tests/skills/test-ascent-security-audit.sh	s/| { grep -viE -- "\$CRED_SAFE" || true; } //	test-ascent-security-audit.sh	env references, booleans and numbers are reported as secrets
+M43-vendored-code-scanned	tests/skills/test-ascent-security-audit.sh	s/--exclude-dir=node_modules //g	test-ascent-security-audit.sh	node_modules is scanned for credentials
+M44-posture-backend-only	tests/skills/test-ascent-sec-posture.sh	s/for x in backend frontend server src app api;/for x in backend;/	test-ascent-sec-posture.sh	non-ASCENT source layouts become coverage gaps
