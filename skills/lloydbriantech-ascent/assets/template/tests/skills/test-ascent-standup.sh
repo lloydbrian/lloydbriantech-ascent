@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_project() {
   mkdir -p "$FIXTURES_DIR/docs/delivery"
@@ -34,13 +36,13 @@ classify_file() {
     return
   fi
   local content
-  content=$(grep -c '[^[:space:]]' "$file" 2>/dev/null || echo 0)
+  content=$(count_matches '[^[:space:]]' "$file")
   if [ "$content" -le 1 ]; then
     printf "EMPTY"
     return
   fi
   local mod_epoch now_epoch age_days
-  mod_epoch=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo 0)
+  mod_epoch=$(file_mtime "$file")
   now_epoch=$(date +%s)
   age_days=$(( (now_epoch - mod_epoch) / 86400 ))
   if [ "$age_days" -gt 7 ]; then
@@ -61,48 +63,41 @@ assert_fail() {
 }
 
 # Test 1: 24-hour git window correctly scopes commits
-# Create a git repo fixture with commits at known timestamps.
+# Commits made now and 2 days ago; only the first is inside the window.
 cleanup
 setup_project
-(
-  cd "$FIXTURES_DIR"
-  git init -q
-  git config user.email "test@test.com"
-  git config user.name "Test"
-  # Commit 1: now (within 24 hours)
-  echo "recent" > file1.txt
-  git add . && git commit -q -m "recent commit" --date="$(date -R)"
-  # Commit 2: 2 days ago (outside 24 hours)
-  echo "old" > file2.txt
-  git add . && git commit -q -m "old commit" --date="$(date -v-2d -R 2>/dev/null || date -d '2 days ago' -R 2>/dev/null || date -R)"
-) 2>/dev/null
-RECENT=$(cd "$FIXTURES_DIR" && git log --oneline --since="24 hours ago" 2>/dev/null | wc -l | tr -d ' ')
-TOTAL=$(cd "$FIXTURES_DIR" && git log --oneline 2>/dev/null | wc -l | tr -d ' ')
-if [ "$RECENT" -eq 1 ] && [ "$TOTAL" -eq 2 ]; then
+git_init_main "$FIXTURES_DIR"
+echo "old" > "$FIXTURES_DIR/file2.txt"
+git_commit_days_ago "$FIXTURES_DIR" 2 "old commit"
+echo "recent" > "$FIXTURES_DIR/file1.txt"
+git_commit_days_ago "$FIXTURES_DIR" 0 "recent commit"
+RECENT=$(git -C "$FIXTURES_DIR" log --oneline --since="24 hours ago" | wc -l | tr -d ' ')
+TOTAL=$(git -C "$FIXTURES_DIR" log --oneline | wc -l | tr -d ' ')
+RECENT_SUBJECT=$(git -C "$FIXTURES_DIR" log --since="24 hours ago" --format=%s | head -1)
+if [ "$RECENT" -eq 1 ] && [ "$TOTAL" -eq 2 ] && [ "$RECENT_SUBJECT" = "recent commit" ]; then
   assert_pass "24-hour window correctly scopes: 1 recent / 2 total commits"
-elif [ "$TOTAL" -eq 2 ]; then
-  # Date manipulation may not work on all platforms; verify the window concept is sound
-  assert_pass "24-hour window: fixture has 2 commits, git --since filters correctly ($RECENT recent)"
 else
-  assert_fail "git fixture should have 2 commits total, got $TOTAL"
+  assert_fail "24-hour window: recent=$RECENT (want 1), total=$TOTAL (want 2), subject='$RECENT_SUBJECT'"
 fi
 
-# Test 2: Data source verification — standup reads the same sources as delivery-status
-# Verify by checking the SKILL.md has distinct Action-on-X branches in Step 3 (session-state)
-SKILL_FILE=".claude/skills/ascent-standup/SKILL.md"
-if [ -f "$SKILL_FILE" ]; then
-  # Count distinct "Action on FRESH/STALE/EMPTY/MISSING" branches in operational logic
-  BRANCH_COUNT=0
-  grep -q "Action on FRESH" "$SKILL_FILE" && BRANCH_COUNT=$((BRANCH_COUNT + 1))
-  grep -q "Action on STALE" "$SKILL_FILE" && BRANCH_COUNT=$((BRANCH_COUNT + 1))
-  grep -qE "Action on EMPTY|EMPTY or MISSING" "$SKILL_FILE" && BRANCH_COUNT=$((BRANCH_COUNT + 1))
-  if [ "$BRANCH_COUNT" -ge 3 ]; then
-    assert_pass "operational logic has distinct branches per state ($BRANCH_COUNT action branches)"
-  else
-    assert_fail "should have distinct Action branches for FRESH, STALE, EMPTY/MISSING — found $BRANCH_COUNT"
-  fi
+# Test 2: STALE branch of the four-state classifier — a populated
+# session-state.md last touched 8 days ago (threshold 7) must classify STALE,
+# which is what routes standup to its "state may be outdated" output.
+cleanup
+setup_project
+cat > "$FIXTURES_DIR/docs/delivery/session-state.md" << 'EOF'
+# Session state
+
+## Current focus
+
+Older focus that may be outdated
+EOF
+set_mtime_days_ago "$FIXTURES_DIR/docs/delivery/session-state.md" 8
+STATE_STALE=$(classify_file "$FIXTURES_DIR/docs/delivery/session-state.md")
+if [ "$STATE_STALE" = "STALE" ]; then
+  assert_pass "four-state classifier: 8-day-old populated session-state classifies STALE"
 else
-  assert_fail "standup SKILL.md not found at $SKILL_FILE"
+  assert_fail "8-day-old populated session-state should classify STALE, got $STATE_STALE"
 fi
 
 # Test 3: Handles empty project — no session state, no PHASE-PLAN
@@ -183,6 +178,26 @@ if [ "$STATE" = "FRESH" ] && [ "$HAS_FOCUS" = "true" ] && [ "$HAS_PLAN" = "true"
   assert_pass "FRESH session state provides data for all standup sections (focus + plan + blockers)"
 else
   assert_fail "FRESH state should populate all sections: state=$STATE focus=$HAS_FOCUS plan=$HAS_PLAN blockers=$HAS_BLOCKERS"
+fi
+
+# Test 6: The SHIPPED classifier (make session-resume in make/session.mk), not a
+# copy of it: 6-day-old state reads FRESH, 8-day-old state reads STALE, and a
+# title-only memory file reads EMPTY.
+SESSION_MK="$(pwd)/make/session.mk"
+cleanup
+setup_project
+printf "# Session state\n\n## Current focus\n\nShipping loop 1\n" > "$FIXTURES_DIR/docs/delivery/session-state.md"
+printf "# Working memory\n" > "$FIXTURES_DIR/docs/delivery/working-memory.md"
+set_mtime_days_ago "$FIXTURES_DIR/docs/delivery/session-state.md" 6
+OUT_FRESH=$(make -s -C "$FIXTURES_DIR" -f "$SESSION_MK" session-resume 2>&1 || true)
+set_mtime_days_ago "$FIXTURES_DIR/docs/delivery/session-state.md" 8
+OUT_STALE=$(make -s -C "$FIXTURES_DIR" -f "$SESSION_MK" session-resume 2>&1 || true)
+if printf '%s' "$OUT_FRESH" | grep -q 'session-state.md: *\[FRESH (6 days old)\]' && \
+   printf '%s' "$OUT_STALE" | grep -q 'session-state.md: *\[STALE (8 days old)\]' && \
+   printf '%s' "$OUT_STALE" | grep -q 'working-memory.md: *\[EMPTY\]'; then
+  assert_pass "make session-resume: 6 days FRESH, 8 days STALE, title-only memory EMPTY"
+else
+  assert_fail "make session-resume output wrong — fresh: $(printf '%s' "$OUT_FRESH" | grep 'session-state.md:' || echo none) / stale: $(printf '%s' "$OUT_STALE" | grep -E 'session-state.md:|working-memory.md:' | tr '\n' ' ')"
 fi
 
 # Summary

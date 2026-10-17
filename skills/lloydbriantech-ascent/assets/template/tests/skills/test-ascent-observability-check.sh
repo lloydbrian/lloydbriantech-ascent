@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_valid_backend() {
   mkdir -p "$FIXTURES_DIR/backend/observability" "$FIXTURES_DIR/backend/middleware" "$FIXTURES_DIR/backend/routes"

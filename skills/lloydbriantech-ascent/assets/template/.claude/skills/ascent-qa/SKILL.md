@@ -1,10 +1,12 @@
 ---
 name: ascent-qa
 description: >-
-  Surface-level quality gate for <<PROJECT_TITLE>>. Runs lightweight
-  checks across structural integrity, ADR discipline, dependency health,
-  documentation freshness, and skill collection integrity. Conditionally
-  recommends deeper sub-skills when concerns are flagged.
+  Use when asked "what should I fix before committing?", "quality gate" or
+  "ready to commit?". Fast surface sweep across structure, ADR discipline,
+  dependencies, doc freshness and skill integrity, recommending deeper skills
+  (such as ascent-skills-doctor) only when a check flags a concern. Not the
+  full invariant audit (use ascent-self-audit) or the weekly stance (use
+  ascent-health).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

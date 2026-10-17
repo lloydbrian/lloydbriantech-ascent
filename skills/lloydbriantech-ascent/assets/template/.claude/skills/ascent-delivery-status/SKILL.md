@@ -1,11 +1,11 @@
 ---
 name: ascent-delivery-status
 description: >-
-  Surfaces the current phase, outstanding work, exit-criteria progress,
-  and recommended next actions for <<PROJECT_TITLE>>. The delivery-lead's
-  at-a-glance view of where the project is and what's needed to close
-  the current phase gate. Per §15, incorporates session-state.md and
-  working-memory.md into the synthesis when present.
+  Use when asked "where are we?", "what's left in this phase?" or for project
+  status. Reports the current phase, exit-criteria progress, outstanding work
+  and recommended next actions, folding in session-state.md and
+  working-memory.md when present. Not for a 24-hour activity summary (use
+  ascent-standup).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   PASS_COUNT=$((PASS_COUNT + 1))

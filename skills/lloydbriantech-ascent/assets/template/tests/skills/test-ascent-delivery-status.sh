@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_project() {
   mkdir -p "$FIXTURES_DIR/docs/delivery"
@@ -56,13 +58,47 @@ cat > "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" << 'EOF'
 - [ ] Routing logic implemented
 - [ ] CHANGELOG entry
 EOF
-DONE=$(grep -c '\[x\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
-TOTAL=$(grep -cE '\[[ x]\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
+DONE=$(count_matches '\[x\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md")
+TOTAL=$(count_matches '\[[ x]\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md")
 if [ "$DONE" -eq 2 ] && [ "$TOTAL" -eq 4 ]; then
   assert_pass "synthesizes exit-criteria progress (2/4 criteria met)"
 else
   assert_fail "should find 2/4 criteria, got $DONE/$TOTAL"
 fi
+
+# Implement the classify_file function matching session-protocol.md spec
+classify_session() {
+  local file="$1"
+  if [ ! -f "$file" ]; then
+    printf "MISSING"
+    return
+  fi
+  local content
+  content=$(count_matches '[^[:space:]]' "$file")
+  if [ "$content" -le 1 ]; then
+    printf "EMPTY"
+    return
+  fi
+  local mod_epoch now_epoch age_days
+  mod_epoch=$(file_mtime "$file")
+  now_epoch=$(date +%s)
+  age_days=$(( (now_epoch - mod_epoch) / 86400 ))
+  if [ "$age_days" -gt 7 ]; then
+    printf "STALE"
+  else
+    printf "FRESH"
+  fi
+}
+
+# Step 2 decision: which session context goes into the status synthesis.
+#   FRESH → include; STALE → include with a staleness flag; EMPTY/MISSING → omit.
+include_session_for() {
+  case "$1" in
+    FRESH) printf 'include' ;;
+    STALE) printf 'include-flagged' ;;
+    *) printf 'omit' ;;
+  esac
+}
 
 # Test 3: Reads FRESH session-state.md per §15
 cleanup
@@ -80,13 +116,15 @@ Implementing the routing logic for parent skill
 
 None currently
 EOF
-# Touch the file to make it fresh (modified now)
-touch "$FIXTURES_DIR/docs/delivery/session-state.md"
+# Six days old — inside the 7-day window, so FRESH
+set_mtime_days_ago "$FIXTURES_DIR/docs/delivery/session-state.md" 6
+STATE=$(classify_session "$FIXTURES_DIR/docs/delivery/session-state.md")
+DECISION=$(include_session_for "$STATE")
 FOCUS=$(grep -A2 "## Current focus" "$FIXTURES_DIR/docs/delivery/session-state.md" | tail -1)
-if echo "$FOCUS" | grep -qi "routing"; then
-  assert_pass "reads FRESH session-state.md current focus per §15"
+if [ "$STATE" = "FRESH" ] && [ "$DECISION" = "include" ] && printf '%s' "$FOCUS" | grep -qi "routing"; then
+  assert_pass "FRESH session-state.md (6 days) included; current focus extracted per §15"
 else
-  assert_fail "should extract current focus from FRESH session-state.md"
+  assert_fail "6-day-old session-state: state=$STATE (want FRESH), decision=$DECISION (want include), focus='$FOCUS'"
 fi
 
 # Test 4: Handles MISSING session-state.md per §15 — behavior verification
@@ -97,39 +135,15 @@ cleanup
 setup_project
 # Deliberately do NOT create session-state.md — MISSING state
 
-# Implement the classify_file function matching session-protocol.md spec
-classify_session() {
-  local file="$1"
-  if [ ! -f "$file" ]; then
-    printf "MISSING"
-    return
-  fi
-  local content
-  content=$(grep -c '[^[:space:]]' "$file" 2>/dev/null || echo 0)
-  if [ "$content" -le 1 ]; then
-    printf "EMPTY"
-    return
-  fi
-  local mod_epoch now_epoch age_days
-  mod_epoch=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo 0)
-  now_epoch=$(date +%s)
-  age_days=$(( (now_epoch - mod_epoch) / 86400 ))
-  if [ "$age_days" -gt 7 ]; then
-    printf "STALE"
-  else
-    printf "FRESH"
-  fi
-}
 
 STATE=$(classify_session "$FIXTURES_DIR/docs/delivery/session-state.md")
 # On MISSING: skill's Step 2 says "Omit session context from synthesis entirely."
 # Verify: the classification is MISSING, AND the project still has .ascent-meta.json
 # (meaning the skill can produce phase-level output without session context).
 if [ "$STATE" = "MISSING" ]; then
-  # Simulate the Step 2 decision: on MISSING, build output WITHOUT session section
-  INCLUDE_SESSION="false"  # This is what the skill decides
+  DECISION=$(include_session_for "$STATE")
   PHASE=$(grep '"phase"' "$FIXTURES_DIR/.ascent-meta.json" 2>/dev/null | sed 's/.*: *"//;s/".*//')
-  if [ "$INCLUDE_SESSION" = "false" ] && [ -n "$PHASE" ]; then
+  if [ "$DECISION" = "omit" ] && [ -n "$PHASE" ]; then
     assert_pass "MISSING session-state: classified correctly, session context omitted, phase state available ($PHASE)"
   else
     assert_fail "MISSING state should omit session and still report phase"
@@ -142,12 +156,12 @@ fi
 cleanup
 setup_project
 printf "# Session state\n" > "$FIXTURES_DIR/docs/delivery/session-state.md"
-CONTENT_LINES=$(grep -c '[^[:space:]]' "$FIXTURES_DIR/docs/delivery/session-state.md" 2>/dev/null || echo 0)
-if [ "$CONTENT_LINES" -le 1 ]; then
-  # File exists but classifies as EMPTY (title only) — skill should omit session context
-  assert_pass "handles EMPTY session-state.md — classifies correctly as EMPTY per §15"
+STATE=$(classify_session "$FIXTURES_DIR/docs/delivery/session-state.md")
+DECISION=$(include_session_for "$STATE")
+if [ "$STATE" = "EMPTY" ] && [ "$DECISION" = "omit" ]; then
+  assert_pass "handles EMPTY session-state.md — classified EMPTY, session context omitted per §15"
 else
-  assert_fail "session-state.md with only title should classify as EMPTY"
+  assert_fail "title-only session-state.md: state=$STATE (want EMPTY), decision=$DECISION (want omit)"
 fi
 
 # Test 6: Handles STALE session-state.md per §15
@@ -162,18 +176,14 @@ Captured: 2026-05-01-0900
 
 Working on backend skeleton
 EOF
-# Make the file 10 days old
-touch -t 202605010900 "$FIXTURES_DIR/docs/delivery/session-state.md" 2>/dev/null || \
-  touch -d "10 days ago" "$FIXTURES_DIR/docs/delivery/session-state.md" 2>/dev/null || true
-MOD_EPOCH=$(stat -f %m "$FIXTURES_DIR/docs/delivery/session-state.md" 2>/dev/null || \
-            stat -c %Y "$FIXTURES_DIR/docs/delivery/session-state.md" 2>/dev/null || echo 0)
-NOW_EPOCH=$(date +%s)
-AGE_DAYS=$(( (NOW_EPOCH - MOD_EPOCH) / 86400 ))
-if [ "$AGE_DAYS" -gt 7 ]; then
-  assert_pass "handles STALE session-state.md ($AGE_DAYS days old) — would flag staleness per §15"
+# Make the file 8 days old — one day past the 7-day threshold (portable helper)
+set_mtime_days_ago "$FIXTURES_DIR/docs/delivery/session-state.md" 8
+STATE=$(classify_session "$FIXTURES_DIR/docs/delivery/session-state.md")
+AGE_DAYS=$(file_age_days "$FIXTURES_DIR/docs/delivery/session-state.md")
+if [ "$STATE" = "STALE" ] && [ "$(include_session_for "$STATE")" = "include-flagged" ]; then
+  assert_pass "handles STALE session-state.md ($AGE_DAYS days old) — included with a staleness flag per §15"
 else
-  # If touch didn't work (platform issue), pass with note
-  assert_pass "STALE test: file age manipulation limited on this platform (age: $AGE_DAYS days)"
+  assert_fail "8-day-old session-state.md should classify STALE, got $STATE (age $AGE_DAYS days)"
 fi
 
 # Summary

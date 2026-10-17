@@ -1,11 +1,11 @@
 ---
 name: ascent-feature-intake
 description: >-
-  Runs the delivery-lead intake protocol for new features in
-  <<PROJECT_TITLE>>: decomposes a request into acceptance criteria,
-  identifies cross-role dependencies, estimates scope, and records the
-  feature in the project's PHASE-PLAN. Per §15, appends locked
-  acceptance criteria as dated entries to working-memory.md.
+  Use when the user says "new feature: X", "I want to add Y" or "intake this
+  request". Runs the delivery-lead intake: turns the request into testable
+  acceptance criteria, identifies cross-role dependencies, estimates scope,
+  records the feature and its criteria in PHASE-PLAN.md and appends a dated
+  intake decision to working-memory.md.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

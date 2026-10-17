@@ -162,9 +162,9 @@ When a phase delivers multiple related artifacts, group them into clusters and s
 2. **Implement** — build all artifacts in the cluster on a feature branch.
 3. **Review packet** — before pushing, ship a review packet containing:
    - Verbatim file content for every new or modified file (not summaries, not "read the file" placeholders)
-   - Validator outputs (`make qa-skill-frontmatter`, `make qa-links`, `make qa-template-placeholders`)
+   - Validator outputs (`make qa-skill-frontmatter`, `make qa-links`, `make qa-template-placeholders`) and test outputs (`make test-skills`, `make test-mutants`)
    - Confirmations checklist naming each design decision by letter and confirming it landed
-4. **Pre-push spot-check** — run validators locally, run tests locally, export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend (not before — Cluster 2's stale-file incident established this discipline).
+4. **Pre-push spot-check** — run validators locally, run tests locally (`make test-skills`, `make test-mutants`), export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend (not before — Cluster 2's stale-file incident established this discipline).
 5. **Push and PR** — open the PR with a substantive description capturing architectural decisions, validator output, and phase-progress update.
 
 **What this does NOT prescribe:** Cluster size, skill count per cluster, or PR description format. The discipline is about the propose → approve → implement → review → push flow. Phase 4 clusters may be larger or smaller than Phase 3 clusters.
@@ -178,7 +178,7 @@ Some artifacts are updated across multiple PRs or phases. When a plan claims a f
 
 **The cross-cutting files that need verification:**
 
-- `INTENT-MAP.md` — when skills are added or renamed
+- `INTENT-MAP.md` — when skills are added or renamed, or a description's trigger phrases change
 - `ASCENT-INVARIANTS.md` — when principles are added or changed
 - `PRINCIPLES.md` — when principles are added (including the relate-to-framework table)
 - `README.md` — when skill counts, version, or phase status change

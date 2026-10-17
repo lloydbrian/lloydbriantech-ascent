@@ -1,9 +1,11 @@
 ---
 name: ascent-sec-posture
 description: >-
-  Security posture summary for <<PROJECT_TITLE>>. Produces a current-stance
-  snapshot: severity-classified findings, coverage assessment across security
-  surfaces, and gap identification. Computed fresh each invocation.
+  Use when asked "what's our security stance?", "current security posture" or
+  "security overview". Summarizes the project's security stance:
+  severity-classified findings, coverage across security surfaces and gaps,
+  computed fresh each run. Not for the list of individual findings (use
+  ascent-security-audit).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

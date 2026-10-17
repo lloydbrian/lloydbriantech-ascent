@@ -1,10 +1,10 @@
 ---
 name: ascent-cost-posture
 description: >-
-  Cloud cost discipline check for <<PROJECT_TITLE>>. Provider-agnostic
-  analysis of resource declarations, data retention documentation, and
-  infrastructure-as-code presence. Checks discipline patterns, not
-  provider-specific pricing.
+  Use when asked "are we tracking costs?" or "check cost discipline", or after
+  an infrastructure change. Provider-agnostic checks for resource limits in
+  compose files, documented data retention and infrastructure-as-code
+  presence. Checks discipline patterns, not pricing.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

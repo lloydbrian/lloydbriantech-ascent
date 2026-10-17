@@ -5,20 +5,22 @@
 #
 # Composition test discipline (per Cluster 1 refinement):
 #   - Runs component tests as smoke test for the delegation pattern
-#   - Verifies self-audit SKILL.md cites the three component skills
-#   - Runs direct invariant checks (structural verification)
+#   - Runs direct invariant checks on the project AND on broken fixtures, so
+#     every check is shown to both pass and fail (Principle §16)
 #   - Does NOT mock results or test aggregation logic (v0.4.x hardening)
 set -euo pipefail
 
-SKILL_DIR=".claude/skills/ascent-self-audit"
 COMPONENT_SKILLS=("ascent-layering-check" "ascent-env-audit" "ascent-observability-check")
+FIXTURES_DIR="tests/skills/.fixtures/self-audit"
 PASS_COUNT=0
 FAIL_COUNT=0
 
 cleanup() {
-  : # No fixtures to clean — this test reads the project's own structure
+  rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   local desc="$1"
@@ -53,74 +55,73 @@ if [ "$COMPONENT_PASS" = true ]; then
   assert_pass "all 3 component tests pass (composition validated)"
 fi
 
-# Test 2: Self-audit SKILL.md cites the three component skills
-SKILL_FILE="$SKILL_DIR/SKILL.md"
-if [ ! -f "$SKILL_FILE" ]; then
-  assert_fail "self-audit SKILL.md not found at $SKILL_FILE"
-else
-  CITES_ALL=true
-  for skill in "${COMPONENT_SKILLS[@]}"; do
-    if ! grep -q "$skill" "$SKILL_FILE"; then
-      assert_fail "self-audit SKILL.md does not cite $skill"
-      CITES_ALL=false
-    fi
-  done
-  if [ "$CITES_ALL" = true ]; then
-    assert_pass "self-audit SKILL.md cites all 3 component skills"
-  fi
-fi
-
-# Test 3: Direct invariant checks — structural verification on the project itself
-# Check §1: Dockerfile exists
-if [ -f "backend/Dockerfile" ]; then
-  assert_pass "§1 Containerization-first: backend/Dockerfile exists"
-else
-  assert_fail "§1 Containerization-first: backend/Dockerfile not found"
-fi
-
-# Check §2: Makefile exists
-if [ -f "Makefile" ]; then
-  assert_pass "§2 Make as operator vocabulary: Makefile exists"
-else
-  assert_fail "§2 Make as operator vocabulary: Makefile not found"
-fi
-
-# Check §7: ADR INDEX.md exists
-if [ -f "docs/architecture/decisions/INDEX.md" ]; then
-  assert_pass "§7 ADR discipline: INDEX.md exists"
-else
-  assert_fail "§7 ADR discipline: docs/architecture/decisions/INDEX.md not found"
-fi
-
-# Check §8: .ascent-meta.json exists with phase field
-if [ -f ".ascent-meta.json" ]; then
-  if grep -q '"phase"' ".ascent-meta.json"; then
-    assert_pass "§8 Phase-gated delivery: .ascent-meta.json has phase field"
+# Stand-in for the skill's direct invariant checks (Steps 4-16 subset).
+# audit_dir DIR — prints one "PASS §N" or "FAIL §N" line per checked invariant.
+audit_dir() {
+  local d="$1" services labels
+  if [ -f "$d/backend/Dockerfile" ]; then echo "PASS §1"; else echo "FAIL §1"; fi
+  if [ -f "$d/Makefile" ]; then echo "PASS §2"; else echo "FAIL §2"; fi
+  if [ -f "$d/docs/architecture/decisions/INDEX.md" ]; then echo "PASS §7"; else echo "FAIL §7"; fi
+  if [ -f "$d/.ascent-meta.json" ] && [ "$(count_matches '"phase"[[:space:]]*:[[:space:]]*"[^"]+"' "$d/.ascent-meta.json")" -ge 1 ]; then
+    echo "PASS §8"
   else
-    assert_fail "§8 Phase-gated delivery: .ascent-meta.json missing phase field"
+    echo "FAIL §8"
   fi
+  services=$(count_matches 'container_name:' "$d/docker-compose.yml")
+  labels=$(count_matches 'project:' "$d/docker-compose.yml")
+  if [ "$services" -gt 0 ] && [ "$labels" -ge "$services" ]; then echo "PASS §9"; else echo "FAIL §9"; fi
+}
+
+result_for() { printf '%s\n' "$1" | grep -E " $2\$" | cut -d' ' -f1; }
+
+# Test 2: The project itself passes every direct invariant check
+PROJECT_RESULTS=$(audit_dir ".")
+PROJECT_FAILS=$(printf '%s\n' "$PROJECT_RESULTS" | grep -c '^FAIL' || true)
+if [ "$PROJECT_FAILS" -eq 0 ]; then
+  assert_pass "project passes §1 §2 §7 §8 §9 direct checks"
 else
-  assert_fail "§8 Phase-gated delivery: .ascent-meta.json not found"
+  assert_fail "project direct checks: $(printf '%s' "$PROJECT_RESULTS" | grep '^FAIL' | tr '\n' ' ')"
 fi
 
-# Check §9: docker-compose.yml labels all services
-if [ -f "docker-compose.yml" ]; then
-  SERVICES=$(grep -c 'container_name:' docker-compose.yml 2>/dev/null || echo 0)
-  LABELS=$(grep -c 'project:' docker-compose.yml 2>/dev/null || echo 0)
-  if [ "$LABELS" -ge "$SERVICES" ] && [ "$SERVICES" -gt 0 ]; then
-    assert_pass "§9 Label-based scoping: all compose services labeled"
-  else
-    assert_fail "§9 Label-based scoping: some services missing project label"
-  fi
+# Test 3: §9 label check fails when a compose service has no project label
+cleanup
+mkdir -p "$FIXTURES_DIR"
+cat > "$FIXTURES_DIR/docker-compose.yml" << 'EOF'
+services:
+  backend:
+    container_name: app-backend
+    labels:
+      project: app
+  worker:
+    container_name: app-worker
+EOF
+if [ "$(result_for "$(audit_dir "$FIXTURES_DIR")" '§9')" = "FAIL" ]; then
+  assert_pass "§9 label check flags an unlabeled compose service"
 else
-  assert_fail "§9 Label-based scoping: docker-compose.yml not found"
+  assert_fail "§9 should FAIL when one of two services is unlabeled"
 fi
 
-# Test 4: Partial-state project handled (project missing some files)
-# This test verifies the audit reports accurately, not that it crashes.
-# The tests above already exercise both PASS and FAIL paths on real project state.
-# A partial-state project produces a mix of PASS/FAIL — that's correct behavior.
-assert_pass "partial-state handling verified (mixed PASS/FAIL is correct)"
+# Test 3b: §8 fails when .ascent-meta.json has an empty phase value
+cleanup
+mkdir -p "$FIXTURES_DIR"
+printf '{\n  "framework": "lloydbriantech-ascent",\n  "phase": ""\n}\n' > "$FIXTURES_DIR/.ascent-meta.json"
+if [ "$(result_for "$(audit_dir "$FIXTURES_DIR")" '§8')" = "FAIL" ]; then
+  assert_pass "§8 phase check flags an empty phase value"
+else
+  assert_fail "§8 should FAIL when phase is empty"
+fi
+
+# Test 4: Partial-state project — an empty directory reports FAIL for every
+# checked invariant instead of crashing or passing.
+cleanup
+mkdir -p "$FIXTURES_DIR"
+EMPTY_RESULTS=$(audit_dir "$FIXTURES_DIR")
+EMPTY_FAILS=$(printf '%s\n' "$EMPTY_RESULTS" | grep -c '^FAIL' || true)
+if [ "$EMPTY_FAILS" -eq 5 ]; then
+  assert_pass "partial-state handling: empty project reports 5/5 FAIL without crashing"
+else
+  assert_fail "empty project should report 5 FAIL lines, got $EMPTY_FAILS: $EMPTY_RESULTS"
+fi
 
 # Summary
 TOTAL=$((PASS_COUNT + FAIL_COUNT))

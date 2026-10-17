@@ -1,11 +1,10 @@
 ---
 name: ascent-standup
 description: >-
-  Generates a brief, time-scoped standup summary for <<PROJECT_TITLE>>:
-  recent activity (last 24 hours of git history + working-memory decisions),
-  current focus, plan for next actions, and blockers. The standup reads
-  the same project state as ascent-delivery-status but produces a concise
-  output a developer reads in 30 seconds.
+  Use when asked "what did we do yesterday?", "standup" or "recent activity".
+  Produces a 30-second summary: the last 24 hours of git history and
+  working-memory decisions, current focus, next actions and blockers. Not for
+  phase progress or exit criteria (use ascent-delivery-status).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

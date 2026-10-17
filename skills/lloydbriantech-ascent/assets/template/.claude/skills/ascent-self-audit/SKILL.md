@@ -1,14 +1,13 @@
 ---
 name: ascent-self-audit
 description: >-
-  Verifies that <<PROJECT_TITLE>> conforms to all 15 ASCENT invariants.
-  The umbrella audit — delegates to ascent-layering-check, ascent-env-audit,
-  and ascent-observability-check for their domains, then validates the
-  remaining 12 invariants directly: containerization, make vocabulary,
-  SDLC-sectioned help, stub-first naming, backend layering structure,
-  ADR discipline, phase-gated delivery, label-based scoping, engine
-  compatibility, context-aware execution, graceful shutdown, dev-status
-  family, persona-segmented docs, and session resumption.
+  Use when asked "is my project ASCENT-compliant?", "check the principles", or
+  for an invariant audit before a commit or PR. Checks the project against
+  ASCENT invariants §1–§15: it applies the layering, env and observability
+  checks defined in those skills, then checks containerization, make
+  vocabulary, ADRs, phase gating, labels, engine compatibility, graceful
+  shutdown, persona docs and session resumption directly. Not for a quick
+  pre-commit sweep (use ascent-qa).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

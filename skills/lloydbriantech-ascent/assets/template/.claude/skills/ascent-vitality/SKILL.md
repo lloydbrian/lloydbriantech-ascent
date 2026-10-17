@@ -1,10 +1,10 @@
 ---
 name: ascent-vitality
 description: >-
-  Project activity and momentum signals for <<PROJECT_TITLE>>. Measures
-  git activity (commit frequency, stale branches), open-work-item age
-  (TODOs, Draft ADRs), and CHANGELOG recency. Activity/momentum, not
-  quality — see ascent-qa for quality aggregation.
+  Use when asked "is this project still active?" or "are we stalling?".
+  Measures momentum, not quality: commit recency, stale unmerged branches,
+  TODO age, the count of Proposed ADRs, and CHANGELOG recency. Not for quality
+  (use ascent-qa) or overall health (use ascent-health).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read
@@ -63,7 +63,7 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 **Stale TODOs:** Scan all source files (`backend/`, `frontend/`, `docs/`) for lines containing `TODO`, `TBD`, `FIXME`, or `PLACEHOLDER`. For each match, check the containing file's modification timestamp via `stat`. Files last modified more than **30 days** ago have stale work items. Report: "[N] stale work items across [M] files (>30 days untouched)."
 
-Detection mechanism: `grep -rn 'TODO\|TBD\|FIXME\|PLACEHOLDER'` across source directories, excluding `node_modules/`, `.git/`, `dist/`. File age computed via `stat -f %m` (macOS) or `stat -c %Y` (Linux).
+Detection mechanism: `grep -rn 'TODO\|TBD\|FIXME\|PLACEHOLDER'` across source directories, excluding `node_modules/`, `.git/`, `dist/`. File age computed via `stat -c %Y` on GNU/Linux or `stat -f %m` on BSD/macOS — detect the platform once and use the matching form; do not chain them (GNU `stat -f` prints file-system data instead of failing).
 
 **Draft ADRs:** Scan `docs/architecture/decisions/ADR-*.md` for files whose `**Status:**` field contains `Proposed` (not yet accepted). These are decisions in limbo — deliberated but not resolved. Report: "[N] ADRs in Proposed status."
 

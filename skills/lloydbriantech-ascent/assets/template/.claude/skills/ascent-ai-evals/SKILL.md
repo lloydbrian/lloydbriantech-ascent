@@ -1,9 +1,10 @@
 ---
 name: ascent-ai-evals
 description: >-
-  Validates AI eval scenario structure and prompt-test coverage for
-  <<PROJECT_TITLE>>. Checks tests/evals/ for scenario conformance.
-  No-ops gracefully when no eval suite is present.
+  Use when asked to "check AI eval coverage" or "validate eval scenarios", or
+  after a prompt changes. Checks tests/evals/ scenario structure and that
+  every prompt has a matching eval. Does nothing when the project has no eval
+  suite.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

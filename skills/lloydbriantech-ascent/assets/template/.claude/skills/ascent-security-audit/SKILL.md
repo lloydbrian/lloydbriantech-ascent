@@ -1,9 +1,12 @@
 ---
 name: ascent-security-audit
 description: >-
-  Point-in-time security baseline check for <<PROJECT_TITLE>>. Static
-  analysis of 5 security surfaces: env-file scope, hardcoded credentials,
-  container privilege, nginx security headers, and production URL schemes.
+  Use when asked "what security issues exist?", "enumerate security findings"
+  or "check security baseline", or before a deploy. Lists point-in-time
+  findings across five surfaces: env-file scope, hardcoded credentials,
+  container privilege, nginx security headers and production URL schemes. Not
+  for an overall rating (use ascent-sec-posture) or full .env discipline (use
+  ascent-env-audit).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

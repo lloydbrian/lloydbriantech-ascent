@@ -1,11 +1,12 @@
 ---
 name: ascent-env-audit
 description: >-
-  Verifies that <<PROJECT_TITLE>> follows ENV-DISCIPLINE: .env is
-  gitignored and dockerignored, .env.example has empty defaults only
-  (no REPLACE_ME), every environment variable read in code appears in
-  .env.example, and no secrets are committed or baked into images.
-  Can run standalone or as a component of ascent-self-audit's umbrella.
+  Use when asked "check my .env", "audit environment variables" or "any
+  secrets committed?". Verifies ENV-DISCIPLINE: .env is gitignored and
+  dockerignored, .env.example has empty defaults and no REPLACE_ME values,
+  every variable read in code is declared, and no .env is committed or baked
+  into images. Read-only; reports variable names with values redacted. Not for
+  hardcoded credentials in source code (use ascent-security-audit).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read
@@ -76,7 +77,7 @@ The skill executes these checks in order. Each check produces PASS or FAIL. Step
 
 **Action on PASS:** Report ".env.example has empty defaults only — PASS."
 
-**Action on FAIL:** For each non-empty value, report the line. Example: "FAIL: .env.example line 3: `<<ENV_PREFIX>>_PORT=3000` — remove the default value. Empty defaults (`<<ENV_PREFIX>>_PORT=`) are the schema; the code owns defaults."
+**Action on FAIL:** For each non-empty value, report the line number and variable name with the value redacted — never echo the value, which may be a real secret. Example: "FAIL: .env.example line 3: `<<ENV_PREFIX>>_PORT=<redacted>` — remove the default value. Empty defaults (`<<ENV_PREFIX>>_PORT=`) are the schema; the code owns defaults."
 
 **Inline example:** `.env.example` with `<<ENV_PREFIX>>_DB_URL=postgresql://REPLACE_ME` → FAIL: line matches REPLACE_ME pattern. Fix: change to `<<ENV_PREFIX>>_DB_URL=`.
 
@@ -143,7 +144,7 @@ ascent-env-audit: 7/7 checks passing
 ascent-env-audit: 6/7 checks passing (1 violation)
   ...
   FAIL: .env.example has empty defaults only
-    → line 5: <<ENV_PREFIX>>_API_KEY=sk-REPLACE_ME
+    → line 5: <<ENV_PREFIX>>_API_KEY=<redacted> (matches REPLACE_ME pattern)
     → Fix: change to <<ENV_PREFIX>>_API_KEY= (empty default). The code owns the default; .env.example is the schema.
   ...
 ```

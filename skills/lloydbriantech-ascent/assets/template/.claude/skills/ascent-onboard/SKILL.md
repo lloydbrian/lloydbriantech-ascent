@@ -1,10 +1,10 @@
 ---
 name: ascent-onboard
 description: >-
-  Guides a new developer through <<PROJECT_TITLE>> with a structured
-  "first hour" walkthrough. Read-only synthesis — detects project
-  maturity from state and adapts depth accordingly. Covers identity,
-  conventions, current state, key decisions, and where to start.
+  Use when asked "walk me through this project", "where do I start?" or
+  "onboard me". Read-only first-hour walkthrough that detects project maturity
+  and adapts depth: identity, conventions, current state, key decisions and
+  where to start.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_fresh_scaffold() {
   mkdir -p "$FIXTURES_DIR/docs/architecture/decisions" \
@@ -87,13 +89,13 @@ detect_maturity() {
   local plan_checked=0
   local adr_count=0
   if [ -f "$project_dir/docs/delivery/working-memory.md" ]; then
-    memory_entries=$(grep -cE '^- [0-9]{4}-[0-9]{2}-[0-9]{2}:' "$project_dir/docs/delivery/working-memory.md" 2>/dev/null || echo 0)
+    memory_entries=$(count_matches '^- [0-9]{4}-[0-9]{2}-[0-9]{2}:' "$project_dir/docs/delivery/working-memory.md")
   fi
   if [ -f "$project_dir/docs/delivery/PHASE-PLAN.md" ]; then
-    plan_checked=$(grep -c '\[x\]' "$project_dir/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
+    plan_checked=$(count_matches '\[x\]' "$project_dir/docs/delivery/PHASE-PLAN.md")
   fi
   if [ -f "$project_dir/docs/architecture/decisions/INDEX.md" ]; then
-    adr_count=$(grep -cE '^\| \[' "$project_dir/docs/architecture/decisions/INDEX.md" 2>/dev/null || echo 0)
+    adr_count=$(count_matches '^\| \[' "$project_dir/docs/architecture/decisions/INDEX.md")
   fi
   if [ "$memory_entries" -gt 0 ] && [ "$plan_checked" -gt 0 ] && [ "$adr_count" -gt 7 ]; then
     printf "established"
@@ -107,7 +109,7 @@ detect_maturity() {
 # Reusable: extract ADR count from INDEX.md (matches skill Step 3 logic)
 count_adrs() {
   local index_file="$1"
-  grep -cE '^\| \[' "$index_file" 2>/dev/null || echo 0
+  count_matches '^\| \[' "$index_file"
 }
 
 # Test 1: Project maturity detection — fresh vs established

@@ -1,10 +1,10 @@
 ---
 name: ascent-dependency-health
 description: >-
-  Validates dependency discipline for <<PROJECT_TITLE>> via static
-  package.json analysis. Checks pinned versions, engine constraints,
-  framework traceability, and unused dependencies — offline-capable,
-  no network required.
+  Use when asked "are dependencies healthy?" or "check for unpinned versions",
+  or after a dependency change. Static package.json analysis: pinned versions,
+  engines constraints, framework traceability and unused dependencies.
+  Offline; no network or audit database.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

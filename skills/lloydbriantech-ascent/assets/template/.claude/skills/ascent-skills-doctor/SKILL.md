@@ -1,10 +1,10 @@
 ---
 name: ascent-skills-doctor
 description: >-
-  Validates the project-embedded skill collection integrity for
-  <<PROJECT_TITLE>>. Checks SKILL.md frontmatter, INTENT-MAP.md sync,
-  cross-skill reference integrity, and allowed-tools honesty across
-  all ascent-* skills.
+  Use when asked "is the skill collection healthy?" or "check skill
+  integrity", or after a skill changes. Validates every ascent-* SKILL.md:
+  frontmatter, a description that leads with its trigger phrases, INTENT-MAP
+  sync, cross-skill references and allowed-tools honesty. Read-only.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read
@@ -45,13 +45,13 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 Validation rules:
 - `name` must match the directory name (e.g., `ascent-env-audit/SKILL.md` must have `name: ascent-env-audit`)
-- `description` must be non-empty
+- `description` must be non-empty, must lead with its trigger phrases (`Use when …` or `Use for …`), and must contain no template placeholder tokens (`<<…>>`). Claude decides when to load a skill from this field alone, and the skill listing truncates long descriptions, so the trigger comes first.
 - `version` must be present (typically `<<PROJECT_VERSION>>`)
 - `allowed-tools` must be a non-empty list
 
 **Action on PASS:** Report "Frontmatter — PASS. N skills, all with valid frontmatter."
 
-**Action on FAIL:** List each invalid skill. Example: "Frontmatter — FAIL. ascent-foo/SKILL.md is missing `version` field."
+**Action on FAIL:** List each invalid skill. Examples: "Frontmatter — FAIL. ascent-foo/SKILL.md is missing `version` field." / "Frontmatter — FAIL. ascent-foo/SKILL.md description does not start with 'Use when' or 'Use for'."
 
 ### Step 2 — INTENT-MAP sync
 
@@ -125,4 +125,4 @@ ascent-skills-doctor: 4/5 checks passing (1 failure)
 
 ### Anti-pattern 1 — Adding a skill without updating INTENT-MAP
 
-Creating a new `ascent-*/SKILL.md` directory but forgetting to add the intent-routing entry. **Why it's tempting:** the skill "works" when invoked directly. **What to do instead:** INTENT-MAP.md is the routing table — if the skill isn't listed, Claude doesn't know when to invoke it. Always update INTENT-MAP.md in the same PR that adds the skill.
+Creating a new `ascent-*/SKILL.md` directory but forgetting to add the intent-routing entry. **Why it's tempting:** the skill "works" when invoked directly. **What to do instead:** INTENT-MAP.md is the human-readable routing table; Claude itself routes on each skill's `description`. Put the skill's trigger phrases at the start of its description and add the same phrases to INTENT-MAP.md in the same PR, so the two never disagree.

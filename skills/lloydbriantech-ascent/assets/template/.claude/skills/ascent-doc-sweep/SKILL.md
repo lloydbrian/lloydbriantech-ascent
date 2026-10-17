@@ -1,9 +1,11 @@
 ---
 name: ascent-doc-sweep
 description: >-
-  Validates documentation freshness and consistency for <<PROJECT_TITLE>>.
-  Checks persona provenance comments, orphaned references, stale TODO/TBD
-  markers (30-day threshold), and doc-graph integrity per §14.
+  Use when asked "are the docs fresh?", "check documentation" or "any stale
+  TODOs in the docs?". Checks Audience provenance comments, broken internal
+  references and TODO/TBD markers older than 30 days across docs/. Read-only.
+  Not for persona entry points or doc depth (use ascent-persona-coverage) or
+  TODO age across source code (use ascent-vitality).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

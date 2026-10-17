@@ -69,12 +69,15 @@ session-resume:  ## META: Display session state for verification (what Claude re
 	    printf "MISSING"; \
 	    return; \
 	  fi; \
-	  local content=$$(grep -c '[^[:space:]]' "$$file" 2>/dev/null || echo 0); \
+	  local content=$$(grep -c '[^[:space:]]' "$$file" 2>/dev/null); content=$${content:-0}; \
 	  if [ "$$content" -le 1 ]; then \
 	    printf "EMPTY"; \
 	    return; \
 	  fi; \
-	  local mod_epoch=$$(stat -f %m "$$file" 2>/dev/null || stat -c %Y "$$file" 2>/dev/null || echo 0); \
+	  local mod_epoch; \
+	  if stat -c %Y "$$file" >/dev/null 2>&1; then mod_epoch=$$(stat -c %Y "$$file"); \
+	  else mod_epoch=$$(stat -f %m "$$file" 2>/dev/null); fi; \
+	  case "$$mod_epoch" in ''|*[!0-9]*) mod_epoch=0 ;; esac; \
 	  local now_epoch=$$(date +%s); \
 	  local age_days=$$(( (now_epoch - mod_epoch) / 86400 )); \
 	  if [ "$$age_days" -gt "$$STALE_DAYS" ]; then \
@@ -91,7 +94,7 @@ session-resume:  ## META: Display session state for verification (what Claude re
 	\
 	STATE_CLASS=$$(classify_file "$$STATE_FILE"); \
 	printf "  session-state.md:   [%s]\n" "$$STATE_CLASS"; \
-	if [ -f "$$STATE_FILE" ] && [ "$$(grep -c '[^[:space:]]' "$$STATE_FILE" 2>/dev/null || echo 0)" -gt 1 ]; then \
+	if [ -f "$$STATE_FILE" ] && [ "$$(grep -c '[^[:space:]]' "$$STATE_FILE" 2>/dev/null)" -gt 1 ]; then \
 	  printf "  ──────────────────────────────────────\n"; \
 	  sed 's/^/  /' "$$STATE_FILE"; \
 	  printf "\n"; \
@@ -100,7 +103,7 @@ session-resume:  ## META: Display session state for verification (what Claude re
 	printf "\n"; \
 	MEMORY_CLASS=$$(classify_file "$$MEMORY_FILE"); \
 	printf "  working-memory.md:  [%s]\n" "$$MEMORY_CLASS"; \
-	if [ -f "$$MEMORY_FILE" ] && [ "$$(grep -c '[^[:space:]]' "$$MEMORY_FILE" 2>/dev/null || echo 0)" -gt 1 ]; then \
+	if [ -f "$$MEMORY_FILE" ] && [ "$$(grep -c '[^[:space:]]' "$$MEMORY_FILE" 2>/dev/null)" -gt 1 ]; then \
 	  printf "  ──────────────────────────────────────\n"; \
 	  sed 's/^/  /' "$$MEMORY_FILE"; \
 	  printf "\n"; \

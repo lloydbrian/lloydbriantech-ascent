@@ -1,12 +1,11 @@
 ---
 name: ascent-observability-check
 description: >-
-  Verifies that <<PROJECT_TITLE>>'s backend services emit observability
-  data per the observability contract: structured JSON logs with the
-  required fields, /healthz and /readyz endpoints, lifecycle events
-  (service.started, service.draining, service.stopped), and trace-id
-  propagation via W3C TraceContext. Can run standalone or as a component
-  of ascent-self-audit's umbrella.
+  Use when asked "is my service observable?", "check logging" or "verify
+  healthchecks", or before a deploy. Verifies the observability contract:
+  structured JSON logs with required fields, /healthz and /readyz, lifecycle
+  events (service.started, service.draining, service.stopped) and W3C trace-id
+  propagation. Read-only.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

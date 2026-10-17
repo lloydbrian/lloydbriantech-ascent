@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
@@ -38,7 +40,7 @@ scan_credentials() {
   if [ -z "$matches" ]; then
     echo 0
   else
-    echo "$matches" | grep -v 'node_modules\|dist\|\.git' | wc -l | tr -d ' '
+    echo "$matches" | { grep -vE 'node_modules|dist|\.git' || true; } | wc -l | tr -d ' '
   fi
 }
 

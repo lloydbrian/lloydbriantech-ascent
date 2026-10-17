@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_project() {
   mkdir -p "$FIXTURES_DIR/docs/delivery" "$FIXTURES_DIR/docs/architecture/decisions"
@@ -46,12 +48,12 @@ generate_handoff() {
   criteria_done=0
   criteria_total=0
   if [ -f "$project_dir/docs/delivery/PHASE-PLAN.md" ]; then
-    criteria_done=$(grep -c '\[x\]' "$project_dir/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
-    criteria_total=$(grep -cE '\[[ x]\]' "$project_dir/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
+    criteria_done=$(count_matches '\[x\]' "$project_dir/docs/delivery/PHASE-PLAN.md")
+    criteria_total=$(count_matches '\[[ x]\]' "$project_dir/docs/delivery/PHASE-PLAN.md")
   fi
   decision_count=0
   if [ -f "$project_dir/docs/delivery/working-memory.md" ]; then
-    decision_count=$(grep -cE '^- [0-9]{4}-[0-9]{2}-[0-9]{2}:' "$project_dir/docs/delivery/working-memory.md" 2>/dev/null || echo 0)
+    decision_count=$(count_matches '^- [0-9]{4}-[0-9]{2}-[0-9]{2}:' "$project_dir/docs/delivery/working-memory.md")
   fi
   {
     printf "# Handoff — Test Project\n\n"
@@ -128,8 +130,8 @@ cat > "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" << 'EOF'
 - [ ] Container topology
 EOF
 # Extract progress (matches skill Step 3 logic)
-DONE=$(grep -c '\[x\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
-TOTAL=$(grep -cE '\[[ x]\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
+DONE=$(count_matches '\[x\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md")
+TOTAL=$(count_matches '\[[ x]\]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md")
 if [ "$DONE" -eq 2 ] && [ "$TOTAL" -eq 5 ]; then
   assert_pass "phase-progress extraction: 2/5 criteria met from PHASE-PLAN fixture"
 else

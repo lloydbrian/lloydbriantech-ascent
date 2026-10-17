@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
@@ -93,7 +95,7 @@ echo "# JWT details" > "$DEEP_PATH/details.md"
 # Count depth from docs/architecture/ (the Architect entry point)
 ENTRY_ROOT="$FIXTURES_DIR/docs/architecture"
 REL_PATH="${DEEP_PATH#$ENTRY_ROOT/}/details.md"
-DIR_DEPTH=$(echo "$REL_PATH" | grep -o '/' | wc -l | tr -d ' ')
+DIR_DEPTH=$(echo "$REL_PATH" | { grep -o '/' || true; } | wc -l | tr -d ' ')
 if [ "$DIR_DEPTH" -gt 3 ]; then
   assert_pass "depth validation: $DIR_DEPTH clicks from Architect root → exceeds 3-click limit"
 else

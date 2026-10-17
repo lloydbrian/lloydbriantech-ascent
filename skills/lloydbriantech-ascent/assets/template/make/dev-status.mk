@@ -53,7 +53,7 @@ dev-status:  ## DEV: Full dev environment status check (~3-5s)
 	@# .env file
 	@printf "  %-24s" ".env file:"
 	@if [ -f .env ]; then \
-	  VARS=$$(grep -cE '^[A-Z_]+=' .env 2>/dev/null || echo 0); \
+	  VARS=$$(grep -cE '^[A-Z_]+=' .env 2>/dev/null); VARS=$${VARS:-0}; \
 	  printf "present (%s vars set)\n" "$$VARS"; \
 	else \
 	  printf "MISSING — copy .env.example to .env and fill in values\n"; \

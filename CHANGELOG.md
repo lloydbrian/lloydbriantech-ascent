@@ -10,6 +10,34 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+**Skill hardening, loop 1 (foundations).** Makes the embedded-skill test suite give the same answer on macOS, Linux and in containers, shows each rewritten check both passing and failing, proves it with named negative controls, runs all of it in CI on both platforms, and makes each skill's description do its routing. See [ADR-008](docs/framework/DECISIONS/ADR-008-portable-skill-tests-and-negative-controls.md).
+
+### Added
+
+- `tests/skills/lib/portable.sh` (template): GNU/BSD-safe helpers for file ages, backdating, DST-safe calendar dates, in-place sed, zero-safe match counts and git fixtures (`main` default branch, hooks disabled, isolated from the outer repository's git environment)
+- `make test-skills` (meta-repo): renders the template with `make/render-template.sh` (fails if any placeholder survives) and runs all 28 embedded-skill tests
+- `make test-mutants` + `make/mutants.tsv`: 26 named mutants guarding 12 tests, plus 4 validator controls; fails on any survivor, anchor miss or skipped row
+- CI `gate` job: `make qa`, `make test-skills` and `make test-mutants` on `ubuntu-latest` and `macos-latest`
+- `test-ascent-standup.sh` Test 6: exercises the shipped `make session-resume` classifier (FRESH, STALE, EMPTY)
+- `.github/dependabot.yml` for the SHA-pinned actions
+- ADR-008: Portable skill tests and named negative controls
+
+### Changed
+
+- All 28 tests source the portable library. The 8 that failed on Linux (delivery-status, doc-sweep, env-audit, health, reflect, self-audit, standup, vitality) now pass; BSD-only `sed -i ''` calls in adr-conformance, adr-write, feature-intake and qa were latent failures and are fixed too
+- Rewritten tests assert on a passing and a failing fixture at threshold ±1 day: delivery-status, doc-sweep, env-audit, health, layering-check (now also routes→services and controller→storage), self-audit (now also an empty `phase`), skills-doctor, standup and vitality. The SKILL.md prose greps in self-audit and standup are replaced with behavior checks; "platform limitation" pass branches are removed
+- All 28 skill descriptions and the parent skill's description lead with "Use when …" trigger phrases, point to the sibling skill where triggers overlap, and contain no template placeholders
+- `qa-skill-frontmatter` enforces the trigger-first description, no placeholders in descriptions, and `name` matching the directory; accepts an optional root for self-testing
+- `ascent-skills-doctor`, INTENT-MAP.md and the parent skill now state that Claude routes on the description; the parent defers to the project's `ascent-*` skills in enhance mode
+- `ascent-env-audit` reports `.env.example` violations with values redacted
+- `validate-skills.yml`: `permissions: contents: read`, `actions/checkout` pinned to the v4.2.2 commit; `release.yml`: `actions/checkout` and `softprops/action-gh-release` pinned to commit SHAs
+- PR template and CONTRIBUTING: `make test-skills` / `make test-mutants`, portable helpers and a mutant per new rule are part of the checklist
+
+### Fixed
+
+- Template `make session-resume` misreported file ages on Linux (BSD-first `stat`) and its zero-line counts produced `0\n0`; the same zero-count bug in `make dev-status`
+- `test-ascent-vitality.sh` no longer depends on a fixed 2026-05-18 fixture date, on git's default branch name, or on colored `git branch` output
+
 ### Planned
 
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)

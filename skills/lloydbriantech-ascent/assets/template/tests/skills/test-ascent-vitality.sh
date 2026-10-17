@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
@@ -24,86 +26,92 @@ assert_fail() {
   printf "FAIL  ascent-vitality: %s\n" "$1"
 }
 
-# Test 1: Last-commit-age detection via git fixture
+# Stand-ins for the skill's Step 1 and Step 3 logic.
+# last_commit_age_days DIR — whole days since the newest commit (%ct, committer date).
+last_commit_age_days() {
+  local ct
+  ct=$(git -C "$1" log -1 --format=%ct)
+  printf '%s' $(( ($(date +%s) - ct) / 86400 ))
+}
+
+# stale_branch_count DIR [THRESHOLD_DAYS] — unmerged branches whose tip is older
+# than the threshold (default 30 days).
+stale_branch_count() {
+  local d="$1" threshold="${2:-30}" now count=0 branch ct
+  now=$(date +%s)
+  while IFS= read -r branch; do
+    [ -z "$branch" ] && continue
+    ct=$(git -C "$d" log -1 --format=%ct "$branch")
+    if [ $(( (now - ct) / 86400 )) -gt "$threshold" ]; then
+      count=$((count + 1))
+    fi
+  done < <(git -C "$d" for-each-ref --no-merged=main --format='%(refname:short)' refs/heads)
+  printf '%s' "$count"
+}
+
+# changelog_stance FILE — ACTIVE if the newest dated entry is ≤60 days old, else STALE.
+changelog_stance() {
+  local latest epoch
+  latest=$(grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' "$1" | head -1 || true)
+  [ -n "$latest" ] || { printf 'UNKNOWN'; return 0; }
+  epoch=$(ymd_to_epoch "$latest")
+  if [ $(( ($(date +%s) - epoch) / 86400 )) -le 60 ]; then printf 'ACTIVE'; else printf 'STALE'; fi
+}
+
+write_changelog() {
+  printf '# Changelog\n\n## v0.4.0 — %s\n\n### Added\n\n- All skills implemented\n' "$2" > "$1"
+}
+
+# Test 1: Last-commit age at the 14-day threshold — 13 days is ACTIVE, 15 is not.
 cleanup
-mkdir -p "$FIXTURES_DIR"
-(
-  cd "$FIXTURES_DIR"
-  git init -q
-  git config user.email "test@test.com"
-  git config user.name "Test"
-  echo "initial" > file.txt
-  git add . && git commit -q -m "recent commit" --date="$(date -R)"
-) 2>/dev/null
-# Compute last commit age (matches skill Step 1 logic)
-LAST_EPOCH=$(cd "$FIXTURES_DIR" && git log -1 --format=%ct 2>/dev/null)
-NOW_EPOCH=$(date +%s)
-AGE_DAYS=$(( (NOW_EPOCH - LAST_EPOCH) / 86400 ))
-if [ "$AGE_DAYS" -le 14 ]; then
-  assert_pass "last-commit age: $AGE_DAYS days (≤14 = ACTIVE)"
+git_init_main "$FIXTURES_DIR"
+echo "initial" > "$FIXTURES_DIR/file.txt"
+git_commit_days_ago "$FIXTURES_DIR" 13 "recent commit"
+RECENT_AGE=$(last_commit_age_days "$FIXTURES_DIR")
+cleanup
+git_init_main "$FIXTURES_DIR"
+echo "initial" > "$FIXTURES_DIR/file.txt"
+git_commit_days_ago "$FIXTURES_DIR" 15 "old commit"
+OLD_AGE=$(last_commit_age_days "$FIXTURES_DIR")
+if [ "$RECENT_AGE" -le 14 ] && [ "$OLD_AGE" -gt 14 ]; then
+  assert_pass "last-commit age: recent=$RECENT_AGE days (ACTIVE), old=$OLD_AGE days (not ACTIVE)"
 else
-  assert_fail "recent commit should be ≤14 days old, got $AGE_DAYS"
+  assert_fail "last-commit age: recent=$RECENT_AGE (want ≤14), old=$OLD_AGE (want >14)"
 fi
 
-# Test 2: Stale-branch detection
+# Test 2: Stale-branch detection at the 30-day threshold — of two unmerged
+# branches, the 31-day-old one is stale and the 29-day-old one is not.
 cleanup
-mkdir -p "$FIXTURES_DIR"
-(
-  cd "$FIXTURES_DIR"
-  git init -q
-  git config user.email "test@test.com"
-  git config user.name "Test"
-  echo "main" > file.txt
-  git add . && git commit -q -m "main commit"
-  git checkout -q -b stale-feature
-  echo "stale" > stale.txt
-  git add . && git commit -q -m "stale branch commit" \
-    --date="$(date -v-45d -R 2>/dev/null || date -d '45 days ago' -R 2>/dev/null || date -R)"
-  git checkout -q main
-) 2>/dev/null
-# Count stale unmerged branches (matches skill Step 1 logic)
-STALE_BRANCHES=0
-while IFS= read -r branch; do
-  [ -z "$branch" ] && continue
-  branch=$(echo "$branch" | tr -d ' *')
-  BRANCH_EPOCH=$(cd "$FIXTURES_DIR" && git log -1 --format=%ct "$branch" 2>/dev/null || echo 0)
-  BRANCH_AGE=$(( (NOW_EPOCH - BRANCH_EPOCH) / 86400 ))
-  if [ "$BRANCH_AGE" -gt 30 ]; then
-    STALE_BRANCHES=$((STALE_BRANCHES + 1))
-  fi
-done < <(cd "$FIXTURES_DIR" && git branch --no-merged main 2>/dev/null)
-if [ "$STALE_BRANCHES" -ge 1 ]; then
-  assert_pass "stale-branch detection: $STALE_BRANCHES unmerged branch(es) >30 days"
-elif [ "$STALE_BRANCHES" -eq 0 ]; then
-  assert_pass "stale-branch detection: date manipulation limited on platform ($STALE_BRANCHES stale, branch exists)"
+git_init_main "$FIXTURES_DIR"
+echo "main" > "$FIXTURES_DIR/file.txt"
+git_commit_days_ago "$FIXTURES_DIR" 50 "main commit"
+git -C "$FIXTURES_DIR" checkout -q -b stale-feature
+echo "stale" > "$FIXTURES_DIR/stale.txt"
+git_commit_days_ago "$FIXTURES_DIR" 31 "stale branch commit"
+git -C "$FIXTURES_DIR" checkout -q main
+git -C "$FIXTURES_DIR" checkout -q -b fresh-feature
+echo "fresh" > "$FIXTURES_DIR/fresh.txt"
+git_commit_days_ago "$FIXTURES_DIR" 29 "fresh branch commit"
+git -C "$FIXTURES_DIR" checkout -q main
+STALE_BRANCHES=$(stale_branch_count "$FIXTURES_DIR")
+if [ "$STALE_BRANCHES" -eq 1 ]; then
+  assert_pass "stale-branch detection: 31-day branch stale, 29-day branch not (30-day threshold)"
 else
-  assert_fail "should detect at least 1 stale branch, got $STALE_BRANCHES"
+  assert_fail "stale-branch detection: expected exactly 1 stale branch, got $STALE_BRANCHES"
 fi
 
-# Test 3: CHANGELOG recency — entry within 60 days ACTIVE, older STALE
+# Test 3: CHANGELOG recency at the 60-day threshold — 58 days ACTIVE, 62 days
+# STALE (2-day margin: calendar dates, not timestamps).
 cleanup
 mkdir -p "$FIXTURES_DIR"
-cat > "$FIXTURES_DIR/CHANGELOG.md" << 'EOF'
-# Changelog
-
-## v0.4.0 — 2026-05-18
-
-### Added
-
-- All skills implemented
-EOF
-# Extract most recent date from CHANGELOG (matches skill Step 3 logic)
-LATEST_DATE=$(grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' "$FIXTURES_DIR/CHANGELOG.md" | head -1)
-if [ -n "$LATEST_DATE" ]; then
-  LATEST_EPOCH=$(date -j -f "%Y-%m-%d" "$LATEST_DATE" +%s 2>/dev/null || date -d "$LATEST_DATE" +%s 2>/dev/null || echo 0)
-  CHANGELOG_AGE=$(( (NOW_EPOCH - LATEST_EPOCH) / 86400 ))
-  if [ "$CHANGELOG_AGE" -le 60 ]; then
-    assert_pass "CHANGELOG recency: $CHANGELOG_AGE days since last entry (≤60 = ACTIVE)"
-  else
-    assert_fail "recent CHANGELOG entry should be ≤60 days old, got $CHANGELOG_AGE"
-  fi
+write_changelog "$FIXTURES_DIR/CHANGELOG.md" "$(ymd_days_ago 58)"
+RECENT_STANCE=$(changelog_stance "$FIXTURES_DIR/CHANGELOG.md")
+write_changelog "$FIXTURES_DIR/CHANGELOG.md" "$(ymd_days_ago 62)"
+OLD_STANCE=$(changelog_stance "$FIXTURES_DIR/CHANGELOG.md")
+if [ "$RECENT_STANCE" = "ACTIVE" ] && [ "$OLD_STANCE" = "STALE" ]; then
+  assert_pass "CHANGELOG recency: 58-day entry ACTIVE, 62-day entry STALE (60-day threshold)"
 else
-  assert_fail "should extract date from CHANGELOG fixture"
+  assert_fail "CHANGELOG recency: 58-day=$RECENT_STANCE (want ACTIVE), 62-day=$OLD_STANCE (want STALE)"
 fi
 
 # Summary

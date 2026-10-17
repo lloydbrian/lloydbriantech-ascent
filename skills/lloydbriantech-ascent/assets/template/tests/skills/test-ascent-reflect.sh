@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_project() {
   mkdir -p "$FIXTURES_DIR/docs/delivery"
@@ -44,13 +46,13 @@ classify_file() {
     return
   fi
   local content
-  content=$(grep -c '[^[:space:]]' "$file" 2>/dev/null || echo 0)
+  content=$(count_matches '[^[:space:]]' "$file")
   if [ "$content" -le 1 ]; then
     printf "EMPTY"
     return
   fi
   local mod_epoch now_epoch age_days
-  mod_epoch=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo 0)
+  mod_epoch=$(file_mtime "$file")
   now_epoch=$(date +%s)
   age_days=$(( (now_epoch - mod_epoch) / 86400 ))
   if [ "$age_days" -gt 7 ]; then
@@ -158,12 +160,11 @@ EOF
 # Simulate reflect Step 8 append (matches skill operational logic)
 # Append new decisions below existing entries under ## Decisions
 NEW_ENTRY="- 2026-05-20: Chose sibling pattern for lifecycle skills (Cluster 5)"
-sed -i '' "/^- 2026-05-17: Session resumption/a\\
-${NEW_ENTRY}" "$FIXTURES_DIR/docs/delivery/working-memory.md" 2>/dev/null || \
-  sed -i "/^- 2026-05-17: Session resumption/a\\${NEW_ENTRY}" "$FIXTURES_DIR/docs/delivery/working-memory.md" 2>/dev/null
-OLD_PRESERVED=$(grep -c "2026-05-16\|2026-05-17" "$FIXTURES_DIR/docs/delivery/working-memory.md")
-NEW_PRESENT=$(grep -c "2026-05-20.*sibling pattern" "$FIXTURES_DIR/docs/delivery/working-memory.md")
-SECTIONS_INTACT=$(grep -c "## Patterns adopted\|## Patterns rejected" "$FIXTURES_DIR/docs/delivery/working-memory.md")
+WM="$FIXTURES_DIR/docs/delivery/working-memory.md"
+awk -v e="$NEW_ENTRY" '{ print } /^- 2026-05-17: Session resumption/ { print e }' "$WM" > "$WM.tmp" && mv "$WM.tmp" "$WM"
+OLD_PRESERVED=$(count_matches "2026-05-16|2026-05-17" "$WM")
+NEW_PRESENT=$(count_matches "2026-05-20.*sibling pattern" "$WM")
+SECTIONS_INTACT=$(count_matches "## Patterns adopted|## Patterns rejected" "$WM")
 if [ "$OLD_PRESERVED" -eq 2 ] && [ "$NEW_PRESENT" -eq 1 ] && [ "$SECTIONS_INTACT" -eq 2 ]; then
   assert_pass "append semantics: 2 old entries preserved, 1 new appended, section structure intact"
 else

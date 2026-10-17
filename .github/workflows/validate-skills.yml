@@ -1,16 +1,16 @@
 # Skill validation workflow
 #
-# Runs on every PR and push to main. Validates:
-#   - SKILL.md frontmatter is valid YAML and matches the schema
-#   - All internal links resolve
-#   - Reference modules referenced by skills exist
-#   - Template assets render with sample slug input
-#   - INTENT-MAP.md is consistent with the project-embedded skills present
+# Runs on every PR and push to main. Jobs:
+#   - structure-check: required framework files and ADR-001..007 exist
+#   - link-check:      internal markdown links resolve
+#   - gate:            on ubuntu-latest and macos-latest (ADR-008)
+#       make qa            frontmatter (incl. trigger-first descriptions),
+#                          links, template placeholders
+#       make test-skills   renders the template, runs all 28 skill tests
+#       make test-mutants  named negative controls; any survivor fails
 #
-# This file is the Phase 0 placeholder. The real validation logic arrives
-# in Phase 1 when the skill itself ships. The placeholder runs a self-check
-# to confirm the repo structure is intact so the workflow is exercised
-# from Day 1.
+# Not yet checked here: INTENT-MAP phrase sync (review responsibility),
+# eval scenarios (Phase 5).
 
 name: validate-skills
 
@@ -21,6 +21,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least privilege: these jobs only read the repository (F34).
+permissions:
+  contents: read
+
 jobs:
   structure-check:
     name: Repository structure
@@ -28,7 +32,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Confirm required files exist
         run: |
@@ -82,7 +86,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Verify internal Markdown links resolve
         run: |
@@ -114,3 +118,26 @@ jobs:
           fi
           echo "✓ All internal links resolve"
 
+  gate:
+    # The framework's own gate on both platforms ASCENT supports (ADR-008):
+    # validators, all 28 embedded-skill tests on a rendered template, and the
+    # named negative controls.
+    name: Gate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Validators
+        run: make qa
+
+      - name: Embedded-skill tests
+        run: make test-skills
+
+      - name: Negative controls
+        run: make test-mutants

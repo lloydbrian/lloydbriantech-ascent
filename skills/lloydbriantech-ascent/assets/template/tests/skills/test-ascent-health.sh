@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
@@ -81,7 +83,7 @@ assess_docs() {
     [ -f "$f" ] || continue
     if grep -qiE 'TODO|TBD' "$f" 2>/dev/null; then
       local mod_epoch
-      mod_epoch=$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0)
+      mod_epoch=$(file_mtime "$f")
       local age=$(( (now_epoch - mod_epoch) / 86400 ))
       [ "$age" -gt 30 ] && stale_todos=$((stale_todos + 1))
     fi
@@ -99,7 +101,7 @@ assess_adrs() {
   [ -f "$index" ] || { echo "not-assessed"; return; }
   local signals=0
   local adr_count
-  adr_count=$(grep -E '^\| \[' "$index" 2>/dev/null | wc -l | tr -d ' ')
+  adr_count=$(count_matches '^\| \[' "$index")
   [ "$adr_count" -gt 0 ] && signals=$((signals + 1))
   local first_adr
   first_adr=$(ls "$dir"/docs/architecture/decisions/ADR-*.md 2>/dev/null | head -1)
@@ -191,7 +193,6 @@ else
 fi
 
 # Test 2: Mixed — strong data + deps, moderate docs (stale TODO) + strong ADRs → moderate
-# Platform fallback: accepts "strong" if touch -t/-d timestamp manipulation isn't supported
 cleanup
 setup_all_pass
 cat > "$FIXTURES_DIR/docs/stale.md" << 'EOF'
@@ -199,8 +200,7 @@ cat > "$FIXTURES_DIR/docs/stale.md" << 'EOF'
 # Stale doc
 TODO: fix this
 EOF
-touch -t 202603010900 "$FIXTURES_DIR/docs/stale.md" 2>/dev/null || \
-  touch -d "80 days ago" "$FIXTURES_DIR/docs/stale.md" 2>/dev/null || true
+set_mtime_days_ago "$FIXTURES_DIR/docs/stale.md" 31
 D=$(assess_data "$FIXTURES_DIR")
 P=$(assess_deps "$FIXTURES_DIR")
 O=$(assess_docs "$FIXTURES_DIR")
@@ -208,8 +208,6 @@ A=$(assess_adrs "$FIXTURES_DIR")
 C=$(composite_stance "$D" "$P" "$O" "$A")
 if [ "$O" = "moderate" ] && [ "$C" = "moderate" ]; then
   assert_pass "mixed: stale TODO → docs moderate → composite moderate"
-elif [ "$O" = "strong" ]; then
-  assert_pass "mixed: timestamp manipulation limited on platform (docs=$O, composite=$C)"
 else
   assert_fail "mixed: data=$D deps=$P docs=$O adrs=$A composite=$C (docs should be moderate)"
 fi
@@ -263,10 +261,11 @@ else
   assert_fail "empty: data=$D (want strong), deps=$P (want strong), docs=$O (want not-assessed), adrs=$A (want not-assessed)"
 fi
 
-# Test 5: Sub-domain count — exactly 4 assessed
+# Test 5: Every sub-domain returns a valid rating (strong|moderate|weak|not-assessed)
 cleanup
 setup_all_pass
-DOMAIN_COUNT=0
+VALID_COUNT=0
+RESULTS=""
 for domain in data deps docs adrs; do
   case "$domain" in
     data) result=$(assess_data "$FIXTURES_DIR") ;;
@@ -274,12 +273,13 @@ for domain in data deps docs adrs; do
     docs) result=$(assess_docs "$FIXTURES_DIR") ;;
     adrs) result=$(assess_adrs "$FIXTURES_DIR") ;;
   esac
-  DOMAIN_COUNT=$((DOMAIN_COUNT + 1))
+  RESULTS="$RESULTS $domain=$result"
+  case "$result" in strong|moderate|weak|not-assessed) VALID_COUNT=$((VALID_COUNT + 1)) ;; esac
 done
-if [ "$DOMAIN_COUNT" -eq 4 ]; then
-  assert_pass "sub-domain count: exactly 4 sub-domains assessed"
+if [ "$VALID_COUNT" -eq 4 ]; then
+  assert_pass "sub-domain ratings: all 4 sub-domains return a valid rating ($RESULTS )"
 else
-  assert_fail "should assess 4 sub-domains, got $DOMAIN_COUNT"
+  assert_fail "every sub-domain must return strong|moderate|weak|not-assessed, got:$RESULTS"
 fi
 
 # Summary

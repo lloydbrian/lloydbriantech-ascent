@@ -1,10 +1,11 @@
 ---
 name: ascent-adr-write
 description: >-
-  Guides writing a new Architectural Decision Record in the canonical
-  ASCENT format: Context, Decision, Alternatives considered, Consequences
-  (Easier/Harder/Neutral), and Cost implications. Assigns the next ADR
-  number, creates the file, and updates INDEX.md.
+  Use when asked to "write an ADR for X" or "document this decision" in this
+  project. Interviews for the decision, then writes ADR-NNN in the canonical
+  format (Context, Decision, Alternatives considered, Consequences, Cost
+  implications), assigns the next number, updates INDEX.md and marks any
+  superseded ADR. Not for checking existing ADRs (use ascent-adr-conformance).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read
