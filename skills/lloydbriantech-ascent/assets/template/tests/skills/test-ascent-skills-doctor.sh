@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_skill_collection() {
   mkdir -p "$FIXTURES_DIR/.claude/skills/ascent-foo" \
@@ -20,7 +22,7 @@ setup_skill_collection() {
   cat > "$FIXTURES_DIR/.claude/skills/ascent-foo/SKILL.md" << 'EOF'
 ---
 name: ascent-foo
-description: A test skill for validation.
+description: Use when asked to check foo. A test skill for validation.
 version: 1.0.0
 allowed-tools:
   - Read
@@ -41,7 +43,7 @@ EOF
   cat > "$FIXTURES_DIR/.claude/skills/ascent-bar/SKILL.md" << 'EOF'
 ---
 name: ascent-bar
-description: Another test skill.
+description: Use when asked to check bar. Another test skill.
 version: 1.0.0
 allowed-tools:
   - Read
@@ -88,6 +90,20 @@ validate_frontmatter() {
   echo "$missing"
 }
 
+# Reusable: routing rules on the description and name (skill Step 1). Prints one
+# line per problem: TRIGGER (does not start with "Use when"/"Use for"),
+# PLACEHOLDER (contains a <<…>> token), NAME (name != directory).
+routing_problems() {
+  local f="$1" dir name desc
+  dir=$(basename "$(dirname "$f")")
+  name=$(sed -n 's/^name:[[:space:]]*//p' "$f" | head -1)
+  desc=$(awk '/^description:/{on=1; sub(/^description:[[:space:]]*(>-|>)?[[:space:]]*/,""); if(length) print; next} on && /^[A-Za-z_-]+:/{exit} on{sub(/^[[:space:]]+/,""); print}' "$f" | tr '\n' ' ')
+  case "$desc" in "Use when "*|"Use for "*) : ;; *) echo "TRIGGER" ;; esac
+  printf '%s' "$desc" | grep -qE '<<[A-Z_]+>>' && echo "PLACEHOLDER"
+  [ "$name" = "$dir" ] || echo "NAME"
+  return 0
+}
+
 # Test 1: Frontmatter validation — valid vs missing version field
 cleanup
 setup_skill_collection
@@ -98,7 +114,7 @@ if [ "$MISSING_VALID" -eq 0 ]; then
   cat > "$FIXTURES_DIR/.claude/skills/ascent-broken/SKILL.md" << 'EOF'
 ---
 name: ascent-broken
-description: Missing version field.
+description: Use when testing. Missing version field.
 allowed-tools:
   - Read
 ---
@@ -172,6 +188,23 @@ if [ "$VALID_REFS" -eq 1 ] && [ "$BROKEN_REFS" -eq 1 ]; then
   assert_pass "cross-references: 1 valid (ascent-bar), 1 broken (ascent-nonexistent)"
 else
   assert_fail "should have 1 valid + 1 broken ref, got valid=$VALID_REFS broken=$BROKEN_REFS"
+fi
+
+# Test 6: Routing rules — well-formed descriptions pass; a description without
+# a trigger, one with a template placeholder, and a name/directory mismatch fail.
+cleanup
+setup_skill_collection
+GOOD=$(routing_problems "$FIXTURES_DIR/.claude/skills/ascent-foo/SKILL.md")
+mkdir -p "$FIXTURES_DIR/.claude/skills/ascent-bad"
+# Built at runtime so template rendering cannot substitute it.
+PH="<<""PROJECT_TITLE>>"
+printf -- '---\nname: ascent-wrong\ndescription: >-\n  Validates %s things.\nversion: 1.0.0\nallowed-tools:\n  - Read\n---\n' "$PH" \
+  > "$FIXTURES_DIR/.claude/skills/ascent-bad/SKILL.md"
+BAD=$(routing_problems "$FIXTURES_DIR/.claude/skills/ascent-bad/SKILL.md" | tr '\n' ' ')
+if [ -z "$GOOD" ] && [ "$BAD" = "TRIGGER PLACEHOLDER NAME " ]; then
+  assert_pass "routing rules: well-formed skill passes; missing trigger, placeholder and name mismatch all flagged"
+else
+  assert_fail "routing rules: good='$GOOD' (want empty), bad='$BAD' (want 'TRIGGER PLACEHOLDER NAME ')"
 fi
 
 # Summary

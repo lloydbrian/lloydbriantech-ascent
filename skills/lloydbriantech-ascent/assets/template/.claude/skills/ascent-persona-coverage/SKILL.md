@@ -1,9 +1,11 @@
 ---
 name: ascent-persona-coverage
 description: >-
-  Validates persona coverage for <<PROJECT_TITLE>>: every canonical
-  persona has a README entry point, every entry-point file exists,
-  and no doc exceeds the 3-click depth limit per §14.
+  Use when asked "are all personas covered?" or "check persona entry points",
+  or after docs are restructured. Validates that every canonical persona has a
+  README entry point, every entry-point file exists and no doc is more than
+  three clicks deep per §14. Read-only. Not for doc freshness or stale TODOs
+  (use ascent-doc-sweep).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

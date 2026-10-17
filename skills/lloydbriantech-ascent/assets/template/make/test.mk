@@ -31,6 +31,7 @@ test-skills:  ## TEST: Run all skill tests
 	  fi; \
 	done; \
 	TOTAL=$$((PASS + FAIL)); \
+	if [ "$$TOTAL" -eq 0 ]; then printf "Skills test suite: no tests found in %s\n" "$$TESTS_DIR"; exit 1; fi; \
 	printf "\nSkills test suite: %s/%s PASS" "$$PASS" "$$TOTAL"; \
 	if [ "$$FAIL" -gt 0 ]; then \
 	  printf ", %s FAIL\n" "$$FAIL"; \

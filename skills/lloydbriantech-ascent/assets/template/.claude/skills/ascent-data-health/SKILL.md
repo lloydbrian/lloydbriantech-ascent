@@ -1,10 +1,10 @@
 ---
 name: ascent-data-health
 description: >-
-  Validates SQLite-WAL database configuration and migration discipline
-  for <<PROJECT_TITLE>>. Checks WAL mode, foreign-key enforcement,
-  migration tracking, and migration file ordering — the silent-failure
-  prevention layer for the data tier.
+  Use when asked "is the database configured correctly?" or "check data
+  health", or after a schema change. Validates the SQLite-WAL data tier: WAL
+  mode, foreign-key enforcement, the _migrations tracking table and migration
+  file ordering. Read-only.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

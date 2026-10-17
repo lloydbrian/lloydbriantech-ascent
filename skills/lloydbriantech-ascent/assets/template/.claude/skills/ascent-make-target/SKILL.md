@@ -1,10 +1,10 @@
 ---
 name: ascent-make-target
 description: >-
-  Proposes and creates new make targets for <<PROJECT_TITLE>> following
-  the MAKE-NAMING convention (<area>-<sub-area>-<action>), places them
-  in the correct SDLC-sectioned .mk file, and validates the naming
-  against existing targets to prevent aliases or collisions.
+  Use when asked to "add a make target for X" or "I need a command to do Y".
+  Proposes a name following MAKE-NAMING (<area>-<sub-area>-<action>), places
+  it in the right SDLC-sectioned .mk file with a help annotation, and checks
+  it against existing targets to prevent aliases or collisions.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

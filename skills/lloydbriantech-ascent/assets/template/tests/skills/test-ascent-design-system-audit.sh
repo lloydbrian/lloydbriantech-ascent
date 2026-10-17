@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 assert_pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
@@ -47,7 +49,7 @@ detect_design_system() {
 detect_hardcoded_colors() {
   local css_file="$1"
   local count
-  count=$(grep -cE 'color:\s*#[0-9a-fA-F]|color:\s*rgb\(|color:\s*hsl\(' "$css_file" 2>/dev/null || echo 0)
+  count=$(count_matches 'color:\s*#[0-9a-fA-F]|color:\s*rgb\(|color:\s*hsl\(' "$css_file")
   echo "$count"
 }
 

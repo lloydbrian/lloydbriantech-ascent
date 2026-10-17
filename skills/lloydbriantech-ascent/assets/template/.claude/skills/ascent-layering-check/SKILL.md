@@ -1,11 +1,11 @@
 ---
 name: ascent-layering-check
 description: >-
-  Verifies that <<PROJECT_TITLE>>'s backend follows strict layering:
-  routes → controllers → services → storage. Detects cross-layer
-  violations (routes importing storage, controllers containing SQL,
-  services using req/res) by analyzing import patterns and code structure.
-  Can run standalone or as a component of ascent-self-audit's umbrella.
+  Use when asked "is my backend layered correctly?" or "check for layering
+  violations". Verifies routes → controllers → services → storage: flags
+  routes importing services or storage, controllers importing storage,
+  services importing express or touching req/res, business logic in storage,
+  and SQL outside storage. Read-only.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

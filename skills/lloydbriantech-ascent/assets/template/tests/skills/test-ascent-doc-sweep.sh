@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_docs() {
   mkdir -p "$FIXTURES_DIR/docs/architecture" "$FIXTURES_DIR/docs/operations"
@@ -39,7 +41,7 @@ has_stale_todo() {
   local threshold_days=30
   if grep -qiE 'TODO|TBD|FIXME|PLACEHOLDER' "$file" 2>/dev/null; then
     local mod_epoch now_epoch age_days
-    mod_epoch=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo 0)
+    mod_epoch=$(file_mtime "$file")
     now_epoch=$(date +%s)
     age_days=$(( (now_epoch - mod_epoch) / 86400 ))
     if [ "$age_days" -gt "$threshold_days" ]; then
@@ -82,24 +84,21 @@ cat > "$FIXTURES_DIR/docs/architecture/fresh-todo.md" << 'EOF'
 
 TODO: add caching strategy
 EOF
-touch "$FIXTURES_DIR/docs/architecture/fresh-todo.md"
+set_mtime_days_ago "$FIXTURES_DIR/docs/architecture/fresh-todo.md" 29
 cat > "$FIXTURES_DIR/docs/architecture/stale-todo.md" << 'EOF'
 <!-- Audience: Architect -->
 # Stale doc
 
 TODO: add security model
 EOF
-# Make the stale file 45 days old
-touch -t 202604050900 "$FIXTURES_DIR/docs/architecture/stale-todo.md" 2>/dev/null || \
-  touch -d "45 days ago" "$FIXTURES_DIR/docs/architecture/stale-todo.md" 2>/dev/null || true
+# Make the stale file 31 days old (fresh one is 29 — threshold is 30)
+set_mtime_days_ago "$FIXTURES_DIR/docs/architecture/stale-todo.md" 31
 FRESH_OK=true
 STALE_OK=true
 has_stale_todo "$FIXTURES_DIR/docs/architecture/fresh-todo.md" && FRESH_OK=false
 has_stale_todo "$FIXTURES_DIR/docs/architecture/stale-todo.md" || STALE_OK=false
 if [ "$FRESH_OK" = true ] && [ "$STALE_OK" = true ]; then
-  assert_pass "stale TODO: fresh TODO passes, 45-day-old TODO flagged (30-day threshold)"
-elif [ "$FRESH_OK" = true ]; then
-  assert_pass "stale TODO: fresh TODO passes (timestamp manipulation limited on this platform)"
+  assert_pass "stale TODO: 29-day TODO passes, 31-day TODO flagged (30-day threshold)"
 else
   assert_fail "stale TODO: fresh_ok=$FRESH_OK stale_ok=$STALE_OK"
 fi
@@ -112,6 +111,7 @@ cat > "$FIXTURES_DIR/docs/architecture/overview.md" << 'EOF'
 # Architecture overview
 
 See [security model](security-model.md) for details.
+See [the overview](overview.md) for the map.
 EOF
 # Extract markdown links and check targets exist (matches skill Step 2 logic)
 ORPHANS=0
@@ -122,10 +122,10 @@ while IFS= read -r link; do
     ORPHANS=$((ORPHANS + 1))
   fi
 done < <(grep -oE '\[.*\]\(([^)]+\.md)\)' "$FIXTURES_DIR/docs/architecture/overview.md" 2>/dev/null | sed 's/.*(\(.*\))/\1/')
-if [ "$ORPHANS" -gt 0 ]; then
-  assert_pass "orphaned reference: link to non-existent security-model.md detected ($ORPHANS orphan)"
+if [ "$ORPHANS" -eq 1 ]; then
+  assert_pass "orphaned reference: missing security-model.md flagged, resolving overview.md link not flagged"
 else
-  assert_fail "should detect orphaned link to security-model.md"
+  assert_fail "expected exactly 1 orphan (security-model.md), got $ORPHANS"
 fi
 
 # Summary

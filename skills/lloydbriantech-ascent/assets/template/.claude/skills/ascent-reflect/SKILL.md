@@ -1,10 +1,11 @@
 ---
 name: ascent-reflect
 description: >-
-  End-of-session capture for <<PROJECT_TITLE>>. Interviews the developer
-  for current focus, decisions made, blockers, and next actions, then
-  writes to session-state.md (overwrite) and working-memory.md (append)
-  per §15 session resumption protocol.
+  Use when the user says "capture this session", "reflect" or "end of
+  session", or before closing the conversation. Interviews for current focus,
+  decisions, blockers and next actions, then overwrites session-state.md and
+  appends decisions to working-memory.md per the §15 session resumption
+  protocol.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

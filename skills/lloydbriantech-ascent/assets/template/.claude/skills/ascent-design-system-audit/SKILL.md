@@ -1,9 +1,10 @@
 ---
 name: ascent-design-system-audit
 description: >-
-  Validates design-system token consistency and hardcoded-value detection
-  for <<PROJECT_TITLE>>. Detects whether a design system is present
-  before auditing. No-ops gracefully on plain-CSS projects.
+  Use when asked to "audit the design system" or "check design tokens", or
+  after a design change. Detects whether a design system exists, then checks
+  tokens defined vs used and flags hardcoded colors and values. Does nothing
+  on plain-CSS projects.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

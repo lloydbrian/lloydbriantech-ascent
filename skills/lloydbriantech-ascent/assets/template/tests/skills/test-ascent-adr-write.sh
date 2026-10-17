@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_adr_tree() {
   mkdir -p "$FIXTURES_DIR/docs/architecture/decisions"
@@ -171,8 +173,7 @@ OLD_ADR="$FIXTURES_DIR/docs/architecture/decisions/ADR-004-sqlite-wal.md"
 # Verify initial status
 if grep -q "^\\*\\*Status:\\*\\* Accepted" "$OLD_ADR"; then
   # Simulate supersession: edit old ADR's status (Step 10 supersession logic)
-  sed -i '' 's/^\*\*Status:\*\* Accepted/**Status:** Superseded by ADR-008/' "$OLD_ADR" 2>/dev/null || \
-    sed -i 's/^\*\*Status:\*\* Accepted/**Status:** Superseded by ADR-008/' "$OLD_ADR" 2>/dev/null
+  sed_inplace 's/^\*\*Status:\*\* Accepted/**Status:** Superseded by ADR-008/' "$OLD_ADR"
   if grep -q "Superseded by ADR-008" "$OLD_ADR"; then
     # Verify body is untouched (only Status line changed)
     if grep -q "## Context" "$OLD_ADR" && grep -q "## Cost implications" "$OLD_ADR"; then

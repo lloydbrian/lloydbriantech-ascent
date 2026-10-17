@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_project() {
   mkdir -p "$FIXTURES_DIR/docs/delivery"
@@ -48,7 +50,7 @@ cat > "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" << 'EOF'
 - [ ] Failed attempts rate-limited to 5/minute per IP
 - [ ] Session token expires after 24 hours of inactivity
 EOF
-CRITERIA_COUNT=$(grep -c '^\- \[ \]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md" 2>/dev/null || echo 0)
+CRITERIA_COUNT=$(count_matches '^\- \[ \]' "$FIXTURES_DIR/docs/delivery/PHASE-PLAN.md")
 if [ "$CRITERIA_COUNT" -ge 3 ]; then
   assert_pass "decomposes request into structured criteria ($CRITERIA_COUNT criteria)"
 else
@@ -73,9 +75,8 @@ EOF
 # Simulate appending a new decision (what feature-intake Step 9 does)
 ENTRY="- $(date +%Y-%m-%d): Feature \"user authentication\" accepted with 4 criteria (see PHASE-PLAN.md)"
 # Insert after the existing decision entry
-sed -i '' "/^- 2026-05-16/a\\
-${ENTRY}" "$FIXTURES_DIR/docs/delivery/working-memory.md" 2>/dev/null || \
-  echo "$ENTRY" >> "$FIXTURES_DIR/docs/delivery/working-memory.md"
+WM="$FIXTURES_DIR/docs/delivery/working-memory.md"
+awk -v e="$ENTRY" '{ print } /^- 2026-05-16/ { print e }' "$WM" > "$WM.tmp" && mv "$WM.tmp" "$WM"
 if grep -q "Feature.*authentication.*accepted" "$FIXTURES_DIR/docs/delivery/working-memory.md"; then
   # Verify the entry is dated
   if grep -qE "^- [0-9]{4}-[0-9]{2}-[0-9]{2}: Feature" "$FIXTURES_DIR/docs/delivery/working-memory.md"; then
@@ -165,7 +166,7 @@ fi
 cleanup
 setup_project
 printf "# Working memory — Test Project\n" > "$FIXTURES_DIR/docs/delivery/working-memory.md"
-CONTENT_LINES=$(grep -c '[^[:space:]]' "$FIXTURES_DIR/docs/delivery/working-memory.md" 2>/dev/null || echo 0)
+CONTENT_LINES=$(count_matches '[^[:space:]]' "$FIXTURES_DIR/docs/delivery/working-memory.md")
 if [ "$CONTENT_LINES" -le 1 ]; then
   assert_pass "handles EMPTY working-memory.md — classifies correctly as EMPTY per §15"
 else

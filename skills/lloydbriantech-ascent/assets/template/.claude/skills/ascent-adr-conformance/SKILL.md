@@ -1,10 +1,11 @@
 ---
 name: ascent-adr-conformance
 description: >-
-  Validates ADR structural conformance for <<PROJECT_TITLE>>: every ADR
-  has the 5 required sections, every ADR is listed in INDEX.md, no
-  orphaned ADRs exist, supersession links are bidirectional, and status
-  fields are consistent between INDEX.md and ADR files.
+  Use when asked "do our ADRs conform?" or "check ADR structure", or after an
+  ADR changes. Validates every ADR has the five required sections, is listed
+  in INDEX.md, has no orphans, keeps supersession links two-way and matches
+  its INDEX status. Read-only. Not for writing a new ADR (use
+  ascent-adr-write).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

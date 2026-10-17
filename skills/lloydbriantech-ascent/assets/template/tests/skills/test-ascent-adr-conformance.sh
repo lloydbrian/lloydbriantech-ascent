@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_adr_tree() {
   mkdir -p "$FIXTURES_DIR/docs/architecture/decisions"
@@ -242,10 +244,8 @@ fi
 cleanup
 setup_adr_tree
 # Modify ADR-002's file status to Superseded but leave INDEX as Accepted
-sed -i '' 's/\*\*Status:\*\* Accepted/**Status:** Superseded by ADR-099/' \
-  "$FIXTURES_DIR/docs/architecture/decisions/ADR-002-layering.md" 2>/dev/null || \
-sed -i 's/\*\*Status:\*\* Accepted/**Status:** Superseded by ADR-099/' \
-  "$FIXTURES_DIR/docs/architecture/decisions/ADR-002-layering.md" 2>/dev/null
+sed_inplace 's/\*\*Status:\*\* Accepted/**Status:** Superseded by ADR-099/' \
+  "$FIXTURES_DIR/docs/architecture/decisions/ADR-002-layering.md"
 # Check: extract status from file and from INDEX, compare (matches skill Step 5 logic)
 FILE_STATUS=$(grep '^\*\*Status:\*\*' "$FIXTURES_DIR/docs/architecture/decisions/ADR-002-layering.md" | sed 's/\*\*Status:\*\* //')
 INDEX_STATUS=$(grep 'ADR-002' "$FIXTURES_DIR/docs/architecture/decisions/INDEX.md" | awk -F'|' '{print $4}' | tr -d ' ')

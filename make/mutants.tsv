@@ -1,0 +1,30 @@
+# Named negative controls for the embedded-skill tests (ADR-008).
+# Each mutant breaks ONE rule in a rendered project; the named test must fail.
+# Columns (TAB-separated): id, file (relative to the rendered project), sed expression, test, what it breaks.
+# A mutant must touch code both GNU and BSD runs execute — never only one side of a platform branch.
+M01-mtime-zero	tests/skills/lib/portable.sh	/^    \*) printf/s/printf '%s' "\$out"/printf '0'/	test-ascent-standup.sh	file_mtime always returns 0, so fresh files read as ancient
+M02-backdate-noop	tests/skills/lib/portable.sh	s/ts=\$(epoch_days_ago "\$2")/ts=$(date +%s)/	test-ascent-delivery-status.sh	set_mtime_days_ago leaves the file fresh (both GNU and BSD paths)
+M03-count-default	tests/skills/lib/portable.sh	s/\${n:-0}/${n:-1}/	test-ascent-env-audit.sh	count_matches reports 1 for a missing file
+M04-committer-date	tests/skills/lib/portable.sh	s/GIT_AUTHOR_DATE="\$ts" GIT_COMMITTER_DATE="\$ts"/GIT_AUTHOR_DATE="$ts"/	test-ascent-vitality.sh	backdating sets the author date only (skills read %ct)
+M05-stale-branch-days	tests/skills/test-ascent-vitality.sh	s/\${2:-30}/${2:-31}/	test-ascent-vitality.sh	stale-branch threshold drifts from 30 to 31 days
+M06-changelog-days	tests/skills/test-ascent-vitality.sh	s/-le 60 ]/-le 63 ]/	test-ascent-vitality.sh	CHANGELOG recency threshold drifts from 60 to 63 days
+M07-env-defaults	tests/skills/test-ascent-env-audit.sh	s/count_matches '\^\[\^#=\[:space:]]+=\.+'/count_matches '^NEVER_MATCHES'/	test-ascent-env-audit.sh	shipped .env.example values are no longer detected
+M08-env-undeclared	tests/skills/test-ascent-env-audit.sh	s/"\$d\/.env.example")" -eq 0/"$d\/.env.example")" -eq 99/	test-ascent-env-audit.sh	undeclared process.env reads are no longer counted
+M09-routes-storage	tests/skills/test-ascent-layering-check.sh	s/(services|storage)/(services)/	test-ascent-layering-check.sh	routes importing storage is no longer a violation
+M10-service-express	tests/skills/test-ascent-layering-check.sh	s/from \['\\"]express\['\\"]|//	test-ascent-layering-check.sh	services importing express is no longer a violation
+M11-compose-labels	tests/skills/test-ascent-self-audit.sh	s/\[ "\$labels" -ge "\$services" ]/[ "$labels" -ge 0 ]/	test-ascent-self-audit.sh	§9 accepts unlabeled compose services
+M12-standup-window	tests/skills/test-ascent-standup.sh	s/--since="24 hours ago"/--since="72 hours ago"/g	test-ascent-standup.sh	standup window widens from 24 to 72 hours
+M13-standup-stale	tests/skills/test-ascent-standup.sh	s/if \[ "\$age_days" -gt 7 ]/if [ "$age_days" -gt 8 ]/	test-ascent-standup.sh	session-state STALE threshold drifts from 7 to 8 days
+M14-health-stale-todo	tests/skills/test-ascent-health.sh	s/\[ "\$age" -gt 30 ] && stale_todos/[ "$age" -gt 31 ] \&\& stale_todos/	test-ascent-health.sh	stale-TODO threshold drifts from 30 to 31 days
+M15-docsweep-threshold	tests/skills/test-ascent-doc-sweep.sh	s/local threshold_days=30/local threshold_days=31/	test-ascent-doc-sweep.sh	doc-sweep stale-TODO threshold drifts from 30 to 31 days
+M16-reflect-append	tests/skills/test-ascent-reflect.sh	s/{ print e }//	test-ascent-reflect.sh	reflect stops appending the new working-memory decision
+M17-intake-append	tests/skills/test-ascent-feature-intake.sh	s/{ print e }//	test-ascent-feature-intake.sh	feature-intake stops writing the dated working-memory entry
+M18-severity-high	tests/skills/test-ascent-sec-posture.sh	s/env_not_gitignored|hardcoded_credentials|privileged_container)/env_not_gitignored|privileged_container)/	test-ascent-sec-posture.sh	hardcoded credentials stop being rated high
+M19-routes-services	tests/skills/test-ascent-layering-check.sh	s/(services|storage)/(storage)/	test-ascent-layering-check.sh	routes importing services is no longer a violation
+M20-controller-storage	tests/skills/test-ascent-layering-check.sh	/sed "s|^|controller/s/storage\/" "\$f"/NEVER\/" "$f"/	test-ascent-layering-check.sh	controllers importing storage is no longer a violation
+M21-gitignore-dropped	tests/skills/test-ascent-env-audit.sh	/\.gitignore")" -ge 1/s/-ge 1/-ge 0/	test-ascent-env-audit.sh	.env missing from .gitignore is no longer flagged
+M22-delivery-always-stale	tests/skills/test-ascent-delivery-status.sh	s/if \[ "\$age_days" -gt 7 ]/if [ "$age_days" -gt -1 ]/	test-ascent-delivery-status.sh	every populated session-state classifies STALE
+M23-docsweep-all-orphans	tests/skills/test-ascent-doc-sweep.sh	s/if \[ ! -f "\$TARGET_DIR\/\$link" ]/if true/	test-ascent-doc-sweep.sh	every link is reported as orphaned
+M24-sessionmk-stale-days	make/session.mk	s/STALE_DAYS=7/STALE_DAYS=30/	test-ascent-standup.sh	the SHIPPED session-resume classifier's threshold drifts from 7 to 30 days
+M25-doctor-trigger	tests/skills/test-ascent-skills-doctor.sh	s/"Use when "\*|"Use for "\*) : ;;/*) : ;;/	test-ascent-skills-doctor.sh	skills-doctor stops flagging descriptions without a trigger
+M26-selfaudit-empty-phase	tests/skills/test-ascent-self-audit.sh	s/"\[^"]+"' "\$d\/.ascent-meta.json"/"' "$d\/.ascent-meta.json"/	test-ascent-self-audit.sh	§8 accepts an empty phase value

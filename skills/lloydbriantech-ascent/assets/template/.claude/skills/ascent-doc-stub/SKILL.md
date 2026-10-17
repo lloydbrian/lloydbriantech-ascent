@@ -1,10 +1,10 @@
 ---
 name: ascent-doc-stub
 description: >-
-  Generates persona-targeted documentation skeletons for <<PROJECT_TITLE>>.
-  Each generated doc has a named audience, a clear navigation path from
-  the persona's entry point, and section headings that match the audience's
-  needs — not blank files or generic templates.
+  Use when asked to "create docs for X" or "I need a doc about Y". Generates a
+  persona-targeted documentation skeleton with a named audience, a navigation
+  path from that persona's entry point, and section headings matched to the
+  audience. Not for auditing existing docs (use ascent-doc-sweep).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

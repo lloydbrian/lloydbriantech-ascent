@@ -1,10 +1,10 @@
 ---
 name: ascent-handoff
 description: >-
-  Documents <<PROJECT_TITLE>>'s current state for another developer or
-  session takeover. Produces a progressive-depth HANDOFF.md artifact at
-  docs/delivery/HANDOFF.md covering current work, recent decisions,
-  phase progress, and project conventions.
+  Use when asked to "write a handoff" or "document project state for someone
+  else". Produces a progressive-depth docs/delivery/HANDOFF.md covering
+  current work, recent decisions, phase progress and project conventions, so
+  another developer or session can take over.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

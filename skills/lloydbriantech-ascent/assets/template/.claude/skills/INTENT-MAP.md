@@ -1,6 +1,6 @@
 # INTENT-MAP — Project-embedded skill routing
 
-Maps user intent shapes to the appropriate `ascent-*` skill for <<PROJECT_TITLE>>. When a user describes what they want, this map determines which skill engages. All 28 skills are implemented as of ASCENT v0.4.0.
+Maps user intent shapes to the appropriate `ascent-*` skill for <<PROJECT_TITLE>>. Claude routes on each skill's `description`, which leads with the same trigger phrases listed here; this table is the human-readable view of that routing and must stay in sync with it. `ascent-skills-doctor` checks that every skill is listed and that every description leads with its trigger; keeping the phrases matched is a review responsibility. All 28 skills are implemented as of ASCENT v0.4.0.
 
 ---
 
@@ -8,7 +8,7 @@ Maps user intent shapes to the appropriate `ascent-*` skill for <<PROJECT_TITLE>
 
 | Intent shape | Skill | Cadence |
 |---|---|---|
-| "Is my project ASCENT-compliant?" / "check the 15 principles" / "invariant audit" | [ascent-self-audit](ascent-self-audit/SKILL.md) | Per-commit or weekly |
+| "Is my project ASCENT-compliant?" / "check the principles" / "invariant audit" | [ascent-self-audit](ascent-self-audit/SKILL.md) | Per-commit or weekly |
 | "Is my backend layered correctly?" / "check for layering violations" | [ascent-layering-check](ascent-layering-check/SKILL.md) | Per-commit |
 | "Check my .env" / "audit environment variables" / "any secrets committed?" | [ascent-env-audit](ascent-env-audit/SKILL.md) | Per-commit |
 | "Is my service observable?" / "check logging" / "verify healthchecks" | [ascent-observability-check](ascent-observability-check/SKILL.md) | Per-deploy |
@@ -19,14 +19,14 @@ Maps user intent shapes to the appropriate `ascent-*` skill for <<PROJECT_TITLE>
 | "Create docs for X" / "I need a doc about Y" | [ascent-doc-stub](ascent-doc-stub/SKILL.md) | Per-feature |
 | "Add a make target for X" / "I need a command to do Y" | [ascent-make-target](ascent-make-target/SKILL.md) | Per-feature |
 | "Is the database configured correctly?" / "check data health" | [ascent-data-health](ascent-data-health/SKILL.md) | Per-schema-change |
-| "Are the docs fresh?" / "check documentation" / "any stale TODOs?" | [ascent-doc-sweep](ascent-doc-sweep/SKILL.md) | Monthly or per-phase |
+| "Are the docs fresh?" / "check documentation" / "any stale TODOs in the docs?" | [ascent-doc-sweep](ascent-doc-sweep/SKILL.md) | Monthly or per-phase |
 | "Are dependencies healthy?" / "check for unpinned versions" | [ascent-dependency-health](ascent-dependency-health/SKILL.md) | Per-dependency-change |
 | "Do our ADRs conform?" / "check ADR structure" | [ascent-adr-conformance](ascent-adr-conformance/SKILL.md) | Per-ADR-change |
 | "Is the skill collection healthy?" / "check skill integrity" | [ascent-skills-doctor](ascent-skills-doctor/SKILL.md) | Per-skill-change |
 | "Capture this session" / "reflect" / "end of session" | [ascent-reflect](ascent-reflect/SKILL.md) | End-of-session |
 | "Write a handoff" / "document project state for someone else" | [ascent-handoff](ascent-handoff/SKILL.md) | Per-handoff |
 | "Walk me through this project" / "where do I start?" / "onboard me" | [ascent-onboard](ascent-onboard/SKILL.md) | Per-onboarding |
-| "What should I fix before committing?" / "quality gate" / "ready to commit?" | [ascent-qa](ascent-qa/SKILL.md) | Weekly or per-phase |
+| "What should I fix before committing?" / "quality gate" / "ready to commit?" | [ascent-qa](ascent-qa/SKILL.md) | Per-commit or weekly |
 | "Are we ready to release?" / "can I tag this?" | [ascent-release-readiness](ascent-release-readiness/SKILL.md) | Pre-release |
 | "What security issues exist?" / "enumerate security findings" / "check security baseline" | [ascent-security-audit](ascent-security-audit/SKILL.md) | Per-phase or pre-deploy |
 | "What's our security stance?" / "current security posture" / "security overview" | [ascent-sec-posture](ascent-sec-posture/SKILL.md) | Per-phase or quarterly |
@@ -95,7 +95,7 @@ Maps user intent shapes to the appropriate `ascent-*` skill for <<PROJECT_TITLE>
 
 | Cadence | Skills | When to run |
 |---|---|---|
-| **Per-commit** | ascent-self-audit, ascent-layering-check, ascent-env-audit | Before committing; integrate into pre-commit hook or CI |
+| **Per-commit** | ascent-qa, ascent-self-audit, ascent-layering-check, ascent-env-audit | Before committing; integrate into pre-commit hook or CI |
 | **Daily** | ascent-delivery-status, ascent-standup | Morning standup; "where are we?" |
 | **Per-feature** | ascent-feature-intake, ascent-make-target, ascent-doc-stub | When a new feature enters; when new operations needed |
 | **Per-decision** | ascent-adr-write | When an architectural choice is made |

@@ -1,10 +1,10 @@
 ---
 name: ascent-release-readiness
 description: >-
-  Pre-release validation gate for <<PROJECT_TITLE>>. Checks CHANGELOG
-  entry, version consistency, clean working tree, release branch, and
-  tag uniqueness. Detects meta-repo vs scaffolded-project context and
-  adapts version-field checks accordingly.
+  Use when asked "are we ready to release?" or "can I tag this?". Pre-release
+  gate: CHANGELOG entry, version consistency, clean working tree, release
+  branch and tag uniqueness. Detects meta-repo vs scaffolded-project context
+  and adapts the version checks. Read-only; never tags.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read
@@ -37,6 +37,8 @@ This is a sibling skill to [ascent-qa](../ascent-qa/SKILL.md). qa provides a bro
 - **`git` state** — working tree status, current branch, existing tags
 
 ## Outputs
+
+This skill never creates or pushes tags; it reports whether tagging is safe and leaves the tag to the operator.
 
 - **Per-check report** — each of the 5 checks marked PASS or FAIL with specific blockers
 - **Go/no-go summary** — "Release vX.Y.Z: READY" or "Release vX.Y.Z: N blockers found"

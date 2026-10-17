@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_docs_tree() {
   mkdir -p "$FIXTURES_DIR/docs/architecture" \
@@ -111,7 +113,7 @@ REL_PATH="${TARGET_PATH#$PERSONA_ROOT/}"
 DEPTH=$(echo "$REL_PATH" | tr '/' '\n' | wc -l | tr -d ' ')
 # File itself counts as final click, directories are intermediate clicks
 # depth = number of '/' separators in relative path
-DIR_DEPTH=$(echo "$REL_PATH" | grep -o '/' | wc -l | tr -d ' ')
+DIR_DEPTH=$(echo "$REL_PATH" | { grep -o '/' || true; } | wc -l | tr -d ' ')
 if [ "$DIR_DEPTH" -gt 3 ]; then
   assert_pass "depth validation: $DIR_DEPTH clicks from root → rejected (limit: 3)"
 else

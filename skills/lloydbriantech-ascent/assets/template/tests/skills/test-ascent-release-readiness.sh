@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_meta_repo() {
   mkdir -p "$FIXTURES_DIR"
@@ -66,7 +68,7 @@ check_changelog() {
   else
     section_text=$(sed -n "$((header_line + 1)),\$p" "$changelog")
   fi
-  content_lines=$(printf '%s\n' "$section_text" | grep '[^[:space:]]' 2>/dev/null | wc -l | tr -d ' ')
+  content_lines=$(printf '%s\n' "$section_text" | { grep '[^[:space:]]' || true; } | wc -l | tr -d ' ')
   if [ "$content_lines" -ge 2 ]; then
     echo "pass"
   else

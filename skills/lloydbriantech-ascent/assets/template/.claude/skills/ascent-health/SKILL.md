@@ -1,11 +1,12 @@
 ---
 name: ascent-health
 description: >-
-  Composite health stance summarizer for <<PROJECT_TITLE>>. Synthesizes
-  signals across four sub-domains (data, dependency, documentation, ADR)
-  into a single stance rating: strong, moderate, weak, or partial. Does
-  not invoke sub-skills at runtime — reads the same project sources they
-  read, at a higher abstraction level.
+  Use for a weekly health review or when asked "how are we across data, deps,
+  docs and ADRs?" or for a composite project stance. Rates each sub-domain
+  strong, moderate, weak or not-assessed, and the project overall strong,
+  moderate, weak or partial, reading the same sources as the sub-domain skills
+  without running them. Not for a pre-commit gate (use ascent-qa) or momentum
+  (use ascent-vitality).
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

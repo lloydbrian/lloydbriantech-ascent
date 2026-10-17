@@ -12,6 +12,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_healthy_backend() {
   mkdir -p "$FIXTURES_DIR/backend/storage/migrations"
@@ -61,7 +63,7 @@ check_pragma() {
 # Reusable: check migration runner presence (matches skill Step 3 logic)
 check_migration_runner() {
   local db_file="$1"
-  grep -q "_migrations" "$db_file" 2>/dev/null && grep -q "runMigrations\|run_migrations" "$db_file" 2>/dev/null
+  grep -q "_migrations" "$db_file" 2>/dev/null && grep -qE "runMigrations|run_migrations" "$db_file" 2>/dev/null
 }
 
 # Reusable: validate migration file ordering (matches skill Step 4 logic)

@@ -13,6 +13,8 @@ cleanup() {
   rm -rf "$FIXTURES_DIR"
 }
 trap cleanup EXIT
+# shellcheck source=lib/portable.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/portable.sh"
 
 setup_healthy_project() {
   mkdir -p "$FIXTURES_DIR/backend" \
@@ -114,8 +116,7 @@ cleanup
 setup_healthy_project
 CLEAN_MISSING=$(adr_spot_check "$FIXTURES_DIR/docs/architecture/decisions")
 # Remove Cost implications from the ADR
-sed -i '' '/## Cost implications/,$d' "$FIXTURES_DIR/docs/architecture/decisions/ADR-001-container.md" 2>/dev/null || \
-  sed -i '/## Cost implications/,$d' "$FIXTURES_DIR/docs/architecture/decisions/ADR-001-container.md" 2>/dev/null
+sed_inplace '/## Cost implications/,$d' "$FIXTURES_DIR/docs/architecture/decisions/ADR-001-container.md"
 BROKEN_MISSING=$(adr_spot_check "$FIXTURES_DIR/docs/architecture/decisions")
 if [ "$CLEAN_MISSING" -eq 0 ] && [ "$BROKEN_MISSING" -eq 1 ]; then
   assert_pass "ADR spot-check: complete ADR=0 missing, no Cost implications=1 missing"

@@ -1,11 +1,12 @@
 ---
 name: lloydbriantech-ascent
 description: >-
-  ASCENT engineering framework. Use to scaffold new projects, enhance existing
-  ASCENT projects, migrate non-ASCENT projects to ASCENT standards, or answer
-  questions about ASCENT's conventions, principles, or nine engineering roles
-  (delivery-lead, architect, ui-ux-designer, developer, data-engineer,
-  ai-engineer, tester, devops, cybersecurity).
+  Use when starting a new ASCENT project, enhancing or migrating a project to
+  ASCENT standards, or asking about ASCENT's conventions, principles or nine
+  engineering roles (delivery-lead, architect, ui-ux-designer, developer,
+  data-engineer, ai-engineer, tester, devops, cybersecurity). Inside a
+  scaffolded project, day-to-day tasks such as ADRs, audits and status belong
+  to the project's ascent-* skills.
 version: 0.4.1
 allowed-tools:
   - Read
@@ -127,6 +128,8 @@ Three signals govern which role(s) engage:
 | "optimize query / migration" | data-engineer, developer | 2–3 |
 | "fix a bug" | developer (primary), tester (regression) | 3–4 |
 | "what role handles X?" | answer with the role; load that role's module | n/a (meta-query) |
+
+**Hand-off to project skills.** In enhance mode, when the request matches a row in the project's `.claude/skills/INTENT-MAP.md` (for example "write an ADR", "where are we?", "ready to commit?"), defer to that `ascent-*` skill instead of routing to a role here. The roles above remain the fallback for intents no project skill covers.
 
 **C. Multi-role expansion.** When the intent matches `feature-lifecycle.md`'s Stage 2 specialist triggers (schema change, AI change, UI surface change, infra change, auth/secrets/egress change), the corresponding specialist roles engage *alongside* the primary lifecycle roles.
 
