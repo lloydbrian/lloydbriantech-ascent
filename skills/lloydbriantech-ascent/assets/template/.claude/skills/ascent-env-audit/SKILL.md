@@ -12,17 +12,18 @@ allowed-tools:
   - Read
   - Grep
   - Glob
-  - Bash
+  - Bash(git ls-files:*)
+  - Bash(git log:*)
 ---
 
 # ascent-env-audit
 
-Validates <<PROJECT_TITLE>>'s environment variable discipline against the ENV-DISCIPLINE contract. Catches the deployment-incident-in-waiting: committed secrets, fake placeholders that get accidentally deployed, and env vars that code reads but `.env.example` doesn't declare. Runs standalone or as a component of [ascent-self-audit](../ascent-self-audit/SKILL.md)'s umbrella audit.
+Validates <<PROJECT_TITLE>>'s environment variable discipline against the ENV-DISCIPLINE contract. Catches the deployment-incident-in-waiting: committed secrets, fake placeholders that get accidentally deployed, and env vars that code reads but `.env.example` doesn't declare. Runs standalone; [ascent-self-audit](../ascent-self-audit/SKILL.md) applies the same checks in its umbrella audit. Skills never call each other at runtime (sibling pattern).
 
 ## When this skill engages
 
 - Before a commit that touches `.env.example`, Dockerfile, or docker-compose files
-- As a component of ascent-self-audit's comprehensive check (delegated invocation)
+- When ascent-self-audit reports an env-discipline concern and you want the detail
 - After adding a new environment variable to the code
 - When a security review flags secret-handling concerns
 - During onboarding to verify the developer's `.env` setup
@@ -31,15 +32,14 @@ Validates <<PROJECT_TITLE>>'s environment variable discipline against the ENV-DI
 ## Inputs
 
 - **Project root directory** — reads `.env.example`, `.gitignore`, `.dockerignore`, Dockerfiles, and source code
-- **Source directories** (optional) — defaults to `backend/` and `frontend/`; override for projects with different structure
-- **Invocation mode** — standalone (full output with guidance) or component (structured PASS/FAIL for umbrella aggregation)
+- **Source directories** — detected, not asked: `backend/`, `frontend/`, `server/`, `src/`, `app/`, `api/` (whichever exist), skipping `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/`. The report names the directories it scanned.
 
 ## Outputs
 
 - **ENV-DISCIPLINE report** — each rule checked with PASS or FAIL status
 - **Per-violation detail** — the specific violation, the file and line if applicable, and the fix action
 - **Summary line** — "N/M env checks passing"
-- **Exit code** — 0 if all checks pass, 1 if any check fails
+- **Verdict line** — `env-audit verdict: PASS` or `env-audit verdict: FAIL (N violations)`, the line other skills and agents read
 
 ## Operational logic
 
@@ -113,9 +113,7 @@ The skill executes these checks in order. Each check produces PASS or FAIL. Step
 
 Collect all PASS/FAIL results from Steps 1-7. Report summary: "7/7 env checks passing" or "5/7 env checks passing (2 violations found)."
 
-In component mode: return structured result `{skill: "ascent-env-audit", passed: N, total: M, violations: [...]}`.
-
-In standalone mode: print the full report with guidance for each violation.
+Print the full report with guidance for each violation, then end with the verdict line: `env-audit verdict: PASS` or `env-audit verdict: FAIL (N violations)`.
 
 ## Examples
 

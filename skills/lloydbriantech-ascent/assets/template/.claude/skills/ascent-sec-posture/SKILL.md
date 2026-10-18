@@ -11,7 +11,6 @@ allowed-tools:
   - Read
   - Grep
   - Glob
-  - Bash
 ---
 
 # ascent-sec-posture
@@ -20,7 +19,18 @@ Summarizes the project's current security stance across all security-relevant su
 
 This is a sibling skill to security-audit. Neither invokes the other — they share security-relevant project sources as data. security-audit enumerates; sec-posture summarizes. The posture is computed fresh on each invocation. Drift detection (comparing posture snapshots over time) is deferred to v0.4.x when a storage mechanism is in place.
 
-**Data sources:** sec-posture reads the same security-relevant files that security-audit reads: `.gitignore` (env-file scope), `backend/` and `frontend/` source files (credential patterns), `docker-compose.yml` and `docker-compose.prod.yml` (container privilege), `backend/Dockerfile` (build-time security), and `nginx/nginx.prod.conf` (security headers). Additionally, it reads `.env.example` (declared secrets inventory) and `docs/architecture/decisions/INDEX.md` (for security-related ADRs).
+**Data sources:** sec-posture reads the same security-relevant files that security-audit reads: `.gitignore` (env-file scope), source code (credential patterns), compose files and Dockerfiles (container privilege), and the nginx config (security headers), located the same way. Additionally, it reads `.env.example` (declared secrets inventory) and `docs/architecture/decisions/INDEX.md` when present (security-related ADRs).
+
+## Locating sources
+
+Detect, don't ask. For each surface, use the first locations that exist and say in the report which ones were used:
+
+- **Source code:** `backend/`, `frontend/`, `server/`, `src/`, `app/`, `api/`, skipping `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/`
+- **Compose files:** `*compose*.yml` or `*compose*.yaml` at the project root or one directory down
+- **Dockerfiles:** any `Dockerfile*` outside the skipped directories
+- **nginx config:** `*.conf` files under an `nginx/` directory, or `nginx*.conf` anywhere; when several exist, assess the one whose name contains `prod` first
+
+A surface with no matching files is reported as **not assessed**, never as a failure. This is what lets the skill run in projects that were not scaffolded by ASCENT.
 
 ## When this skill engages
 
@@ -31,12 +41,14 @@ This is a sibling skill to security-audit. Neither invokes the other — they sh
 
 ## Inputs
 
-- **`.gitignore`** — env-file scope assessment
-- **`backend/`, `frontend/` source files** — credential pattern coverage
-- **`docker-compose.yml`, `docker-compose.prod.yml`, `backend/Dockerfile`** — container security
-- **`nginx/nginx.prod.conf`** (optional) — header coverage
+- **`.gitignore`** — env-file scope
+- **Source code** — credential hygiene
+- **Compose files and Dockerfiles** — container security
+- **nginx config** (optional) — header coverage
 - **`.env.example`** — declared secrets inventory
-- **`docs/architecture/decisions/INDEX.md`** — security-related ADRs
+- **`docs/architecture/decisions/INDEX.md`** (optional) — security-related ADRs
+
+All located as described in Locating sources.
 
 ## Outputs
 
@@ -53,21 +65,39 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 | Surface | Source file(s) | Assessable when |
 |---|---|---|
-| Env-file scope | `.gitignore` | .gitignore exists |
-| Credential hygiene | `backend/`, `frontend/` source | Source directories exist |
-| Container security | `docker-compose*.yml`, Dockerfiles | Compose or Dockerfile exists |
-| Network security | `nginx/nginx.prod.conf` | nginx config exists |
-| Secret inventory | `.env.example` | .env.example exists |
+| Env-file scope | `.gitignore` | Always — a missing `.gitignore` is the High finding "`.env` not ignored" |
+| Credential hygiene | Source code | A source directory from Locating sources exists |
+| Container security | Compose files, Dockerfiles | At least one compose file or Dockerfile exists; with none, the surface is **not present** (the project ships no containers) |
+| Network security | nginx config | An nginx config with a `server` block exists |
+| Secret inventory | `.env.example` | Always — a missing `.env.example` is the Low finding "No `.env.example`" |
 
-Report: "[N]/5 security surfaces assessable."
+Critical surfaces are env-file scope, credential hygiene and container security. A surface that is **not present** is not applicable: a project with no compose files or Dockerfiles has no container surface to secure, so it is never a coverage gap. Credential hygiene with no source directory is **not assessed**, which is a gap, because the code may live somewhere this skill does not look. Network security being unassessed is informational.
+
+Report: "[N]/[M] security surfaces assessable", where M is 5 minus the surfaces that are not present, and name each not-present surface.
 
 ### Step 2 — Classify findings by severity
 
-**Action:** For each assessable surface, run the same checks security-audit uses (Steps 1-5 logic) and classify:
+**Action:** For each assessable surface, apply the same checks security-audit uses (its Steps 1-5) and classify every finding with this table, which is identical in [ascent-security-audit](../ascent-security-audit/SKILL.md):
 
-- **High severity:** .env not gitignored, hardcoded credentials detected, privileged containers
-- **Medium severity:** missing nginx security headers, http:// in production configs
-- **Low severity:** .env.example missing (no secrets inventory documented)
+<!-- severity-table:start — keep identical in ascent-security-audit and ascent-sec-posture (checked by make test-plugins) -->
+| Finding | Severity |
+|---|---|
+| `.env` not ignored by `.gitignore` (including no `.gitignore` at all) | High |
+| `.env` committed to git, now or in history | High |
+| A Dockerfile copies `.env` into an image | High |
+| Hardcoded credential pattern in source | High |
+| Privileged container, added capabilities, host networking or a mounted Docker socket | High |
+| `.env` not ignored by `.dockerignore` | Medium |
+| `.env.example` ships a value or a `REPLACE_ME`-style placeholder | Medium |
+| Missing required security header, including headers dropped by a block's own `add_header` | Medium |
+| `http://` external URL in a production config | Medium |
+| A variable read in code is not declared in `.env.example` | Low |
+| No `.env.example` (no secrets inventory) | Low |
+| Only a deprecated header present (e.g. `X-XSS-Protection`) | Info |
+| HSTS not set where TLS is not terminated in this nginx ("verify at the TLS terminator") | Info |
+<!-- severity-table:end -->
+
+Never print a matched credential value or line; cite `file:line` and the rule name.
 
 ### Step 3 — Identify coverage gaps
 
@@ -79,9 +109,13 @@ Coverage gaps are informational, not failures — a project without nginx legiti
 
 **Action:** Aggregate into a posture rating:
 
-- **Strong:** 0 high-severity findings, 0-1 medium, all assessable surfaces clean
-- **Moderate:** 0 high-severity, 2+ medium, or 1+ coverage gaps in critical surfaces
-- **Weak:** any high-severity finding
+Apply the first rule that matches (the rules cover every case):
+
+1. **Weak:** any High finding.
+2. **Strong:** no Medium findings, and every critical surface (env-file scope, credential hygiene, container security) was assessed or is not present.
+3. **Moderate:** everything else — at least one Medium finding, or a critical surface that exists but could not be assessed (in practice, source code outside the locations in Locating sources).
+
+Low and Info findings never change the rating; list them.
 
 Report:
 ```
@@ -100,12 +134,22 @@ sec-posture: strong — 5/5 surfaces assessed
   Coverage gaps: none
 ```
 
-### Example 2 — Posture with gaps
+### Example 2 — Strong posture, no containers
+
+A static site with serverless functions and no compose files or Dockerfiles:
 
 ```
-sec-posture: moderate — 4/5 surfaces assessed
-  High: 0  Medium: 1 (missing X-XSS-Protection header)  Low: 0
-  Coverage gaps: secret inventory (no .env.example)
+sec-posture: strong — 4/4 surfaces assessed (container security: not present)
+  High: 0  Medium: 0  Low: 1 (no .env.example)
+  Coverage gaps: none
+```
+
+### Example 3 — Moderate posture (one Medium finding)
+
+```
+sec-posture: moderate — 5/5 surfaces assessed
+  High: 0  Medium: 1 (MISSING Content-Security-Policy, server line 12)  Low: 1 (no .env.example)
+  Coverage gaps: none
 ```
 
 ## Anti-patterns

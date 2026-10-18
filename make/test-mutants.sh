@@ -89,6 +89,75 @@ validator_case V01-no-trigger fail ascent-x ascent-x "Does x for the project."
 validator_case V02-placeholder fail ascent-x ascent-x "Use when asked to do x for <<PROJECT_TITLE>>."
 validator_case V03-name-mismatch fail ascent-y ascent-x "Use when asked to do x. Does x."
 
+# Plugin controls (ADR-009): make/test-plugins.sh must fail on each broken copy
+# of the repository, and fail with the check named in EXPECT, so a control
+# cannot pass because some other check happened to break. A baseline copy with
+# no change must pass first, or every control below would be meaningless.
+plugin_copy() {  # DIR — fresh copy of the repository without .git
+  rm -rf "$1"; mkdir -p "$1"
+  (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) | (cd "$1" && tar -xf -)
+}
+plugin_gate() {  # DIR — run test-plugins on a copy; output to $WORK/plugin-out
+  ASCENT_SKIP_CLAUDE_CLI=1 bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
+}
+plugin_copy "$WORK/p-baseline"
+total=$((total + 1))
+if plugin_gate "$WORK/p-baseline"; then
+  printf "  control      %-28s unmodified copy passes test-plugins\n" "P00-baseline"
+  killed=$((killed + 1))
+else
+  printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins:\n" "P00-baseline"
+  grep '^FAIL' "$WORK/plugin-out" | sed 's/^/                 /'
+  survived=$((survived + 1))
+fi
+
+plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuild]
+  local copy="$WORK/p-$1"
+  plugin_copy "$copy"
+  total=$((total + 1))
+  cp "$copy/$3" "$WORK/before"
+  sed -i.mut-bak -e "$4" "$copy/$3" && rm -f "$copy/$3.mut-bak"
+  if cmp -s "$WORK/before" "$copy/$3"; then
+    printf "  ANCHOR MISS  %-28s sed changed nothing in %s\n" "$1" "$3"
+    missed=$((missed + 1)); return 0
+  fi
+  if [ "${5:-}" = rebuild ] && ! bash "$copy/make/build-plugins.sh" >/dev/null 2>&1; then
+    printf "  SURVIVED     %-28s rebuild failed before the gate ran\n" "$1"
+    survived=$((survived + 1)); return 0
+  fi
+  if plugin_gate "$copy"; then
+    printf "  SURVIVED     %-28s test-plugins still passes\n" "$1"
+    survived=$((survived + 1))
+  elif grep -q "^FAIL  test-plugins: $2 " "$WORK/plugin-out"; then
+    printf "  killed       %-28s by test-plugins %s\n" "$1" "$2"
+    killed=$((killed + 1))
+  else
+    printf "  SURVIVED     %-28s failed, but not on %s: %s\n" "$1" "$2" \
+      "$(grep '^FAIL' "$WORK/plugin-out" | sed 's/^FAIL  test-plugins: //' | cut -c1-60 | tr '\n' ';')"
+    survived=$((survived + 1))
+  fi
+}
+SEC=plugins/ascent-security
+TPL=skills/lloydbriantech-ascent/assets/template/.claude/skills
+AGENT="$SEC/agents/security-auditor.md"
+plugin_case P01-hand-edited-skill T1 "$SEC/skills/env-audit/SKILL.md" '$a\
+Hand edit that bypasses the template source.'
+plugin_case P02-agent-can-write T4 "$AGENT" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
+plugin_case P03-severity-drift T5 "$TPL/ascent-sec-posture/SKILL.md" 's/| No `.env.example` (no secrets inventory) | Low |/| No `.env.example` (no secrets inventory) | Medium |/' rebuild
+plugin_case P04-version-mismatch T3 .claude-plugin/marketplace.json 's/"version": "0.1.0"/"version": "0.1.1"/'
+plugin_case P05-agent-links-template T6 "$AGENT" '$a\
+See [sec-posture](../skills/ascent-sec-posture/SKILL.md).'
+plugin_case P06-source-not-rebuilt T1 "$TPL/ascent-env-audit/SKILL.md" 's/never echo the value/never print the value/'
+plugin_case P07-agent-cites-missing-step T9 "$AGENT" 's/(security-audit Step 4)/(security-audit Step 9)/'
+plugin_case P08-agent-extra-key T4 "$AGENT" 's/^model: inherit$/model: inherit\
+permissionMode: bypassPermissions/'
+plugin_case P09-skill-wide-tools T4b "$TPL/ascent-security-audit/SKILL.md" 's/^  - Glob$/  - Glob\
+  - Bash/' rebuild
+plugin_case P10-marketplace-bad-source T3 .claude-plugin/marketplace.json 's|"source": "./plugins/ascent-security"|"source": "./plugins/ascent-securty"|'
+plugin_case P11-agent-cites-unknown-skill T9 "$AGENT" 's/(security-audit Step 5)/(secrets-audit Step 5)/'
+plugin_case P12-agent-cites-nothing T9 "$AGENT" 's/Step/Stage/g'
+plugin_case P13-severity-table-removed T5 "$TPL/ascent-sec-posture/SKILL.md" '/severity-table:start/d' rebuild
+
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
   "$total" "$killed" "$survived" "$missed"
 [ "$survived" -eq 0 ] && [ "$missed" -eq 0 ] && [ "$total" -gt 0 ]

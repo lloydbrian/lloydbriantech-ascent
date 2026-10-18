@@ -18,6 +18,7 @@ Dates are in **America/New_York** timezone.
 | [006](ADR-006-dual-licensing.md) | Dual MIT OR Apache-2.0 license | Accepted | 2026-05-14 | Adopt the Rust-ecosystem convention to maximize adoption while providing explicit patent grant for corporate users |
 | [007](ADR-007-template-repo-pairing.md) | Template repo paired with skill via CI generation | Accepted | 2026-05-14 | A separate `lloydbriantech-ascent-starter` GitHub template repo is generated from the skill on every release tag |
 | [008](ADR-008-portable-skill-tests-and-negative-controls.md) | Portable skill tests and named negative controls | Proposed | 2026-10-17 | Skill tests behave the same on GNU/Linux and BSD/macOS, every check is shown to pass and fail, named mutants prove each test can fail, and CI runs the suite on both platforms |
+| [009](ADR-009-plugins-generated-from-template-skills.md) | Plugins generated from the template skills | Proposed | 2026-10-17 | Plugin skills are built from the template by `make plugins`, never hand-edited; `make test-plugins` fails on drift; plugins live in this repo until the marketplace repo exists |
 
 ---
 
