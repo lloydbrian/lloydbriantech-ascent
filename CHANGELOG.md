@@ -16,7 +16,15 @@ Dates are in **America/New_York** timezone.
 - v0.4.3 — `ascent-security-audit` Step 2: short hardcoded secrets (Medium) — a quoted literal of 4–7 characters with no spaces, assigned or compared to a key with a whole credential word (`pin`, `passcode`, `password`, `passwd`, `secret`, `token`, split at `_`, `-` and camelCase). Quoted digits count; findings cite `file:line` only
 - v0.4.3 — `ascent-security-audit` Step 6: dynamic code execution (Medium) — `eval(` and `new Function(` in code files under the source locations, `scripts/` and root-level scripts, skipping commented lines, member calls such as `model.eval()`, look-alikes such as `evaluate(`, vendored directories and `*.min.js`
 - v0.4.3 — Two Medium rows in the shared severity table (short hardcoded credential; dynamic code execution)
-- v0.4.3 — `make test-mutants`: 15 mutants (M47–M61) for the two rules and their severities, and plugin control P14 (content changed without a version bump) — 80 in total
+- v0.4.3 — `make test-mutants`: 15 mutants (M47–M61) for the two rules and their severities, and plugin control P14 (content changed without a version bump)
+- `plugins/ascent-delivery/`: the delivery loop as a plugin for any repository — a hand-written `delivery-loop` skill (Steps 0–7: contract, decide, build with a file-modification audit, test with negative controls, gate and review, fix and definition of done, operator runbook, beta/prod verification and release record), a read-only `finding-verifier` agent, references (`.delivery-loop.yml` schema, runbook template with a `redact` helper, review lenses with provider-or-fallback prompts), `plugin.json` and README
+- `ascent-delivery` operator-boundary hook (`PreToolUse` on Bash): blocks git writes, gh writes, deploys listed in `.delivery-loop.yml` and well-known deploy/publish verbs, through compound commands, subshells, substitutions (heredoc-aware), unquoted heredoc bodies, shells fed by stdin, `bash -c`, `eval`, `find -exec` and wrapper prefixes; contract entries match by command and positional words, ignoring flags; commands over 512 KB are blocked; portable bash and POSIX awk, no jq. Hardened after an independent adversarial review (174 cases)
+- `.claude-plugin/marketplace.json`: `ascent-delivery` entry (`/plugin install ascent-delivery@lloydbriantech-ascent`)
+- `tests/plugins/ascent-delivery/test-operator-boundary.sh`: 199 allow/block cases fed as real PreToolUse JSON, run on every awk found (mawk, gawk, BWK awk)
+- `make test-plugins` T11: every plugin with `hooks/` has passing hook behavior tests with an `N/N PASS` summary, and `hooks.json` runs only scripts that exist
+- `make test-mutants`: 15 plugin controls (P15–P29) for the hook (including heredocs in substitutions, the size guard, stdin shells, unquoted heredocs and contract chains), its tests, `hooks.json`, the verifier agent and the skill's links
+- ADR-010: Delivery-loop plugin and operator-boundary hook (Proposed)
+- `make test-mutants`: 95 in total (26 loop-1 mutants, 4 validator controls, M27–M61, P00 baseline, P01–P29)
 
 ### Changed
 
