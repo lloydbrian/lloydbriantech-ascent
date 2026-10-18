@@ -103,7 +103,7 @@ Some ASCENT skills also ship as Claude Code plugins that work in any repository,
 |---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | `env-audit`, `security-audit` and `sec-posture` skills, plus a read-only `security-auditor` agent |
 
-Plugin skills are generated from the template skills by `make plugins` and checked by `make test-plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)).
+Plugin skills are generated from the template skills by `make plugins` and checked by `make test-plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)). Any change to a plugin's files needs a `version` bump in its `plugin.json` and marketplace entry, or installed copies never update; `make test-plugins` (T10) fails until the bump is made.
 
 ## How it works
 

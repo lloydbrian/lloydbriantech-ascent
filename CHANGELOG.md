@@ -10,10 +10,21 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Added
+
+- v0.4.3 — `make test-plugins` T10: fails when any file under a plugin changes while its `plugin.json` version stays the same, or when the version is not recorded. `make/plugins.lock` holds each plugin's version and content hash (`make/plugin-hash.sh`); `make plugins` writes a row when the version changes and warns, without changing the lock, when content changed under the same version
+- v0.4.3 — `ascent-security-audit` Step 2: short hardcoded secrets (Medium) — a quoted literal of 4–7 characters with no spaces, assigned or compared to a key with a whole credential word (`pin`, `passcode`, `password`, `passwd`, `secret`, `token`, split at `_`, `-` and camelCase). Quoted digits count; findings cite `file:line` only
+- v0.4.3 — `ascent-security-audit` Step 6: dynamic code execution (Medium) — `eval(` and `new Function(` in code files under the source locations, `scripts/` and root-level scripts, skipping commented lines, member calls such as `model.eval()`, look-alikes such as `evaluate(`, vendored directories and `*.min.js`
+- v0.4.3 — Two Medium rows in the shared severity table (short hardcoded credential; dynamic code execution)
+- v0.4.3 — `make test-mutants`: 15 mutants (M47–M61) for the two rules and their severities, and plugin control P14 (content changed without a version bump) — 80 in total
+
+### Changed
+
+- v0.4.3 — `ascent-security` 0.1.1: generated skills carry the two new rules; the `security-auditor` agent rates short secrets under check 3 and adds check 7 (dynamic code execution, security-audit Step 6), so neither lands under "Other observations" any more
+- v0.4.3 — `ascent-security-audit` reports 6 checks; "Aggregate and report" is now Step 7. `ascent-sec-posture` applies security-audit Steps 1–6 and counts dynamic-code findings under the credential-hygiene surface
+
 ### Planned
 
-- v0.4.3 — `make test-plugins` T10: fail when plugin files change without a `plugin.json` version bump
-- v0.4.3 — `ascent-security`: rules for short credential literals near auth or role logic, and for `eval` / `new Function` on untrusted input (both surfaced by the trial run as unrated observations)
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5 — Test harness with three eval scenarios
 - Phase 6 — Starter repo generation tooling

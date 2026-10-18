@@ -22,6 +22,8 @@ paths you used:
 
 - source code: `backend/`, `frontend/`, `server/`, `src/`, `app/`, `api/`,
   skipping `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/`
+- scripts (check 7 only): `scripts/` and root-level `*.js`, `*.mjs`, `*.cjs`,
+  `*.ts`, with the same skips
 - compose files: `*compose*.yml` / `*compose*.yaml` at the root or one level down
 - Dockerfiles: any `Dockerfile*` outside the skipped directories
 - nginx config: `*.conf` under `nginx/`, or `nginx*.conf`; prefer names containing `prod`
@@ -52,6 +54,13 @@ Apply these checks, which mirror the plugin's skills step for step. Read
    end of the line; and `AKIA` followed by 16 capitals or digits. Skip values
    read from the environment (`process.env…`, `os.environ…`, `getenv(…)`,
    `${VAR}`), empty values, booleans, numbers and quoted strings with spaces.
+   These are High. Also a **short hardcoded secret** (Medium): a quoted literal
+   of 4–7 characters with no spaces, assigned (`:`, `=`, `:=`) or compared
+   (`==`, `===`, `!=`, `!==`) to a key that, split at `_`, `-` and camelCase
+   boundaries, has a word exactly `pin`, `passcode`, `password`, `passwd`,
+   `secret` or `token` (`ORGANIZER_PIN`, `adminPin`, `pin_code` count;
+   `spinner`, `pinned`, `tokenizer` do not). Quoted digits such as a PIN count;
+   bare numbers, empty values and quoted `true`/`false`/`null` do not.
 4. **Container privilege** (security-audit Step 3, env-audit Step 6), ignoring
    commented lines: `privileged: true`, `cap_add:`, `--cap-add`, `SYS_ADMIN`,
    `SYS_PTRACE`, `network_mode: host`, a mounted `/var/run/docker.sock`; any
@@ -70,6 +79,12 @@ Apply these checks, which mirror the plugin's skills step for step. Read
    compose files, the production nginx config and `.env.example`, excluding
    `localhost`, `127.0.0.1`, `[::1]`, single-label hosts such as
    `http://backend:3000`, and `xmlns` URIs. Dotted hosts are external.
+7. **Dynamic code execution** (security-audit Step 6): `eval(` as a standalone
+   call (or `window.eval(` / `globalThis.eval(`) and `new Function(` in code
+   files under the source and scripts locations, skipping `*.min.js`. Skip
+   lines starting with `//`, `#`, `*` or `/*`, member calls on other objects
+   (`model.eval()`), and look-alikes (`evaluate(`, `literal_eval(`). Medium. In
+   the scenario, say where the evaluated input comes from if you can see it.
 
 Committed-history checks (`git log` for a past `.env`, env-audit Step 7) need a
 shell. Report them as "not checked here — run the env-audit skill in the main
@@ -79,20 +94,22 @@ session".
 
 Use the shared table in the sec-posture skill (Step 2) exactly. In short: High
 for `.env` not gitignored (or no `.gitignore`), `.env` in git history, a
-Dockerfile copying `.env`, hardcoded credentials and privileged containers
-(including capabilities, host networking and the Docker socket). Medium for
-`.env` not dockerignored, values or placeholders in `.env.example`, missing or
-dropped security headers and external `http://` URLs. Low for an undeclared
-variable or no `.env.example`. Info for a deprecated-only header and HSTS where
+Dockerfile copying `.env`, hardcoded credentials (8+ characters, or an `AKIA`
+key) and privileged containers (including capabilities, host networking and
+the Docker socket). Medium for `.env` not dockerignored, values or placeholders
+in `.env.example`, missing or dropped security headers, external `http://`
+URLs, short hardcoded secrets (4–7 characters, e.g. a PIN) and dynamic code
+execution (`eval`, `new Function`). Low for an undeclared variable or no
+`.env.example`. Info for a deprecated-only header and HSTS where
 TLS is terminated elsewhere. Posture (sec-posture Step 4): any High → weak; no
 Medium and env-file scope, credentials and containers each assessed or not
 present → strong; otherwise moderate.
 
-Only findings from checks 1–6 get a severity and count toward the posture and
-the verdict. Anything else you notice (unsafe code patterns, short PINs or
-passwords below the 8-character rule, identifiers in docs, deploy scripts) goes
-under **Other observations**, unrated, so the rating stays comparable between
-runs and repositories.
+Only findings from checks 1–7 get a severity and count toward the posture and
+the verdict. Anything else you notice (other unsafe code patterns, secrets
+shorter than 4 characters or under key names without a credential word,
+identifiers in docs, deploy scripts) goes under **Other observations**,
+unrated, so the rating stays comparable between runs and repositories.
 
 ## Output
 

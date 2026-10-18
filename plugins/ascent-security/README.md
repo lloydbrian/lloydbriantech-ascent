@@ -1,6 +1,6 @@
 # ascent-security
 
-Read-only security checks for any repository. The checks cover `.env` discipline, hardcoded credentials, container privilege, nginx security headers and production URLs. This plugin is part of the [ASCENT framework](../../README.md), and you don't need an ASCENT project to use it.
+Read-only security checks for any repository. The checks cover `.env` discipline, hardcoded credentials (including short ones such as PINs), container privilege, nginx security headers, production URLs and dynamic code execution (`eval`, `new Function`). This plugin is part of the [ASCENT framework](../../README.md), and you don't need an ASCENT project to use it.
 
 | Component | Type | Use it when you ask |
 |---|---|---|
@@ -30,9 +30,9 @@ To turn the plugin on for everyone working in a repository, add it to that repos
 
 - The checks only read. The skills pre-approve Read, Grep and Glob (plus `git ls-files` and `git log` for `env-audit`), and their instructions never change files. Claude still asks before using any other tool.
 - The agent's tools are limited to Read, Grep and Glob. It cannot edit files or run commands.
-- Findings cite `file:line` and the rule name, never the matched value or line. Detection is pattern-based: it misses some secrets (short, split or binary) and can flag test fixtures, so confirm each finding.
+- Findings cite `file:line` and the rule name, never the matched value or line. Detection is pattern-based: it misses some secrets (under 4 characters, split across lines or binary) and can flag test fixtures, so confirm each finding.
 - Fixes are given as advice in text. The skills and the agent never rotate keys, deploy or run git; the operator acts on findings.
 
 ## How this plugin is built
 
-The three skills are **generated** by `make plugins` from the template skills in `skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-{env-audit,security-audit,sec-posture}`. To change a skill, edit that source and run `make plugins`. `make test-plugins` fails if a generated file has drifted from its source. The agent and the manifests are maintained by hand. See [ADR-009](../../docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md).
+The three skills are **generated** by `make plugins` from the template skills in `skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-{env-audit,security-audit,sec-posture}`. To change a skill, edit that source and run `make plugins`. `make test-plugins` fails if a generated file has drifted from its source, or if any file in the plugin changed without a `plugin.json` version bump (recorded in `make/plugins.lock`). The agent and the manifests are maintained by hand. See [ADR-009](../../docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md).

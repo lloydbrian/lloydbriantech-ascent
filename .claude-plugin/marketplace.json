@@ -10,8 +10,8 @@
     {
       "name": "ascent-security",
       "source": "./plugins/ascent-security",
-      "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers and production URLs, plus a security-auditor agent.",
-      "version": "0.1.0",
+      "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs and dynamic code execution, plus a security-auditor agent.",
+      "version": "0.1.1",
       "license": "MIT OR Apache-2.0"
     }
   ]

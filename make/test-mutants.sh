@@ -144,7 +144,7 @@ plugin_case P01-hand-edited-skill T1 "$SEC/skills/env-audit/SKILL.md" '$a\
 Hand edit that bypasses the template source.'
 plugin_case P02-agent-can-write T4 "$AGENT" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
 plugin_case P03-severity-drift T5 "$TPL/ascent-sec-posture/SKILL.md" 's/| No `.env.example` (no secrets inventory) | Low |/| No `.env.example` (no secrets inventory) | Medium |/' rebuild
-plugin_case P04-version-mismatch T3 .claude-plugin/marketplace.json 's/"version": "0.1.0"/"version": "0.1.1"/'
+plugin_case P04-version-mismatch T3 .claude-plugin/marketplace.json 's/"version": "0.1.1"/"version": "0.1.2"/'
 plugin_case P05-agent-links-template T6 "$AGENT" '$a\
 See [sec-posture](../skills/ascent-sec-posture/SKILL.md).'
 plugin_case P06-source-not-rebuilt T1 "$TPL/ascent-env-audit/SKILL.md" 's/never echo the value/never print the value/'
@@ -157,6 +157,8 @@ plugin_case P10-marketplace-bad-source T3 .claude-plugin/marketplace.json 's|"so
 plugin_case P11-agent-cites-unknown-skill T9 "$AGENT" 's/(security-audit Step 5)/(secrets-audit Step 5)/'
 plugin_case P12-agent-cites-nothing T9 "$AGENT" 's/Step/Stage/g'
 plugin_case P13-severity-table-removed T5 "$TPL/ascent-sec-posture/SKILL.md" '/severity-table:start/d' rebuild
+plugin_case P14-content-changed-no-bump T10 "$AGENT" '$a\
+A line added without bumping the plugin version.'
 
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
   "$total" "$killed" "$survived" "$missed"

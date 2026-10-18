@@ -10,6 +10,12 @@
 #
 # Usage: build-plugins.sh [OUT_ROOT]   (OUT_ROOT defaults to the repo root;
 #        the plugin is written to OUT_ROOT/plugins/<plugin>/skills/)
+#
+# When building into the repo root, it also records each plugin's version and
+# content hash in make/plugins.lock (plugin<TAB>version<TAB>sha256). A row is
+# written only when it is missing or the version changed. If the content changed
+# under an unchanged version, the lock is left alone and a warning asks for a
+# version bump; `make test-plugins` T10 fails until the version is bumped.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
 set -euo pipefail
@@ -78,3 +84,28 @@ printf '%s\n' "$MAP" | while IFS='|' read -r plugin src dst; do
   fi
   echo "build-plugins: $plugin/$dst <- $src (v$version)"
 done
+
+# Version lock (T10). Only for a build into the repository itself: T1 builds
+# into a temporary OUT_ROOT and must not touch the lock.
+if [ "$(cd "$OUT_ROOT" && pwd)" = "$REPO_ROOT" ]; then
+  LOCK="$REPO_ROOT/make/plugins.lock"
+  TAB="$(printf '\t')"
+  [ -f "$LOCK" ] || printf '# plugin\tversion\tsha256 — written by make plugins; see make/test-plugins.sh T10\n' > "$LOCK"
+  for pj in "$REPO_ROOT"/plugins/*/.claude-plugin/plugin.json; do
+    [ -f "$pj" ] || continue
+    plugin="$(basename "$(dirname "$(dirname "$pj")")")"
+    version="$(plugin_version "$plugin")"
+    hash="$(bash "$REPO_ROOT/make/plugin-hash.sh" "$REPO_ROOT/plugins/$plugin")"
+    row="$(awk -F'\t' -v p="$plugin" '$1 == p { print; exit }' "$LOCK")"
+    lock_ver="$(printf '%s' "$row" | cut -f2)"
+    lock_hash="$(printf '%s' "$row" | cut -f3)"
+    if [ -z "$row" ] || [ "$lock_ver" != "$version" ]; then
+      awk -F'\t' -v p="$plugin" '$1 != p' "$LOCK" > "$LOCK.tmp"
+      printf '%s%s%s%s%s\n' "$plugin" "$TAB" "$version" "$TAB" "$hash" >> "$LOCK.tmp"
+      mv "$LOCK.tmp" "$LOCK"
+      echo "build-plugins: plugins.lock records $plugin v$version"
+    elif [ "$lock_hash" != "$hash" ]; then
+      echo "build-plugins: WARNING $plugin: content changed under $version; bump plugins/$plugin/.claude-plugin/plugin.json version and the marketplace entry" >&2
+    fi
+  done
+fi

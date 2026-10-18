@@ -77,7 +77,7 @@ Report: "[N]/[M] security surfaces assessable", where M is 5 minus the surfaces 
 
 ### Step 2 — Classify findings by severity
 
-**Action:** For each assessable surface, apply the same checks security-audit uses (its Steps 1-5) and classify every finding with this table, which is identical in [ascent-security-audit](../ascent-security-audit/SKILL.md):
+**Action:** For each assessable surface, apply the same checks security-audit uses (its Steps 1-6; dynamic-code findings belong to the credential-hygiene surface, since both scan source code) and classify every finding with this table, which is identical in [ascent-security-audit](../ascent-security-audit/SKILL.md):
 
 <!-- severity-table:start — keep identical in ascent-security-audit and ascent-sec-posture (checked by make test-plugins) -->
 | Finding | Severity |
@@ -91,6 +91,8 @@ Report: "[N]/[M] security surfaces assessable", where M is 5 minus the surfaces 
 | `.env.example` ships a value or a `REPLACE_ME`-style placeholder | Medium |
 | Missing required security header, including headers dropped by a block's own `add_header` | Medium |
 | `http://` external URL in a production config | Medium |
+| Short hardcoded credential (4–7 characters, e.g. a PIN) in source | Medium |
+| Dynamic code execution (`eval`, `new Function`) in source | Medium |
 | A variable read in code is not declared in `.env.example` | Low |
 | No `.env.example` (no secrets inventory) | Low |
 | Only a deprecated header present (e.g. `X-XSS-Protection`) | Info |

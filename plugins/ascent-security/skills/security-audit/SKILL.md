@@ -3,11 +3,12 @@ name: security-audit
 description: >-
   Use when asked "what security issues exist?", "enumerate security findings"
   or "check security baseline", or before a deploy. Lists point-in-time
-  findings across five surfaces: env-file scope, hardcoded credentials,
-  container privilege, nginx security headers and production URL schemes. Not
+  findings across six surfaces: env-file scope, hardcoded credentials,
+  container privilege, nginx security headers, production URL schemes and
+  dynamic code execution (eval, new Function). Not
   for an overall rating (use sec-posture) or full .env discipline (use
   env-audit).
-version: 0.1.0
+version: 0.1.1
 allowed-tools:
   - Read
   - Grep
@@ -18,7 +19,7 @@ allowed-tools:
 
 # security-audit
 
-Point-in-time security check that enumerates specific findings across 5 security surfaces. Each finding is independently actionable — a developer can fix one without understanding the others. This is static file-based analysis; runtime security assessment (CVE scanning, SBOM generation, OWASP ZAP) is deferred to v0.4.x.
+Point-in-time security check that enumerates specific findings across 6 security surfaces. Each finding is independently actionable — a developer can fix one without understanding the others. This is static file-based analysis; runtime security assessment (CVE scanning, SBOM generation, OWASP ZAP) is deferred to v0.4.x.
 
 This is a sibling skill to [sec-posture](../sec-posture/SKILL.md). security-audit enumerates point-in-time findings; sec-posture summarizes the project's overall security stance. Neither invokes the other — they share security-relevant project sources as data. For the §5 env-discipline check that `ascent-self-audit` (an ASCENT project skill) includes, see that skill's Step 2, which applies the same checks as [env-audit](../env-audit/SKILL.md). This skill checks broader security surfaces beyond env discipline.
 
@@ -32,7 +33,7 @@ This is a sibling skill to [sec-posture](../sec-posture/SKILL.md). security-audi
 ## Inputs
 
 - **`.gitignore`** — must list `.env`
-- **Source code** — scanned for credential patterns
+- **Source code** — scanned for credential patterns and dynamic code execution
 - **Compose files and Dockerfiles** — container privilege checks
 - **nginx config** (optional) — security header validation
 
@@ -41,6 +42,7 @@ This is a sibling skill to [sec-posture](../sec-posture/SKILL.md). security-audi
 Detect, don't ask. For each surface, use the first locations that exist and say in the report which ones were used:
 
 - **Source code:** `backend/`, `frontend/`, `server/`, `src/`, `app/`, `api/`, skipping `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/`
+- **Scripts** (Step 6 only): `scripts/` and root-level `*.js`, `*.mjs`, `*.cjs` and `*.ts` files, with the same skips
 - **Compose files:** `*compose*.yml` or `*compose*.yaml` at the project root or one directory down
 - **Dockerfiles:** any `Dockerfile*` outside the skipped directories
 - **nginx config:** `*.conf` files under an `nginx/` directory, or `nginx*.conf` anywhere; when several exist, assess the one whose name contains `prod` first
@@ -63,6 +65,8 @@ Every finding carries a severity from this table. [sec-posture](../sec-posture/S
 | `.env.example` ships a value or a `REPLACE_ME`-style placeholder | Medium |
 | Missing required security header, including headers dropped by a block's own `add_header` | Medium |
 | `http://` external URL in a production config | Medium |
+| Short hardcoded credential (4–7 characters, e.g. a PIN) in source | Medium |
+| Dynamic code execution (`eval`, `new Function`) in source | Medium |
 | A variable read in code is not declared in `.env.example` | Low |
 | No `.env.example` (no secrets inventory) | Low |
 | Only a deprecated header present (e.g. `X-XSS-Protection`) | Info |
@@ -71,8 +75,8 @@ Every finding carries a severity from this table. [sec-posture](../sec-posture/S
 
 ## Outputs
 
-- **Per-check report** — each of the 5 checks marked PASS, FAIL, or WARNING with findings
-- **Summary line** — "security-audit: N/5 checks passing"
+- **Per-check report** — each of the 6 checks marked PASS, FAIL, or WARNING with findings
+- **Summary line** — "security-audit: N/6 checks passing"
 
 ## Operational logic
 
@@ -92,14 +96,15 @@ The skill executes these steps in order. Step numbers are local to this skill.
 
 - **secret assignments:** a key whose name contains `api_key`/`apiKey`, `secret`, `password`/`passwd`, `token`, `private_key`, `access_key` or `client_secret` (so `SECRET_KEY`, `JWT_SECRET_KEY` and `db_PASSWORD` count), followed by `:` or `=` and either a quoted literal (`"…"`, `'…'` or `` `…` ``) of 8 or more characters with no spaces, or an unquoted value of 8 or more characters running to the end of the line (YAML, `.properties`, `.env`-style)
 - **cloud keys:** strings shaped like `AKIA` followed by 16 capitals or digits
+- **short secrets (Medium):** a quoted literal of 4 to 7 characters with no spaces, assigned (`:`, `=`, `:=`) or compared (`==`, `===`, `!=`, `!==`) to a key with a credential word. Split the key into words at `_`, `-` and lower-to-upper camelCase boundaries; one word must be exactly `pin`, `passcode`, `password`, `passwd`, `secret` or `token`. So `ORGANIZER_PIN`, `adminPin`, `pin_code` and `"pin":` count, and `spinner`, `pinned`, `tokenizer` and `PINCODE` do not. Quoted digits (`"4821"`) count: a PIN is usually digits. A client-side page that compares a typed PIN to a literal gives the PIN to anyone who opens the source
 
-Not findings (skip them): values that read from the environment (`process.env…`, `os.environ…`, `getenv(…)`, `ENV[…]`, `$VAR`, `${VAR}`), empty values, `true`/`false`/`null`, plain numbers, and quoted strings containing spaces (labels, i18n text). Skip `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/` by directory.
+Not findings (skip them): values that read from the environment (`process.env…`, `os.environ…`, `getenv(…)`, `ENV[…]`, `$VAR`, `${VAR}`), empty values, `true`/`false`/`null` (quoted or not), unquoted numbers, and quoted strings containing spaces (labels, i18n text). Skip `node_modules/`, `dist/`, `build/`, `vendor/` and `.git/` by directory.
 
-Known limits: secrets shorter than 8 characters, values split across lines, and secrets in binary files are not detected. Locale files can still produce false positives; confirm before acting.
+Known limits: secrets shorter than 4 characters, short secrets under key names without a credential word, values split across lines, and secrets in binary files are not detected. Locale files can still produce false positives; confirm before acting.
 
 **Action on PASS:** Report "Hardcoded credentials — PASS. No credential patterns detected."
 
-**Action on FAIL (High):** List each finding as `file:line — <rule>` (`hardcoded secret` or `cloud access key`), one line per `file:line` even if both rules match. **Never print the matched value or the matched line** — a real key in the report is a second leak. Example: "Hardcoded credentials — FAIL (High). backend/routes/pay.js:4 — hardcoded secret. Verify and move it to the environment." False positives are possible (test fixtures, documentation examples); say so, but keep the High rating until a person has confirmed it.
+**Action on FAIL:** List each finding as `file:line — <rule>` (`hardcoded secret` or `cloud access key`, both High; `short hardcoded secret`, Medium), one line per `file:line` even if several rules match (the High rule wins). **Never print the matched value or the matched line** — a real key in the report is a second leak. Example: "Hardcoded credentials — FAIL (High). backend/routes/pay.js:4 — hardcoded secret. Verify and move it to the environment." False positives are possible (test fixtures, documentation examples); say so, but keep the High rating until a person has confirmed it.
 
 ### Step 3 — Container privilege
 
@@ -137,9 +142,24 @@ Exclude: `localhost`, `127.0.0.1` and `[::1]`; single-label hostnames with no do
 
 **Action on WARNING:** List each finding. "Production URLs — WARNING. [file:line] uses http:// — verify this is intentional."
 
-### Step 6 — Aggregate and report
+### Step 6 — Dynamic code execution
 
-**Action:** Collect results from Steps 1-5. Report summary with each finding.
+**Condition:** Scan code files (`.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts`, `.cts`, `.vue`, `.svelte`, `.html`, `.htm`, `.py`, `.rb`, `.php`) in the source code and scripts locations (see Locating sources) for:
+
+- `eval(` as a standalone call, or `window.eval(` / `globalThis.eval(`
+- `new Function(`
+
+Not findings (skip them): lines whose first non-blank characters are `//`, `#`, `*` or `/*`; member calls on other objects (`model.eval()`, `client.eval(…)`), which are unrelated methods; identifiers that only contain `eval` (`evaluate(`, `literal_eval(`); `*.min.js` bundles; and the skipped directories. `JSON.parse` is the safe alternative for data and is never a finding.
+
+Known limits: a call inside a string or after a trailing comment on the same line is still reported, and indirect forms (`setTimeout("…")`, `Function(…)` without `new`, Python `exec`) are not detected.
+
+**Action on PASS:** Report "Dynamic code execution — PASS. No eval or new Function in source."
+
+**Action on FAIL (Medium):** List each finding as `file:line — dynamic code execution (eval)` or `(new Function)`. Example: "Dynamic code execution — FAIL (Medium). scripts/build.mjs:12 — dynamic code execution (new Function). If the input can come from a fetched page, a user or a file someone else controls, it runs as code; parse it as data (`JSON.parse`) or use an explicit allow-list instead."
+
+### Step 7 — Aggregate and report
+
+**Action:** Collect results from Steps 1-6. Report summary with each finding.
 
 ## Examples
 
@@ -147,19 +167,20 @@ Exclude: `localhost`, `127.0.0.1` and `[::1]`; single-label hostnames with no do
 
 **Skill output:**
 ```
-security-audit: 5/5 checks passing
+security-audit: 6/6 checks passing
   Env-file scope         PASS (.env gitignored)
   Hardcoded credentials  PASS (no patterns detected)
   Container privilege    PASS (no escalation)
   Nginx security headers PASS (5/5 headers in every server, no block drops them)
   Production URLs        PASS (no unencrypted external URLs)
+  Dynamic code execution PASS (no eval or new Function)
 ```
 
 ### Example 2 — .env not ignored
 
 **Skill output:**
 ```
-security-audit: 4/5 checks passing (1 failure)
+security-audit: 5/6 checks passing (1 failure)
   Env-file scope         FAIL (High) — .env not ignored by .gitignore
   ...
 ```
@@ -168,4 +189,4 @@ security-audit: 4/5 checks passing (1 failure)
 
 ### Anti-pattern 1 — Treating security-audit as exhaustive
 
-This skill checks 5 static surfaces. It does not detect runtime vulnerabilities, dependency CVEs, or network-level exposure. **What to do instead:** complement with `npm audit` (dependency CVEs), runtime penetration testing, and infrastructure security reviews. security-audit catches configuration-level mistakes, not all security issues.
+This skill checks 6 static surfaces. It does not detect runtime vulnerabilities, dependency CVEs, or network-level exposure. **What to do instead:** complement with `npm audit` (dependency CVEs), runtime penetration testing, and infrastructure security reviews. security-audit catches configuration-level mistakes, not all security issues.

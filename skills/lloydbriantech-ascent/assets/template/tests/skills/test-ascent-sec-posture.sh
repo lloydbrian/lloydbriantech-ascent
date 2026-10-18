@@ -31,7 +31,7 @@ classify_severity() {
   case "$finding_type" in
     env_not_gitignored|env_committed|dockerfile_copies_env|hardcoded_credentials|privileged_container)
       echo "high" ;;
-    env_not_dockerignored|env_example_value|missing_security_header|http_in_production)
+    env_not_dockerignored|env_example_value|missing_security_header|http_in_production|short_hardcoded_credential|dynamic_code_execution)
       echo "medium" ;;
     undeclared_env_var|missing_env_example)
       echo "low" ;;
@@ -78,12 +78,12 @@ posture_rating() {
 cleanup
 mkdir -p "$FIXTURES_DIR"
 GOT=""
-for t in env_not_gitignored env_committed dockerfile_copies_env hardcoded_credentials privileged_container env_not_dockerignored env_example_value missing_security_header http_in_production undeclared_env_var missing_env_example deprecated_header_only hsts_not_terminated_here; do
+for t in env_not_gitignored env_committed dockerfile_copies_env hardcoded_credentials privileged_container env_not_dockerignored env_example_value missing_security_header http_in_production short_hardcoded_credential dynamic_code_execution undeclared_env_var missing_env_example deprecated_header_only hsts_not_terminated_here; do
   GOT="$GOT $t=$(classify_severity "$t")"
 done
-WANT=" env_not_gitignored=high env_committed=high dockerfile_copies_env=high hardcoded_credentials=high privileged_container=high env_not_dockerignored=medium env_example_value=medium missing_security_header=medium http_in_production=medium undeclared_env_var=low missing_env_example=low deprecated_header_only=info hsts_not_terminated_here=info"
+WANT=" env_not_gitignored=high env_committed=high dockerfile_copies_env=high hardcoded_credentials=high privileged_container=high env_not_dockerignored=medium env_example_value=medium missing_security_header=medium http_in_production=medium short_hardcoded_credential=medium dynamic_code_execution=medium undeclared_env_var=low missing_env_example=low deprecated_header_only=info hsts_not_terminated_here=info"
 if [ "$GOT" = "$WANT" ]; then
-  assert_pass "severity classification matches the shared table (5 high, 4 medium, 2 low, 2 info)"
+  assert_pass "severity classification matches the shared table (5 high, 6 medium, 2 low, 2 info)"
 else
   assert_fail "severity:$GOT
   want:$WANT"
