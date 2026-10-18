@@ -1,0 +1,46 @@
+# .ascent/contract.yml — one project contract, one section per ASCENT plugin
+# (decision 2, 2026-10-18). Where ASCENT-named files are not allowed, use
+# .claude/contract.yml instead (decision 3). Commit it: it is the project's own
+# statement of targets, and reviews are judged against it.
+#
+# The architecture-review skill proposes this file from what the repository
+# already declares and asks the operator to confirm it once (detect, don't ask).
+# Every guessed value is marked "# guess" until confirmed. Never put credentials,
+# account ids, email addresses or other personal data in this file.
+
+version: 1
+
+architecture:
+  # enterprise (default) | standard | prototype. Anything the target requires but the
+  # project skips is a waiver: an ADR id under waivers below.
+  maturity_target: enterprise
+
+  cloud: aws                         # aws | azure | gcp | none (static hosting elsewhere)
+  region: us-east-1
+  blueprint: static-site-serverless-aws   # a blueprint id from the plugin, or none
+  iac: cloudformation                # cloudformation | cdk | terraform | bicep | none
+  iac_paths:                         # templates the review and the checks read
+    - infra/template.yaml
+
+  # Targets the quality-attributes skill scores against. Leave a target out and it is
+  # reported as "unmeasured", which is a Low finding at the enterprise target.
+  quality_targets:
+    availability: "99.9%"            # monthly, for the user-facing entry point
+    p95_latency_ms: 500              # end to end, measured at the CDN or load balancer
+    rpo: 24h                         # maximum data loss on restore
+    rto: 4h                          # maximum time to restore service
+    monthly_budget_usd: 25           # matches the AWS Budget in the template
+    peak_rps: 50                     # sustained requests per second the design must handle
+
+  # Monthly usage, one "key<TAB>quantity" row per priced item (see the plugin's pricing
+  # file for keys). Input to the cost estimate in deployment-options.
+  usage_profile: docs/architecture/usage.tsv
+
+  adr_dir: docs/adr/
+  waivers: []
+  # waivers:
+  #   - id: ADR-012
+  #     skips: multi-region failover
+  #     review_by: 2027-06-30
+
+# delivery:   read by ascent-delivery 0.2.0 (planned); .delivery-loop.yml keeps working.
