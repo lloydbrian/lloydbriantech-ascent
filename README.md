@@ -102,8 +102,11 @@ Some ASCENT skills also ship as Claude Code plugins that work in any repository,
 | Plugin | Contents |
 |---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | `env-audit`, `security-audit` and `sec-posture` skills, plus a read-only `security-auditor` agent |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | `delivery-loop` skill (build, test with negative controls, gate, review, operator runbook, beta/prod, release record), a read-only `finding-verifier` agent, and a hook that blocks git writes and deploys for Claude |
 
-Plugin skills are generated from the template skills by `make plugins` and checked by `make test-plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)). Any change to a plugin's files needs a `version` bump in its `plugin.json` and marketplace entry, or installed copies never update; `make test-plugins` (T10) fails until the bump is made.
+Install `ascent-delivery` the same way: `/plugin install ascent-delivery@lloydbriantech-ascent`. While it is enabled, its hook blocks Claude from committing, pushing, tagging, merging and deploying in every session. The operator does those, from the runbook Claude writes.
+
+Template-backed plugin skills are generated from the template skills by `make plugins`. All plugins are checked by `make test-plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)). The delivery loop is hand-written, and its hook has behavior tests ([ADR-010](docs/framework/DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md)). Any change to a plugin's files needs a `version` bump in its `plugin.json` and marketplace entry, or installed copies never update; `make test-plugins` (T10) fails until the bump is made.
 
 ## How it works
 

@@ -1,0 +1,17 @@
+{
+  "description": "Operator boundary (ADR-010): blocks git write operations, gh writes and deploys in Bash commands. The operator runs those from the delivery-loop runbook.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/operator-boundary.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

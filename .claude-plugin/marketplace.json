@@ -4,7 +4,7 @@
     "name": "lloydbriantech"
   },
   "metadata": {
-    "description": "Plugins generated from the ASCENT engineering framework. Interim home until lloydbriantech-claude-marketplace exists (ADR-009)."
+    "description": "Plugins from the ASCENT engineering framework. Interim home until lloydbriantech-claude-marketplace exists (ADR-009)."
   },
   "plugins": [
     {
@@ -12,6 +12,13 @@
       "source": "./plugins/ascent-security",
       "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs and dynamic code execution, plus a security-auditor agent.",
       "version": "0.1.1",
+      "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "ascent-delivery",
+      "source": "./plugins/ascent-delivery",
+      "description": "The ASCENT delivery loop for any repository: build, test with negative controls, gate, independent review with a finding verifier, and an operator runbook. A hook blocks git writes and deploys for Claude.",
+      "version": "0.1.0",
       "license": "MIT OR Apache-2.0"
     }
   ]

@@ -19,6 +19,10 @@
 #   T10 any change to a plugin's files comes with a plugin.json version bump:
 #       make/plugins.lock records version and content hash (make/plugin-hash.sh);
 #       same version with a different hash fails, as does an unrecorded version
+#   T11 every plugin with hooks/ has a hooks.json whose ${CLAUDE_PLUGIN_ROOT}
+#       script paths exist, and behavior tests in tests/plugins/<plugin>/test-*.sh
+#       that all pass; each test must end with "<test-name>: N/N PASS" (N > 0).
+#       A plugin with hooks but no tests fails.
 #
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
@@ -217,6 +221,40 @@ for p in $PLUGINS; do
   else
     ok "T10 $p: content matches the version recorded in make/plugins.lock (v$ver)"
   fi
+done
+
+# T11 — hook behavior tests
+for p in $PLUGINS; do
+  [ -d "$ROOT/plugins/$p/hooks" ] || continue
+  problems=""
+  HJ="$ROOT/plugins/$p/hooks/hooks.json"
+  if [ -f "$HJ" ]; then
+    for ref in $(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9._/-]+' "$HJ" | sed 's|^\${CLAUDE_PLUGIN_ROOT}/||' | LC_ALL=C sort -u); do
+      [ -f "$ROOT/plugins/$p/$ref" ] || problems="$problems hooks.json runs missing $ref;"
+    done
+  else
+    problems="$problems hooks/ has no hooks.json;"
+  fi
+  TESTS=$(ls "$ROOT/tests/plugins/$p"/test-*.sh 2>/dev/null | LC_ALL=C sort || true)
+  if [ -z "$TESTS" ]; then
+    bad "T11 $p has hooks/ but no tests under tests/plugins/$p/ (test-*.sh)"; continue
+  fi
+  NTESTS=0; NCASES=0
+  for t in $TESTS; do
+    NTESTS=$((NTESTS + 1)); tn=$(basename "$t" .sh)
+    if bash "$t" </dev/null >"$WORK/t11.out" 2>&1; then
+      summary=$(sed -n "s/^$tn: \([0-9][0-9]*\)\/\([0-9][0-9]*\) PASS.*/\1 \2/p" "$WORK/t11.out" | tail -1)
+      x=${summary%% *}; y=${summary##* }
+      if [ -z "$summary" ] || [ "$x" != "$y" ] || [ "$y" -eq 0 ]; then
+        problems="$problems $tn passed without a '$tn: N/N PASS' summary (N > 0);"
+      else
+        NCASES=$((NCASES + y))
+      fi
+    else
+      problems="$problems $tn failed: $(grep -E '^FAIL' "$WORK/t11.out" | head -3 | cut -c1-100 | tr '\n' ';')"
+    fi
+  done
+  if [ -z "$problems" ]; then ok "T11 $p: $NTESTS hook test file(s), $NCASES cases pass"; else bad "T11 $p:$problems"; fi
 done
 
 printf "\ntest-plugins: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"

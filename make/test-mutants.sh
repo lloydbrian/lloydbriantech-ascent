@@ -98,7 +98,7 @@ plugin_copy() {  # DIR — fresh copy of the repository without .git
   (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) | (cd "$1" && tar -xf -)
 }
 plugin_gate() {  # DIR — run test-plugins on a copy; output to $WORK/plugin-out
-  ASCENT_SKIP_CLAUDE_CLI=1 bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
+  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
 }
 plugin_copy "$WORK/p-baseline"
 total=$((total + 1))
@@ -125,7 +125,10 @@ plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuil
     printf "  SURVIVED     %-28s rebuild failed before the gate ran\n" "$1"
     survived=$((survived + 1)); return 0
   fi
-  if plugin_gate "$copy"; then
+  plugin_judge "$1" "$2" "$copy"
+}
+plugin_judge() {  # ID EXPECT-LABEL COPY — run the gate and classify the result
+  if plugin_gate "$3"; then
     printf "  SURVIVED     %-28s test-plugins still passes\n" "$1"
     survived=$((survived + 1))
   elif grep -q "^FAIL  test-plugins: $2 " "$WORK/plugin-out"; then
@@ -136,6 +139,17 @@ plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuil
       "$(grep '^FAIL' "$WORK/plugin-out" | sed 's/^FAIL  test-plugins: //' | cut -c1-60 | tr '\n' ';')"
     survived=$((survived + 1))
   fi
+}
+plugin_case_rm() {  # ID EXPECT-LABEL PATH(relative to repo) — the control deletes PATH
+  local copy="$WORK/p-$1"
+  plugin_copy "$copy"
+  total=$((total + 1))
+  if [ ! -e "$copy/$3" ]; then
+    printf "  ANCHOR MISS  %-28s %s not found\n" "$1" "$3"
+    missed=$((missed + 1)); return 0
+  fi
+  rm -rf "${copy:?}/$3"
+  plugin_judge "$1" "$2" "$copy"
 }
 SEC=plugins/ascent-security
 TPL=skills/lloydbriantech-ascent/assets/template/.claude/skills
@@ -159,6 +173,24 @@ plugin_case P12-agent-cites-nothing T9 "$AGENT" 's/Step/Stage/g'
 plugin_case P13-severity-table-removed T5 "$TPL/ascent-sec-posture/SKILL.md" '/severity-table:start/d' rebuild
 plugin_case P14-content-changed-no-bump T10 "$AGENT" '$a\
 A line added without bumping the plugin version.'
+DEL=plugins/ascent-delivery
+HOOK="$DEL/hooks/operator-boundary.sh"
+VERIFIER="$DEL/agents/finding-verifier.md"
+plugin_case P15-hook-allows-git-push T11 "$HOOK" 's/GIT_READ = " status /GIT_READ = " push status /'
+plugin_case P16-hook-ignores-contract T11 "$HOOK" 's/cur = (key == "deploy_beta" || key == "deploy_prod") ? key : ""/cur = ""/'
+plugin_case P17-hook-test-emptied T11 tests/plugins/ascent-delivery/test-operator-boundary.sh '1,$d'
+plugin_case_rm P18-hook-tests-removed T11 tests/plugins/ascent-delivery
+plugin_case P19-verifier-can-write T4 "$VERIFIER" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
+plugin_case P20-skill-links-missing-ref T6 "$DEL/skills/delivery-loop/SKILL.md" 's|(references/review-lenses.md)|(references/review-lens.md)|'
+plugin_case P21-hooks-json-missing-script T11 "$DEL/hooks/hooks.json" 's|hooks/operator-boundary.sh|hooks/operator-guard.sh|'
+plugin_case P22-verifier-cites-missing-step T9 "$VERIFIER" 's/(delivery-loop Step 4)/(delivery-loop Step 9)/'
+plugin_case P23-hook-skips-substitutions T11 "$HOOK" 's/for (k = 1; k <= NSUB; k++) enqueue(SUBS\[k\])/k = 0/'
+plugin_case P24-hook-skips-git-global-opts T11 "$HOOK" 's/if (has(" -C -c --git-dir --work-tree --namespace --super-prefix --config-env --attr-source ", SW\[j\])) j += 2; else j++/j++/'
+plugin_case P25-hook-heredoc-in-substitution T11 "$HOOK" 's/if (!arith \&\& c == "<" \&\& A\[i + 1\] == "<") {/if (0) {/'
+plugin_case P26-hook-no-size-guard T11 "$HOOK" 's/if (nb > MAXB) {/if (0) {/'
+plugin_case P27-hook-ignores-stdin-shells T11 "$HOOK" 's/if (j > SN) { STDIN_SHELL = 1; return 0 }/if (j > SN) return 0/'
+plugin_case P28-hook-skips-unquoted-heredocs T11 "$HOOK" 's/if (!HQ\[k\]) scan_subs(b, HDBEND, 0)/if (0) scan_subs(b, HDBEND, 0)/'
+plugin_case P29-contract-denies-whole-chain T11 "$HOOK" 's/if (SN > 0 \&\& !inpipe) { dn = SN;/if (SN > 0 \&\& !inpipe \&\& dn == 0) { dn = SN;/'
 
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
   "$total" "$killed" "$survived" "$missed"
