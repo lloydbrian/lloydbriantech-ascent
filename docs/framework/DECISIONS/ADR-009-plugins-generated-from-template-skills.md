@@ -1,6 +1,6 @@
 # ADR-009: Plugins generated from the template skills
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-17 (America/New_York)
 **Decider:** lloydbriantech
 

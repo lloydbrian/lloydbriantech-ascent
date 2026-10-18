@@ -10,6 +10,21 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Planned
+
+- v0.4.3 — `make test-plugins` T10: fail when plugin files change without a `plugin.json` version bump
+- v0.4.3 — `ascent-security`: rules for short credential literals near auth or role logic, and for `eval` / `new Function` on untrusted input (both surfaced by the trial run as unrated observations)
+- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
+- Phase 5 — Test harness with three eval scenarios
+- Phase 6 — Starter repo generation tooling
+- Phase 7 — First production project scaffolded from ASCENT
+
+See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.2] — 2026-10-18
+
 **Skill hardening, loop 1 (foundations).** Makes the embedded-skill test suite give the same answer on macOS, Linux and in containers, shows each rewritten check both passing and failing, proves it with named negative controls, runs all of it in CI on both platforms, and makes each skill's description do its routing. See [ADR-008](docs/framework/DECISIONS/ADR-008-portable-skill-tests-and-negative-controls.md).
 
 **Skill hardening, loop 2 (`ascent-security` plugin).** The first ASCENT plugin, installable in any repository from Claude Code, VS Code or Cowork. Its skills are generated from the template so there is one source of truth. See [ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md).
@@ -58,15 +73,6 @@ Dates are in **America/New_York** timezone.
 
 - Template `make session-resume` misreported file ages on Linux (BSD-first `stat`) and its zero-line counts produced `0\n0`; the same zero-count bug in `make dev-status`
 - `test-ascent-vitality.sh` no longer depends on a fixed 2026-05-18 fixture date, on git's default branch name, or on colored `git branch` output
-
-### Planned
-
-- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
-- Phase 5 — Test harness with three eval scenarios
-- Phase 6 — Starter repo generation tooling
-- Phase 7 — First production project scaffolded from ASCENT
-
-See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
 
 ---
 
