@@ -10,13 +10,31 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Planned
+
+- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges
+- `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
+- Plugin roadmap (decisions 2026-10-18): `ascent-architecture` (architecture review, quality attributes, design principles, deployment options with cost estimates and blueprints), then `ascent-ux`, `ascent-ops`, `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`
+- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
+- Phase 5 — Test harness with three eval scenarios
+- Phase 6 — Starter repo generation tooling
+- Phase 7 — First production project scaffolded from ASCENT
+
+See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.3] — 2026-10-18
+
+**Security rules, version gate and the delivery-loop plugin.** `ascent-security` 0.1.1 rates short hardcoded secrets and dynamic code execution, both found by the first trial run. A new gate makes every plugin change carry a version bump so installed copies update. `ascent-delivery` 0.1.0 ships the delivery loop with a hook that blocks Claude from git writes and deploys. See [ADR-010](docs/framework/DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md).
+
 ### Added
 
-- v0.4.3 — `make test-plugins` T10: fails when any file under a plugin changes while its `plugin.json` version stays the same, or when the version is not recorded. `make/plugins.lock` holds each plugin's version and content hash (`make/plugin-hash.sh`); `make plugins` writes a row when the version changes and warns, without changing the lock, when content changed under the same version
-- v0.4.3 — `ascent-security-audit` Step 2: short hardcoded secrets (Medium) — a quoted literal of 4–7 characters with no spaces, assigned or compared to a key with a whole credential word (`pin`, `passcode`, `password`, `passwd`, `secret`, `token`, split at `_`, `-` and camelCase). Quoted digits count; findings cite `file:line` only
-- v0.4.3 — `ascent-security-audit` Step 6: dynamic code execution (Medium) — `eval(` and `new Function(` in code files under the source locations, `scripts/` and root-level scripts, skipping commented lines, member calls such as `model.eval()`, look-alikes such as `evaluate(`, vendored directories and `*.min.js`
-- v0.4.3 — Two Medium rows in the shared severity table (short hardcoded credential; dynamic code execution)
-- v0.4.3 — `make test-mutants`: 15 mutants (M47–M61) for the two rules and their severities, and plugin control P14 (content changed without a version bump)
+- `make test-plugins` T10: fails when any file under a plugin changes while its `plugin.json` version stays the same, or when the version is not recorded. `make/plugins.lock` holds each plugin's version and content hash (`make/plugin-hash.sh`); `make plugins` writes a row when the version changes and warns, without changing the lock, when content changed under the same version
+- `ascent-security-audit` Step 2: short hardcoded secrets (Medium) — a quoted literal of 4–7 characters with no spaces, assigned or compared to a key with a whole credential word (`pin`, `passcode`, `password`, `passwd`, `secret`, `token`, split at `_`, `-` and camelCase). Quoted digits count; findings cite `file:line` only
+- `ascent-security-audit` Step 6: dynamic code execution (Medium) — `eval(` and `new Function(` in code files under the source locations, `scripts/` and root-level scripts, skipping commented lines, member calls such as `model.eval()`, look-alikes such as `evaluate(`, vendored directories and `*.min.js`
+- Two Medium rows in the shared severity table (short hardcoded credential; dynamic code execution)
+- `make test-mutants`: 15 mutants (M47–M61) for the two rules and their severities, and plugin control P14 (content changed without a version bump)
 - `plugins/ascent-delivery/`: the delivery loop as a plugin for any repository — a hand-written `delivery-loop` skill (Steps 0–7: contract, decide, build with a file-modification audit, test with negative controls, gate and review, fix and definition of done, operator runbook, beta/prod verification and release record), a read-only `finding-verifier` agent, references (`.delivery-loop.yml` schema, runbook template with a `redact` helper, review lenses with provider-or-fallback prompts), `plugin.json` and README
 - `ascent-delivery` operator-boundary hook (`PreToolUse` on Bash): blocks git writes, gh writes, deploys listed in `.delivery-loop.yml` and well-known deploy/publish verbs, through compound commands, subshells, substitutions (heredoc-aware), unquoted heredoc bodies, shells fed by stdin, `bash -c`, `eval`, `find -exec` and wrapper prefixes; contract entries match by command and positional words, ignoring flags; commands over 512 KB are blocked; portable bash and POSIX awk, no jq. Hardened after an independent adversarial review (174 cases)
 - `.claude-plugin/marketplace.json`: `ascent-delivery` entry (`/plugin install ascent-delivery@lloydbriantech-ascent`)
@@ -28,17 +46,8 @@ Dates are in **America/New_York** timezone.
 
 ### Changed
 
-- v0.4.3 — `ascent-security` 0.1.1: generated skills carry the two new rules; the `security-auditor` agent rates short secrets under check 3 and adds check 7 (dynamic code execution, security-audit Step 6), so neither lands under "Other observations" any more
-- v0.4.3 — `ascent-security-audit` reports 6 checks; "Aggregate and report" is now Step 7. `ascent-sec-posture` applies security-audit Steps 1–6 and counts dynamic-code findings under the credential-hygiene surface
-
-### Planned
-
-- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
-- Phase 5 — Test harness with three eval scenarios
-- Phase 6 — Starter repo generation tooling
-- Phase 7 — First production project scaffolded from ASCENT
-
-See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+- `ascent-security` 0.1.1: generated skills carry the two new rules; the `security-auditor` agent rates short secrets under check 3 and adds check 7 (dynamic code execution, security-audit Step 6), so neither lands under "Other observations" any more
+- `ascent-security-audit` reports 6 checks; "Aggregate and report" is now Step 7. `ascent-sec-posture` applies security-audit Steps 1–6 and counts dynamic-code findings under the credential-hygiene surface
 
 ---
 
