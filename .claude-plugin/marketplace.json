@@ -20,6 +20,13 @@
       "description": "The ASCENT delivery loop for any repository: build, test with negative controls, gate, independent review with a finding verifier, and an operator runbook. A hook blocks git writes and deploys for Claude.",
       "version": "0.1.0",
       "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "ascent-architecture",
+      "source": "./plugins/ascent-architecture",
+      "description": "Architecture review for any repository: quality attributes against measurable targets, design principles, deployment options with dated cost estimates, a CloudFormation static-site blueprint with template checks, and a read-only architecture-reviewer agent.",
+      "version": "0.1.0",
+      "license": "MIT OR Apache-2.0"
     }
   ]
 }

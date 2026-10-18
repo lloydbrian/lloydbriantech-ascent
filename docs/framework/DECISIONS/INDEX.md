@@ -20,6 +20,7 @@ Dates are in **America/New_York** timezone.
 | [008](ADR-008-portable-skill-tests-and-negative-controls.md) | Portable skill tests and named negative controls | Accepted | 2026-10-17 | Skill tests behave the same on GNU/Linux and BSD/macOS, every check is shown to pass and fail, named mutants prove each test can fail, and CI runs the suite on both platforms |
 | [009](ADR-009-plugins-generated-from-template-skills.md) | Plugins generated from the template skills | Accepted | 2026-10-17 | Plugin skills are built from the template by `make plugins`, never hand-edited; `make test-plugins` fails on drift; plugins live in this repo until the marketplace repo exists |
 | [010](ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) | Delivery-loop plugin and operator-boundary hook | Proposed | 2026-10-18 | `ascent-delivery` ships the delivery loop as a hand-written plugin skill; a PreToolUse hook blocks git writes and deploys for Claude; review wraps installed providers; `.delivery-loop.yml` is the project contract |
+| [011](ADR-011-architecture-plugin-and-project-contract.md) | Architecture plugin and the project contract file | Proposed | 2026-10-18 | `ascent-architecture` reviews architecture against targets in `.ascent/contract.yml`; enterprise maturity by default with waivers in ADRs; dated cost estimates; a tested CloudFormation static-site blueprint and template checks; T11 covers plugin scripts |
 
 ---
 
