@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Test: ascent-security-audit
-# Verifies static security checks: env-file scope, hardcoded credentials, container privilege.
+# Verifies static security checks: env-file scope, hardcoded credentials (long and
+# short), container privilege, nginx headers and dynamic code execution.
 # Per PHASE-3-PLAN.md §4: bash test, self-contained, trap-based cleanup.
 set -euo pipefail
 
@@ -56,7 +57,75 @@ credential_findings() {
       { grep -nE -- "$AWS_RE" "$f" || true; } | cut -d: -f1 |
       while IFS= read -r n; do printf '%s:%s — cloud access key\n' "$f" "$n"; done
     done
+    short_credential_findings "$target"
   } | awk -F' — ' '!seen[$1]++'
+}
+
+# Reusable: short hardcoded credentials (skill Step 2, Medium). A key is split
+# into words at "_", "-" and lower-to-upper camelCase boundaries; one word must
+# be exactly pin, passcode, password, passwd, secret or token (so adminPin,
+# ORGANIZER_PIN and pin_code count; spinner, pinned and tokenizer do not). The
+# key is assigned (":", "=", ":=") or compared ("==", "===", "!=", "!==") to a
+# quoted literal of 4-7 characters with no spaces and no "$". Quoted digits
+# ("4821") count; bare numbers, empty values and quoted true/false/null do not.
+# Only file and line number are printed, never the value or the line.
+SHORT_PRE="(pin|passcode|passw(or)?d|secret|token)[A-Za-z0-9_-]*[\"']?[[:space:]]*(:=?|=|[=!]==?)[[:space:]]*[\"'\`]"
+short_credential_findings() {
+  local target="$1" f
+  { grep -rliE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+      --exclude-dir=vendor --exclude-dir=.git -- "$SHORT_PRE" "$target" 2>/dev/null || true; } |
+  while IFS= read -r f; do
+    awk -v file="$f" '
+      function keyhit(k,   i, c, prev, out, n, w) {
+        out = ""; prev = ""
+        for (i = 1; i <= length(k); i++) {
+          c = substr(k, i, 1)
+          if (c ~ /[A-Z]/ && prev ~ /[a-z0-9]/) out = out "_"
+          out = out c; prev = c
+        }
+        out = tolower(out); gsub(/-/, "_", out)
+        n = split(out, w, "_")
+        for (i = 1; i <= n; i++) if (w[i] ~ /^(pin|passcode|password|passwd|secret|token)$/) return 1
+        return 0
+      }
+      {
+        s = $0
+        while (match(s, /[A-Za-z0-9_-]+["\047]?[ \t]*(:=?|=|[=!]==?)[ \t]*["\047`][^"\047` \t$]*["\047`]/)) {
+          m = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
+          key = m; sub(/["\047]?[ \t]*(:=?|=|[=!]==?)[ \t]*["\047`].*$/, "", key)
+          val = m; sub(/^[^"\047`]*["\047]?[ \t]*(:=?|=|[=!]==?)[ \t]*["\047`]/, "", val); sub(/.$/, "", val)
+          if (length(val) >= 4 && length(val) <= 7 && tolower(val) !~ /^(true|false|null)$/ && keyhit(key)) {
+            print file ":" FNR " — short hardcoded secret"; break
+          }
+        }
+      }' "$f"
+  done
+}
+
+# Reusable: dynamic code execution (skill Step 6, Medium). Scans the source
+# directories, scripts/ and root-level *.js/*.mjs/*.cjs/*.ts for eval( and
+# new Function( in code files, skipping vendored and built directories and
+# *.min.js bundles. Not findings: commented lines (starting with //, #, * or
+# /*), member calls such as model.eval() or db.eval() (only window.eval and
+# globalThis.eval count), and identifiers that merely contain eval
+# (evaluate(, literal_eval(). Prints "file:line — dynamic code execution (eval)"
+# or "(new Function)".
+DYN_SKIP=(--exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=vendor --exclude-dir=.git)
+DYN_CODE=(--include='*.js' --include='*.mjs' --include='*.cjs' --include='*.jsx' --include='*.ts' --include='*.tsx' --include='*.mts' --include='*.cts' --include='*.vue' --include='*.svelte' --include='*.html' --include='*.htm' --include='*.py' --include='*.rb' --include='*.php')
+dynamic_code_findings() {
+  local root="$1" x f
+  local targets=()
+  for x in backend frontend server src app api scripts; do [ -d "$root/$x" ] && targets+=("$root/$x"); done
+  for f in "$root"/*.js "$root"/*.mjs "$root"/*.cjs "$root"/*.ts; do [ -f "$f" ] && targets+=("$f"); done
+  [ "${#targets[@]}" -gt 0 ] || return 0
+  { grep -rlE "${DYN_SKIP[@]}" "${DYN_CODE[@]}" -- 'eval|Function' "${targets[@]}" 2>/dev/null || true; } |
+  while IFS= read -r f; do
+    case "$f" in *.min.js) continue ;; esac
+    awk -v file="$f" '
+      /^[ \t]*(\/\/|#|\*|\/\*)/ { next }
+      /(^|[^A-Za-z0-9_$.])eval[ \t]*\(/ || /(^|[^A-Za-z0-9_$.])(window|globalThis)\.eval[ \t]*\(/ { print file ":" FNR " — dynamic code execution (eval)"; next }
+      /(^|[^A-Za-z0-9_$.])new[ \t]+Function[ \t]*\(/ { print file ":" FNR " — dynamic code execution (new Function)" }' "$f"
+  done
 }
 
 # Reusable: privileged containers (skill Step 3), ignoring commented lines.
@@ -359,6 +428,81 @@ if [ "$NGINX_OK" = true ]; then
   assert_pass "nginx: 12 configurations — clean, dropped (location, nested, http→server), commented, report-only, frame-ancestors, no-TLS, include, X-XSS-only, redirect, snippet"
 else
   assert_fail "nginx header findings differ from expectations (see lines above)"
+fi
+
+# Test 7: Short hardcoded credentials — 4-7 character literals under whole-word
+# key names are Medium findings (quoted digits included); near-miss names, bare
+# numbers, empty, 3-character, boolean, $-reference and spaced values are not;
+# 8+ characters stay with the High rule; values are never printed
+cleanup
+mkdir -p "$FIXTURES_DIR/src"
+cat > "$FIXTURES_DIR/src/admin.js" << 'EOF'
+const ORGANIZER_PIN = "4821";
+const adminPin = '7731';
+const config = { pin_code: "0042" };
+if (pin === "1739") { unlock(); }
+const passcode = `abc12`;
+const password = "hunter2";
+const db_password = "hunter22";
+const spinner = "abcd";
+const pinned = "wxyz";
+const tokenizer = "wordpc";
+const PIN_LENGTH = 4;
+const pin = "";
+const pin = "abc";
+const userToken = "${TOKEN}";
+const secret = "true";
+const pin = "12 34";
+{ "pin": "9988" }
+EOF
+SHORT_OUT=$(credential_findings "$FIXTURES_DIR/src" | sed "s|^$FIXTURES_DIR/src/||" | LC_ALL=C sort)
+SHORT_WANT=$(printf '%s\n' "admin.js:1 — short hardcoded secret" "admin.js:2 — short hardcoded secret" \
+  "admin.js:3 — short hardcoded secret" "admin.js:4 — short hardcoded secret" "admin.js:5 — short hardcoded secret" \
+  "admin.js:6 — short hardcoded secret" "admin.js:7 — hardcoded secret" "admin.js:17 — short hardcoded secret" | LC_ALL=C sort)
+LEAKED=""
+for v in 4821 7731 0042 1739 abc12 hunter2 9988; do
+  printf '%s' "$SHORT_OUT" | grep -q -- "$v" && LEAKED="$LEAKED $v"
+done
+if [ "$SHORT_OUT" = "$SHORT_WANT" ] && [ -z "$LEAKED" ]; then
+  assert_pass "short credentials: 7 found (PINs as quoted digits, camelCase, snake_case, comparison, JSON key); spinner/pinned/tokenizer, number, empty, 3-char, boolean, \$-ref and spaced skipped; 8 chars stays High; no value printed"
+else
+  assert_fail "short credentials: leaked=[${LEAKED# }]
+  got:  $(printf '%s' "$SHORT_OUT" | tr '\n' ';')
+  want: $(printf '%s' "$SHORT_WANT" | tr '\n' ';')"
+fi
+
+# Test 8: Dynamic code execution — eval( and new Function( in source dirs,
+# scripts/ and root-level scripts; commented lines, member calls, look-alike
+# identifiers, vendored code, minified bundles, non-code files and directories
+# outside the scan are not findings
+cleanup
+mkdir -p "$FIXTURES_DIR/scripts" "$FIXTURES_DIR/src/lib" "$FIXTURES_DIR/src/node_modules/x" "$FIXTURES_DIR/docs"
+cat > "$FIXTURES_DIR/scripts/build.mjs" << 'EOF'
+const render = new Function("return " + body);
+  // eval(previous)
+ * eval(doc)
+const data = eval(text);
+EOF
+printf 'model.eval();\nevaluate(x);\nJSON.parse(s);\nwindow.eval(code);\n' > "$FIXTURES_DIR/src/page.js"
+printf 'x = ast.literal_eval(s)\n# eval(y)\n' > "$FIXTURES_DIR/src/tool.py"
+printf 'eval(x)\n' > "$FIXTURES_DIR/build.js"
+printf 'eval(x)\n' > "$FIXTURES_DIR/notes.md"
+printf 'eval(x)\n' > "$FIXTURES_DIR/src/notes.md"
+printf 'eval(x)\n' > "$FIXTURES_DIR/src/node_modules/x/i.js"
+printf 'eval(x)\n' > "$FIXTURES_DIR/src/lib/x.min.js"
+printf 'eval(x)\n' > "$FIXTURES_DIR/docs/a.js"
+DYN_OUT=$(dynamic_code_findings "$FIXTURES_DIR" | sed "s|^$FIXTURES_DIR/||" | LC_ALL=C sort)
+DYN_WANT=$(printf '%s\n' "build.js:1 — dynamic code execution (eval)" \
+  "scripts/build.mjs:1 — dynamic code execution (new Function)" "scripts/build.mjs:4 — dynamic code execution (eval)" \
+  "src/page.js:4 — dynamic code execution (eval)" | LC_ALL=C sort)
+mkdir -p "$FIXTURES_DIR/empty"
+DYN_EMPTY=$(dynamic_code_findings "$FIXTURES_DIR/empty")
+if [ "$DYN_OUT" = "$DYN_WANT" ] && [ -z "$DYN_EMPTY" ]; then
+  assert_pass "dynamic code: new Function, eval, window.eval and a root script found (4); comments, model.eval, evaluate, literal_eval, node_modules, .min.js, .md and docs/ skipped"
+else
+  assert_fail "dynamic code: empty=[$DYN_EMPTY]
+  got:  $(printf '%s' "$DYN_OUT" | tr '\n' ';')
+  want: $(printf '%s' "$DYN_WANT" | tr '\n' ';')"
 fi
 
 # Summary

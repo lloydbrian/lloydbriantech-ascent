@@ -16,6 +16,9 @@
 #   T8  `claude plugin validate` passes (SKIP when the CLI is absent or skipped)
 #   T9  every "<skill> Step N" an agent cites names a skill in its plugin and a
 #       "### Step N" heading that exists; an agent must cite at least one step
+#   T10 any change to a plugin's files comes with a plugin.json version bump:
+#       make/plugins.lock records version and content hash (make/plugin-hash.sh);
+#       same version with a different hash fails, as does an unrecorded version
 #
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
@@ -198,6 +201,22 @@ EOF_REFS
   if [ -n "$MISSING_REFS" ]; then bad "T9 $(basename "$a" .md) cites steps or skills that do not exist:$MISSING_REFS"
   elif [ "$NREFS" -eq 0 ]; then bad "T9 $(basename "$a" .md) cites no skill steps — an agent must trace its checks to skill steps"
   else ok "T9 $(basename "$a" .md): $NREFS step references resolve"; fi
+done
+
+# T10 — content changes need a version bump (make/plugins.lock)
+LOCK="$ROOT/make/plugins.lock"
+for p in $PLUGINS; do
+  ver=$(json_field "$ROOT/plugins/$p/.claude-plugin/plugin.json" version)
+  hash=$(bash "$ROOT/make/plugin-hash.sh" "$ROOT/plugins/$p")
+  row=$([ -f "$LOCK" ] && awk -F'\t' -v p="$p" '$1 == p { print; exit }' "$LOCK" || true)
+  lock_ver=$(printf '%s' "$row" | cut -f2); lock_hash=$(printf '%s' "$row" | cut -f3)
+  if [ -z "$row" ] || [ "$lock_ver" != "$ver" ]; then
+    bad "T10 $p: version $ver not recorded in make/plugins.lock — run make plugins"
+  elif [ "$lock_hash" != "$hash" ]; then
+    bad "T10 $p: content changed but version still $ver — bump the version"
+  else
+    ok "T10 $p: content matches the version recorded in make/plugins.lock (v$ver)"
+  fi
 done
 
 printf "\ntest-plugins: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"

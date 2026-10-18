@@ -48,3 +48,18 @@ M43-vendored-code-scanned	tests/skills/test-ascent-security-audit.sh	s/--exclude
 M44-posture-backend-only	tests/skills/test-ascent-sec-posture.sh	s/for x in backend frontend server src app api;/for x in backend;/	test-ascent-sec-posture.sh	non-ASCENT source layouts become coverage gaps
 M45-no-containers-is-a-gap	tests/skills/test-ascent-sec-posture.sh	s/for s in credentials; do/for s in credentials container; do/	test-ascent-sec-posture.sh	a project with no containers can never rate strong
 M46-missing-source-not-a-gap	tests/skills/test-ascent-sec-posture.sh	s/for s in credentials; do/for s in ; do/	test-ascent-sec-posture.sh	source code that cannot be located no longer blocks a strong rating
+M47-short-credential-off	tests/skills/test-ascent-security-audit.sh	s/length(val) >= 4 &&/0 \&\&/	test-ascent-security-audit.sh	short hardcoded secrets (4-7 characters) are no longer found
+M48-quoted-digits-skipped	tests/skills/test-ascent-security-audit.sh	s/(true|false|null)\$/(true|false|null|[0-9]*)$/	test-ascent-security-audit.sh	a quoted digit PIN such as "4821" is skipped like a number
+M49-key-word-prefix-match	tests/skills/test-ascent-security-audit.sh	s/|secret|token)\$\/) return 1/|secret|token)\/) return 1/	test-ascent-security-audit.sh	key words match by prefix, so pinned and tokenizer count as credential keys
+M50-short-value-printed	tests/skills/test-ascent-security-audit.sh	s/short hardcoded secret"; break/short hardcoded secret " val; break/	test-ascent-security-audit.sh	short credential findings print the matched value
+M51-three-char-short	tests/skills/test-ascent-security-audit.sh	s/length(val) >= 4/length(val) >= 3/	test-ascent-security-audit.sh	3-character literals are reported as short secrets
+M52-eval-missed	tests/skills/test-ascent-security-audit.sh	s/])eval\[/])evil[/	test-ascent-security-audit.sh	a standalone eval( call is no longer found
+M53-commented-eval-counted	tests/skills/test-ascent-security-audit.sh	s/{ next }$/{ }/	test-ascent-security-audit.sh	commented-out eval( and new Function( lines are reported
+M54-new-function-missed	tests/skills/test-ascent-security-audit.sh	s/+Function\[/+Functoin[/	test-ascent-security-audit.sh	new Function( is no longer found
+M55-dyn-vendored-scanned	tests/skills/test-ascent-security-audit.sh	/^DYN_SKIP=/s/--exclude-dir=node_modules //	test-ascent-security-audit.sh	node_modules is scanned for dynamic code execution
+M56-member-eval-counted	tests/skills/test-ascent-security-audit.sh	s/_\$.])eval/_$])eval/	test-ascent-security-audit.sh	member calls such as model.eval() are reported as dynamic code
+M57-root-scripts-skipped	tests/skills/test-ascent-security-audit.sh	s/for f in "\$root"\/\*\.js/for f in "$root"\/*.none/	test-ascent-security-audit.sh	root-level *.js build scripts are not scanned
+M58-minified-scanned	tests/skills/test-ascent-security-audit.sh	s/\*.min.js) continue/*.min.none) continue/	test-ascent-security-audit.sh	*.min.js bundles are scanned for dynamic code execution
+M59-scripts-dir-skipped	tests/skills/test-ascent-security-audit.sh	s/ api scripts; do/ api; do/	test-ascent-security-audit.sh	scripts/ is not scanned for dynamic code execution
+M60-short-credential-high	tests/skills/test-ascent-sec-posture.sh	s/privileged_container)/privileged_container|short_hardcoded_credential)/	test-ascent-sec-posture.sh	a short hardcoded credential is rated High instead of Medium
+M61-dynamic-code-unrated	tests/skills/test-ascent-sec-posture.sh	s/|dynamic_code_execution)/)/	test-ascent-sec-posture.sh	dynamic code execution has no severity

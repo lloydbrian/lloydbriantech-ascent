@@ -100,7 +100,7 @@ When a domain needs both detailed analysis (what specifically is wrong?) and sta
 
 **Cluster 4 (1:1 fan-in):** `ascent-adr-conformance` enumerates ADR-level findings (missing sections, orphaned entries, supersession-link gaps). `ascent-self-audit`'s §7 check provides the stance-level gate (ADR discipline: PASS or FAIL). One enumerator, one summarizer.
 
-**Cluster 7 (1:1 fan-in):** `ascent-security-audit` enumerates point-in-time security findings across 5 surfaces. `ascent-sec-posture` summarizes the security stance (strong/moderate/weak with severity distribution). The pattern reinforces at the same 1:1 ratio with distinct nouns: audit uses "issues" and "findings"; posture uses "stance" and "coverage."
+**Cluster 7 (1:1 fan-in):** `ascent-security-audit` enumerates point-in-time security findings across 5 surfaces (6 since v0.4.3, which added dynamic code execution). `ascent-sec-posture` summarizes the security stance (strong/moderate/weak with severity distribution). The pattern reinforces at the same 1:1 ratio with distinct nouns: audit uses "issues" and "findings"; posture uses "stance" and "coverage."
 
 **Cluster 8 (1:4 fan-in):** `ascent-health` summarizes stance across four Cluster 4 enumerators: `ascent-data-health`, `ascent-dependency-health`, `ascent-doc-sweep`, and `ascent-adr-conformance`. Each enumerator produces domain-specific findings; health produces a composite stance with a mechanical 3-signal-per-domain classification ladder. The abstraction distinction is documented explicitly: health asks "how does this sub-domain look overall?"; enumerators ask "what specifically is wrong?"
 
