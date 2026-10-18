@@ -20,7 +20,7 @@ Dates are in **America/New_York** timezone.
 - `.claude-plugin/marketplace.json`: installs with `/plugin marketplace add lloydbrian/lloydbriantech-ascent`, then `/plugin install ascent-security@lloydbriantech-ascent`
 - `make plugins` (`make/build-plugins.sh`): builds plugin skills from the template sources; fails if a placeholder survives
 - `make test-plugins` (`make/test-plugins.sh`): drift and orphans, placeholders, name/version/source agreement with the marketplace, read-only agents (tools and frontmatter keys), read-only skill tool pre-approvals, the shared severity table in the skills that need it, links, frontmatter, agent step references, and `claude plugin validate` when the CLI is installed; added to the CI gate
-- `make test-mutants`: 18 security-rule mutants (M27–M44), a baseline control and 13 plugin controls (P01–P13), each of which must fail on the check it names — 62 in total with loop 1's 26 mutants and 4 validator controls
+- `make test-mutants`: 20 security-rule mutants (M27–M46), a baseline control and 13 plugin controls (P01–P13), each of which must fail on the check it names — 64 in total with loop 1's 26 mutants and 4 validator controls
 - README section on installing ASCENT skills as plugins
 - ADR-009: Plugins generated from the template skills
 
@@ -29,7 +29,8 @@ Dates are in **America/New_York** timezone.
 - `ascent-security-audit` and `ascent-sec-posture` share one severity table (credentials are High in both); credential scanning covers object-style secret literals and `AKIA…` keys and never prints a matched value; nginx checks require CSP and HSTS, flag `location` blocks whose own `add_header` drops the security headers, and treat `X-XSS-Protection` as deprecated (Info)
 - Credential findings and the security-audit report cite `file:line` and the rule name only, never the matched value or line; `.gitignore` forms (`/.env`, `*.env`, `.env*`) are recognized, and a missing `.gitignore` is High; container checks add `network_mode: host` and a mounted Docker socket; production-URL checks skip localhost, single-label service names and XML namespaces
 - The three skills pre-approve only read tools (Read, Grep, Glob; `env-audit` adds `git ls-files` and `git log`)
-- `ascent-sec-posture` rating rules are exhaustive: any High → weak; no Medium and critical surfaces assessed → strong; otherwise moderate
+- `ascent-sec-posture` rating rules are exhaustive: any High → weak; no Medium and critical surfaces assessed or not present → strong; otherwise moderate. A project with no compose files or Dockerfiles has no container surface ("not present") and can still rate strong; source code that cannot be located remains a gap
+- `security-auditor` reports anything outside its six checks under an unrated "Other observations" section, so the rating stays comparable between runs (both found in the first trial run on a real repository)
 - `ascent-env-audit`, `ascent-security-audit` and `ascent-sec-posture` detect source, compose, Dockerfile and nginx locations instead of assuming the ASCENT layout; `ascent-env-audit` drops its fictional component mode and exit code for a verdict line
 
 ### Added (loop 1)

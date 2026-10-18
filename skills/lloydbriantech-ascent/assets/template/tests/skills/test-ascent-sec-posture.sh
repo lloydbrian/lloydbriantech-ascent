@@ -57,6 +57,15 @@ check_surface_assessable() {
   esac
 }
 
+# Reusable: count critical coverage gaps (skill Steps 1 and 3). Env-file scope is
+# always assessable. Container security with no compose files or Dockerfiles is
+# "not present", never a gap. Only credential hygiene can be a critical gap.
+critical_gaps() {
+  local d="$1" n=0 s
+  for s in credentials; do check_surface_assessable "$s" "$d" || n=$((n + 1)); done
+  echo "$n"
+}
+
 # Reusable: posture rating (skill Step 4) — first matching rule wins.
 # posture_rating HIGH MEDIUM CRITICAL_GAPS
 posture_rating() {
@@ -110,6 +119,22 @@ if [ "$R1" = "weak" ] && [ "$R2" = "strong" ] && [ "$R3" = "moderate" ] && [ "$R
   assert_pass "posture: any High=weak, clean=strong, one Medium=moderate, critical gap=moderate"
 else
   assert_fail "posture: high=$R1 (weak) clean=$R2 (strong) medium=$R3 (moderate) gap=$R4 (moderate)"
+fi
+
+# Test 4: A project with no containers can still rate strong; a project whose
+# source cannot be located cannot
+cleanup
+mkdir -p "$FIXTURES_DIR/nocontainers/app" "$FIXTURES_DIR/nosource/site"
+echo "services:" > "$FIXTURES_DIR/nosource/compose.yaml"
+G_NOCONT=$(critical_gaps "$FIXTURES_DIR/nocontainers")
+G_NOSRC=$(critical_gaps "$FIXTURES_DIR/nosource")
+CONT_PRESENT=true
+check_surface_assessable "container" "$FIXTURES_DIR/nocontainers" || CONT_PRESENT=false
+R_NOCONT=$(posture_rating 0 0 "$G_NOCONT"); R_NOSRC=$(posture_rating 0 0 "$G_NOSRC")
+if [ "$CONT_PRESENT" = false ] && [ "$R_NOCONT" = "strong" ] && [ "$R_NOSRC" = "moderate" ]; then
+  assert_pass "posture: no containers (not present) can be strong; source not located is a gap (moderate)"
+else
+  assert_fail "posture: containers-present=$CONT_PRESENT (false) no-containers=$R_NOCONT (strong) no-source=$R_NOSRC (moderate)"
 fi
 
 # Summary

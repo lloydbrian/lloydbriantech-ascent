@@ -26,7 +26,10 @@ paths you used:
 - Dockerfiles: any `Dockerfile*` outside the skipped directories
 - nginx config: `*.conf` under `nginx/`, or `nginx*.conf`; prefer names containing `prod`
 
-A surface with no files is **not assessed**. That is never a failure.
+A surface with no files is never a failure. Container security with no compose
+files or Dockerfiles is **not present**: the project ships no containers, so it
+is not applicable and not a gap. Source code that cannot be located is **not
+assessed**, which is a gap.
 
 ## Checks
 
@@ -82,8 +85,14 @@ Dockerfile copying `.env`, hardcoded credentials and privileged containers
 dropped security headers and external `http://` URLs. Low for an undeclared
 variable or no `.env.example`. Info for a deprecated-only header and HSTS where
 TLS is terminated elsewhere. Posture (sec-posture Step 4): any High → weak; no
-Medium and env-file scope, credentials and containers all assessed → strong;
-otherwise moderate.
+Medium and env-file scope, credentials and containers each assessed or not
+present → strong; otherwise moderate.
+
+Only findings from checks 1–6 get a severity and count toward the posture and
+the verdict. Anything else you notice (unsafe code patterns, short PINs or
+passwords below the 8-character rule, identifiers in docs, deploy scripts) goes
+under **Other observations**, unrated, so the rating stays comparable between
+runs and repositories.
 
 ## Output
 
@@ -91,12 +100,17 @@ Return only this, most severe first:
 
 ```
 security-auditor: <weak|moderate|strong> — <N> High, <N> Medium, <N> Low
-Assessed: <surfaces and paths used>   Not assessed: <surfaces or "none">
+Assessed: <surfaces and paths used>
+Not present: <surfaces or "none">   Not assessed: <surfaces or "none">
 
 <SEV>  <file>:<line>  <finding>
        Scenario: <what goes wrong, concretely>
        Fix: <one line>
 ...
+Other observations (unrated, not counted above):
+- <file>:<line>  <observation> — <one-line suggestion>
+
+Not checked here: <git history, live headers, anything outside this repository>
 security-auditor verdict: <PASS if no High or Medium | FAIL (N High, N Medium)>
 ```
 

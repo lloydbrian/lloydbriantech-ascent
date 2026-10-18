@@ -67,13 +67,13 @@ The skill executes these steps in order. Step numbers are local to this skill.
 |---|---|---|
 | Env-file scope | `.gitignore` | Always — a missing `.gitignore` is the High finding "`.env` not ignored" |
 | Credential hygiene | Source code | A source directory from Locating sources exists |
-| Container security | Compose files, Dockerfiles | At least one compose file or Dockerfile exists |
+| Container security | Compose files, Dockerfiles | At least one compose file or Dockerfile exists; with none, the surface is **not present** (the project ships no containers) |
 | Network security | nginx config | An nginx config with a `server` block exists |
 | Secret inventory | `.env.example` | Always — a missing `.env.example` is the Low finding "No `.env.example`" |
 
-Critical surfaces are env-file scope, credential hygiene and container security. Only credential hygiene and container security can be unassessed; network security being unassessed is informational.
+Critical surfaces are env-file scope, credential hygiene and container security. A surface that is **not present** is not applicable: a project with no compose files or Dockerfiles has no container surface to secure, so it is never a coverage gap. Credential hygiene with no source directory is **not assessed**, which is a gap, because the code may live somewhere this skill does not look. Network security being unassessed is informational.
 
-Report: "[N]/5 security surfaces assessable."
+Report: "[N]/[M] security surfaces assessable", where M is 5 minus the surfaces that are not present, and name each not-present surface.
 
 ### Step 2 — Classify findings by severity
 
@@ -112,8 +112,8 @@ Coverage gaps are informational, not failures — a project without nginx legiti
 Apply the first rule that matches (the rules cover every case):
 
 1. **Weak:** any High finding.
-2. **Strong:** no Medium findings, and every critical surface (env-file scope, credential hygiene, container security) was assessed.
-3. **Moderate:** everything else — at least one Medium finding, or a critical surface that could not be assessed.
+2. **Strong:** no Medium findings, and every critical surface (env-file scope, credential hygiene, container security) was assessed or is not present.
+3. **Moderate:** everything else — at least one Medium finding, or a critical surface that exists but could not be assessed (in practice, source code outside the locations in Locating sources).
 
 Low and Info findings never change the rating; list them.
 
@@ -134,7 +134,17 @@ sec-posture: strong — 5/5 surfaces assessed
   Coverage gaps: none
 ```
 
-### Example 2 — Posture with gaps
+### Example 2 — Strong posture, no containers
+
+A static site with serverless functions and no compose files or Dockerfiles:
+
+```
+sec-posture: strong — 4/4 surfaces assessed (container security: not present)
+  High: 0  Medium: 0  Low: 1 (no .env.example)
+  Coverage gaps: none
+```
+
+### Example 3 — Moderate posture (one Medium finding)
 
 ```
 sec-posture: moderate — 5/5 surfaces assessed

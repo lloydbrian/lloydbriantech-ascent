@@ -109,6 +109,8 @@ Known limits: secrets shorter than 8 characters, values split across lines, and 
 
 **Action on FAIL:** Report each finding. "Container privilege — FAIL. [file] uses privileged mode — this breaks container isolation (§1)."
 
+**Action on SKIP (no compose files or Dockerfiles):** Report "Container privilege — not present (no compose files or Dockerfiles)." This is not a gap: the project ships no containers.
+
 ### Step 4 — Nginx security headers
 
 **Condition:** an nginx config was found (see Locating sources).

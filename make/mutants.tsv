@@ -46,3 +46,5 @@ M41-docker-sock-missed	tests/skills/test-ascent-security-audit.sh	s#|/var/run/do
 M42-false-positive-filter-off	tests/skills/test-ascent-security-audit.sh	s/| { grep -viE -- "\$CRED_SAFE" || true; } //	test-ascent-security-audit.sh	env references, booleans and numbers are reported as secrets
 M43-vendored-code-scanned	tests/skills/test-ascent-security-audit.sh	s/--exclude-dir=node_modules //g	test-ascent-security-audit.sh	node_modules is scanned for credentials
 M44-posture-backend-only	tests/skills/test-ascent-sec-posture.sh	s/for x in backend frontend server src app api;/for x in backend;/	test-ascent-sec-posture.sh	non-ASCENT source layouts become coverage gaps
+M45-no-containers-is-a-gap	tests/skills/test-ascent-sec-posture.sh	s/for s in credentials; do/for s in credentials container; do/	test-ascent-sec-posture.sh	a project with no containers can never rate strong
+M46-missing-source-not-a-gap	tests/skills/test-ascent-sec-posture.sh	s/for s in credentials; do/for s in ; do/	test-ascent-sec-posture.sh	source code that cannot be located no longer blocks a strong rating
