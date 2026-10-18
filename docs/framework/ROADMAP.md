@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Skill hardening and first plugin complete, v0.4.2, October 18, 2026. Phase 4 awaiting signal.
+**Current state:** Security rules, version gate and the delivery-loop plugin complete, v0.4.3, October 18, 2026. Plugin roadmap decided (architecture first); Phase 4 awaiting signal.
 
 ---
 
@@ -114,6 +114,12 @@ Captures the 5 durable lessons from Phase 3 as framework artifacts: cluster-base
 **Status:** ✅ Complete (October 18, 2026)
 
 Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macOS and Linux, proved each one can fail with named negative controls, and runs the suite in CI on both platforms ([ADR-008](DECISIONS/ADR-008-portable-skill-tests-and-negative-controls.md)). Loop 2 hardened the three security skills and shipped them as the first plugin, `ascent-security`, generated from the template so there is one source of truth ([ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md)). A trial run on a real repository found two calibration gaps, fixed before release. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.3 — Security rules, version gate and the delivery-loop plugin
+
+**Status:** ✅ Complete (October 18, 2026)
+
+`ascent-security` 0.1.1 adds two rules surfaced by the trial run: short hardcoded secrets and dynamic code execution. A plugin version gate (`make/plugins.lock`, T10) makes sure installed copies receive every change. `ascent-delivery` 0.1.0 packages the delivery loop with a hook that blocks Claude from git writes and deploys, hardened after an adversarial review and verified on macOS and Linux ([ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md), Proposed). The plugin roadmap that follows — architecture, ux, ops, quality, session, adr, docs, node-stack — was decided the same day. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 
