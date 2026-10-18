@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Phase 3 retrospective complete, v0.4.1, May 21, 2026. Phase 4 awaiting signal.
+**Current state:** Skill hardening and first plugin complete, v0.4.2, October 18, 2026. Phase 4 awaiting signal.
 
 ---
 
@@ -108,6 +108,12 @@ Note: §15 implementation extends `ascent-delivery-status` (read session state) 
 **Status:** ✅ Complete (May 21, 2026)
 
 Captures the 5 durable lessons from Phase 3 as framework artifacts: cluster-based PR discipline, four architectural patterns, process-leak class detection, behavior verification as Principle §16, and phase-plan discipline. Matches the v0.3.1 precedent — focused patch adding framework discipline between phase releases. See [`CHANGELOG.md`](../../CHANGELOG.md) for delivery record and [`RETROSPECTIVES/PHASE-3.md`](RETROSPECTIVES/PHASE-3.md) for the narrative account.
+
+### v0.4.2 — Skill hardening and the first plugin
+
+**Status:** ✅ Complete (October 18, 2026)
+
+Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macOS and Linux, proved each one can fail with named negative controls, and runs the suite in CI on both platforms ([ADR-008](DECISIONS/ADR-008-portable-skill-tests-and-negative-controls.md)). Loop 2 hardened the three security skills and shipped them as the first plugin, `ascent-security`, generated from the template so there is one source of truth ([ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md)). A trial run on a real repository found two calibration gaps, fixed before release. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 

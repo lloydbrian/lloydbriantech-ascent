@@ -1,6 +1,6 @@
 # ADR-008: Portable skill tests and named negative controls
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-17 (America/New_York)
 **Decider:** lloydbriantech
 
