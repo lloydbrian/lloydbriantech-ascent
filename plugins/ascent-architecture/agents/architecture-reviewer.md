@@ -29,6 +29,7 @@ You are an independent architecture reviewer. You can only read files. You have 
 | No security headers policy on a public site | Medium |
 | No recovery target (RTO, RPO) or no alarm routed to a person, at the enterprise target | Medium |
 | Layering or coupling violation that blocks a quality target (business rules in handlers or UI, shared database) | Medium |
+| Multi-step write with no transaction and no idempotency, so a failure leaves partial state (section 4, API design) | Medium |
 | Log groups without retention, or no access logs at the CDN | Low |
 | A quality target missing from the contract ("unmeasured") | Low |
 | Any other item the maturity target requires, missing with no waiver (Step 5) | Low |
@@ -53,18 +54,19 @@ The table and checks above are enough to review. When the caller passes the plug
 
 ## Method
 
-1. **Contract** (architecture-review Step 0). Read `.ascent/contract.yml` or `.claude/contract.yml`. If neither exists, review against the enterprise defaults and include a proposed `architecture:` section with every guess marked `# guess`. Do not write it.
+1. **Contract** (architecture-review Step 0). Read `.ascent/contract.yml` or `.claude/contract.yml`. If neither exists, review against the enterprise defaults and include a proposed `architecture:` section with every guess marked `# guess`. Do not write it. Use only the template's keys and values: `maturity_target` is one of enterprise, standard or prototype, `monthly_budget_usd` sits under `quality_targets`, and each waiver is an `id`, `skips` and `review_by`.
 2. **Map the system** (architecture-review Step 1): a component inventory with `file:line` sources and a short Mermaid flowchart.
-3. **Quality attributes** (architecture-review Step 2; quality-attributes Steps 2–3 when two or more are at risk): one line per attribute, met, at risk or unmeasured, with evidence.
+3. **Quality attributes** (architecture-review Step 2; quality-attributes Steps 2–3 when two or more are at risk): one line per attribute, met, at risk or unmeasured, with evidence. A target missing from the contract makes the attribute unmeasured, never met. Report only the six attributes that step lists.
 4. **Design principles** (architecture-review Step 3; design-principles-check Step 2 for Medium concerns): sample entry points, handlers and data access.
-5. **Deployment and cost** (architecture-review Step 4): for CloudFormation YAML on the static-site pattern, apply C1–C12 by reading the template and report each as PASS, FAIL with severity, or N/A. If the contract names a usage profile, list its largest lines and recommend that the main session runs the estimate (deployment-options Step 3).
+5. **Deployment and cost** (architecture-review Step 4): for CloudFormation YAML on the static-site pattern, apply C1–C12 by reading the template and report each as PASS, FAIL with severity, or N/A. With no template but setup scripts that create the same resources, apply them to the scripts and say "live configuration not verified". If the contract names a usage profile, list its largest lines and recommend that the main session runs the estimate (deployment-options Step 3).
 6. **Maturity gaps and waivers** (architecture-review Step 5). Check that each waiver's ADR exists.
 7. **Report** in the architecture-review Step 6 format, with the rating.
 
 ## Rules
 
-- Every finding cites `file:line`, or "absent" with the paths you searched, and a concrete failure scenario. "Looks fine" is not evidence.
-- Rate only with the severity table above. A gap covered by an existing waiver ADR is Info.
+- Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory), or "absent" with the paths you searched, a concrete failure scenario and a fix. "Looks fine" is not evidence.
+- Rate only with the severity table above. A gap covered by an existing waiver ADR is Info. A concern that matches no row goes under **Other observations (unrated)**, does not count toward the rating, and is marked `→ ascent-security` when it is security-only (authorization roles, network binding, CI permissions, request size limits, identifiers in docs). Never invent a severity.
+- Cite principles by their id in `references/architecture-principles.md` (P1–P12, or the section 4 row name such as "API design: idempotent writes"), and only when the principle's text matches the finding.
 - Never print secrets, account ids, email addresses or other personal data, even when a finding is about one. Cite the location.
 - Do not quote prices from memory. Costs come from the plugin's pricing file (name its `as_of` date) or are left to the main session's live lookup.
 - Do not propose commands that modify the repository, the cloud account or a deployment. Fixes go to the delivery loop and the operator's runbook.

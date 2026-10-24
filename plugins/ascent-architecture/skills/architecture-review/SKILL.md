@@ -15,18 +15,21 @@ allowed-tools: Read, Grep, Glob
 
 One review of the whole system, judged against the project's own targets. It is the entry point of the `ascent-architecture` plugin: it runs lightweight surface checks itself, and recommends [quality-attributes](../quality-attributes/SKILL.md), [design-principles-check](../design-principles-check/SKILL.md) or [deployment-options](../deployment-options/SKILL.md) only for the areas where a surface check found something (the hybrid pattern). It never invokes them; they read the same sources.
 
-Shared sources: [architecture-principles.md](../../references/architecture-principles.md) (principles P1–P12, Well-Architected pillars, maturity targets) and [contract-template.yml](../../references/contract-template.yml) (the `architecture:` section of `.ascent/contract.yml`).
+Shared sources: [architecture-principles.md](../../references/architecture-principles.md) (principles P1–P12, Well-Architected pillars, maturity targets) and [contract-template.yml](../../references/contract-template.yml) (the `architecture:` section of `.ascent/contract.yml`). The pricing files are in `pricing/` and the blueprints in `blueprints/`, both under `PLUGIN_ROOT` (see Rules).
 
 If `engineering:system-design` or `engineering:architecture` is installed, use them for generic design advice and ADR formatting. This skill keeps the ASCENT parts: the contract, the severity table, the maturity target and the report format (decision 5, extend don't duplicate).
 
 ## Rules
 
 - **Read-only.** Never edit files, run deploys or call cloud APIs. Scripts named here only read files.
-- **Evidence or it is not a finding.** Every finding cites `file:line` (or "absent: searched <paths>") and a concrete failure scenario.
+- **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory), or "absent: searched <paths>", and a concrete failure scenario.
+- **Fresh evidence.** Re-read the evidence for every finding in this run. Never carry findings over from an earlier pass, an agent's report or another session.
+- **Rate only with the severity table.** A concern that matches no row goes under **Other observations (unrated)** in the report and does not count toward the rating. Never invent a severity.
+- **Cite principles by their id** in [architecture-principles.md](../../references/architecture-principles.md): P1–P12 for system principles, the section 4 row name (for example "API design: idempotent writes") for software design. Cite one only when its text matches the finding.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Cite the location.
-- **Security depth belongs to `ascent-security`.** Flag what the architecture exposes (public origins, missing TLS); leave credential scanning to that plugin.
-- **Scripts.** The plugin's read-only scripts are in `scripts/`, two directories above this skill's base directory (shown when the skill loads). Below, `PLUGIN_ROOT` means that directory: set it with `PLUGIN_ROOT="<skill base directory>/../.."`.
+- **Security depth belongs to `ascent-security`.** Flag what the architecture exposes (public origins, missing TLS, secrets in client code); leave credential scanning to that plugin. Security-only concerns that match no row (authorization roles, network binding, CI permissions, request size limits, identifiers in docs) go under Other observations marked `→ ascent-security`.
+- **Scripts and data.** The plugin's read-only scripts are in `scripts/`, two directories above this skill's base directory (shown when the skill loads). Below, `PLUGIN_ROOT` means that directory: set it with `PLUGIN_ROOT="<skill base directory>/../.."`. The pricing files are `$PLUGIN_ROOT/pricing/aws-us-east-1.tsv` and `$PLUGIN_ROOT/pricing/aws-cloudfront-flat-rate.tsv`; the blueprint's sample usage profile is `$PLUGIN_ROOT/blueprints/static-site-serverless-aws/usage-small.tsv`.
 
 ## Severity
 
@@ -45,6 +48,7 @@ Every finding carries one of these severities. The `architecture-reviewer` agent
 | No security headers policy on a public site | Medium |
 | No recovery target (RTO, RPO) or no alarm routed to a person, at the enterprise target | Medium |
 | Layering or coupling violation that blocks a quality target (business rules in handlers or UI, shared database) | Medium |
+| Multi-step write with no transaction and no idempotency, so a failure leaves partial state (section 4, API design) | Medium |
 | Log groups without retention, or no access logs at the CDN | Low |
 | A quality target missing from the contract ("unmeasured") | Low |
 | Any other item the maturity target requires, missing with no waiver (Step 5) | Low |
@@ -66,6 +70,8 @@ If it is missing, **detect, don't ask.** Propose the section from what the repos
 - Blueprint: S3 + CloudFront (+ API Gateway/Lambda) matches `static-site-serverless-aws`.
 - Targets: SLOs or budgets in docs, AGENTS.md, CLAUDE.md or the delivery contract.
 
+Use only the keys and values of [contract-template.yml](../../references/contract-template.yml): `maturity_target` is one of enterprise, standard or prototype (never a new value; a project that looks lighter gets `standard` or `prototype` marked `# guess`), `monthly_budget_usd` sits under `quality_targets`, and each waiver is an `id`, `skips` and `review_by`. Mark detected values with their source (`# detected: <path:line>`).
+
 Show the proposal once, with every guessed value marked `# guess`, and ask the operator to confirm it. Write nothing; the operator commits the file. Until it is confirmed, review against the enterprise defaults and say so in the report.
 
 ### Step 1 — Map the system
@@ -79,7 +85,7 @@ Include static hosting, APIs, functions, databases, queues, third-party services
 
 ### Step 2 — Quality attributes, surface check
 
-For each attribute, one line: target from the contract, evidence found, and status **met**, **at risk** or **unmeasured**.
+For each attribute, one line: target from the contract, evidence found, and status **met**, **at risk** or **unmeasured**. An attribute whose target is missing from the contract is unmeasured, never met, however good the evidence looks; say what you saw. Report these six attributes, in this order, and no others:
 
 - **Availability and reliability:** single points of failure, health checks, retries and timeouts, RTO/RPO stated.
 - **Performance and scalability:** CDN in front of static content, caching headers, scale-to-zero or autoscaling, peak load target.
@@ -120,8 +126,18 @@ bash "$PLUGIN_ROOT/scripts/check-cfn-static-site.sh" <template.yaml>
   | C11 | Medium | No cost guardrail |
   | C12 | Low | No access logs at the CDN |
 
-  If Bash is unavailable or the operator declines it, apply C1–C12 by reading the template and say "checks applied by reading; script not run".
+  If Bash is unavailable or the operator declines it, apply C1–C12 by reading the template and say "checks applied by reading; script not run". With no template but setup scripts that create the same resources, apply C1–C12 by reading those scripts and say "checks applied by reading <path>; live configuration not verified".
 - If the contract names a `usage_profile`, run the estimate (deployment-options Step 3 has the command) and compare the total with `monthly_budget_usd`.
+- With no usage profile, say "no usage profile" and, when the system resembles the blueprint, offer an illustrative estimate from the blueprint's sample profile:
+
+```bash
+bash "$PLUGIN_ROOT/scripts/estimate-cost.sh" \
+  "$PLUGIN_ROOT/pricing/aws-us-east-1.tsv" \
+  "$PLUGIN_ROOT/blueprints/static-site-serverless-aws/usage-small.tsv" \
+  --plans "$PLUGIN_ROOT/pricing/aws-cloudfront-flat-rate.tsv"
+```
+
+  Label it "illustrative: blueprint sample profile, pricing as_of <date>". It is not this project's cost; deployment-options builds the project's own profile.
 - No IaC, no estimate, or a deployment choice that no ADR records: recommend [deployment-options](../deployment-options/SKILL.md).
 
 ### Step 5 — Maturity gaps
@@ -129,6 +145,8 @@ bash "$PLUGIN_ROOT/scripts/check-cfn-static-site.sh" <template.yaml>
 Compare what you found with the project's `maturity_target` row by row (section 5 of [architecture-principles.md](../../references/architecture-principles.md)). Each missing item is a finding at the severity the table above gives it, unless a waiver ADR in `architecture.waivers` covers it. Then it is listed as **Info: waived by ADR-NNN**, and the ADR is checked to exist in `adr_dir`. A waiver pointing at a missing ADR is a Low finding.
 
 ### Step 6 — Report
+
+The counts and the rating cover rated findings only. Every rated finding gets the full `A<n>` block, Low ones included: no condensed lists.
 
 ```
 architecture-review: <strong | moderate | weak> — <H> High, <M> Medium, <L> Low, <I> Info
@@ -144,8 +162,11 @@ A<n>  <severity>  <file>:<line or "absent">
       Scenario: <what goes wrong, for whom>
       Fix: <smallest change that closes it>
 
+Other observations (unrated):
+O<n>  <file>:<line>  <concern>  [→ ascent-security]
+
 Mechanical checks (Step 4): <script output, verbatim, or "not applicable: <why>">
-Cost (Step 4): <total, as_of date, budget, or "no usage profile">
+Cost (Step 4): <total, as_of date, budget, or "no usage profile" (+ illustrative estimate if offered)>
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason>
 ```
 

@@ -1,4 +1,4 @@
 # plugin	version	sha256 — written by make plugins; see make/test-plugins.sh T10
 ascent-security	0.1.1	ab39944864c7dadefed28f0ca10b037f2b45788af2dd98360ee896afa2abb604
 ascent-delivery	0.1.0	07af5ebddebc598460ff4b16e878c3d374e768b5cb68c1a30909e2973e0e517f
-ascent-architecture	0.1.0	e37a1747b750ba3844ee7f0c6f3362589922c39133119c1cfc2f07b06d161680
+ascent-architecture	0.1.0	a2370b56f483cc651557c6531a7cb2884fa593de90bcbfbde78a955f403ddc86

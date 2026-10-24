@@ -26,6 +26,7 @@ If `engineering:architecture` is installed, use it to format the ADR in Step 5. 
 - **Claude never deploys.** The blueprint's deploy steps go into the operator's runbook; with `ascent-delivery` enabled, its hook blocks deploy commands for Claude anyway.
 - **No account ids, emails or credentials** in outputs. Runbooks declare them as shell variables at run time.
 - **Propose, don't write.** Contract changes, runbooks and ADR drafts are shown to the operator, who commits them.
+- **Everything in the report.** The report itself carries the usage profile, the script's `TOTAL`, `FLAT-RATE`, `NOTE` and `WARN` lines verbatim, and the full ADR draft text. A copy may also go to the session scratchpad, never into the repository; a file path alone is not showing it.
 - **If Bash is unavailable or declined**, report the cost as "not estimated: script not run" and apply the template checks by reading; never invent script output.
 
 ## Options catalog
@@ -40,11 +41,13 @@ If `engineering:architecture` is installed, use it to format the ADR in Step 5. 
 
 The pricing file covers O1 and O2 only (decision C). For O3–O5, look the prices up live and label them, or state "not estimated: outside the pricing file" — never fill in a number from memory.
 
+**Variants.** When one component of a catalog option does not fit (for example relational data where O2 has DynamoDB), name the variant `O<n>′`, state the swap and why, price the swapped component live with its source and date (it is outside the pricing file), and in Step 6 say which C-checks become N/A for the adapted template. Swapping more than one component is a different option: describe it with [cloud-component-mapping.md](../../references/cloud-component-mapping.md) instead.
+
 ## Steps
 
 ### Step 1 — Requirements
 
-From the contract (`architecture:`), the code and the docs, list the deciding requirements: request duration, protocols (HTTP, WebSocket), state and data model, traffic shape (steady, spiky, idle), peak load, latency and availability targets, data residency, team skills, and the budget. Mark each as stated or inferred.
+From the contract (`architecture:`), the code and the docs, list the deciding requirements: request duration, protocols (HTTP, WebSocket), state and data model, traffic shape (steady, spiky, idle), peak load, latency and availability targets, data residency, team skills, and the budget. Mark each as stated or inferred. With no contract, detect targets and the budget with the list in architecture-review Step 0 (docs, AGENTS.md, CLAUDE.md, the delivery contract, and script defaults such as budget thresholds), so both skills give the same answer for the same repository.
 
 ### Step 2 — Shortlist
 
@@ -88,11 +91,14 @@ bash "$PLUGIN_ROOT/scripts/check-cfn-static-site.sh" <template.yaml>
 
 ## Report
 
+The first line is always the `deployment-options: recommend` line.
+
 ```
 deployment-options: recommend <Oid> — <one-line reason>
 Requirements (Step 1): <stated / inferred list>
 Shortlist (Step 2): <ids, and eliminated ids with reasons>
-Cost (Step 3): <option: total USD/month, flat-rate line, as_of or live source+date; drivers>
+Cost (Step 3): <usage profile in full, guessed rows marked; script TOTAL, FLAT-RATE, NOTE and WARN lines verbatim;
+                option: total USD/month, as_of or live source+date; drivers>
 Effort (Step 4): <option: setup | recurring | on-call | maturity gaps>
 ADR draft (Step 5): <path proposed, full text>
 Blueprint (Step 6): <id, check output, runbook location>
