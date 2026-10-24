@@ -10,9 +10,28 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Planned
+
+- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges
+- `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
+- Plugin roadmap (decisions 2026-10-18; order confirmed 2026-10-24): `ascent-ux` next, then `ascent-ops`, `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`
+- `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
+- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
+- Phase 5 — Test harness with three eval scenarios
+- Phase 6 — Starter repo generation tooling
+- Phase 7 — First production project scaffolded from ASCENT
+
+See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.4] — 2026-10-24
+
+**Architecture plugin.** `ascent-architecture` 0.1.0 reviews any repository's architecture against a project contract (`.ascent/contract.yml`): a system map, quality attributes, design principles, deployment and dated cost estimates, with rated findings and a strong/moderate/weak rating. It ships a static-site blueprint on AWS with a template checker and a cost estimator. A read-only trial on a real repository (five runs) drove two calibration rounds before release. See [ADR-011](docs/framework/DECISIONS/ADR-011-architecture-plugin-and-project-contract.md), now Accepted.
+
 ### Added
 
-- `plugins/ascent-architecture/` 0.1.0 (ADR-011, Proposed): architecture review for any repository. Four hand-written skills — `architecture-review` (entry point: maps the system, surface checks for quality attributes, design principles, deployment and cost, maturity gaps; severity table and strong/moderate/weak rating), `quality-attributes` (measurable targets, met / at risk / unmeasured with evidence), `design-principles-check` (style detection; separation of concerns, coupling, SOLID, twelve-factor, API design) and `deployment-options` (five options compared by setup effort, dated monthly cost, operations burden and maturity fit; ADR draft; blueprint hand-off) — and a read-only `architecture-reviewer` agent
+- `plugins/ascent-architecture/` 0.1.0 (ADR-011): architecture review for any repository. Four hand-written skills — `architecture-review` (entry point: maps the system, surface checks for quality attributes, design principles, deployment and cost, maturity gaps; severity table and strong/moderate/weak rating), `quality-attributes` (measurable targets, met / at risk / unmeasured with evidence), `design-principles-check` (style detection; separation of concerns, coupling, SOLID, twelve-factor, API design) and `deployment-options` (five options compared by setup effort, dated monthly cost, operations burden and maturity fit; ADR draft; blueprint hand-off) — and a read-only `architecture-reviewer` agent
 - `ascent-architecture` references: architecture principles P1–P12 with evidence, the six Well-Architected pillars, the Solutions Architect Professional lens, prototype/standard/enterprise maturity targets; AWS ↔ Azure ↔ Google Cloud component mapping; the `architecture:` section of the project contract `.ascent/contract.yml` (`.claude/contract.yml` where ASCENT-named files are not allowed)
 - Blueprint `static-site-serverless-aws`: CloudFormation for a private S3 origin behind CloudFront (Origin Access Control, security headers, HTTPS only), an HTTP API on Lambda arm64 with DynamoDB on demand, retained data, point-in-time recovery, log retention, throttling, an error alarm and a monthly budget; passes `cfn-lint`; README with architecture, cost, effort, operator deploy runbook (change-set dry run, personal values as shell variables) and rollback
 - `scripts/estimate-cost.sh` and pricing files (AWS us-east-1 list prices and CloudFront flat-rate plans with their feature tiers, as_of 2026-10-18, source URL per row): itemized monthly estimate, shared free-allowance pools, flat-rate comparison that honors `plan_needs_<feature>` rows, 90-day staleness warning, exit 2 on any unpriced or malformed usage line
@@ -26,19 +45,6 @@ Dates are in **America/New_York** timezone.
 - `make test-plugins` T11 runs behavior tests for every plugin that ships `scripts/` as well as `hooks/`; a plugin with either and no tests fails, and so does a script that no test names
 - `make test-plugins` T5 also requires every copy of the architecture severity table (`arch-severity` markers) to be identical
 - `.claude-plugin/marketplace.json`: `ascent-architecture` entry (`/plugin install ascent-architecture@lloydbriantech-ascent`)
-
-### Planned
-
-- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges
-- `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
-- Plugin roadmap (decisions 2026-10-18): after `ascent-architecture`, `ascent-ux`, `ascent-ops`, `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`
-- `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing
-- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
-- Phase 5 — Test harness with three eval scenarios
-- Phase 6 — Starter repo generation tooling
-- Phase 7 — First production project scaffolded from ASCENT
-
-See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
 
 ---
 

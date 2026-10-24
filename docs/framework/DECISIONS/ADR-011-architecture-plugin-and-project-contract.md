@@ -1,6 +1,6 @@
 # ADR-011: Architecture plugin and the project contract file
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-24, after the read-only trial of decision E)
 **Date:** 2026-10-18 (America/New_York)
 **Decider:** lloydbriantech
 
@@ -47,9 +47,10 @@ Decision 2 put per-project configuration in one file with a section per plugin. 
 - The pricing file goes stale. The estimator's 90-day warning and the live check make that visible; refreshing it is a plugin change with a version bump (T10), which is the intended friction.
 - The template checker reads YAML by indentation and treats any `Fn::If` branch as present. It can miss a defect in an unusual template, which is why it is documented as a guard rail and names `cfn-lint` and `cfn-guard`.
 - Accessibility and UX remain out of scope until `ascent-ux`, and SRE runbooks, pre-flight and post-flight checks until `ascent-ops`.
+- The trial (decision E, 2026-10-24) ran the agent and the skills five times on a real repository. It found spec gaps rather than design flaws: severities invented outside the table, a pricing path one skill did not name, invalid contract values, and a missed High for credentials in client code. Two calibration rounds fixed them before release, each pinned by a rule test and negative controls (P50–P61).
 
 ## Cost implications
 
-- One plugin of about 1,600 lines (skills, agent, references, blueprint, two scripts) and about 400 lines of tests. Twenty more controls add about two minutes to `make test-mutants`.
+- One plugin of about 1,600 lines (skills, agent, references, blueprint, two scripts) and about 400 lines of tests. Thirty-two more controls (P30–P61) add about three minutes to `make test-mutants`.
 - Recurring: refresh the pricing file at least every 90 days or when AWS changes a price; review the blueprint when a Lambda runtime approaches end of support.
 - The blueprint itself costs about 0.86 USD a month for a small site on pay-as-you-go, at prices as of 2026-10-18. CloudFront flat-rate plans do not pay off for it as written: its access logs and custom security headers need the Business plan (200 USD).

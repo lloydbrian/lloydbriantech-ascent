@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Security rules, version gate and the delivery-loop plugin complete, v0.4.3, October 18, 2026. Plugin roadmap decided (architecture first); Phase 4 awaiting signal.
+**Current state:** Architecture plugin complete, v0.4.4, October 24, 2026. Next plugin: `ascent-ux`, then `ascent-ops`; Phase 4 awaiting signal.
 
 ---
 
@@ -120,6 +120,12 @@ Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macO
 **Status:** ✅ Complete (October 18, 2026)
 
 `ascent-security` 0.1.1 adds two rules surfaced by the trial run: short hardcoded secrets and dynamic code execution. A plugin version gate (`make/plugins.lock`, T10) makes sure installed copies receive every change. `ascent-delivery` 0.1.0 packages the delivery loop with a hook that blocks Claude from git writes and deploys, hardened after an adversarial review and verified on macOS and Linux ([ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md), Proposed). The plugin roadmap that follows — architecture, ux, ops, quality, session, adr, docs, node-stack — was decided the same day. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.4 — Architecture plugin
+
+**Status:** ✅ Complete (October 24, 2026)
+
+`ascent-architecture` 0.1.0 reviews a repository's architecture against the project contract, `.ascent/contract.yml`, which every plugin will share. It maps the system, checks quality attributes, design principles, deployment and cost, and rates findings strong, moderate or weak. It compares deployment options with dated cost estimates and hands over a static-site blueprint on AWS ([ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md)). A read-only trial on a real repository ran five times and drove two calibration rounds before release. Among the fixes: severities only from the table, a pricing path the review skill could not find, and a missed High for secrets in client code. Thirty-two plugin controls pin the result. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 
