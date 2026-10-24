@@ -1,0 +1,34 @@
+# ascent-architecture pricing file: AWS us-east-1 (US East, N. Virginia), USD list prices.
+# as_of: 2026-10-18
+# Covers the services in blueprint static-site-serverless-aws only (decision C, 2026-10-18).
+# ESTIMATES ONLY. Excludes tax, support plans, Savings Plans, credits and data transfer
+# between Regions. "free" is the always-free monthly allowance; 12-month and credit-based
+# free tiers are NOT counted, so new-account bills can be lower than the estimate.
+# Refresh: check each source URL, update usd/free and as_of, bump the plugin version.
+# Columns (TAB-separated): key, per (units per price), usd (price per "per" units),
+# free (always-free units per month), pool (rows sharing one free allowance, or -),
+# unit, source.
+key	per	usd	free	pool	unit	source
+s3_storage_gb	1	0.023	0	-	GB-month, S3 Standard, first 50 TB	https://aws.amazon.com/s3/pricing/
+s3_put_requests	1000	0.005	0	-	PUT, COPY, POST, LIST requests	https://aws.amazon.com/s3/pricing/
+s3_get_requests	1000	0.0004	0	-	GET and other read requests	https://aws.amazon.com/s3/pricing/
+cf_data_out_gb	1	0.085	1024	-	GB to internet, US/Mexico/Canada, up to 10 TB	https://aws.amazon.com/cloudfront/pricing/pay-as-you-go
+cf_https_requests	10000	0.0100	10000000	cf_requests	HTTPS requests, US	https://aws.amazon.com/cloudfront/pricing/pay-as-you-go
+cf_http_requests	10000	0.0075	10000000	cf_requests	HTTP requests, US	https://aws.amazon.com/cloudfront/pricing/pay-as-you-go
+cf_function_invocations	1000000	0.10	2000000	-	CloudFront Functions invocations	https://aws.amazon.com/cloudfront/pricing/pay-as-you-go
+lambda_requests	1000000	0.20	1000000	-	requests	https://aws.amazon.com/lambda/pricing/
+lambda_gb_seconds_arm	1	0.0000133334	400000	lambda_gbs	GB-second, arm64, first tier	https://aws.amazon.com/lambda/pricing/
+lambda_gb_seconds_x86	1	0.0000166667	400000	lambda_gbs	GB-second, x86_64, first tier	https://aws.amazon.com/lambda/pricing/
+apigw_http_requests	1000000	1.00	0	-	HTTP API requests, first 300 M (512 KB units)	https://aws.amazon.com/api-gateway/pricing/
+apigw_rest_requests	1000000	3.50	0	-	REST API requests, first 333 M	https://aws.amazon.com/api-gateway/pricing/
+ddb_write_units	1000000	0.625	0	-	on-demand write request units, Standard table	https://aws.amazon.com/dynamodb/pricing/on-demand/
+ddb_read_units	1000000	0.125	0	-	on-demand read request units, Standard table	https://aws.amazon.com/dynamodb/pricing/on-demand/
+ddb_storage_gb	1	0.25	25	-	GB-month, Standard table	https://aws.amazon.com/dynamodb/pricing/on-demand/
+r53_hosted_zones	1	0.50	0	-	hosted zone-month, first 25	https://aws.amazon.com/route53/pricing/
+r53_queries	1000000	0.40	0	-	standard queries (alias queries to CloudFront are free)	https://aws.amazon.com/route53/pricing/
+cw_logs_ingest_gb	1	0.50	5	cw_logs	GB ingested, Standard class	https://aws.amazon.com/cloudwatch/pricing/
+cw_logs_storage_gb	1	0.03	5	cw_logs	GB-month stored	https://aws.amazon.com/cloudwatch/pricing/
+cw_alarms	1	0.10	10	-	standard-resolution alarm-month	https://aws.amazon.com/cloudwatch/pricing/
+waf_web_acls	1	5.00	0	-	web ACL-month	https://aws.amazon.com/waf/pricing/
+waf_rules	1	1.00	0	-	rule or managed rule group-month	https://aws.amazon.com/waf/pricing/
+waf_requests	1000000	0.60	0	-	web requests inspected	https://aws.amazon.com/waf/pricing/

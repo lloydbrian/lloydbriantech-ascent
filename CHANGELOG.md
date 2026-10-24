@@ -10,11 +10,29 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Added
+
+- `plugins/ascent-architecture/` 0.1.0 (ADR-011, Proposed): architecture review for any repository. Four hand-written skills — `architecture-review` (entry point: maps the system, surface checks for quality attributes, design principles, deployment and cost, maturity gaps; severity table and strong/moderate/weak rating), `quality-attributes` (measurable targets, met / at risk / unmeasured with evidence), `design-principles-check` (style detection; separation of concerns, coupling, SOLID, twelve-factor, API design) and `deployment-options` (five options compared by setup effort, dated monthly cost, operations burden and maturity fit; ADR draft; blueprint hand-off) — and a read-only `architecture-reviewer` agent
+- `ascent-architecture` references: architecture principles P1–P12 with evidence, the six Well-Architected pillars, the Solutions Architect Professional lens, prototype/standard/enterprise maturity targets; AWS ↔ Azure ↔ Google Cloud component mapping; the `architecture:` section of the project contract `.ascent/contract.yml` (`.claude/contract.yml` where ASCENT-named files are not allowed)
+- Blueprint `static-site-serverless-aws`: CloudFormation for a private S3 origin behind CloudFront (Origin Access Control, security headers, HTTPS only), an HTTP API on Lambda arm64 with DynamoDB on demand, retained data, point-in-time recovery, log retention, throttling, an error alarm and a monthly budget; passes `cfn-lint`; README with architecture, cost, effort, operator deploy runbook (change-set dry run, personal values as shell variables) and rollback
+- `scripts/estimate-cost.sh` and pricing files (AWS us-east-1 list prices and CloudFront flat-rate plans with their feature tiers, as_of 2026-10-18, source URL per row): itemized monthly estimate, shared free-allowance pools, flat-rate comparison that honors `plan_needs_<feature>` rows, 90-day staleness warning, exit 2 on any unpriced or malformed usage line
+- `scripts/check-cfn-static-site.sh`: 12 read-only per-resource checks (C1–C12) on CloudFormation YAML for the static-site pattern, N/A when a check's resources are absent, exit 2 on syntax it cannot read; CRLF and tabs accepted
+- `tests/plugins/ascent-architecture/`: `test-estimate-cost.sh` (hand-checkable fixtures, pools, plan features, shipped files and documented totals, bad input) and `test-check-cfn.sh` (blueprint passes 12/12 in six layouts; one broken copy per defect fails that check and no other; severities agree across script, skill and output; `cfn-lint` when installed), on every awk installed
+- `make test-mutants`: plugin controls P30–P61 for the agent, the estimator, the checker, the blueprint, its documented cost, the pricing version gate, the tests, the skill links, the severity tables and the trial-calibration rules (127 in total)
+- `ascent-architecture` trial calibration (read-only trial on a real repository, 2026-10-24): off-table concerns go under "Other observations (unrated)" and never get an invented severity; new severity row for multi-step writes with no transaction or idempotency (Medium); repository-relative `file:line` evidence and fresh evidence per run; `architecture-review` names the pricing files and offers an illustrative estimate from the blueprint's sample profile; contract proposals use only the template's keys and `maturity_target` values; a missing target is unmeasured (or at risk when the evidence shows a gap), never met; client code and templates are searched for secrets, High even before publishing, and `ascent-security` is recommended whenever an item is referred to it; C1–C12 may be applied by reading setup scripts; `deployment-options` keeps the usage profile, script lines and ADR text in the report, defines `O<n>′` variants and detects targets like `architecture-review` Step 0. Pinned by `test-skill-rules.sh` (R1–R11)
+
+### Changed
+
+- `make test-plugins` T11 runs behavior tests for every plugin that ships `scripts/` as well as `hooks/`; a plugin with either and no tests fails, and so does a script that no test names
+- `make test-plugins` T5 also requires every copy of the architecture severity table (`arch-severity` markers) to be identical
+- `.claude-plugin/marketplace.json`: `ascent-architecture` entry (`/plugin install ascent-architecture@lloydbriantech-ascent`)
+
 ### Planned
 
 - `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges
 - `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
-- Plugin roadmap (decisions 2026-10-18): `ascent-architecture` (architecture review, quality attributes, design principles, deployment options with cost estimates and blueprints), then `ascent-ux`, `ascent-ops`, `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`
+- Plugin roadmap (decisions 2026-10-18): after `ascent-architecture`, `ascent-ux`, `ascent-ops`, `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`
+- `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5 — Test harness with three eval scenarios
 - Phase 6 — Starter repo generation tooling

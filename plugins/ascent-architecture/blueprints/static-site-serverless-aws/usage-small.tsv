@@ -1,0 +1,23 @@
+# Usage profile: small public site with a light API (club or team site, ~5k visitors/month).
+# Monthly quantities. Copy this file into the project (contract: architecture.usage_profile)
+# and replace the numbers with measured ones (CloudWatch, CloudFront reports, Cost Explorer).
+# Columns (TAB-separated): key, quantity, comment. plan_needs_<feature> rows are
+# requirements for the CloudFront flat-rate comparison, not priced lines.
+s3_storage_gb	2	site assets and images
+s3_put_requests	2000	deploy uploads
+s3_get_requests	50000	CloudFront cache misses
+cf_data_out_gb	40	pages and images
+cf_https_requests	600000	about 120 requests per visit
+lambda_requests	150000	API calls
+lambda_gb_seconds_arm	3750	150k calls x 0.1 s x 0.25 GB
+apigw_http_requests	150000	one per API call
+ddb_write_units	20000	score and result writes
+ddb_read_units	300000	standings and schedule reads
+ddb_storage_gb	1	league data
+r53_hosted_zones	1	the site's zone
+r53_queries	200000	non-alias queries
+cw_logs_ingest_gb	1	Lambda, API and CloudFront logs
+cw_logs_storage_gb	3	30-day retention
+cw_alarms	1	API error alarm (the budget is not a CloudWatch alarm)
+plan_needs_access_logs	1	the template delivers CloudFront access logs
+plan_needs_custom_response_headers	1	the template uses its own security headers policy (CSP)

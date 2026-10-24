@@ -1,0 +1,12 @@
+{
+  "name": "ascent-architecture",
+  "version": "0.1.0",
+  "description": "Architecture review for any repository: quality attributes against measurable targets, design principles, deployment options with dated cost estimates, a CloudFormation blueprint for a static site with a serverless API, mechanical template checks, and a read-only architecture-reviewer agent.",
+  "author": {
+    "name": "lloydbriantech"
+  },
+  "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["architecture", "well-architected", "quality-attributes", "cost", "cloudformation", "aws", "review", "ascent"]
+}

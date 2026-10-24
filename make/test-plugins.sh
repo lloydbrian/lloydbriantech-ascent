@@ -9,7 +9,8 @@
 #   T4b skills pre-approve only read tools: Read, Grep, Glob, Bash(git ls-files:*),
 #       Bash(git log:*)
 #   T5  every skill that classifies findings carries the shared severity table,
-#       and all copies are identical
+#       and all copies are identical; every copy of the architecture severity
+#       table (arch-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
 #   T7  skill frontmatter passes qa-skill-frontmatter
@@ -19,10 +20,12 @@
 #   T10 any change to a plugin's files comes with a plugin.json version bump:
 #       make/plugins.lock records version and content hash (make/plugin-hash.sh);
 #       same version with a different hash fails, as does an unrecorded version
-#   T11 every plugin with hooks/ has a hooks.json whose ${CLAUDE_PLUGIN_ROOT}
-#       script paths exist, and behavior tests in tests/plugins/<plugin>/test-*.sh
-#       that all pass; each test must end with "<test-name>: N/N PASS" (N > 0).
-#       A plugin with hooks but no tests fails.
+#   T11 every plugin with hooks/ or scripts/ has behavior tests in
+#       tests/plugins/<plugin>/test-*.sh that all pass; each test must end with
+#       "<test-name>: N/N PASS" (N > 0). A plugin with hooks or scripts but no
+#       tests fails, and so does a script no test file names. A plugin with
+#       hooks/ also needs a hooks.json whose
+#       ${CLAUDE_PLUGIN_ROOT} script paths exist.
 #
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
@@ -154,6 +157,15 @@ for f in $(grep -rl 'severity-table:start' "$ROOT/plugins" "$ROOT/skills" 2>/dev
   if [ -n "$FIRST" ] && [ "$(table "$f")" != "$(table "$FIRST")" ]; then T5_OK=0; bad "T5 severity table in ${f#"$ROOT"/} differs"; fi
 done
 [ "$T5_OK" -eq 1 ] && ok "T5 severity table present in $N5 plugin skills and identical everywhere"
+atable() { awk '/<!-- arch-severity:start/{on=1; next} /<!-- arch-severity:end/{on=0} on' "$1"; }
+AFIRST=""; NA5=0; A5_OK=1
+for f in $(grep -rl 'arch-severity:start' "$ROOT/plugins" 2>/dev/null | LC_ALL=C sort || true); do
+  NA5=$((NA5 + 1))
+  if [ -z "$(atable "$f" | grep '^|' || true)" ]; then A5_OK=0; bad "T5 architecture severity table in ${f#"$ROOT"/} is empty"
+  elif [ -z "$AFIRST" ]; then AFIRST="$f"
+  elif [ "$(atable "$f")" != "$(atable "$AFIRST")" ]; then A5_OK=0; bad "T5 architecture severity table in ${f#"$ROOT"/} differs from ${AFIRST#"$ROOT"/}"; fi
+done
+[ "$NA5" -gt 0 ] && [ "$A5_OK" -eq 1 ] && ok "T5 architecture severity table identical in $NA5 files"
 
 # T6 — links
 BROKEN=""
@@ -223,22 +235,28 @@ for p in $PLUGINS; do
   fi
 done
 
-# T11 — hook behavior tests
+# T11 — behavior tests for plugins that ship executable code (hooks or scripts)
 for p in $PLUGINS; do
-  [ -d "$ROOT/plugins/$p/hooks" ] || continue
+  [ -d "$ROOT/plugins/$p/hooks" ] || [ -d "$ROOT/plugins/$p/scripts" ] || continue
   problems=""
-  HJ="$ROOT/plugins/$p/hooks/hooks.json"
-  if [ -f "$HJ" ]; then
-    for ref in $(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9._/-]+' "$HJ" | sed 's|^\${CLAUDE_PLUGIN_ROOT}/||' | LC_ALL=C sort -u); do
-      [ -f "$ROOT/plugins/$p/$ref" ] || problems="$problems hooks.json runs missing $ref;"
-    done
-  else
-    problems="$problems hooks/ has no hooks.json;"
+  if [ -d "$ROOT/plugins/$p/hooks" ]; then
+    HJ="$ROOT/plugins/$p/hooks/hooks.json"
+    if [ -f "$HJ" ]; then
+      for ref in $(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9._/-]+' "$HJ" | sed 's|^\${CLAUDE_PLUGIN_ROOT}/||' | LC_ALL=C sort -u); do
+        [ -f "$ROOT/plugins/$p/$ref" ] || problems="$problems hooks.json runs missing $ref;"
+      done
+    else
+      problems="$problems hooks/ has no hooks.json;"
+    fi
   fi
   TESTS=$(ls "$ROOT/tests/plugins/$p"/test-*.sh 2>/dev/null | LC_ALL=C sort || true)
   if [ -z "$TESTS" ]; then
-    bad "T11 $p has hooks/ but no tests under tests/plugins/$p/ (test-*.sh)"; continue
+    bad "T11 $p ships hooks/ or scripts/ but has no tests under tests/plugins/$p/ (test-*.sh)"; continue
   fi
+  for sc in "$ROOT/plugins/$p"/scripts/*; do
+    [ -f "$sc" ] || continue
+    grep -qF "$(basename "$sc")" $TESTS 2>/dev/null || problems="$problems scripts/$(basename "$sc") is not exercised by any test;"
+  done
   NTESTS=0; NCASES=0
   for t in $TESTS; do
     NTESTS=$((NTESTS + 1)); tn=$(basename "$t" .sh)
@@ -254,7 +272,7 @@ for p in $PLUGINS; do
       problems="$problems $tn failed: $(grep -E '^FAIL' "$WORK/t11.out" | head -3 | cut -c1-100 | tr '\n' ';')"
     fi
   done
-  if [ -z "$problems" ]; then ok "T11 $p: $NTESTS hook test file(s), $NCASES cases pass"; else bad "T11 $p:$problems"; fi
+  if [ -z "$problems" ]; then ok "T11 $p: $NTESTS behavior test file(s), $NCASES cases pass"; else bad "T11 $p:$problems"; fi
 done
 
 printf "\ntest-plugins: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
