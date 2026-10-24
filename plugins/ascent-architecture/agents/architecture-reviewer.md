@@ -56,11 +56,11 @@ The table and checks above are enough to review. When the caller passes the plug
 
 1. **Contract** (architecture-review Step 0). Read `.ascent/contract.yml` or `.claude/contract.yml`. If neither exists, review against the enterprise defaults and include a proposed `architecture:` section with every guess marked `# guess`. Do not write it. Use only the template's keys and values: `maturity_target` is one of enterprise, standard or prototype, `monthly_budget_usd` sits under `quality_targets`, and each waiver is an `id`, `skips` and `review_by`.
 2. **Map the system** (architecture-review Step 1): a component inventory with `file:line` sources and a short Mermaid flowchart.
-3. **Quality attributes** (architecture-review Step 2; quality-attributes Steps 2–3 when two or more are at risk): one line per attribute, met, at risk or unmeasured, with evidence. A target missing from the contract makes the attribute unmeasured, never met. Report only the six attributes that step lists.
+3. **Quality attributes** (architecture-review Step 2; quality-attributes Steps 2–3 when two or more are at risk): one line per attribute, met, at risk or unmeasured, with evidence. A target missing from the contract makes the attribute unmeasured, never met; it is at risk instead when the evidence shows a gap. Report only the six attributes that step lists. Run that step's search for secrets in client code: a hit is High whether or not the page is published yet.
 4. **Design principles** (architecture-review Step 3; design-principles-check Step 2 for Medium concerns): sample entry points, handlers and data access.
 5. **Deployment and cost** (architecture-review Step 4): for CloudFormation YAML on the static-site pattern, apply C1–C12 by reading the template and report each as PASS, FAIL with severity, or N/A. With no template but setup scripts that create the same resources, apply them to the scripts and say "live configuration not verified". If the contract names a usage profile, list its largest lines and recommend that the main session runs the estimate (deployment-options Step 3).
 6. **Maturity gaps and waivers** (architecture-review Step 5). Check that each waiver's ADR exists.
-7. **Report** in the architecture-review Step 6 format, with the rating.
+7. **Report** in the architecture-review Step 6 format, with the rating. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
 
 ## Rules
 

@@ -28,7 +28,7 @@ If `engineering:system-design` or `engineering:architecture` is installed, use t
 - **Cite principles by their id** in [architecture-principles.md](../../references/architecture-principles.md): P1–P12 for system principles, the section 4 row name (for example "API design: idempotent writes") for software design. Cite one only when its text matches the finding.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Cite the location.
-- **Security depth belongs to `ascent-security`.** Flag what the architecture exposes (public origins, missing TLS, secrets in client code); leave credential scanning to that plugin. Security-only concerns that match no row (authorization roles, network binding, CI permissions, request size limits, identifiers in docs) go under Other observations marked `→ ascent-security`.
+- **Security depth belongs to `ascent-security`.** Flag what the architecture exposes (public origins, missing TLS, secrets in client code); leave credential scanning to that plugin. Security-only concerns that match no row (authorization roles, network binding, CI permissions, request size limits, identifiers in docs) go under Other observations marked `→ ascent-security`. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
 - **Scripts and data.** The plugin's read-only scripts are in `scripts/`, two directories above this skill's base directory (shown when the skill loads). Below, `PLUGIN_ROOT` means that directory: set it with `PLUGIN_ROOT="<skill base directory>/../.."`. The pricing files are `$PLUGIN_ROOT/pricing/aws-us-east-1.tsv` and `$PLUGIN_ROOT/pricing/aws-cloudfront-flat-rate.tsv`; the blueprint's sample usage profile is `$PLUGIN_ROOT/blueprints/static-site-serverless-aws/usage-small.tsv`.
 
 ## Severity
@@ -85,11 +85,11 @@ Include static hosting, APIs, functions, databases, queues, third-party services
 
 ### Step 2 — Quality attributes, surface check
 
-For each attribute, one line: target from the contract, evidence found, and status **met**, **at risk** or **unmeasured**. An attribute whose target is missing from the contract is unmeasured, never met, however good the evidence looks; say what you saw. Report these six attributes, in this order, and no others:
+For each attribute, one line: target from the contract, evidence found, and status **met**, **at risk** or **unmeasured**. An attribute whose target is missing from the contract is unmeasured, never met, however good the evidence looks; it is at risk instead when the evidence shows a gap. Say what you saw. Report these six attributes, in this order, and no others:
 
 - **Availability and reliability:** single points of failure, health checks, retries and timeouts, RTO/RPO stated.
 - **Performance and scalability:** CDN in front of static content, caching headers, scale-to-zero or autoscaling, peak load target.
-- **Security:** private origins, TLS, headers, least-privilege roles (depth: `ascent-security`).
+- **Security:** private origins, TLS, headers, least-privilege roles, and secrets in client code: search the served HTML and JavaScript and the templates for credential-like assignments (`PIN`, `password`, `token`, `secret`, `api_key`). A hit is High per the severity table whether or not the page is published yet; give the publish status in the Scenario, never the value (depth: `ascent-security`).
 - **Cost:** budget alarm, dated estimate, throttling, log retention.
 - **Operability and observability:** alarms routed to a person, structured logs, build stamp, runbooks.
 - **Maintainability:** layering, tests, IaC, ADRs for one-way decisions.
@@ -167,7 +167,7 @@ O<n>  <file>:<line>  <concern>  [→ ascent-security]
 
 Mechanical checks (Step 4): <script output, verbatim, or "not applicable: <why>">
 Cost (Step 4): <total, as_of date, budget, or "no usage profile" (+ illustrative estimate if offered)>
-Recommended next: <only the deeper skills whose surface checks flagged something, with the reason>
+Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
 ```
 
 ## What this skill does not do

@@ -9,12 +9,15 @@
 #       exactly those in references/contract-template.yml
 #   R4  architecture-review and the agent route off-table concerns to
 #       "Other observations (unrated)"
-#   R5  a missing target makes an attribute "unmeasured, never met" (both files)
+#   R5  a missing target makes an attribute "unmeasured, never met", or at risk
+#       when the evidence shows a gap (both files)
 #   R6  architecture-review requires fresh evidence (no findings carried over)
 #   R7  deployment-options puts the profile, script lines and ADR text in the report
 #   R8  every "<skill> Step N" a skill cites names a skill and a heading that exist
 #   R9  the severity table has the multi-step write row (test-plugins T5 keeps
 #       every copy identical)
+#   R10 both files search client code for secrets, High even when unpublished
+#   R11 both files recommend ascent-security when an item is referred to it
 #
 # Prints "test-skill-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -71,6 +74,8 @@ has R4 "$AGENT" '**Other observations (unrated)**'
 # R5 — no target, no "met"
 has R5 "$REVIEW" 'unmeasured, never met'
 has R5 "$AGENT" 'unmeasured, never met'
+has R5 "$REVIEW" 'at risk instead when the evidence shows a gap'
+has R5 "$AGENT" 'at risk instead when the evidence shows a gap'
 
 # R6 — fresh evidence
 has R6 "$REVIEW" '**Fresh evidence.**'
@@ -99,6 +104,15 @@ done
 
 # R9 — the multi-step write row
 has R9 "$REVIEW" '| Multi-step write with no transaction and no idempotency, so a failure leaves partial state (section 4, API design) | Medium |'
+
+# R10 — secrets in client code are looked for, and rated High even before publishing
+has R10 "$REVIEW" 'secrets in client code: search the served HTML and JavaScript and the templates'
+has R10 "$REVIEW" 'A hit is High per the severity table whether or not the page is published yet'
+has R10 "$AGENT" 'a hit is High whether or not the page is published yet'
+
+# R11 — referrals reach Recommended next
+has R11 "$REVIEW" 'Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.'
+has R11 "$AGENT" 'Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.'
 
 printf "test-skill-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]
