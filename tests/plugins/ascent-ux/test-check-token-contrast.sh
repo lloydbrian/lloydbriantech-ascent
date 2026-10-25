@@ -99,9 +99,10 @@ C
   run "$WORK/s.css"
   rc css 0
   has css-dark "PASS  dark   fg on bg  16.14:1  text (needs 4.5)  inferred"
-  has css-light "PASS  light  fg on bg  15.90:1  text (needs 4.5)  inferred"
+  has css-base "PASS  base   fg on bg  15.90:1  text (needs 4.5)  inferred"
+  [ "$(printf '%s\n' "$OUT" | grep -c 'base   fg on bg ')" -eq 1 ] && ok || bad "a pair inferred from a rule and from names must appear once per theme"
   has css-chain "PASS  dark   link on bg  16.14:1"
-  has on-accent "PASS  light  color-text-on-accent on color-accent-base"
+  has on-accent "PASS  base   color-text-on-accent on color-accent-base"
   lacks on-surface "color-text-on-accent on color-surface-base"
   has named "color-text-body on color-surface-base"
   lacks comment "commented"
@@ -111,7 +112,19 @@ C
   printf ':root { --ink: #111111; }\n.note { color: var(--ink); background-color: var(--from-js); }\n' > "$WORK/partial.css"
   run "$WORK/partial.css"
   rc partial 0
-  has partial "SKIP  light  ink on from-js  not defined in the scanned files: no token from-js  inferred"
+  has partial "SKIP  base   ink on from-js  not defined in the scanned files: no token from-js  inferred"
+
+  # A plain :root palette is "base", not "light", even when it is dark (C4); names
+  # without the color- prefix are inferred (C6); pair files accept "--" (C5).
+  printf ':root { --text-dim: #4a6a8a; --text-main: #e2e8f0; --bg: #0a0f1c; --bg-2: #0d1526; }\n' > "$WORK/dark-root.css"
+  run "$WORK/dark-root.css"
+  has c4-base "FAIL  base   text-dim on bg-2  3.22:1  text (needs 4.5)  inferred"
+  lacks c4-nolight "light  text-dim"
+  has c6-names "PASS  base   text-main on bg  "
+  printf -- '--text-dim\t--bg-2\ttext\n' > "$WORK/dashes.tsv"
+  run --pairs "$WORK/dashes.tsv" "$WORK/dark-root.css"
+  has c5-dashes "FAIL  base   text-dim on bg-2  3.22:1  text (needs 4.5)"
+  rc c5-rc 1
 
   # Every shipped direction passes the shared pairs in light and dark.
   n=0

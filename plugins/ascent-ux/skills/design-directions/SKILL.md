@@ -28,6 +28,7 @@ Each direction is a token set (Design Tokens format 2025.10, light and dark), no
 - **No imitation of another organization's brand**: logos, trademarked palettes or product look-alikes. Brand colors are the project's own, from its repository or from the operator.
 - **Fonts:** a direction names font stacks with system fallbacks. Say when a named web font must be licensed and loaded; mocks render with whatever the machine has, and the gallery says which font was used.
 - **Browser rules from `ux-review` Step 4:** `file://` or `localhost` only, and no real data.
+- **The catalog guarantee is contrast.** Layout still depends on the page: check reflow at 320 px, focus and target sizes for every option in the browser, and fix the mock's structure, not the tokens, when it overflows.
 
 ## Steps
 
@@ -60,6 +61,8 @@ Pick the one to three pages that matter most: the home or landing page, and the 
 
 Recommend the two that best fit the personas and core flows, with one reason each, but always build all five. The operator chooses.
 
+**Brand-adapted option.** When the project has its own brand colors (its current accent, logo colors, or colors the operator names), also offer **D<n>-brand**: the top recommendation with its accent and focus colors replaced by the brand hue, adjusted until every pair in `pairs.tsv` passes. Build it as a D6+ option (Step 6) and show it next to the catalog, so the operator can keep their identity without losing accessibility.
+
 ### Step 3 — Build the mocks
 
 For each direction, and for D0:
@@ -85,7 +88,7 @@ Then run the browser pass on each mock (`file://`): `browser_snapshot`, a short 
 
 ### Step 5 — Gallery
 
-Take screenshots with `browser_take_screenshot` of each mock at 1280 wide and 320 wide, in light and dark (`browser_emulate_media` `colorScheme`). Write one `gallery.html` in the mock directory:
+Take screenshots with `browser_take_screenshot` of each mock at 1280 wide and 320 wide, in light and dark (`browser_emulate_media` `colorScheme`). If `file://` is blocked, ask the operator to serve the mock directory on localhost (as in `ux-review` Step 4) and wait. Write one `gallery.html` in the mock directory, with every screenshot at a legible size (320 px shots at their natural width, 1280 px shots at least half size, each linking to the full image):
 - the options side by side
 - each with its name, "feels like" and fit
 - the contrast summary and any check notes

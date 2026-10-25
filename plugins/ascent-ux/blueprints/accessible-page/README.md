@@ -21,6 +21,7 @@ A one-page starter that shows the ASCENT UX baseline working. It is also the tem
 | Targets of at least 24px (44px on primary controls) | 2.5.8 | `--size-target-*` |
 | Contrast in light and dark | 1.4.3, 1.4.11 | the token pairs |
 | Reduced motion and reflow | 2.3.3, 1.4.10 | the media queries |
+| Wide tables scroll in a labelled, focusable region, so the page itself never scrolls sideways at 320px | 1.4.10, 2.1.1 | `.table-wrap` with `role="region"` and `tabindex="0"` |
 
 ## Using it in a project
 

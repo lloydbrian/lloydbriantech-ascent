@@ -5,9 +5,13 @@
 #
 # Usage: check-web-accessibility.sh [--core FILE]... PATH...
 #
-# PATH is a file or a directory (searched for markup and CSS, skipping
-# node_modules, dist, build, .git, vendor and *.min.*). --core marks a file as part
-# of a core user flow: U3 and U12 failures there are High instead of Medium.
+# PATH is a file or a directory (searched for markup, CSS and JS/TS, skipping
+# node_modules, dist, build, .git, vendor, *.min.* and *.test.*/*.spec.*). In
+# .js/.ts/.mjs/.cjs files only HTML inside template literals is checked (views of
+# single-page apps); those findings say "[js template]", and U7 and U8 are not applied
+# there because one file holds many separate templates. --core marks a file as part
+# of a core user flow (with or without a leading ./): U3 and U12 failures there are
+# High instead of Medium.
 #
 # Checks (severity from the ux-review severity table; WCAG 2.2 criterion):
 #   U1  Medium  <html> declares lang                                  3.1.1
@@ -20,7 +24,8 @@
 #   U8  Low     id values are unique within a file                    4.1.2
 #   U9  Medium  a full page has a non-empty <title>                   2.4.2
 #   U10 Medium  autoplay media is muted and has controls              1.4.2, 2.2.2
-#   U11 Medium  focus outlines are not removed unless a :focus-visible style exists   2.4.7, 2.4.11
+#   U11 Medium  an outline removed on a selector is replaced by a :focus-visible style for
+#               that selector (or a universal :focus-visible rule)       2.4.7, 2.4.11
 #   U12 Medium  click handlers sit on elements a keyboard can reach (role, tabindex, key handler)   2.1.1
 #
 # Output: one FAIL line per finding (FAIL  Uk  SEVERITY  file:line  message), a
@@ -28,8 +33,10 @@
 # found nothing to check, then "check-web-accessibility: ...".
 # Limits: static. Markup is read as text: a ">" inside a template expression ends a
 # tag early, names built at runtime cannot be seen (a dynamic name counts as
-# present), and capitalized JSX/Vue/Svelte components are skipped. Every finding is
-# "static" until the browser pass (live accessibility tree) confirms it.
+# present), capitalized JSX/Vue/Svelte components are skipped, and elements built with
+# document.createElement or wired with delegated listeners are not seen (read them,
+# and rely on the browser pass). Every finding is "static" until the browser pass
+# (live accessibility tree) confirms it.
 # Exit: 0 no FAIL; 1 at least one FAIL; 2 bad input.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk.
 
@@ -54,10 +61,10 @@ FILES=""
 for p in "${PATHS[@]}"; do
   if [ -d "$p" ]; then
     FILES="$FILES$(find "$p" \( -name node_modules -o -name dist -o -name build -o -name .git -o -name vendor \) -prune -o \
-      -type f -print 2>/dev/null | grep -Ei "\\.($MARKUP|css|scss)\$" | grep -v '\.min\.' | LC_ALL=C sort || true)
+      -type f -print 2>/dev/null | grep -Ei "\\.($MARKUP|css|scss|js|ts|mjs|cjs)\$" | grep -Ev '\.min\.|\.(test|spec)\.' | LC_ALL=C sort || true)
 "
   elif [ -f "$p" ]; then
-    printf '%s\n' "$p" | grep -Eiq "\\.($MARKUP|css|scss)\$" || { echo "check-web-accessibility: not a markup or CSS file: $p" >&2; exit 2; }
+    printf '%s\n' "$p" | grep -Eiq "\\.($MARKUP|css|scss|js|ts|mjs|cjs)\$" || { echo "check-web-accessibility: not a markup, CSS or JS file: $p" >&2; exit 2; }
     FILES="$FILES$p
 "
   else
@@ -65,13 +72,9 @@ for p in "${PATHS[@]}"; do
   fi
 done
 FILES=$(printf '%s' "$FILES" | grep -v '^$' || true)
-[ -n "$FILES" ] || { echo "check-web-accessibility: no markup or CSS files under: ${PATHS[*]}" >&2; exit 2; }
-for c in $(printf '%s' "$CORE"); do printf '%s\n' "$FILES" | grep -qxF "$c" || { echo "check-web-accessibility: --core $c is not among the scanned files" >&2; exit 2; }; done
+[ -n "$FILES" ] || { echo "check-web-accessibility: no markup, CSS or JS files under: ${PATHS[*]}" >&2; exit 2; }
+for c in $(printf '%s' "$CORE"); do printf '%s\n' "$FILES" | sed 's|^\./||' | grep -qxF "${c#./}" || { echo "check-web-accessibility: --core $c is not among the scanned files" >&2; exit 2; }; done
 
-# U11: a :focus-visible style anywhere (CSS, <style>, Tailwind variants) is the replacement.
-FV=0
-# shellcheck disable=SC2086
-if printf '%s\n' "$FILES" | tr '\n' '\0' | xargs -0 grep -lE ':focus-visible|focus-visible:|focus:ring|focus:outline' >/dev/null 2>&1; then FV=1; fi
 
 PROG='
 function blank(s) { gsub(/[^\n]/, " ", s); return s }
@@ -96,12 +99,54 @@ function blank_css_comments(t,   out, i, j) {
   }
   return out t
 }
-function css_scan(t, base,   off) {
-  t = blank_css_comments(t); off = 0
-  while (match(t, /outline[ \t]*:[ \t]*(none|0)([ \t;}!]|$)/)) {
-    css_hit(base + off + RSTART)
+function selector_before(t, p,   pre, k, j, c) {
+  pre = substr(t, 1, p); k = 0
+  for (j = length(pre); j > 0; j--) { c = substr(pre, j, 1); if (c == "{") { k = j; break } if (c == "}") return "" }
+  if (k == 0) return ""
+  pre = substr(pre, 1, k - 1)
+  for (j = length(pre); j > 0; j--) { c = substr(pre, j, 1); if (c == "}" || c == "{" || c == ";" || c == ">") break }
+  return substr(pre, j + 1)
+}
+function selnorm(x) { gsub(/::?[A-Za-z-]+(\([^)]*\))?/, "", x); gsub(/[ \t\r\n]+/, " ", x); sub(/^ /, "", x); sub(/ $/, "", x); return x }
+function covered(sel,   n, parts, i, b) {
+  if (FVALL) return 1
+  n = split(sel, parts, ",")
+  if (n == 0) return 0
+  for (i = 1; i <= n; i++) { b = selnorm(parts[i]); if (b == "" || !(b in FVSEL)) return 0 }
+  return 1
+}
+function fv_prepass(raw,   full, t, off, p, j, c, k, sel, n, parts, i, b) {
+  full = blank_css_comments(raw); t = full; off = 0
+  while (match(t, /:focus-visible/)) {
+    p = off + RSTART
+    for (j = p - 1; j > 0; j--) { c = substr(full, j, 1); if (c == "{" || c == "}" || c == ";" || c == ">") break }
+    k = index(substr(full, p), "{")
+    sel = (k == 0) ? substr(full, j + 1, p - j - 1 + RLENGTH) : substr(full, j + 1, p - j - 1 + k - 1)
+    n = split(sel, parts, ",")
+    for (i = 1; i <= n; i++) if (parts[i] ~ /:focus-visible/) { b = selnorm(parts[i]); if (b == "" || b == "*" || b == "html" || b == "body") FVALL = 1; else FVSEL[b] = 1 }
     off += RSTART + RLENGTH - 1; t = substr(t, RSTART + RLENGTH)
   }
+}
+function css_scan(t, base,   full, off, p, sel) {
+  full = blank_css_comments(t); t = full; off = 0
+  while (match(t, /outline[ \t]*:[ \t]*(none|0)([ \t;}!]|$)/)) {
+    p = off + RSTART; sel = selector_before(full, p)
+    css_hit(base + p, sel)
+    off += RSTART + RLENGTH - 1; t = substr(t, RSTART + RLENGTH)
+  }
+}
+function js_templates(t,   out, i, j, k, rest, content) {
+  out = ""
+  while ((i = index(t, "`")) > 0) {
+    out = out blank(substr(t, 1, i)); rest = substr(t, i + 1)
+    j = 0
+    while (1) { k = index(substr(rest, j + 1), "`"); if (k == 0) { j = 0; break } j += k; if (substr(rest, j - 1, 1) != "\\") break }
+    if (j == 0) { out = out blank(rest); t = ""; break }
+    content = substr(rest, 1, j - 1)
+    out = out ((content ~ /<[A-Za-z]/) ? content : blank(content)) " "
+    t = substr(rest, j + 1)
+  }
+  return out blank(t)
 }
 function line_at(pos,   seg, n) {
   if (pos < LASTPOS) { LASTPOS = 1; LASTLINE = 1 }
@@ -119,7 +164,7 @@ function val(tag, re,   t, v) {
 function dynamic(v) { return v ~ /[{]/ || v ~ /^\$/ }
 function fail(k, pos, msg, sev) {
   NF_[k]++; NFAIL++
-  OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s:%d  %s\n", k, (sev == "") ? SEV[k] : sev, FILE, line_at(pos), msg)
+  OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s:%d  %s%s\n", k, (sev == "") ? SEV[k] : sev, FILE, line_at(pos), msg, ISJS ? " [js template]" : "")
 }
 function named_content(c) {
   if (c ~ /[{]/ || tolower(c) ~ /<slot/) return 1
@@ -131,6 +176,7 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
   if (FILE == "") return
   LASTPOS = 1; LASTLINE = 1; NST = 0
   if (FILE ~ /\.(css|scss)$/) { css_scan(B, 0); return }
+  if (ISJS) B = js_templates(B)
   ORIGB = B
   blank_between("<!--", "-->", 0)
   blank_between("{/*", "*/}", 0)
@@ -157,8 +203,9 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
     lname = tolower(name)
     if (lname == "label") { ldepth += isclose ? -1 : 1; if (ldepth < 0) ldepth = 0; if (!isclose && tag ~ /\/>$/) ldepth--; continue }
     if (isclose) continue
-    if (has(tag, "style") && tolower(val(tag, "style")) ~ /outline[ \t]*:[ \t]*(none|0)([ \t;]|$)/) css_hit(pos)
-    if (tolower(val(tag, "class|classname")) ~ /(^|[ \t])outline-none([ \t]|$)/) css_hit(pos)
+    if (has(tag, "style") && tolower(val(tag, "style")) ~ /outline[ \t]*:[ \t]*(none|0)([ \t;]|$)/) css_hit(pos, "")
+    v = tolower(val(tag, "class|classname"))
+    if (v ~ /(^|[ \t])outline-none([ \t]|$)/) { CHK["U11"]++; if (v !~ /focus-visible:|focus:ring|focus:outline/) fail("U11", pos, "class outline-none with no focus-visible: or focus:ring class on the element (2.4.7, 2.4.11)") }
     if (lname == "html") { CHK["U1"]++; if (!has(tag, "lang")) fail("U1", pos, "<html> has no lang attribute (3.1.1)") }
     if (lname == "img") {
       CHK["U2"]++
@@ -188,11 +235,11 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
     if (has(tag, "tabindex")) { CHK["U6"]++; v = val(tag, "tabindex"); gsub(/[{} ]/, "", v); if (v ~ /^[1-9][0-9]*$/) fail("U6", pos, "positive tabindex=\"" v "\" changes the focus order (2.4.3)") }
     if (lname ~ /^h[1-6]$/) {
       CHK["U7"]++; lv = substr(lname, 2) + 0; if (lv == 1) hasH1 = 1
-      if (prev > 0 && lv > prev + 1) fail("U7", pos, "heading level skips from h" prev " to h" lv " (1.3.1, 2.4.6)")
+      if (!ISJS && prev > 0 && lv > prev + 1) fail("U7", pos, "heading level skips from h" prev " to h" lv " (1.3.1, 2.4.6)")
       prev = lv
     }
     v = val(tag, "id")
-    if (v != "" && !dynamic(v)) { CHK["U8"]++; if (v in IDS) fail("U8", pos, "duplicate id \"" v "\" (first on line " IDS[v] ") (4.1.2)"); else IDS[v] = line_at(pos) }
+    if (v != "" && !dynamic(v) && !ISJS) { CHK["U8"]++; if (v in IDS) fail("U8", pos, "duplicate id \"" v "\" (first on line " IDS[v] ") (4.1.2)"); else IDS[v] = line_at(pos) }
     if ((lname == "video" || lname == "audio") && has(tag, "autoplay")) {
       CHK["U10"]++; c = ""
       if (!has(tag, "muted")) c = "muted"
@@ -217,7 +264,12 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
   }
   for (k = 1; k <= NST; k++) css_scan(substr(ORIGB, SST[k], SEN[k] - SST[k]), SST[k] - 1)
 }
-function css_hit(pos) { CHK["U11"]++; if (!FV) fail("U11", pos, "focus outline removed and no :focus-visible style exists in the scanned files (2.4.7, 2.4.11)") }
+function css_hit(pos, sel,   shown) {
+  CHK["U11"]++
+  if (covered(sel)) return
+  shown = selnorm(sel); if (shown == "") shown = "an inline style"
+  fail("U11", pos, "focus outline removed on " shown " and no :focus-visible style covers it (2.4.7, 2.4.11)")
+}
 BEGIN {
   split("U1 U2 U3 U4 U5 U6 U7 U8 U9 U10 U11 U12", ORDER, " ")
   split("Medium Medium Medium Medium Medium Low Low Low Medium Medium Medium Medium", sv, " ")
@@ -225,12 +277,13 @@ BEGIN {
   D["U1"] = "<html> declares lang"; D["U2"] = "images have alt"; D["U3"] = "form controls have labels"
   D["U4"] = "buttons and links have accessible names"; D["U5"] = "the viewport allows zoom"; D["U6"] = "no positive tabindex"
   D["U7"] = "heading levels do not skip; pages have an <h1>"; D["U8"] = "ids are unique within each file"; D["U9"] = "pages have a title"
-  D["U10"] = "autoplay media is muted and has controls"; D["U11"] = "focus outlines are not removed without :focus-visible"
+  D["U10"] = "autoplay media is muted and has controls"; D["U11"] = "removed focus outlines are replaced by :focus-visible"
   D["U12"] = "click handlers sit on keyboard-reachable elements"
-  FV = ENVIRON["ASCENT_FV"] + 0; nc = split(ENVIRON["ASCENT_CORE"], cl, "\n"); for (i = 1; i <= nc; i++) if (cl[i] != "") COREF[(cl[i] ~ /^\//) ? cl[i] : "./" cl[i]] = 1
+  for (i = 1; i < ARGC; i++) { T0 = ""; while ((getline line < ARGV[i]) > 0) T0 = T0 line "\n"; close(ARGV[i]); fv_prepass(T0) }
+  nc = split(ENVIRON["ASCENT_CORE"], cl, "\n"); for (i = 1; i <= nc; i++) if (cl[i] != "") COREF[(cl[i] ~ /^\//) ? cl[i] : "./" cl[i]] = 1
   FILE = ""; NFILES = 0
 }
-FNR == 1 { process(); FILE = FILENAME; B = ""; NFILES++; ISCORE = (FILE in COREF); COMPONENTS = (FILE ~ /\.(jsx|tsx|vue|svelte|astro)$/) }
+FNR == 1 { process(); FILE = FILENAME; B = ""; NFILES++; ISCORE = (FILE in COREF); COMPONENTS = (FILE ~ /\.(jsx|tsx|vue|svelte|astro)$/); ISJS = (FILE ~ /\.(m|c)?(js|ts)$/) }
 { B = B $0 "\n" }
 END {
   process()
@@ -252,4 +305,4 @@ CORE_N=""
 for c in $(printf '%s' "$CORE"); do case "$c" in /*|./*) CORE_N="$CORE_N${c#./}
 " ;; *) CORE_N="$CORE_N$c
 " ;; esac; done
-ASCENT_FV="$FV" ASCENT_CORE="$CORE_N" awk "$PROG" "${ARGS[@]}"
+ASCENT_CORE="$CORE_N" awk "$PROG" "${ARGS[@]}"

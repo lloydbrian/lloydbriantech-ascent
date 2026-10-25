@@ -91,12 +91,29 @@ matrix() {
   mutate u12-jsx Widget.jsx 's/ role="button" tabIndex={0}//' && expect_only u12-jsx U12 Medium 'no role, tabindex'
   mutate u12-svelte Item.svelte 's/ on:keydown={pick}//' && expect_only u12-svelte U12
 
+  # Template literals in JS views are checked (C1); the h2 -> h4 jump in views.js is
+  # not a U7 failure there, because a JS file holds many separate templates.
+  mutate js-label views.js 's/<label for="zone-size">Size<\/label>/<span>Size<\/span>/' && expect_only js-label U3 Medium '[js template]'
+  mutate js-alt views.js 's/ alt="${zone.name}"//' && expect_only js-alt U2 Medium 'views.js:9'
+  mutate js-name views.js "s/\${t('save')}//" && expect_only js-name U4
+
+  # U11 is per selector (C2): an outline removed on .card is not excused by a
+  # :focus-visible rule for a different selector.
+  mutate u11-selector page.html 's/:focus-visible { outline: 3px solid #0a58ca; }//' && expect_only u11-selector U11 Medium 'removed on .card'
+  printf '.x:focus { outline: none; }\n.x:focus-visible { outline: 2px solid; }\n' > "$WORK/covered.css"
+  run "$WORK" ./covered.css; [ "$RC" -eq 0 ] && ok || bad "u11: .x:focus-visible must cover .x:focus outline removal: $(printf '%s' "$OUT" | grep FAIL)"
+  printf '.x:focus { outline: none; }\n.y:focus-visible { outline: 2px solid; }\n' > "$WORK/uncovered.css"
+  run "$WORK" ./uncovered.css; printf '%s\n' "$OUT" | grep -q '^FAIL  U11  Medium ./uncovered.css:1  focus outline removed on .x' && ok || bad "u11: .y:focus-visible must not cover .x"
+
   # --core raises U3 and U12 to High, and only in the named file.
   mutate core page.html 's/<input type="text" aria-label="Search">/<input type="text">/' page.html 's/ onkeydown="go()"//' Widget.jsx 's/ onKeyDown={save}//'
-  run "$WORK/core" --core ./page.html .
+  run "$WORK/core" --core page.html .
   [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  U3   High   ./page.html')" = 1 ] && ok || bad "core: U3 in page.html is not High"
   [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  U12  High   ./page.html')" = 1 ] && ok || bad "core: U12 in page.html is not High"
   printf '%s\n' "$OUT" | grep -q '^FAIL  U12  Medium ./Widget.jsx' && ok || bad "core: U12 outside the core file must stay Medium"
+
+  # --core accepts a leading ./ as well (C5).
+  run "$GOOD" --core ./page.html .; [ "$RC" -eq 0 ] && ok || bad "--core ./page.html must be accepted: $(printf '%s' "$OUT" | tail -1)"
 
   # Capitalized components are skipped; a lowercase element with the same problem is not.
   mutate comp Widget.jsx 's/<Button onClick={save}>Save<\/Button>/<Button onClick={save} \/>/'

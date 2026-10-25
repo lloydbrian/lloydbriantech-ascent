@@ -80,6 +80,9 @@ main:focus-visible { outline: 3px solid var(--color-focus-ring); }
   margin-block: var(--space-4);
 }
 
+/* Wide tables scroll inside a labelled, focusable region at narrow widths: the data
+   table exception of WCAG 1.4.10 Reflow. Without it, larger type sizes overflow 320px. */
+.table-wrap { overflow-x: auto; max-width: 100%; }
 table { width: 100%; border-collapse: collapse; }
 caption { text-align: start; color: var(--color-text-secondary); padding-bottom: var(--space-2); }
 th, td { text-align: start; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border-default); }

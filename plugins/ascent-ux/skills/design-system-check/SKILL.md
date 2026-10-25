@@ -61,7 +61,7 @@ Run the contrast check with the contract's pairs, or with inferred pairs when th
 bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" --pairs <ux.contrast_pairs> <token files or CSS>
 ```
 
-`PLUGIN_ROOT` is two directories above this skill's base directory. Each `FAIL` is a Medium finding (1.4.3 for text, 1.4.11 for borders, icons and focus rings). A `SKIP` (translucent or unsupported color) is listed with "not computed". When pairs are inferred, propose a `contrast_pairs` file using the format of the shipped `directions/pairs.tsv`.
+`PLUGIN_ROOT` is two directories above this skill's base directory. Group the `FAIL` lines by foreground token: each failing foreground token is one Medium finding (1.4.3 for text, 1.4.11 for borders, icons and focus rings) that lists every background and theme it fails on, because one token change fixes it. A `SKIP` (translucent or unsupported color) is listed with "not computed". When pairs are inferred, propose a `contrast_pairs` file using the format of the shipped `directions/pairs.tsv`.
 
 ### Step 4 — Theming and motion
 

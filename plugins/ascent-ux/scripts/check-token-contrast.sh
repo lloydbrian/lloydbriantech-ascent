@@ -6,16 +6,19 @@
 #
 # TOKENS are Design Tokens JSON files (format 2025.10; the theme comes from the file
 # name, NAME.THEME.tokens.json, else "default") or CSS files with custom properties
-# (themes "light" and "dark", see scripts/lib/tokens.awk). Token names are the CSS
-# custom property names without "--" (JSON paths joined with "-").
+# (themes "base" for plain :root, "dark" and "light" from selectors and media queries,
+# see scripts/lib/tokens.awk). Token names are the CSS custom property names, with or
+# without the leading "--" (JSON paths joined with "-").
 #
 # PAIRS.tsv rows: foreground<TAB>background<TAB>kind, where kind is
 #   text        4.5:1  (WCAG 1.4.3 Contrast (Minimum), normal text)
 #   large-text  3:1    (1.4.3, text at least 24px, or 18.66px bold)
 #   ui          3:1    (1.4.11 Non-text Contrast: borders, icons, focus indicators)
 # Without --pairs the pairs are inferred and every line says "inferred": CSS rules that
-# set both color and background from var(--x); then, by name, every color-text-* on
-# every color-surface-*, and any *-on-X token on color-X, color-X-base and color-X-strong.
+# set both color and background from var(--x); then, by name, every text token
+# (color-text-*, text-*, fg-*, foreground-*) on every background token (color-surface-*,
+# surface-*, color-bg-*, bg-*, background-*), and any *-on-X token on color-X, X,
+# color-X-base and color-X-strong.
 #
 # Output, one line per pair and theme:
 #   PASS|FAIL  THEME  FG on BG  RATIO:1  KIND (needs N)
@@ -74,7 +77,7 @@ BEGIN {
     else { ok = css_load(slurp(f[3])); HASCSS = 1 }
     if (!ok || TOKERR != "") { printf "check-token-contrast: cannot read %s: %s\n", f[3], TOKERR > "/dev/stderr"; exit 2 }
   }
-  if (HASCSS) { THEMES["light"] = 1; if (NAMES["dark"] != "") THEMES["dark"] = 1 }
+  if (HASCSS) { THEMES["base"] = 1; if (NAMES["dark"] != "") THEMES["dark"] = 1; if (NAMES["light"] != "") THEMES["light"] = 1 }
   np = 0
   if (PAIRS != "") {
     while ((getline line < PAIRS) > 0) {
@@ -82,19 +85,20 @@ BEGIN {
       if (line ~ /^[ \t]*(#|$)/) continue
       m = split(line, c, "\t")
       if (m < 3 || need(c[3]) == 0) { printf "check-token-contrast: bad pairs line: %s (want fg<TAB>bg<TAB>text|large-text|ui)\n", line > "/dev/stderr"; exit 2 }
+      sub(/^--/, "", c[1]); sub(/^--/, "", c[2])
       np++; PF[np] = c[1]; PB[np] = c[2]; PK[np] = c[3]
     }
     SRC = "pairs file"
   } else {
     SRC = "inferred"
-    for (i = 1; i <= NRULEPAIR; i++) { split(RULEPAIR[i], c, " "); np++; PF[np] = c[1]; PB[np] = c[2]; PK[np] = "text" }
+    for (i = 1; i <= NRULEPAIR; i++) { split(RULEPAIR[i], c, " "); SEEN[c[1], c[2]] = 1; np++; PF[np] = c[1]; PB[np] = c[2]; PK[np] = "text" }
     for (th in THEMES) { m = split(NAMES[th], nm, " "); for (i = 1; i <= m; i++) ALL[nm[i]] = 1 }
     for (a in ALL) {
       if (match(a, /-on-[A-Za-z0-9_-]+$/)) {
         x = substr(a, RSTART + 4)
-        for (q = 1; q <= 3; q++) { b = "color-" x ((q == 2) ? "-base" : (q == 3) ? "-strong" : "")
+        for (q = 1; q <= 4; q++) { b = ((q == 4) ? "" : "color-") x ((q == 2) ? "-base" : (q == 3) ? "-strong" : "")
           if ((b in ALL) && !((a, b) in SEEN)) { SEEN[a, b] = 1; np++; PF[np] = a; PB[np] = b; PK[np] = "text" } }
-      } else if (a ~ /^color-text-/) for (b in ALL) if (b ~ /^color-surface-/ && !((a, b) in SEEN)) { SEEN[a, b] = 1; np++; PF[np] = a; PB[np] = b; PK[np] = "text" }
+      } else if (a ~ /^(color-)?(text|fg|foreground)(-|$)/) for (b in ALL) if (b ~ /^(color-)?(surface|bg|background)(-|$)/ && !((a, b) in SEEN)) { SEEN[a, b] = 1; np++; PF[np] = a; PB[np] = b; PK[np] = "text" }
     }
   }
   if (np == 0) { print "check-token-contrast: no pairs to check (give --pairs, or name tokens color-text-* and color-surface-*)" > "/dev/stderr"; exit 2 }

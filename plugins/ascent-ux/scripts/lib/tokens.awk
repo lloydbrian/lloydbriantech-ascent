@@ -11,11 +11,13 @@
 #   name is the token path joined with "-" (the CSS custom property name).
 # css_load(TEXT) parses CSS custom properties ("--name: value;"). A property
 #   counts for theme "dark" inside a dark selector or media query
-#   (prefers-color-scheme: dark, [data-theme=dark], .dark, .theme-dark), else
-#   "light". Rules that set both color and background(-color) from var(--x) are
+#   (prefers-color-scheme: dark, [data-theme=dark], .dark, .theme-dark), for theme
+#   "light" inside a light one (prefers-color-scheme: light, [data-theme=light],
+#   .light), and for theme "base" otherwise (plain :root, which may itself be a dark
+#   palette). Rules that set both color and background(-color) from var(--x) are
 #   recorded as inferred pairs in RULEPAIR[n] = "fg bg".
 # resolve(THEME, NAME) follows aliases ({a.b} and var(--a)) to a final value,
-#   falling back to theme "light", then "default". Sets RESERR on failure.
+#   falling back to "base", then "light", then "default". Sets RESERR on failure.
 # parse_color(VALUE) sets CR, CG, CB (0-255) and CA (0-1); returns 1 on success,
 #   0 when the value is not a supported color (hex, rgb(), rgba(), white, black).
 
@@ -149,7 +151,8 @@ function trim(s) { sub(/^[ \t\r\n]+/, "", s); sub(/[ \t\r\n]+$/, "", s); return 
 function css_theme(ctx,   c) {
   c = tolower(ctx)
   if (c ~ /prefers-color-scheme:[ ]*dark/ || c ~ /data-theme=["']?dark/ || c ~ /\.dark([^a-z0-9_-]|$)/ || c ~ /\.theme-dark/) return "dark"
-  return "light"
+  if (c ~ /prefers-color-scheme:[ ]*light/ || c ~ /data-theme=["']?light/ || c ~ /\.light([^a-z0-9_-]|$)/ || c ~ /\.theme-light/) return "light"
+  return "base"
 }
 function css_decls(decls, theme,   n, d, i, k, prop, val, fg, bg) {
   n = split(decls, d, ";"); fg = ""; bg = ""
@@ -191,6 +194,7 @@ function ctxs(n,   i, s) { s = ""; for (i = 1; i <= n; i++) s = s " " CTX[i]; re
 
 function lookup(theme, name) {
   if ((theme, name) in V) return V[theme, name]
+  if (theme != "base" && (("base", name) in V)) return V["base", name]
   if (theme != "light" && (("light", name) in V)) return V["light", name]
   if (theme != "default" && (("default", name) in V)) return V["default", name]
   RESERR = "no token " name; return ""

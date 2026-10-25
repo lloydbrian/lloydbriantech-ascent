@@ -254,7 +254,7 @@ plugin_case P63-web-ignores-alt T11 "$UXW" 's/if (!has(tag, "alt") \&\&/if (0 \&
 plugin_case P64-web-label-for-ignored T11 "$UXW" 's/(v in LABELFOR)/(0)/'
 plugin_case P65-web-empty-name-passes T11 "$UXW" 's/^  return c != ""$/  return 1/'
 plugin_case P66-web-zoom-block-missed T11 "$UXW" 's/maximum-scale=(0|1)/maximum-scale=(9)/'
-plugin_case P67-web-outline-none-allowed T11 "$UXW" 's/if (!FV) fail("U11"/if (0) fail("U11"/'
+plugin_case P67-web-outline-none-allowed T11 "$UXW" 's/^  if (covered(sel)) return$/  return/'
 plugin_case P68-web-no-key-handler-needed T11 "$UXW" 's/if (!has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = /if (0) c = /'
 plugin_case P69-web-core-not-high T11 "$UXW" 's/ISCORE ? "High" : ""/""/g'
 plugin_case P70-web-scans-comments T11 "$UXW" 's/^  blank_between("<!--", "-->", 0)$//'
@@ -281,6 +281,20 @@ plugin_case P90-ux-agent-cites-missing-step T9 "$UXA" 's/(ux-review Step 4)/(ux-
 plugin_case P91-ux-agent-can-write T4 "$UXA" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
 plugin_case P92-directions-catalog-drift T11 "$UXD" '/^| D5 | Dense professional/d'
 plugin_case_rm P93-ux-tests-removed T11 tests/plugins/ascent-ux
+plugin_case P94-web-skips-js-templates T11 "$UXW" 's/^  if (ISJS) B = js_templates(B)$/  if (ISJS) B = blank(B)/'
+plugin_case P95-web-u11-global-again T11 "$UXW" 's/^  if (FVALL) return 1$/  return 1/'
+plugin_case P96-web-core-needs-exact-path T11 "$UXW" 's/grep -qxF "\${c#\.\/}"/grep -qxF "$c"/'
+plugin_case P97-css-root-called-light T11 "$UXL" 's/^  return "base"$/  return "light"/'
+plugin_case P98-contrast-names-narrowed T11 "$UXC" 's/(color-)?(text|fg|foreground)(-|$)/^color-text-/'
+plugin_case P99-pairs-keep-dashes T11 "$UXC" '/sub(\/^--\/, "", c\[1\]); sub(\/^--\/, "", c\[2\])/d'
+plugin_case P100-blueprint-table-overflows T11 "$UXB/page.css" 's/\.table-wrap { overflow-x: auto; max-width: 100%; }//'
+plugin_case P101-browser-pass-optional T11 "$UXR" 's/the browser pass is \*\*not optional\*\*/the browser pass is optional/'
+plugin_case P102-guessed-flows-unlabelled T11 "$UXR" '/\*\*Guessed core flows are labelled\.\*\*/d'
+plugin_case P103-agent-rates-estimates T11 "$UXA" 's/suspected low contrast, not computed/estimated contrast, rated Medium/'
+plugin_case P104-agent-key-drift T11 "$UXA" 's/`direction`, //'
+plugin_case P105-playwright-files-deleted T11 "$UXR" 's/ Never delete files in the reviewed repository yourself\.//'
+plugin_case P106-no-brand-option T11 "$UXD" '/^\*\*Brand-adapted option\.\*\*/d'
+plugin_case P107-contrast-per-pair T11 "$UX/skills/design-system-check/SKILL.md" 's/each failing foreground token is one Medium finding/each FAIL is a Medium finding/'
 
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
   "$total" "$killed" "$survived" "$missed"

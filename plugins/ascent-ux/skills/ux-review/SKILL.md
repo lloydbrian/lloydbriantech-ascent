@@ -39,6 +39,10 @@ The companion plugins are installed with this one: `design`, `frontend-design` a
 - **Static until confirmed.** Findings from `check-web-accessibility.sh` or from reading code are marked "static" until the browser pass confirms them. A browser-pass result overrides a static one for the same element.
 - **No conformance claims from automation.** Automated checks find only part of WCAG failures. The report never says "conforms to WCAG 2.2 AA". It says what was checked, what failed, and what the manual checklist must still cover.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
+- **Never "met" without a target.** A lens or attribute whose target is missing from the contract is unmeasured, or at risk when the evidence shows a gap. Good evidence alone never makes it met.
+- **Guessed core flows are labelled.** Until the operator confirms the contract, every severity that depends on a core flow (High for U3, U12 and the first severity row) carries "(core flow guessed)".
+- **One contrast finding per failing foreground token**, listing every background and theme it fails on. The fix is one token change, so it is one finding.
+- **Maturity gaps are always rated.** With no confirmed contract, rate them against the enterprise defaults (Step 5) and say so; never list them unrated.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Credentials in client code are `ascent-security`'s and `ascent-architecture`'s finding: cite the location, mark it `→ ascent-security`, and never print the value.
 - **Security-only concerns** (authorization, CSP, cookie flags) go under Other observations marked `→ ascent-security`. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
 - **Dated sources.** The law map and the standards status carry `as_of`. If it is more than 90 days old, say "standards status as_of <date>: refresh due" in the report.
@@ -128,9 +132,10 @@ bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" [--pairs <contract contrast_
 
 ### Step 4 — Browser pass (authoritative)
 
-When the Playwright tools (`mcp__plugin_playwright_playwright__*`) are available, check the core flows in a real browser:
+When the Playwright tools (`mcp__plugin_playwright_playwright__*`) are available, the browser pass is **not optional**. Check the core flows in a real browser:
 
-- **Where:** only `file://` pages or a `localhost` server, or a URL the operator names. If a dev server is needed, give the operator the command (for example `make up`) and wait. Never start it yourself.
+- **Where:** only `file://` pages or a `localhost` server, or a URL the operator names. Some Playwright setups block `file://`; then, and whenever the app needs a dev server, ask the operator to start one and **wait for their answer** before writing the report. Give the exact command: `make up`, the project's dev command, or for static files `python3 -m http.server 8000 --bind 127.0.0.1` in the site folder. Never start it yourself.
+- **"Not run" needs a concrete reason:** the Playwright tools are missing, the operator declined, or the operator did not start the server. Anything else is a skipped step, not a reason.
 - **Never** submit forms with real data, sign in with real credentials, or follow links off the site.
 - **Accessibility tree:** `browser_snapshot` on each core page. Every interactive element has a role and a name (4.1.2), and headings and landmarks match the static map (1.3.1).
 - **Keyboard walk:** `browser_press_key` Tab through each core flow from the top. Record the focus order (2.4.3), confirm nothing traps focus (2.1.2), confirm every control is reached (2.1.1), and confirm Escape closes dialogs.
@@ -141,6 +146,8 @@ When the Playwright tools (`mcp__plugin_playwright_playwright__*`) are available
 - **axe-core:** only when `node_modules/axe-core/axe.min.js` already exists. Inject it with `browser_evaluate`, run `axe.run()` with the `wcag2a`, `wcag2aa`, `wcag21aa` and `wcag22aa` tags, and report violations with their WCAG criterion. Never install it.
 
 Without Playwright, say "browser pass not run: <reason>". Every finding then stays "static", and the rating carries "(static only)".
+
+After the pass, run `git status` in the reviewed repository. The Playwright server may write snapshots to `.playwright-mcp/` in its working directory. If that folder appeared, tell the operator and suggest adding it to `.gitignore`. Never delete files in the reviewed repository yourself.
 
 ### Step 5 — Maturity gaps
 
@@ -156,10 +163,10 @@ Contract: <path, or "none — enterprise defaults, WCAG 2.2 AA (proposal shown i
 Maturity target: <target>   Conformance target: <target>   Direction: <Dn or none>
 
 UI map (Step 1): <inventory table>
-Lenses (Step 2): <one line per lens: target | evidence | status>
+Lenses (Step 2): <one line per lens: target | evidence | status (met only when the contract sets a target)>
 
 Findings, most severe first:
-X<n>  <severity>  <file>:<line or "absent: searched …">  [static | browser]
+X<n>  <severity>  <file>:<line or "absent: searched …">  [static | browser] [(core flow guessed)]
       Criterion: <e.g. 2.4.7 Focus Visible (AA)> or Heuristic: <name>
       Scenario: <who cannot do what>
       Fix: <smallest change that closes it>

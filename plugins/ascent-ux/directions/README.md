@@ -20,6 +20,8 @@ They share one schema ([design-tokens.md](../references/design-tokens.md)), so a
 - Every direction converts to CSS with `scripts/tokens-to-css.sh`.
 - The blueprint's `tokens.css` is exactly the D1 output, so it cannot drift.
 
+The guarantee covers contrast. Layout is not fixed by tokens: a direction with larger type can still overflow a narrow screen. `design-directions` Step 4 checks reflow, focus and target sizes in the browser for every mock. The 2026-10-24 trial found D2, D3 and D4 overflowing at 320px through a table, which led to the blueprint's `.table-wrap`.
+
 ## Fonts
 
 Named web fonts (Inter, Poppins, Source Serif 4, Nunito) are open-source (SIL Open Font License), but they must be loaded by the project. Every stack ends in a system fallback, and mocks say which font actually rendered.

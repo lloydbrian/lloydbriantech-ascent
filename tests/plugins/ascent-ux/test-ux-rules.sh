@@ -15,6 +15,16 @@
 #   R10 security items are referred, and Recommended next names ascent-security
 #   R11 every "<skill> Step N" a skill cites names a skill and a heading that exist
 #   R12 the design-directions catalog names exactly the shipped direction files
+#   Trial calibration (2026-10-24):
+#   R13 the browser pass is mandatory when Playwright is present; "not run" needs a reason
+#   R14 the agent's inline ux: key list equals the keys of the contract template
+#   R15 core-flow severities from a guessed contract are labelled "(core flow guessed)"
+#   R16 one contrast finding per failing foreground token (ux-review, agent, design-system-check)
+#   R17 the agent never rates estimated contrast
+#   R18 file:// may be blocked (ask for a localhost server); .playwright-mcp/ is reported, never deleted
+#   R19 the blueprint's tables scroll in a labelled, focusable region (1.4.10)
+#   R20 design-directions offers a brand-adapted option
+#   R21 "met" never without a target, and maturity gaps always rated (Rules section)
 #
 # Prints "test-ux-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -125,6 +135,29 @@ if [ -n "$SHIPPED" ] && [ "$SHIPPED" = "$LISTED" ]; then ok; else bad "R12 desig
 for d in $SHIPPED; do
   ls "$PLUGIN/directions/$d"-*.dark.tokens.json >/dev/null 2>&1 && ok || bad "R12 $d has no dark tokens file"
 done
+
+SYSCHK="$PLUGIN/skills/design-system-check/SKILL.md"
+BPX="$PLUGIN/blueprints/accessible-page"
+has R13 "$REVIEW" 'the browser pass is **not optional**'
+has R13 "$REVIEW" '**"Not run" needs a concrete reason:**'
+TKEYS=$(awk '/^ux:/{on=1; next} on && /^[^ #]/{on=0} on && /^  [a-z_]+:/{sub(/^  /, ""); sub(/:.*/, ""); print}' "$TEMPLATE" | LC_ALL=C sort | tr '\n' ' ')
+AKEYS=$(sed -n 's/.*The `ux:` keys are \(.*\) Use no other keys\..*/\1/p' "$AGENT" | sed 's/([^)]*)//g' | grep -oE '`[a-z_]+`' | tr -d '`' | grep -vE '^(lcp_ms|inp_ms|cls|page_kb|name)$' | LC_ALL=C sort -u | tr '\n' ' ')
+if [ -n "$TKEYS" ] && [ "$TKEYS" = "$AKEYS" ]; then ok; else bad "R14 agent ux: keys '$AKEYS' differ from the template's '$TKEYS'"; fi
+for k in lcp_ms inp_ms cls page_kb; do grep -q "^  performance_budget:.*$k" "$TEMPLATE" && grep -qF "\`$k\`" "$AGENT" && ok || bad "R14 performance_budget key $k missing from the template or the agent"; done
+has R15 "$REVIEW" '"(core flow guessed)"'
+has R15 "$AGENT" '"(core flow guessed)"'
+has R16 "$REVIEW" '**One contrast finding per failing foreground token**'
+has R16 "$AGENT" 'One rated finding per failing token'
+has R16 "$SYSCHK" 'each failing foreground token is one Medium finding'
+has R17 "$AGENT" 'suspected low contrast, not computed'
+has R18 "$REVIEW" 'Some Playwright setups block `file://`'
+has R18 "$REVIEW" 'Never delete files in the reviewed repository yourself.'
+has R18 "$DIRECT" 'If `file://` is blocked, ask the operator to serve the mock directory on localhost'
+has R19 "$BPX/page.css" '.table-wrap { overflow-x: auto;'
+has R19 "$BPX/index.html" 'class="table-wrap" role="region" aria-labelledby="standings-caption" tabindex="0"'
+has R20 "$DIRECT" '**Brand-adapted option.**'
+has R21 "$REVIEW" '**Never "met" without a target.**'
+has R21 "$REVIEW" '**Maturity gaps are always rated.**'
 
 printf "test-ux-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

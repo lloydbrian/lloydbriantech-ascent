@@ -18,7 +18,7 @@ Installing it also installs and enables its companions: `design` (Anthropic dire
 | `design-system-check` | skill | token source, values that bypass tokens, contrast in every theme, theming, motion, component states |
 | `design-directions` | skill | five predefined directions shown as checked mocks of the project's pages, more on request, ADR and token hand-off |
 | `ux-reviewer` | agent, read-only | independent static review; a delivery-loop review lens for UI changes |
-| `check-web-accessibility.sh` | script | U1–U12 static checks on HTML, JSX/TSX, Vue, Svelte, Astro and server templates |
+| `check-web-accessibility.sh` | script | U1–U12 static checks on HTML, JSX/TSX, Vue, Svelte, Astro, server templates and HTML inside JS/TS template literals (single-page-app views) |
 | `check-token-contrast.sh` | script | exact WCAG contrast for token pairs, per theme, from Design Tokens JSON or CSS custom properties |
 | `tokens-to-css.sh` | script | Design Tokens JSON to CSS custom properties, light and dark |
 | `directions/` | data | D1 Clean neutral, D2 Bold brand, D3 Editorial, D4 Soft friendly, D5 Dense professional |
