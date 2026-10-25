@@ -10,10 +10,13 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Changed
+
+- CI runs the negative controls in parallel, one job per group and platform: `make test-mutants GROUP=<group>` runs `core` (embedded-skill rows and validator controls) or one plugin's section, `make test-mutants-groups` lists the groups for the CI matrix, and an unknown or empty group fails. The gate job keeps qa, the skill tests and the plugin gate, with a 15-minute timeout. Locally the longest group (`ascent-ux`, 57 controls) takes about 6.5 minutes; before, one macOS job ran all 183 in 18m39s of its 25 minutes
+
 ### Planned
 
 - `ascent-ops` next (plugin roadmap rank 3), then `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
-- CI: `make test-mutants` takes 18m39s of the 25-minute gate on macOS (183 controls). Before `ascent-ops` adds more, split the run per plugin or raise the timeout
 - `ascent-ux` 0.2.0 candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
 - `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges; runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
