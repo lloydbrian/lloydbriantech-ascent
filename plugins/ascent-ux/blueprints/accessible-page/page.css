@@ -1,0 +1,134 @@
+/* Accessible page starter (ascent-ux blueprint). Every value comes from a token in
+   tokens.css, so a design direction changes the look without touching this file. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-md);
+  line-height: var(--font-line-height-body);
+}
+
+h1, h2 {
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--font-line-height-heading);
+  margin: var(--space-6) 0 var(--space-3);
+}
+h1 { font-size: var(--font-size-xxl); }
+h2 { font-size: var(--font-size-xl); }
+
+p, table, form { max-width: var(--size-measure); }
+
+a { color: var(--color-text-link); text-underline-offset: 0.15em; }
+a:hover { color: var(--color-accent-strong); }
+
+/* One visible focus style for every interactive element (WCAG 2.4.7, 2.4.11, 2.4.13). */
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+main:focus { outline: none; }
+main:focus-visible { outline: 3px solid var(--color-focus-ring); }
+
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: -100px;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-accent-base);
+  color: var(--color-text-on-accent);
+  border-radius: var(--radius-md);
+}
+.skip-link:focus { top: var(--space-2); }
+
+.site-header, .site-footer, main {
+  padding: var(--space-4);
+  margin: 0 auto;
+  max-width: 72rem;
+}
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+}
+.brand { margin: 0; font-weight: var(--font-weight-bold); }
+.nav-list { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
+.nav-list a {
+  display: inline-block;
+  min-height: var(--size-target-comfortable);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+.nav-list a[aria-current="page"] { font-weight: var(--font-weight-bold); text-decoration-thickness: 2px; }
+
+.lede { color: var(--color-text-secondary); font-size: var(--font-size-lg); }
+
+.card {
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-block: var(--space-4);
+}
+
+/* Wide tables scroll inside a labelled, focusable region at narrow widths: the data
+   table exception of WCAG 1.4.10 Reflow. Without it, larger type sizes overflow 320px. */
+.table-wrap { overflow-x: auto; max-width: 100%; }
+table { width: 100%; border-collapse: collapse; }
+caption { text-align: start; color: var(--color-text-secondary); padding-bottom: var(--space-2); }
+th, td { text-align: start; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border-default); }
+
+.field { margin-block: var(--space-4); border: 0; padding: 0; }
+label, legend { display: block; font-weight: var(--font-weight-bold); margin-bottom: var(--space-1); }
+.choice { font-weight: var(--font-weight-regular); display: flex; align-items: center; gap: var(--space-2); min-height: var(--size-target-comfortable); }
+input[type="text"], select {
+  min-height: var(--size-target-comfortable);
+  width: 100%;
+  max-width: 24rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-base);
+  border: 1px solid var(--color-border-strong);   /* 3:1 against the surface (1.4.11) */
+  border-radius: var(--radius-md);
+}
+input[type="radio"] { width: var(--size-target-min); height: var(--size-target-min); accent-color: var(--color-accent-base); }
+.hint { color: var(--color-text-secondary); margin: var(--space-1) 0 0; }
+.error { color: var(--color-status-error); font-weight: var(--font-weight-bold); margin: var(--space-1) 0 0; }
+
+.button {
+  min-height: var(--size-target-comfortable);
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-base);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.button:hover { background-color: var(--color-accent-strong); }
+
+.empty { color: var(--color-text-secondary); }
+.site-footer { border-top: 1px solid var(--color-border-default); color: var(--color-text-secondary); }
+
+/* Respect the reduced-motion setting (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Reflow at 320 CSS pixels without horizontal scrolling (WCAG 1.4.10). */
+@media (max-width: 30rem) {
+  .site-header { flex-direction: column; align-items: flex-start; }
+  th, td { padding: var(--space-1) var(--space-2); }
+}

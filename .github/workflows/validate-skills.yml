@@ -126,7 +126,7 @@ jobs:
     # named negative controls.
     name: Gate (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25   # test-mutants runs ~127 controls; macOS takes longest (ADR-011)
+    timeout-minutes: 25   # test-mutants runs ~183 controls; macOS takes longest (ADR-011)
     strategy:
       fail-fast: false
       matrix:

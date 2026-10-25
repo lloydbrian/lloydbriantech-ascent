@@ -1,0 +1,183 @@
+{
+  "$description": "Dense professional: compact spacing, data-first palette, crisp lines. Dashboards and admin tools. Dark theme: color overrides only; everything else comes from the light file.",
+  "color": {
+    "$type": "color",
+    "text": {
+      "primary": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9529,
+            0.9569,
+            0.9647
+          ],
+          "hex": "#f3f4f6"
+        }
+      },
+      "secondary": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6118,
+            0.6392,
+            0.6863
+          ],
+          "hex": "#9ca3af"
+        }
+      },
+      "link": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5765,
+            0.7725,
+            0.9922
+          ],
+          "hex": "#93c5fd"
+        }
+      },
+      "on-accent": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0431,
+            0.0706,
+            0.1255
+          ],
+          "hex": "#0b1220"
+        }
+      }
+    },
+    "surface": {
+      "base": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0431,
+            0.0588,
+            0.0902
+          ],
+          "hex": "#0b0f17"
+        }
+      },
+      "raised": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0667,
+            0.0941,
+            0.1529
+          ],
+          "hex": "#111827"
+        }
+      },
+      "sunken": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0196,
+            0.0275,
+            0.0431
+          ],
+          "hex": "#05070b"
+        }
+      }
+    },
+    "accent": {
+      "base": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3765,
+            0.6471,
+            0.9804
+          ],
+          "hex": "#60a5fa"
+        }
+      },
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5765,
+            0.7725,
+            0.9922
+          ],
+          "hex": "#93c5fd"
+        }
+      }
+    },
+    "border": {
+      "default": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1216,
+            0.1608,
+            0.2157
+          ],
+          "hex": "#1f2937"
+        }
+      },
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4471,
+            0.502
+          ],
+          "hex": "#6b7280"
+        }
+      }
+    },
+    "focus": {
+      "ring": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5765,
+            0.7725,
+            0.9922
+          ],
+          "hex": "#93c5fd"
+        }
+      }
+    },
+    "status": {
+      "error": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9882,
+            0.6471,
+            0.6471
+          ],
+          "hex": "#fca5a5"
+        }
+      },
+      "success": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5255,
+            0.9373,
+            0.6745
+          ],
+          "hex": "#86efac"
+        }
+      },
+      "warning": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9882,
+            0.8275,
+            0.302
+          ],
+          "hex": "#fcd34d"
+        }
+      }
+    }
+  }
+}

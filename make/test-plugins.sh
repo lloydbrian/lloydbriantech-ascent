@@ -10,7 +10,8 @@
 #       Bash(git log:*)
 #   T5  every skill that classifies findings carries the shared severity table,
 #       and all copies are identical; every copy of the architecture severity
-#       table (arch-severity markers) is identical too
+#       table (arch-severity markers) and of the UX severity table (ux-severity
+#       markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
 #   T7  skill frontmatter passes qa-skill-frontmatter
@@ -26,10 +27,18 @@
 #       tests fails, and so does a script no test file names. A plugin with
 #       hooks/ also needs a hooks.json whose
 #       ${CLAUDE_PLUGIN_ROOT} script paths exist.
+#   T12 plugin.json uses only known manifest keys (a misspelled key such as
+#       "dependencis" passes claude plugin validate but is silently ignored), and
+#       every dependency on another marketplace is allowlisted in the
+#       marketplace's allowCrossMarketplaceDependenciesOn (without it the plugin
+#       installs but fails to load; ADR-012)
 #
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
 #        give the same answer with or without the CLI installed).
+#        ASCENT_T11_ONLY=<plugin> runs T11 for that plugin only. make test-mutants sets it
+#        when a control edits one plugin's files, which keeps the suite fast; running
+#        fewer tests can only make a control harder to kill, never easier.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
 set -euo pipefail
@@ -166,6 +175,15 @@ for f in $(grep -rl 'arch-severity:start' "$ROOT/plugins" 2>/dev/null | LC_ALL=C
   elif [ "$(atable "$f")" != "$(atable "$AFIRST")" ]; then A5_OK=0; bad "T5 architecture severity table in ${f#"$ROOT"/} differs from ${AFIRST#"$ROOT"/}"; fi
 done
 [ "$NA5" -gt 0 ] && [ "$A5_OK" -eq 1 ] && ok "T5 architecture severity table identical in $NA5 files"
+utable() { awk '/<!-- ux-severity:start/{on=1; next} /<!-- ux-severity:end/{on=0} on' "$1"; }
+UFIRST=""; NU5=0; U5_OK=1
+for f in $(grep -rl 'ux-severity:start' "$ROOT/plugins" 2>/dev/null | LC_ALL=C sort || true); do
+  NU5=$((NU5 + 1))
+  if [ -z "$(utable "$f" | grep '^|' || true)" ]; then U5_OK=0; bad "T5 UX severity table in ${f#"$ROOT"/} is empty"
+  elif [ -z "$UFIRST" ]; then UFIRST="$f"
+  elif [ "$(utable "$f")" != "$(utable "$UFIRST")" ]; then U5_OK=0; bad "T5 UX severity table in ${f#"$ROOT"/} differs from ${UFIRST#"$ROOT"/}"; fi
+done
+[ "$NU5" -gt 0 ] && [ "$U5_OK" -eq 1 ] && ok "T5 UX severity table identical in $NU5 files"
 
 # T6 — links
 BROKEN=""
@@ -237,6 +255,7 @@ done
 
 # T11 — behavior tests for plugins that ship executable code (hooks or scripts)
 for p in $PLUGINS; do
+  [ -n "${ASCENT_T11_ONLY:-}" ] && [ "$p" != "$ASCENT_T11_ONLY" ] && continue
   [ -d "$ROOT/plugins/$p/hooks" ] || [ -d "$ROOT/plugins/$p/scripts" ] || continue
   problems=""
   if [ -d "$ROOT/plugins/$p/hooks" ]; then
@@ -273,6 +292,24 @@ for p in $PLUGINS; do
     fi
   done
   if [ -z "$problems" ]; then ok "T11 $p: $NTESTS behavior test file(s), $NCASES cases pass"; else bad "T11 $p:$problems"; fi
+done
+
+# T12 — manifest keys and cross-marketplace dependencies
+KNOWN_KEYS=" name version description author homepage repository license keywords dependencies commands agents skills hooks mcpServers lspServers outputStyles icon userConfig defaultEnabled "
+OWN_MKT=$(json_field "$MKT" name)
+ALLOW=$(sed -n 's/^  "allowCrossMarketplaceDependenciesOn":[[:space:]]*\[\(.*\)\].*/\1/p' "$MKT" | tr -d ' "' | tr ',' ' ')
+for p in $PLUGINS; do
+  PJ="$ROOT/plugins/$p/.claude-plugin/plugin.json"
+  problems=""
+  for k in $(sed -n 's/^  "\([^"]*\)":.*/\1/p' "$PJ"); do
+    case "$KNOWN_KEYS" in *" $k "*) ;; *) problems="$problems unknown manifest key '$k';" ;; esac
+  done
+  deps=$(awk '/^  "dependencies":[[:space:]]*\[/{on=1; next} on && /^  \]/{on=0} on' "$PJ")
+  for m in $(printf '%s\n' "$deps" | sed -n 's/.*"[^"@]*@\([^"]*\)".*/\1/p; s/.*"marketplace":[[:space:]]*"\([^"]*\)".*/\1/p' | LC_ALL=C sort -u); do
+    [ "$m" = "$OWN_MKT" ] && continue
+    case " $ALLOW " in *" $m "*) ;; *) problems="$problems dependency marketplace '$m' is not in allowCrossMarketplaceDependenciesOn;" ;; esac
+  done
+  if [ -z "$problems" ]; then ok "T12 $p: manifest keys known, cross-marketplace dependencies allowlisted"; else bad "T12 $p:$problems"; fi
 done
 
 printf "\ntest-plugins: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"

@@ -1,0 +1,374 @@
+{
+  "$description": "Dense professional: compact spacing, data-first palette, crisp lines. Dashboards and admin tools.",
+  "color": {
+    "$type": "color",
+    "text": {
+      "primary": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0667,
+            0.0941,
+            0.1529
+          ],
+          "hex": "#111827"
+        }
+      },
+      "secondary": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2941,
+            0.3333,
+            0.3882
+          ],
+          "hex": "#4b5563"
+        }
+      },
+      "link": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1137,
+            0.3059,
+            0.8471
+          ],
+          "hex": "#1d4ed8"
+        }
+      },
+      "on-accent": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "hex": "#ffffff"
+        }
+      }
+    },
+    "surface": {
+      "base": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "raised": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9765,
+            0.9804,
+            0.9843
+          ],
+          "hex": "#f9fafb"
+        }
+      },
+      "sunken": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9529,
+            0.9569,
+            0.9647
+          ],
+          "hex": "#f3f4f6"
+        }
+      }
+    },
+    "accent": {
+      "base": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1137,
+            0.3059,
+            0.8471
+          ],
+          "hex": "#1d4ed8"
+        }
+      },
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1176,
+            0.251,
+            0.6863
+          ],
+          "hex": "#1e40af"
+        }
+      }
+    },
+    "border": {
+      "default": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.898,
+            0.9059,
+            0.9216
+          ],
+          "hex": "#e5e7eb"
+        }
+      },
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4471,
+            0.502
+          ],
+          "hex": "#6b7280"
+        }
+      }
+    },
+    "focus": {
+      "ring": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1137,
+            0.3059,
+            0.8471
+          ],
+          "hex": "#1d4ed8"
+        }
+      }
+    },
+    "status": {
+      "error": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7255,
+            0.1098,
+            0.1098
+          ],
+          "hex": "#b91c1c"
+        }
+      },
+      "success": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0824,
+            0.502,
+            0.2392
+          ],
+          "hex": "#15803d"
+        }
+      },
+      "warning": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5412,
+            0.3255,
+            0.0
+          ],
+          "hex": "#8a5300"
+        }
+      }
+    }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "body": {
+        "$value": [
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif"
+        ]
+      },
+      "heading": {
+        "$value": "{font.family.body}"
+      },
+      "mono": {
+        "$value": [
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "monospace"
+        ]
+      }
+    },
+    "size": {
+      "$type": "dimension",
+      "sm": {
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        }
+      },
+      "md": {
+        "$value": {
+          "value": 14,
+          "unit": "px"
+        }
+      },
+      "lg": {
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "xl": {
+        "$value": {
+          "value": 20,
+          "unit": "px"
+        }
+      },
+      "xxl": {
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        }
+      }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": {
+        "$value": 400
+      },
+      "bold": {
+        "$value": 600
+      }
+    },
+    "line-height": {
+      "$type": "number",
+      "body": {
+        "$value": 1.45
+      },
+      "heading": {
+        "$value": 1.2
+      }
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "1": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    },
+    "2": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "3": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "4": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "6": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "8": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "sm": {
+      "$value": {
+        "value": 3,
+        "unit": "px"
+      }
+    },
+    "md": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      }
+    },
+    "pill": {
+      "$value": {
+        "value": 999,
+        "unit": "px"
+      }
+    }
+  },
+  "size": {
+    "$type": "dimension",
+    "target-min": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "target-comfortable": {
+      "$value": {
+        "value": 44,
+        "unit": "px"
+      }
+    },
+    "measure": {
+      "$value": {
+        "value": 68,
+        "unit": "ch"
+      }
+    }
+  },
+  "motion": {
+    "duration": {
+      "$type": "duration",
+      "fast": {
+        "$value": {
+          "value": 100,
+          "unit": "ms"
+        }
+      },
+      "base": {
+        "$value": {
+          "value": 160,
+          "unit": "ms"
+        }
+      }
+    },
+    "easing": {
+      "$type": "cubicBezier",
+      "standard": {
+        "$value": [
+          0.2,
+          0,
+          0,
+          1
+        ]
+      }
+    }
+  }
+}
