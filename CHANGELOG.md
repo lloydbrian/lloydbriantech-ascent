@@ -10,6 +10,24 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Added
+
+- `plugins/ascent-ux/` 0.1.0 (ADR-012, Proposed): UX review for any web UI. Four hand-written skills: `ux-review` (entry point: contract, UI map, five lenses, static checks, a Playwright browser pass, maturity gaps; severity table and strong/moderate/weak rating), `accessibility-audit` (all 55 WCAG 2.2 A and AA criteria for the core flows, ARIA widgets against the APG, axe-core when the project has it), `design-system-check` (token source, hard-coded values, contrast in every theme, theming, motion, component states) and `design-directions` (five predefined design directions shown as checked mocks of the project's pages, more on request, ADR and token hand-off); a read-only `ux-reviewer` agent
+- `ascent-ux` dependencies: installing it installs and enables `design` (Anthropic directory), `frontend-design` and `playwright` (claude-plugins-official). The marketplace allowlists both marketplaces in `allowCrossMarketplaceDependenciesOn`
+- `scripts/check-web-accessibility.sh`: 12 static checks (U1–U12) on HTML, JSX/TSX, Vue, Svelte, Astro and server templates, each mapped to a WCAG 2.2 criterion; `--core` raises U3 and U12 to High on core flows; comments, script bodies and capitalized components are skipped; every finding is "static" until the browser pass confirms it
+- `scripts/check-token-contrast.sh`: exact WCAG contrast (sRGB relative luminance, truncated, never rounded up) for token pairs per theme, from Design Tokens 2025.10 JSON or CSS custom properties, with pair files or inferred pairs; `scripts/tokens-to-css.sh`: Design Tokens JSON to CSS custom properties with light and dark blocks; shared parser `scripts/lib/tokens.awk`
+- `directions/`: D1 Clean neutral, D2 Bold brand, D3 Editorial, D4 Soft friendly and D5 Dense professional, each a light and dark Design Tokens 2025.10 set on one schema, all passing `pairs.tsv` (16 pairs, both themes)
+- Blueprint `accessible-page`: a token-only accessible page starter (skip link, landmarks, labelled form with hint, error and status patterns, visible focus, 44px targets, reduced motion, 320px reflow); the mock template
+- `ascent-ux` references: WCAG 2.2 checklist, ARIA patterns, Nielsen's heuristics with ISO 9241-110, design tokens, performance UX, an accessibility law and standards map (as_of 2026-10-24, not legal advice), a manual keyboard and screen-reader checklist, and the `ux:` section of `.ascent/contract.yml`
+- `tests/plugins/ascent-ux/`: `test-check-web-accessibility.sh` (good fixtures in four syntaxes pass all 12 checks; one broken copy per check fails that check and no other), `test-check-token-contrast.sh` (hand-checked ratios; every direction in both themes), `test-tokens-to-css.sh` (value shapes; no blueprint drift) and `test-ux-rules.sh` (R1–R12), on every awk installed
+- `make test-mutants`: plugin controls P62–P93 for the checks, the contrast math, the token parser, the directions, the blueprint, the severity table, the dependency allowlist, the manifest keys and the skill rules
+
+### Changed
+
+- `make test-plugins` T5 also keeps every copy of the UX severity table (`ux-severity` markers) identical; new T12 fails on an unknown `plugin.json` key and on a dependency from another marketplace that is not allowlisted
+- `docs/framework/DECISIONS/INDEX.md`: ADR-011 shown as Accepted (it was accepted in v0.4.4)
+- `role-ui-ux-designer.md` points to `ascent-ux` as the single source of the role's checks
+
 ### Planned
 
 - `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges

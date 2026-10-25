@@ -6,6 +6,7 @@
   "metadata": {
     "description": "Plugins from the ASCENT engineering framework. Interim home until lloydbriantech-claude-marketplace exists (ADR-009)."
   },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official", "anthropic-plugin-directory"],
   "plugins": [
     {
       "name": "ascent-security",
@@ -25,6 +26,13 @@
       "name": "ascent-architecture",
       "source": "./plugins/ascent-architecture",
       "description": "Architecture review for any repository: quality attributes against measurable targets, design principles, deployment options with dated cost estimates, a CloudFormation static-site blueprint with template checks, and a read-only architecture-reviewer agent.",
+      "version": "0.1.0",
+      "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "ascent-ux",
+      "source": "./plugins/ascent-ux",
+      "description": "UX review for any web UI: WCAG 2.2 AA evidence with static checks and a Playwright browser pass, design-token contrast checks, five accessible design directions shown as mocks, and a read-only ux-reviewer agent.",
       "version": "0.1.0",
       "license": "MIT OR Apache-2.0"
     }

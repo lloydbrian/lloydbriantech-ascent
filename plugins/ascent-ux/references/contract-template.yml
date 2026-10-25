@@ -1,0 +1,50 @@
+# .ascent/contract.yml: the ux: section (ascent-ux). One project contract, one
+# section per ASCENT plugin (decision 2, 2026-10-18; ADR-012). Where ASCENT-named
+# files are not allowed, use .claude/contract.yml instead. Commit it: it is the
+# project's own statement of UX targets, and reviews are judged against it.
+#
+# ux-review proposes this section from what the repository already declares and
+# asks the operator to confirm it once (detect, don't ask). Every guessed value is
+# marked "# guess" until confirmed. Never put credentials, account ids, email
+# addresses or other personal data in this file.
+
+version: 1
+
+ux:
+  # enterprise (default) | standard | prototype. Anything the target requires but the
+  # project skips is a waiver: an ADR id under waivers below.
+  maturity_target: enterprise
+
+  # wcag-2.2-aa (default) | wcag-2.1-aa | wcag-2.2-aa-plus (AA plus the AAA criteria
+  # listed in aaa_criteria).
+  conformance: wcag-2.2-aa
+  aaa_criteria: []                     # e.g. ["1.4.6", "2.5.5"], only with wcag-2.2-aa-plus
+
+  # Informational: rows of references/accessibility-law-map.md, e.g. [us-ada-title-ii, eu-eaa].
+  jurisdictions: []
+
+  personas: docs/audience-mapping.md   # who the UI serves
+  core_flows:                          # flows where a blocking accessibility failure is High
+    - name: enter-score
+      pages: [app/public/score.html]
+  pages: ["app/public/**/*.html"]      # what the static checks scan
+
+  tokens: design/tokens/                # Design Tokens JSON files, a CSS variables sheet, or tailwind.config.*
+  themes: [light, dark]
+  contrast_pairs: design/tokens/pairs.tsv   # foreground<TAB>background<TAB>text|large-text|ui
+  direction: D1                         # chosen with design-directions; D1-D5, or D6+ for a custom one
+
+  browsers: [last-2-evergreen, ios-safari-17]
+  viewports: [320, 768, 1280]          # 320 px is WCAG 1.4.10 Reflow
+
+  # Leave a budget out and the performance lens is reported as "unmeasured".
+  performance_budget: { lcp_ms: 2500, inp_ms: 200, cls: 0.1, page_kb: 150 }
+
+  manual_tests: []                     # dated keyboard and screen-reader passes (references/manual-test-checklist.md)
+
+  adr_dir: docs/adr/
+  waivers: []
+  # waivers:
+  #   - id: ADR-014
+  #     skips: screen-reader pass on the admin pages
+  #     review_by: 2027-06-30

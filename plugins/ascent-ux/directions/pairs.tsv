@@ -1,0 +1,18 @@
+# Contrast pairs every direction must pass, in light and dark (check-token-contrast.sh --pairs).
+# foreground	background	kind (text 4.5:1, large-text 3:1, ui 3:1)
+color-text-primary	color-surface-base	text
+color-text-primary	color-surface-raised	text
+color-text-primary	color-surface-sunken	text
+color-text-secondary	color-surface-base	text
+color-text-secondary	color-surface-raised	text
+color-text-link	color-surface-base	text
+color-text-link	color-surface-raised	text
+color-text-on-accent	color-accent-base	text
+color-text-on-accent	color-accent-strong	text
+color-accent-base	color-surface-base	ui
+color-border-strong	color-surface-base	ui
+color-focus-ring	color-surface-base	ui
+color-focus-ring	color-surface-raised	ui
+color-status-error	color-surface-base	text
+color-status-success	color-surface-base	text
+color-status-warning	color-surface-base	text

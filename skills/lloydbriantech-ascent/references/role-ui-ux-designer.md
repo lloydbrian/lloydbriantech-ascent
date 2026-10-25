@@ -95,3 +95,4 @@ State transitions are explicit: idle → loading → loaded → error. The spec 
 - `audience-mapping.md` — the personas this role serves
 - `feature-lifecycle.md` Stage 2 — when customer-facing changes engage UI/UX
 - `doc-architecture.md` — persona-aligned doc hierarchy, sibling discipline to persona-aligned UI hierarchy
+- The `ascent-ux` plugin (ADR-012) makes this role checkable in any repository: `ux-review` and `accessibility-audit` gather WCAG 2.2 AA evidence, `design-system-check` checks tokens and contrast, and `design-directions` offers five accessible looks as mocks. The plugin is the single source for those checks; this reference keeps the role's principles.

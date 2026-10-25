@@ -1,0 +1,183 @@
+{
+  "$description": "Bold brand: strong color, large type, high contrast. Marketing and community sites. Dark theme: color overrides only; everything else comes from the light file.",
+  "color": {
+    "$type": "color",
+    "text": {
+      "primary": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9608,
+            0.9529,
+            1.0
+          ],
+          "hex": "#f5f3ff"
+        }
+      },
+      "secondary": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.7098,
+            0.9922
+          ],
+          "hex": "#c4b5fd"
+        }
+      },
+      "link": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.7098,
+            0.9922
+          ],
+          "hex": "#c4b5fd"
+        }
+      },
+      "on-accent": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0784,
+            0.0667,
+            0.1216
+          ],
+          "hex": "#14111f"
+        }
+      }
+    },
+    "surface": {
+      "base": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0706,
+            0.051,
+            0.1216
+          ],
+          "hex": "#120d1f"
+        }
+      },
+      "raised": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1098,
+            0.0824,
+            0.1882
+          ],
+          "hex": "#1c1530"
+        }
+      },
+      "sunken": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0431,
+            0.0314,
+            0.0784
+          ],
+          "hex": "#0b0814"
+        }
+      }
+    },
+    "accent": {
+      "base": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6549,
+            0.5451,
+            0.9804
+          ],
+          "hex": "#a78bfa"
+        }
+      },
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.7098,
+            0.9922
+          ],
+          "hex": "#c4b5fd"
+        }
+      }
+    },
+    "border": {
+      "default": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2314,
+            0.1843,
+            0.3608
+          ],
+          "hex": "#3b2f5c"
+        }
+      },
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5451,
+            0.4824,
+            0.7216
+          ],
+          "hex": "#8b7bb8"
+        }
+      }
+    },
+    "focus": {
+      "ring": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9569,
+            0.4471,
+            0.7137
+          ],
+          "hex": "#f472b6"
+        }
+      }
+    },
+    "status": {
+      "error": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9843,
+            0.4431,
+            0.5216
+          ],
+          "hex": "#fb7185"
+        }
+      },
+      "success": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2039,
+            0.8275,
+            0.6
+          ],
+          "hex": "#34d399"
+        }
+      },
+      "warning": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9843,
+            0.749,
+            0.1412
+          ],
+          "hex": "#fbbf24"
+        }
+      }
+    }
+  }
+}

@@ -98,9 +98,10 @@ plugin_copy() {  # DIR — fresh copy of the repository without .git
   (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) | (cd "$1" && tar -xf -)
 }
 plugin_gate() {  # DIR — run test-plugins on a copy; output to $WORK/plugin-out
-  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
+  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
 }
 plugin_copy "$WORK/p-baseline"
+T11_ONLY=""
 total=$((total + 1))
 if plugin_gate "$WORK/p-baseline"; then
   printf "  control      %-28s unmodified copy passes test-plugins\n" "P00-baseline"
@@ -111,8 +112,16 @@ else
   survived=$((survived + 1))
 fi
 
+t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every plugin's tests)
+  case "$1" in
+    plugins/*) T11_ONLY=${1#plugins/}; T11_ONLY=${T11_ONLY%%/*} ;;
+    tests/plugins/*) T11_ONLY=${1#tests/plugins/}; T11_ONLY=${T11_ONLY%%/*} ;;
+    *) T11_ONLY="" ;;
+  esac
+}
 plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuild]
   local copy="$WORK/p-$1"
+  t11_scope "$3"
   plugin_copy "$copy"
   total=$((total + 1))
   cp "$copy/$3" "$WORK/before"
@@ -142,6 +151,7 @@ plugin_judge() {  # ID EXPECT-LABEL COPY — run the gate and classify the resul
 }
 plugin_case_rm() {  # ID EXPECT-LABEL PATH(relative to repo) — the control deletes PATH
   local copy="$WORK/p-$1"
+  t11_scope "$3"
   plugin_copy "$copy"
   total=$((total + 1))
   if [ ! -e "$copy/$3" ]; then
@@ -230,6 +240,47 @@ plugin_case P58-review-skips-client-secrets T11 "$REVIEW" 's/, and secrets in cl
 plugin_case P59-agent-secrets-only-when-published T11 "$ARC_AGENT" 's/a hit is High whether or not the page is published yet/a hit is High once the page is published/'
 plugin_case P60-review-drops-security-referral T11 "$REVIEW" 's/ Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`\.//'
 plugin_case P61-agent-at-risk-rule-removed T11 "$ARC_AGENT" 's/; it is at risk instead when the evidence shows a gap\././'
+UX=plugins/ascent-ux
+UXW="$UX/scripts/check-web-accessibility.sh"
+UXC="$UX/scripts/check-token-contrast.sh"
+UXT="$UX/scripts/tokens-to-css.sh"
+UXL="$UX/scripts/lib/tokens.awk"
+UXR="$UX/skills/ux-review/SKILL.md"
+UXD="$UX/skills/design-directions/SKILL.md"
+UXA="$UX/agents/ux-reviewer.md"
+UXB="$UX/blueprints/accessible-page"
+plugin_case P62-web-ignores-lang T11 "$UXW" 's/if (!has(tag, "lang")) fail("U1"/if (0) fail("U1"/'
+plugin_case P63-web-ignores-alt T11 "$UXW" 's/if (!has(tag, "alt") \&\&/if (0 \&\&/'
+plugin_case P64-web-label-for-ignored T11 "$UXW" 's/(v in LABELFOR)/(0)/'
+plugin_case P65-web-empty-name-passes T11 "$UXW" 's/^  return c != ""$/  return 1/'
+plugin_case P66-web-zoom-block-missed T11 "$UXW" 's/maximum-scale=(0|1)/maximum-scale=(9)/'
+plugin_case P67-web-outline-none-allowed T11 "$UXW" 's/if (!FV) fail("U11"/if (0) fail("U11"/'
+plugin_case P68-web-no-key-handler-needed T11 "$UXW" 's/if (!has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = /if (0) c = /'
+plugin_case P69-web-core-not-high T11 "$UXW" 's/ISCORE ? "High" : ""/""/g'
+plugin_case P70-web-scans-comments T11 "$UXW" 's/^  blank_between("<!--", "-->", 0)$//'
+plugin_case P71-contrast-no-linearization T11 "$UXC" 's/((c + 0.055) \/ 1.055) ^ 2.4/c/'
+plugin_case P72-contrast-text-threshold T11 "$UXC" 's/if (kind == "text") return 4.5/if (kind == "text") return 4.4/'
+plugin_case P73-contrast-rounds-up T11 "$UXC" 's/int(r \* 100) \/ 100/r/'
+plugin_case P74-tokens-alias-unresolved T11 "$UXL" 's/^    v = lookup(theme, ref); depth++$/    depth++/'
+plugin_case P75-tokens-no-light-fallback T11 "$UXL" 's/if (theme != "light" /if (0 \&\& theme != "light" /'
+plugin_case P76-css-dark-media-ignored T11 "$UXL" 's/prefers-color-scheme:\[ \]\*dark/prefers-color-scheme:[ ]*never/'
+plugin_case P77-contrast-on-accent-on-surface T11 "$UXC" 's/x = substr(a, RSTART + 4)/x = "surface"/'
+plugin_case P78-css-dark-block-dropped T11 "$UXT" 's/^  print "@media (prefers-color-scheme: dark) {"$//'
+plugin_case P79-direction-contrast-regression T11 "$UX/directions/D3-editorial.light.tokens.json" 's/"#57534e"/"#a8a29e"/'
+plugin_case P80-blueprint-tokens-drift T11 "$UXB/tokens.css" 's/--color-text-primary: #1f2328;/--color-text-primary: #1f2329;/'
+plugin_case P81-blueprint-loses-lang T11 "$UXB/index.html" 's/<html lang="en">/<html>/'
+plugin_case P82-ux-severity-copy-drift T5 "$UXA" 's/| Content that flashes more than three times a second (2.3.1) | High |/| Content that flashes more than three times a second (2.3.1) | Medium |/'
+plugin_case P83-dependency-not-allowlisted T12 .claude-plugin/marketplace.json 's/, "anthropic-plugin-directory"\]/]/'
+plugin_case P84-manifest-key-misspelled T12 "$UX/.claude-plugin/plugin.json" 's/"dependencies"/"dependencis"/'
+plugin_case P85-ux-review-rates-off-table T11 "$UXR" 's/goes under \*\*Other observations (unrated)\*\*/gets the nearest severity/'
+plugin_case P86-browser-pass-real-data T11 "$UXR" '/\*\*Never\*\* submit forms with real data/d'
+plugin_case P87-directions-writes-repo T11 "$UXD" 's/Never write tracked files/Write the token files/'
+plugin_case P88-conformance-claimed T11 "$UXR" 's/\*\*No conformance claims from automation\.\*\*/**Conformance from automation.**/'
+plugin_case P89-law-map-undated T11 "$UX/references/accessibility-law-map.md" 's/\*\*as_of: /**updated: /'
+plugin_case P90-ux-agent-cites-missing-step T9 "$UXA" 's/(ux-review Step 4)/(ux-review Step 9)/'
+plugin_case P91-ux-agent-can-write T4 "$UXA" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
+plugin_case P92-directions-catalog-drift T11 "$UXD" '/^| D5 | Dense professional/d'
+plugin_case_rm P93-ux-tests-removed T11 tests/plugins/ascent-ux
 
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
   "$total" "$killed" "$survived" "$missed"

@@ -1,0 +1,3 @@
+/* outline: none in a comment is ignored */
+a:focus-visible { outline: 2px solid currentColor; }
+.card:focus { outline: 0; }
