@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha (this release) to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Architecture plugin complete, v0.4.4, October 24, 2026. Next plugin: `ascent-ux`, then `ascent-ops`; Phase 4 awaiting signal.
+**Current state:** UX plugin complete, v0.4.5, October 25, 2026. Next plugin: `ascent-ops`; Phase 4 awaiting signal.
 
 ---
 
@@ -126,6 +126,12 @@ Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macO
 **Status:** ✅ Complete (October 24, 2026)
 
 `ascent-architecture` 0.1.0 reviews a repository's architecture against the project contract, `.ascent/contract.yml`, which every plugin will share. It maps the system, checks quality attributes, design principles, deployment and cost, and rates findings strong, moderate or weak. It compares deployment options with dated cost estimates and hands over a static-site blueprint on AWS ([ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md)). A read-only trial on a real repository ran five times and drove two calibration rounds before release. Among the fixes: severities only from the table, a pricing path the review skill could not find, and a missed High for secrets in client code. Thirty-two plugin controls pin the result. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.5 — UX plugin
+
+**Status:** ✅ Complete (October 25, 2026)
+
+`ascent-ux` 0.1.0 rates a web UI against the `ux:` section of the project contract, with WCAG 2.2 AA evidence from static checks, exact token contrast in every theme, and a Playwright browser pass that overrides both. It checks the design system and offers five predefined design directions as mocks of the project's own pages, each verified before it is shown ([ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md)). It is the first ASCENT plugin with dependencies: `design`, `frontend-design` and `playwright` install with it. A read-only trial on two real repositories and a re-trial drove two calibration rounds before release. Among the fixes: single-page-app views read from JS template literals, focus outlines judged per selector, line numbers that stay right after non-ASCII text, and delegated click handlers. Forty-six plugin controls (P62–P117) pin the result. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 
