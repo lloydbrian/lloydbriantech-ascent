@@ -21,6 +21,8 @@ GOOD="$HERE/fixtures/good"
 BP="$PLUGIN/blueprints/accessible-page"
 for f in "$CHECK" "$GOOD/page.html" "$BP/index.html"; do [ -e "$f" ] || { echo "test-check-web-accessibility: missing $f"; echo "test-check-web-accessibility: 0/1 PASS"; exit 1; }; done
 
+UTF8=$(locale -a 2>/dev/null | grep -iE '^(C|en_US)\.utf-?8$' | head -1); UTF8=${UTF8:-C.UTF-8}
+
 PASS=0; FAIL=0
 ok()  { PASS=$((PASS + 1)); }
 bad() { FAIL=$((FAIL + 1)); printf "FAIL  [%s] %s\n" "$AWKNAME" "$1"; }
@@ -104,6 +106,41 @@ matrix() {
   run "$WORK" ./covered.css; [ "$RC" -eq 0 ] && ok || bad "u11: .x:focus-visible must cover .x:focus outline removal: $(printf '%s' "$OUT" | grep FAIL)"
   printf '.x:focus { outline: none; }\n.y:focus-visible { outline: 2px solid; }\n' > "$WORK/uncovered.css"
   run "$WORK" ./uncovered.css; printf '%s\n' "$OUT" | grep -q '^FAIL  U11  Medium ./uncovered.css:1  focus outline removed on .x' && ok || bad "u11: .y:focus-visible must not cover .x"
+
+  # A box-shadow ring in the same :focus rule replaces the outline, as a NOTE (C20);
+  # box-shadow: none, or a shadow outside a :focus rule, does not.
+  printf '.x:focus { outline: none; box-shadow: 0 0 0 3px #0a58ca; }\n' > "$WORK/ring.css"
+  run "$WORK" ./ring.css; [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^NOTE  U11  -      ./ring.css:1  outline on .x is replaced by a box-shadow ring' && ok || bad "u11: a box-shadow ring must be a NOTE, not a FAIL: $(printf '%s' "$OUT" | grep U11)"
+  printf '.x:focus { outline: none; box-shadow: none; }\n' > "$WORK/ring-none.css"
+  run "$WORK" ./ring-none.css; printf '%s\n' "$OUT" | grep -q '^FAIL  U11  Medium ./ring-none.css:1' && ok || bad "u11: box-shadow: none must not replace the outline"
+  printf '.x { outline: none; box-shadow: 0 1px 2px #000; }\n' > "$WORK/ring-base.css"
+  run "$WORK" ./ring-base.css; printf '%s\n' "$OUT" | grep -q '^FAIL  U11  Medium ./ring-base.css:1' && ok || bad "u11: a shadow outside a :focus rule must not replace the outline"
+
+  # Line numbers stay right after non-ASCII text, and neither valid nor invalid UTF-8
+  # stops the scan, in a UTF-8 caller locale (C17). Thirty arrows put 60 more bytes
+  # than characters ahead of eight short lines.
+  ARROWS=$(printf '\342\206\222%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30)
+  printf '/* %s */\n.a{}\n.b{}\n.c{}\n.d{}\n.e{}\n.f{}\n.g{}\n.h{}\n.x:focus { outline: none; }\n' "$ARROWS" > "$WORK/utf8.css"
+  (cd "$WORK" && PATH="$SHIM:$PATH" LC_ALL="$UTF8" bash "$CHECK" ./utf8.css) >"$WORK/out" 2>&1; OUT=$(cat "$WORK/out")
+  printf '%s\n' "$OUT" | grep -q '^FAIL  U11  Medium ./utf8.css:10 ' && ok || bad "utf8: U11 line must be 10 after non-ASCII text: $(printf '%s' "$OUT" | tail -2 | tr '\n' ';')"
+  printf '/* \377\376 */\n.x:focus { outline: none; }\n' > "$WORK/bad-utf8.css"
+  (cd "$WORK" && PATH="$SHIM:$PATH" LC_ALL="$UTF8" bash "$CHECK" ./bad-utf8.css) >"$WORK/out" 2>&1; RC=$?; OUT=$(cat "$WORK/out")
+  [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -q '^FAIL  U11  Medium ./bad-utf8.css:2 ' && ok || bad "utf8: invalid UTF-8 must not stop the scan (exit $RC): $(printf '%s' "$OUT" | tail -2 | tr '\n' ';')"
+
+  # An <h1> rendered only by a JS template is a NOTE on the page, not a FAIL (C18).
+  mutate js-h1 page.html 's/<h1>Fixture<\/h1>/<p>Fixture<\/p>/' views.js 's/<h4>Notes<\/h4>/<h1>Notes<\/h1>/'
+  run "$WORK/js-h1" .
+  [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^NOTE  U7   -      ./page.html:1  no static <h1>; a js template renders one at ./views.js:11 ' && ok || bad "js-h1: expected a U7 NOTE naming views.js:11: $(printf '%s' "$OUT" | grep U7 | tr '\n' ';')"
+
+  # Delegated listeners (C19): the element a click listener finds with
+  # e.target.closest() needs role and tabindex, and a key listener in the same file.
+  mutate deleg-tab views.js 's/ role="button" tabindex="0" data-pick/ data-pick/' && expect_only deleg-tab U12 Medium 'selector [data-pick] (line 20) but has no role, tabindex; use a <button> (2.1.1) [delegated]'
+  mutate deleg-key views.js "/addEventListener('keydown'/d" && expect_only deleg-key U12 Medium 'but has no a key listener'
+  printf 'el.addEventListener("click", e => { e.target.closest(".row"); e.target.matches("#go"); e.target.closest(".hdr[data-open]"); other.closest(".card"); });\nconst v = `<div class="row x">a</div><span id="go">b</span><div class="hdr" data-open="1">c</div><div class="card">d</div>`;\n' > "$WORK/deleg.js"
+  run "$WORK" ./deleg.js
+  [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  U12  Medium ./deleg.js:2  ')" = 3 ] && printf '%s\n' "$OUT" | grep -qF 'selector .row ' && printf '%s\n' "$OUT" | grep -qF 'selector #go ' && printf '%s\n' "$OUT" | grep -qF 'selector .hdr[data-open] ' && ! printf '%s\n' "$OUT" | grep -qF '.card' && ok || bad "deleg: expected .row, #go and .hdr[data-open], not .card: $(printf '%s' "$OUT" | grep U12 | cut -c1-120 | tr '\n' ';')"
+  printf 'el.addEventListener("mouseover", e => e.target.closest(".row"));\nconst v = `<div class="row">a</div>`;\n' > "$WORK/hover.js"
+  run "$WORK" ./hover.js; [ "$RC" -eq 0 ] && ok || bad "deleg: closest() without a click listener must not fail U12: $(printf '%s' "$OUT" | grep FAIL)"
 
   # --core raises U3 and U12 to High, and only in the named file.
   mutate core page.html 's/<input type="text" aria-label="Search">/<input type="text">/' page.html 's/ onkeydown="go()"//' Widget.jsx 's/ onKeyDown={save}//'

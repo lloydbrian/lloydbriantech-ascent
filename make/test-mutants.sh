@@ -295,6 +295,16 @@ plugin_case P104-agent-key-drift T11 "$UXA" 's/`direction`, //'
 plugin_case P105-playwright-files-deleted T11 "$UXR" 's/ Never delete files in the reviewed repository yourself\.//'
 plugin_case P106-no-brand-option T11 "$UXD" '/^\*\*Brand-adapted option\.\*\*/d'
 plugin_case P107-contrast-per-pair T11 "$UX/skills/design-system-check/SKILL.md" 's/each failing foreground token is one Medium finding/each FAIL is a Medium finding/'
+plugin_case P108-web-locale-dependent T11 "$UXW" 's/ LC_ALL=C awk "\$PROG" "\${ARGS\[@\]}"/ awk "$PROG" "${ARGS[@]}"/'
+plugin_case P109-tokens-locale-dependent T11 "$UXC" 's/ LC_ALL=C awk "\$PROG" </ awk "$PROG" </'
+plugin_case P110-web-js-h1-ignored T11 "$UXW" 's/if (!hasH1 \&\& JSH1 != "") note/if (0) note/'
+plugin_case P111-web-delegated-ignored T11 "$UXW" 's/(d = delegated(tag)) != ""/0/'
+plugin_case P112-web-delegated-key-assumed T11 "$UXW" 's/if (!(FILE in DKEY) \&\& /if (0 \&\& /'
+plugin_case P113-web-ring-without-focus T11 "$UXW" 's/if (sel ~ \/:focus\/ \&\& ring(full, p))/if (ring(full, p))/'
+plugin_case P114-web-ring-none-accepted T11 "$UXW" 's/return v ~ \/\[1-9\]\/ \&\& v/return 1 || v/'
+plugin_case P115-web-notes-dropped T11 "$UXW" '/^    printf "%s", NOTES\[k\]$/d'
+plugin_case P116-ux-review-notes-rated T11 "$UXR" 's/Each `NOTE` line is unrated/Each `NOTE` line is Low/'
+plugin_case P117-agent-delegated-dropped T11 "$UXA" 's/That includes delegated listeners/It covers inline handlers/'
 
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
   "$total" "$killed" "$survived" "$missed"

@@ -28,7 +28,8 @@
 # The ratio uses WCAG relative luminance (sRGB, 0.04045 threshold) and is truncated,
 # never rounded up, to two decimals.
 # Exit: 0 no FAIL; 1 at least one FAIL; 2 bad input.
-# Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk.
+# Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk (run with LC_ALL=C, so
+# positions and lengths are bytes in every awk and invalid UTF-8 cannot stop it).
 
 set -euo pipefail
 
@@ -132,4 +133,4 @@ BEGIN {
   printf "check-token-contrast: %d pairs in %d theme(s), %d pass, %d fail, %d skipped (pairs: %s)\n", np, nt, pass, fail, skip, SRC
   exit (fail > 0) ? 1 : 0
 }'
-ASCENT_TOKEN_LIST="$LIST" ASCENT_TOKEN_PAIRS="$PAIRS" awk "$PROG" </dev/null
+ASCENT_TOKEN_LIST="$LIST" ASCENT_TOKEN_PAIRS="$PAIRS" LC_ALL=C awk "$PROG" </dev/null

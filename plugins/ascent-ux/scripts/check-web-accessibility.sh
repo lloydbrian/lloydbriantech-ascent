@@ -20,25 +20,33 @@
 #   U4  Medium  buttons and links have an accessible name             4.1.2, 2.4.4
 #   U5  Medium  the viewport meta tag allows zoom                     1.4.4
 #   U6  Low     no positive tabindex                                  2.4.3
-#   U7  Low     heading levels do not skip; a full page has an <h1>   1.3.1, 2.4.6
+#   U7  Low     heading levels do not skip; a full page has an <h1> (or a scanned JS
+#               template renders one: a NOTE, to confirm in the browser)  1.3.1, 2.4.6
 #   U8  Low     id values are unique within a file                    4.1.2
 #   U9  Medium  a full page has a non-empty <title>                   2.4.2
 #   U10 Medium  autoplay media is muted and has controls              1.4.2, 2.2.2
 #   U11 Medium  an outline removed on a selector is replaced by a :focus-visible style for
-#               that selector (or a universal :focus-visible rule)       2.4.7, 2.4.11
-#   U12 Medium  click handlers sit on elements a keyboard can reach (role, tabindex, key handler)   2.1.1
+#               that selector (or a universal :focus-visible rule), or by a box-shadow
+#               ring in the same :focus rule (a NOTE: ring contrast not computed)   2.4.7, 2.4.11
+#   U12 Medium  click handlers sit on elements a keyboard can reach (role, tabindex, key
+#               handler), including elements a JS click listener in the same file finds
+#               with closest() or matches() on [attr], .class or #id ("[delegated]")   2.1.1
 #
 # Output: one FAIL line per finding (FAIL  Uk  SEVERITY  file:line  message), a
 # PASS line per check with no finding (with the count checked), N/A when a check
-# found nothing to check, then "check-web-accessibility: ...".
+# found nothing to check, NOTE lines (unrated, not failures) for what only the
+# browser can settle, then "check-web-accessibility: ...".
 # Limits: static. Markup is read as text: a ">" inside a template expression ends a
 # tag early, names built at runtime cannot be seen (a dynamic name counts as
-# present), capitalized JSX/Vue/Svelte components are skipped, and elements built with
-# document.createElement or wired with delegated listeners are not seen (read them,
-# and rely on the browser pass). Every finding is "static" until the browser pass
-# (live accessibility tree) confirms it.
+# present), capitalized JSX/Vue/Svelte components are skipped, elements built with
+# document.createElement are not seen, and delegated listeners are matched only
+# within one file and only for simple selectors (read the rest, and rely on the
+# browser pass). Every finding is "static" until the browser pass (live
+# accessibility tree) confirms it.
 # Exit: 0 no FAIL; 1 at least one FAIL; 2 bad input.
-# Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk.
+# Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk. awk runs with LC_ALL=C:
+# in a UTF-8 locale some awks count characters in one place and bytes in another,
+# which shifts line numbers after non-ASCII text, and stop on invalid UTF-8.
 
 set -euo pipefail
 
@@ -127,13 +135,56 @@ function fv_prepass(raw,   full, t, off, p, j, c, k, sel, n, parts, i, b) {
     off += RSTART + RLENGTH - 1; t = substr(t, RSTART + RLENGTH)
   }
 }
-function css_scan(t, base,   full, off, p, sel) {
+function ring(t, p,   j, e, body, v) {
+  for (j = p; j > 0; j--) if (substr(t, j, 1) == "{") break
+  e = index(substr(t, p), "}"); body = (e == 0) ? substr(t, j + 1) : substr(t, j + 1, p - j - 1 + e - 1)
+  if (!match(body, /box-shadow[ \t\r\n]*:[^;}]*/)) return 0
+  v = substr(body, RSTART, RLENGTH); sub(/^box-shadow[ \t\r\n]*:/, "", v)
+  return v ~ /[1-9]/ && v !~ /^[ \t\r\n]*none/
+}
+function css_scan(t, base,   full, off, p, sel, rs, rl) {
   full = blank_css_comments(t); t = full; off = 0
   while (match(t, /outline[ \t]*:[ \t]*(none|0)([ \t;}!]|$)/)) {
-    p = off + RSTART; sel = selector_before(full, p)
-    css_hit(base + p, sel)
-    off += RSTART + RLENGTH - 1; t = substr(t, RSTART + RLENGTH)
+    rs = RSTART; rl = RLENGTH
+    p = off + rs; sel = selector_before(full, p)
+    if (sel ~ /:focus/ && ring(full, p)) { CHK["U11"]++; if (!covered(sel)) note("U11", base + p, "outline on " selnorm(sel) " is replaced by a box-shadow ring; its contrast is not computed (confirm in the browser pass)") }
+    else css_hit(base + p, sel)
+    off += rs + rl - 1; t = substr(t, rs + rl)
   }
+}
+function lines_before(t, p,   s) { s = substr(t, 1, p - 1); return gsub(/\n/, "", s) + 1 }
+function add_dsel(f, kind, key, shown, line,   n) { n = ++DN[f]; DK[f, n] = kind; DV[f, n] = key; DS[f, n] = shown; DL[f, n] = line }
+function js_prepass(f, raw,   t, rest, off, s, a, line) {
+  if (f !~ /\.(m|c)?(js|ts)$/) return
+  t = js_templates(raw)
+  if (JSH1 == "" && match(tolower(t), /<h1[ \t\r\n>]/)) JSH1 = f ":" lines_before(t, RSTART)
+  if (raw !~ /addEventListener\([ \t]*["\047]click["\047]/) return
+  DCLICK[f] = 1
+  if (raw ~ /addEventListener\([ \t]*["\047]key(down|up|press)["\047]/) DKEY[f] = 1
+  rest = raw; off = 0
+  while (match(rest, /target\.(closest|matches)\([ \t]*["\047][^"\047]+["\047][ \t]*\)/)) {
+    s = substr(rest, RSTART, RLENGTH); sub(/^target\.[a-z]+\([ \t]*["\047]/, "", s); sub(/["\047][ \t]*\)$/, "", s)
+    line = lines_before(raw, off + RSTART)
+    off += RSTART + RLENGTH - 1; rest = substr(rest, RSTART + RLENGTH)
+    if (s ~ /[ >+~,]/) continue
+    if (match(s, /\[[A-Za-z_][-A-Za-z0-9_:.]*/)) { a = substr(s, RSTART + 1, RLENGTH - 1); add_dsel(f, "a", tolower(a), s, line) }
+    else if (s ~ /^\.[-A-Za-z0-9_]+$/) add_dsel(f, "c", tolower(substr(s, 2)), s, line)
+    else if (s ~ /^#[-A-Za-z0-9_]+$/) add_dsel(f, "i", substr(s, 2), s, line)
+  }
+}
+function delegated(tag,   i, k, cl) {
+  if (!(FILE in DCLICK)) return ""
+  cl = ""
+  for (i = 1; i <= DN[FILE]; i++) {
+    k = DK[FILE, i]
+    if (k == "a" && has(tag, DV[FILE, i])) return DS[FILE, i] " (line " DL[FILE, i] ")"
+    if (k == "c") {
+      if (cl == "") { cl = " " tolower(val(tag, "class|classname")) " "; gsub(/[ \t\r\n]+/, " ", cl) }
+      if (index(cl, " " DV[FILE, i] " ") > 0) return DS[FILE, i] " (line " DL[FILE, i] ")"
+    }
+    if (k == "i" && val(tag, "id") == DV[FILE, i]) return DS[FILE, i] " (line " DL[FILE, i] ")"
+  }
+  return ""
 }
 function js_templates(t,   out, i, j, k, rest, content) {
   out = ""
@@ -166,13 +217,14 @@ function fail(k, pos, msg, sev) {
   NF_[k]++; NFAIL++
   OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s:%d  %s%s\n", k, (sev == "") ? SEV[k] : sev, FILE, line_at(pos), msg, ISJS ? " [js template]" : "")
 }
+function note(k, pos, msg) { NOTES[k] = NOTES[k] sprintf("NOTE  %-4s %-6s %s:%d  %s\n", k, "-", FILE, line_at(pos), msg) }
 function named_content(c) {
   if (c ~ /[{]/ || tolower(c) ~ /<slot/) return 1
   if (match(tolower(c), /alt[ \t]*=[ \t]*["\047][^"\047]+["\047]/) || tolower(c) ~ /aria-label(ledby)?[ \t]*=/ || tolower(c) ~ /<title[ >]/) return 1
   gsub(/<[^>]*>/, "", c); gsub(/&nbsp;|&#160;|&#xa0;/, "", c); gsub(/[ \t\r\n]/, "", c)
   return c != ""
 }
-function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, prev, v, c, j, endp, fulldoc, hash, hasH1, sel) {
+function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, prev, v, c, j, endp, fulldoc, hash, hasH1, sel, d) {
   if (FILE == "") return
   LASTPOS = 1; LASTLINE = 1; NST = 0
   if (FILE ~ /\.(css|scss)$/) { css_scan(B, 0); return }
@@ -253,6 +305,13 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
       if (!has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = c (c == "" ? "" : ", ") "a key handler"
       if (c != "") fail("U12", pos, "<" lname "> has a click handler but no " c "; use a <button> (2.1.1)", ISCORE ? "High" : "")
     }
+    else if (lname ~ /^(div|span|li|td|p|section|article|img|svg)$/ && (d = delegated(tag)) != "") {
+      CHK["U12"]++; c = ""
+      if (!has(tag, "role")) c = "role"
+      if (!has(tag, "tabindex")) c = c (c == "" ? "" : ", ") "tabindex"
+      if (!(FILE in DKEY) && !has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = c (c == "" ? "" : ", ") "a key listener"
+      if (c != "") fail("U12", pos, "<" lname "> matches the delegated click selector " d " but has no " c "; use a <button> (2.1.1) [delegated]", ISCORE ? "High" : "")
+    }
   }
   if (fulldoc) {
     CHK["U9"]++
@@ -260,7 +319,8 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
     if (j == 0) fail("U9", 1, "the page has no <title> (2.4.2)")
     else { c = substr(B, j); sub(/^<[^>]*>/, "", c); i = index(tolower(c), "</title>"); c = (i == 0) ? "" : substr(c, 1, i - 1); gsub(/[ \t\r\n]/, "", c); if (c == "") fail("U9", j, "the page has an empty <title> (2.4.2)") }
     CHK["U7"]++
-    if (!hasH1) fail("U7", 1, "the page has no <h1> (1.3.1, 2.4.6)")
+    if (!hasH1 && JSH1 != "") note("U7", 1, "no static <h1>; a js template renders one at " JSH1 " (confirm in the browser pass)")
+    else if (!hasH1) fail("U7", 1, "the page has no <h1> (1.3.1, 2.4.6)")
   }
   for (k = 1; k <= NST; k++) css_scan(substr(ORIGB, SST[k], SEN[k] - SST[k]), SST[k] - 1)
 }
@@ -279,7 +339,7 @@ BEGIN {
   D["U7"] = "heading levels do not skip; pages have an <h1>"; D["U8"] = "ids are unique within each file"; D["U9"] = "pages have a title"
   D["U10"] = "autoplay media is muted and has controls"; D["U11"] = "removed focus outlines are replaced by :focus-visible"
   D["U12"] = "click handlers sit on keyboard-reachable elements"
-  for (i = 1; i < ARGC; i++) { T0 = ""; while ((getline line < ARGV[i]) > 0) T0 = T0 line "\n"; close(ARGV[i]); fv_prepass(T0) }
+  for (i = 1; i < ARGC; i++) { T0 = ""; while ((getline line < ARGV[i]) > 0) T0 = T0 line "\n"; close(ARGV[i]); fv_prepass(T0); js_prepass(ARGV[i], T0) }
   nc = split(ENVIRON["ASCENT_CORE"], cl, "\n"); for (i = 1; i <= nc; i++) if (cl[i] != "") COREF[(cl[i] ~ /^\//) ? cl[i] : "./" cl[i]] = 1
   FILE = ""; NFILES = 0
 }
@@ -292,6 +352,7 @@ END {
     if (NF_[k] > 0) printf "%s", OUT[k]
     else if (CHK[k] > 0) printf "PASS  %-4s %s (%d checked)\n", k, D[k], CHK[k]
     else printf "N/A   %-4s %s (nothing to check)\n", k, D[k]
+    printf "%s", NOTES[k]
   }
   printf "check-web-accessibility: %d file(s), %d failure(s) (static checks; confirm in the browser pass)\n", NFILES, NFAIL
   exit (NFAIL > 0) ? 1 : 0
@@ -305,4 +366,4 @@ CORE_N=""
 for c in $(printf '%s' "$CORE"); do case "$c" in /*|./*) CORE_N="$CORE_N${c#./}
 " ;; *) CORE_N="$CORE_N$c
 " ;; esac; done
-ASCENT_CORE="$CORE_N" awk "$PROG" "${ARGS[@]}"
+ASCENT_CORE="$CORE_N" LC_ALL=C awk "$PROG" "${ARGS[@]}"

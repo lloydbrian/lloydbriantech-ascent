@@ -11,3 +11,11 @@ export function renderZone(zone) {
       <h4>Notes</h4>
     </section>`;
 }
+// Delegated listeners: the element a click listener finds with closest() must be
+// keyboard-reachable too (C19).
+export function renderPicker(id) {
+  return `
+    <div class="pick" role="button" tabindex="0" data-pick="${id}">Pick</div>`;
+}
+document.body.addEventListener('click', e => { const el = e.target.closest('[data-pick]'); if (el) pick(el); });
+document.body.addEventListener('keydown', e => { if (e.key === 'Enter') { const el = e.target.closest('[data-pick]'); if (el) pick(el); } });

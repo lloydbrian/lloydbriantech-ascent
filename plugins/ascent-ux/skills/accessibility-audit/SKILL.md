@@ -39,7 +39,7 @@ Run the checker over the scope, with `--core` for each core-flow file, and inclu
 bash "$PLUGIN_ROOT/scripts/check-web-accessibility.sh" --core <core-flow file> <scope>
 ```
 
-`PLUGIN_ROOT` is two directories above this skill's base directory. Map each U-check to its criterion in the table. Static results feed the criterion rows; they are not the audit.
+`PLUGIN_ROOT` is two directories above this skill's base directory. Map each U-check to its criterion in the table. Static results feed the criterion rows; they are not the audit. A `NOTE` line is never a pass: its criterion stays `not tested` until the browser pass settles it.
 
 ### Step 3 — Criterion walk
 

@@ -44,12 +44,12 @@ You are an independent UX and accessibility reviewer. You can only read files. Y
 - U4 Medium: buttons and links have an accessible name.
 - U5 Medium: the viewport meta tag does not block zoom.
 - U6 Low: no positive `tabindex`.
-- U7 Low: heading levels do not skip, and a full page has an `<h1>`.
+- U7 Low: heading levels do not skip, and a full page has an `<h1>`. An `<h1>` that only a script renders is an unrated observation, to confirm in the browser.
 - U8 Low: ids are unique within a file.
 - U9 Medium: a full page has a non-empty `<title>`.
 - U10 Medium: autoplay media is muted and has controls.
-- U11 Medium: focus outlines are not removed unless a `:focus-visible` style exists.
-- U12 Medium: click handlers sit on keyboard-reachable elements (role, tabindex and a key handler). It is High on a core flow.
+- U11 Medium: an outline removed on a selector is replaced by a `:focus-visible` style for that selector (or a universal one). A box-shadow ring in the same `:focus` rule replaces it too, but its contrast is not computed: an unrated observation. A border-colour change alone does not.
+- U12 Medium: click handlers sit on keyboard-reachable elements (role, tabindex and a key handler). That includes delegated listeners: an element that a click listener finds with `event.target.closest()` or `.matches()`. It is High on a core flow.
 
 A check with nothing to check is N/A.
 

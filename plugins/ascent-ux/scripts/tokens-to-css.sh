@@ -13,7 +13,8 @@
 # resolved to values. cubicBezier tokens become cubic-bezier(...). Only tokens whose
 # value differs from the light file appear in the dark blocks.
 # Exit: 0 written; 2 bad input (unreadable JSON, unresolvable alias, unsupported value).
-# Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk.
+# Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk (run with LC_ALL=C, so
+# positions and lengths are bytes in every awk and invalid UTF-8 cannot stop it).
 
 set -euo pipefail
 
@@ -51,4 +52,4 @@ BEGIN {
   print "}"
   print ":root[data-theme=\"dark\"] {"; o2 = out; gsub(/\n    /, "\n  ", o2); sub(/^    /, "  ", o2); printf "%s", o2; print "}"
 }'
-ASCENT_LIGHT="$1" ASCENT_DARK="${2:-}" awk "$PROG" </dev/null
+ASCENT_LIGHT="$1" ASCENT_DARK="${2:-}" LC_ALL=C awk "$PROG" </dev/null

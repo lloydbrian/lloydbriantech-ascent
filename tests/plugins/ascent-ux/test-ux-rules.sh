@@ -25,6 +25,10 @@
 #   R19 the blueprint's tables scroll in a labelled, focusable region (1.4.10)
 #   R20 design-directions offers a brand-adapted option
 #   R21 "met" never without a target, and maturity gaps always rated (Rules section)
+#   Re-trial calibration (2026-10-25):
+#   R22 the three scripts run awk with LC_ALL=C (line numbers after non-ASCII text)
+#   R23 NOTE lines from check-web-accessibility.sh are unrated and never a pass
+#   R24 the agent applies U11 per selector with box-shadow rings, and U12 to delegated listeners
 #
 # Prints "test-ux-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -158,6 +162,13 @@ has R19 "$BPX/index.html" 'class="table-wrap" role="region" aria-labelledby="sta
 has R20 "$DIRECT" '**Brand-adapted option.**'
 has R21 "$REVIEW" '**Never "met" without a target.**'
 has R21 "$REVIEW" '**Maturity gaps are always rated.**'
+for s in check-web-accessibility.sh check-token-contrast.sh tokens-to-css.sh; do
+  grep -q ' LC_ALL=C awk "$PROG" ' "$PLUGIN/scripts/$s" && ok || bad "R22 scripts/$s does not run awk with LC_ALL=C"
+done
+has R23 "$REVIEW" 'Each `NOTE` line is unrated: list it under Other observations'
+has R23 "$AUDIT" 'A `NOTE` line is never a pass'
+has R24 "$AGENT" 'A box-shadow ring in the same `:focus` rule replaces it too'
+has R24 "$AGENT" 'That includes delegated listeners'
 
 printf "test-ux-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

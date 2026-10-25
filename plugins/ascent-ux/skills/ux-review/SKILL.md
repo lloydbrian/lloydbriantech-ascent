@@ -127,6 +127,7 @@ bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" [--pairs <contract contrast_
 
 - Pass `--core` once for each file of a core flow, so U3 and U12 failures there are High.
 - Each static `FAIL` line is a finding with the severity it prints, marked "static".
+- Each `NOTE` line is unrated: list it under Other observations and settle it in the browser pass (an `<h1>` rendered by a script, a box-shadow focus ring whose contrast is not computed).
 - Contrast `FAIL` lines are Medium findings (1.4.3 or 1.4.11). Pairs marked "inferred" came from CSS rules or token names; say so.
 - If Bash is unavailable or the operator declines it, apply U1–U12 by reading the markup and say "checks applied by reading; scripts not run". Never estimate a contrast ratio by eye: say "contrast not computed".
 
