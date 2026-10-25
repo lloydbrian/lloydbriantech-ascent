@@ -10,6 +10,12 @@
 # Before any mutant runs, every named test must pass on the unmutated project,
 # so a kill always means the mutation was detected, not that the test was broken.
 #
+# Groups (one CI job each, run in parallel): "core" holds the embedded-skill rows
+# and the validator controls; each "mutant_group <plugin>" line below starts that
+# plugin's controls. ASCENT_MUTANT_GROUP (make test-mutants GROUP=<g>) runs one
+# group; unset runs every group. --groups-json prints the group list for the CI
+# matrix, so a new plugin section joins CI without a workflow change.
+#
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
 set -euo pipefail
@@ -18,6 +24,20 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MUTANTS="$REPO_ROOT/make/mutants.tsv"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT INT TERM
+
+GROUPS_ALL="core $(awk '/^mutant_group [a-z0-9-]+$/ { print $2 }' "$0" | tr '\n' ' ' | sed 's/ $//')"
+if [ "${1:-}" = --groups-json ]; then
+  printf '%s\n' "$GROUPS_ALL" | awk '{ s = "["; for (i = 1; i <= NF; i++) s = s (i > 1 ? "," : "") "\"" $i "\""; print s "]" }'
+  exit 0
+fi
+GROUP="${ASCENT_MUTANT_GROUP:-all}"
+case " all $GROUPS_ALL " in *" $GROUP "*) ;; *) echo "test-mutants: unknown group '$GROUP' (groups: all $GROUPS_ALL)" >&2; exit 2 ;; esac
+CUR_GROUP=core
+mutant_group() { CUR_GROUP="$1"; }
+in_group() { [ "$GROUP" = all ] || [ "$GROUP" = "$CUR_GROUP" ]; }
+killed=0; survived=0; missed=0; total=0
+
+if in_group; then
 
 bash "$REPO_ROOT/make/render-template.sh" "$WORK/base" >/dev/null
 
@@ -31,7 +51,6 @@ for t in $tests_named; do
   fi
 done
 
-killed=0; survived=0; missed=0; total=0
 expected_rows=$(grep -v '^#' "$MUTANTS" | grep -c . || true)
 while IFS="$(printf '\t')" read -r id file expr test desc; do
   case "$id" in ''|\#*) continue ;; esac
@@ -88,6 +107,7 @@ validator_case V00-wellformed pass ascent-x ascent-x "Use when asked to do x. Do
 validator_case V01-no-trigger fail ascent-x ascent-x "Does x for the project."
 validator_case V02-placeholder fail ascent-x ascent-x "Use when asked to do x for <<PROJECT_TITLE>>."
 validator_case V03-name-mismatch fail ascent-y ascent-x "Use when asked to do x. Does x."
+fi
 
 # Plugin controls (ADR-009): make/test-plugins.sh must fail on each broken copy
 # of the repository, and fail with the check named in EXPECT, so a control
@@ -100,6 +120,7 @@ plugin_copy() {  # DIR — fresh copy of the repository without .git
 plugin_gate() {  # DIR — run test-plugins on a copy; output to $WORK/plugin-out
   ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
 }
+if [ "$GROUP" != core ]; then
 plugin_copy "$WORK/p-baseline"
 T11_ONLY=""
 total=$((total + 1))
@@ -111,6 +132,7 @@ else
   grep '^FAIL' "$WORK/plugin-out" | sed 's/^/                 /'
   survived=$((survived + 1))
 fi
+fi
 
 t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every plugin's tests)
   case "$1" in
@@ -120,6 +142,7 @@ t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every pl
   esac
 }
 plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuild]
+  in_group || return 0
   local copy="$WORK/p-$1"
   t11_scope "$3"
   plugin_copy "$copy"
@@ -150,6 +173,7 @@ plugin_judge() {  # ID EXPECT-LABEL COPY — run the gate and classify the resul
   fi
 }
 plugin_case_rm() {  # ID EXPECT-LABEL PATH(relative to repo) — the control deletes PATH
+  in_group || return 0
   local copy="$WORK/p-$1"
   t11_scope "$3"
   plugin_copy "$copy"
@@ -161,6 +185,7 @@ plugin_case_rm() {  # ID EXPECT-LABEL PATH(relative to repo) — the control del
   rm -rf "${copy:?}/$3"
   plugin_judge "$1" "$2" "$copy"
 }
+mutant_group ascent-security
 SEC=plugins/ascent-security
 TPL=skills/lloydbriantech-ascent/assets/template/.claude/skills
 AGENT="$SEC/agents/security-auditor.md"
@@ -183,6 +208,7 @@ plugin_case P12-agent-cites-nothing T9 "$AGENT" 's/Step/Stage/g'
 plugin_case P13-severity-table-removed T5 "$TPL/ascent-sec-posture/SKILL.md" '/severity-table:start/d' rebuild
 plugin_case P14-content-changed-no-bump T10 "$AGENT" '$a\
 A line added without bumping the plugin version.'
+mutant_group ascent-delivery
 DEL=plugins/ascent-delivery
 HOOK="$DEL/hooks/operator-boundary.sh"
 VERIFIER="$DEL/agents/finding-verifier.md"
@@ -201,6 +227,7 @@ plugin_case P26-hook-no-size-guard T11 "$HOOK" 's/if (nb > MAXB) {/if (0) {/'
 plugin_case P27-hook-ignores-stdin-shells T11 "$HOOK" 's/if (j > SN) { STDIN_SHELL = 1; return 0 }/if (j > SN) return 0/'
 plugin_case P28-hook-skips-unquoted-heredocs T11 "$HOOK" 's/if (!HQ\[k\]) scan_subs(b, HDBEND, 0)/if (0) scan_subs(b, HDBEND, 0)/'
 plugin_case P29-contract-denies-whole-chain T11 "$HOOK" 's/if (SN > 0 \&\& !inpipe) { dn = SN;/if (SN > 0 \&\& !inpipe \&\& dn == 0) { dn = SN;/'
+mutant_group ascent-architecture
 ARC=plugins/ascent-architecture
 ARC_AGENT="$ARC/agents/architecture-reviewer.md"
 EST="$ARC/scripts/estimate-cost.sh"
@@ -240,6 +267,7 @@ plugin_case P58-review-skips-client-secrets T11 "$REVIEW" 's/, and secrets in cl
 plugin_case P59-agent-secrets-only-when-published T11 "$ARC_AGENT" 's/a hit is High whether or not the page is published yet/a hit is High once the page is published/'
 plugin_case P60-review-drops-security-referral T11 "$REVIEW" 's/ Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`\.//'
 plugin_case P61-agent-at-risk-rule-removed T11 "$ARC_AGENT" 's/; it is at risk instead when the evidence shows a gap\././'
+mutant_group ascent-ux
 UX=plugins/ascent-ux
 UXW="$UX/scripts/check-web-accessibility.sh"
 UXC="$UX/scripts/check-token-contrast.sh"
@@ -306,6 +334,7 @@ plugin_case P115-web-notes-dropped T11 "$UXW" '/^    printf "%s", NOTES\[k\]$/d'
 plugin_case P116-ux-review-notes-rated T11 "$UXR" 's/Each `NOTE` line is unrated/Each `NOTE` line is Low/'
 plugin_case P117-agent-delegated-dropped T11 "$UXA" 's/That includes delegated listeners/It covers inline handlers/'
 
-printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses\n" \
-  "$total" "$killed" "$survived" "$missed"
+[ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
+printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s)\n" \
+  "$total" "$killed" "$survived" "$missed" "$GROUP"
 [ "$survived" -eq 0 ] && [ "$missed" -eq 0 ] && [ "$total" -gt 0 ]

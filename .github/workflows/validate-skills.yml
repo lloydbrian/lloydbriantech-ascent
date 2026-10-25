@@ -7,9 +7,11 @@
 #       make qa            frontmatter (incl. trigger-first descriptions),
 #                          links, template placeholders
 #       make test-skills   renders the template, runs all 28 skill tests
-#       make test-mutants  named negative controls; any survivor fails
 #       make test-plugins  plugin drift, names, read-only agents (ADR-009);
 #                          'claude plugin validate' runs locally, SKIPs in CI
+#   - mutant-groups:   lists the negative-control groups (make test-mutants-groups)
+#   - mutants:         one job per group and platform, in parallel:
+#       make test-mutants GROUP=<group>  named negative controls; any survivor fails
 #
 # Not yet checked here: INTENT-MAP phrase sync (review responsibility),
 # eval scenarios (Phase 5).
@@ -123,10 +125,10 @@ jobs:
   gate:
     # The framework's own gate on both platforms ASCENT supports (ADR-008):
     # validators, all 28 embedded-skill tests on a rendered template, and the
-    # named negative controls.
+    # plugin gate. The negative controls run in the mutants jobs below.
     name: Gate (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25   # test-mutants runs ~183 controls; macOS takes longest (ADR-011)
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -141,8 +143,41 @@ jobs:
       - name: Embedded-skill tests
         run: make test-skills
 
-      - name: Negative controls
-        run: make test-mutants
-
       - name: Plugin gate
         run: make test-plugins
+
+  mutant-groups:
+    # The group list comes from make/test-mutants.sh itself, so a new plugin's
+    # controls get their own job without a change to this file.
+    name: Mutant groups
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      groups: ${{ steps.list.outputs.groups }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: List groups
+        id: list
+        run: echo "groups=$(make --no-print-directory test-mutants-groups)" >> "$GITHUB_OUTPUT"
+
+  mutants:
+    # Named negative controls, one job per group and platform (ADR-008).
+    name: Negative controls (${{ matrix.os }}, ${{ matrix.group }})
+    needs: mutant-groups
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        group: ${{ fromJSON(needs.mutant-groups.outputs.groups) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Negative controls
+        env:
+          GROUP: ${{ matrix.group }}
+        run: make test-mutants GROUP="$GROUP"
