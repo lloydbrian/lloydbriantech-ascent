@@ -10,9 +10,30 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Planned
+
+- `ascent-ops` next (plugin roadmap rank 3), then `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
+- CI: `make test-mutants` takes 18m39s of the 25-minute gate on macOS (183 controls). Before `ascent-ops` adds more, split the run per plugin or raise the timeout
+- `ascent-ux` 0.2.0 candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
+- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges; runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
+- `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
+- `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
+- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
+- Phase 5 — Test harness with three eval scenarios
+- Phase 6 — Starter repo generation tooling
+- Phase 7 — First production project scaffolded from ASCENT
+
+See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.5] — 2026-10-25
+
+**UX plugin.** `ascent-ux` 0.1.0 rates any web UI against the project contract with WCAG 2.2 AA evidence: static checks on markup, CSS and single-page-app views, exact contrast for every token pair in every theme, and a Playwright browser pass that is authoritative. It checks the design system, and it offers five predefined design directions as mocks of the project's own pages, each verified for contrast and accessibility before it is shown. Installing it also installs `design`, `frontend-design` and `playwright`. A read-only trial on two real repositories (five runs) and a re-trial drove two calibration rounds before release. See [ADR-012](docs/framework/DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md), now Accepted.
+
 ### Added
 
-- `plugins/ascent-ux/` 0.1.0 (ADR-012, Proposed): UX review for any web UI. Four hand-written skills: `ux-review` (entry point: contract, UI map, five lenses, static checks, a Playwright browser pass, maturity gaps; severity table and strong/moderate/weak rating), `accessibility-audit` (all 55 WCAG 2.2 A and AA criteria for the core flows, ARIA widgets against the APG, axe-core when the project has it), `design-system-check` (token source, hard-coded values, contrast in every theme, theming, motion, component states) and `design-directions` (five predefined design directions shown as checked mocks of the project's pages, more on request, ADR and token hand-off); a read-only `ux-reviewer` agent
+- `plugins/ascent-ux/` 0.1.0 (ADR-012): UX review for any web UI. Four hand-written skills: `ux-review` (entry point: contract, UI map, five lenses, static checks, a Playwright browser pass, maturity gaps; severity table and strong/moderate/weak rating), `accessibility-audit` (all 55 WCAG 2.2 A and AA criteria for the core flows, ARIA widgets against the APG, axe-core when the project has it), `design-system-check` (token source, hard-coded values, contrast in every theme, theming, motion, component states) and `design-directions` (five predefined design directions shown as checked mocks of the project's pages, more on request, ADR and token hand-off); a read-only `ux-reviewer` agent
 - `ascent-ux` dependencies: installing it installs and enables `design` (Anthropic directory), `frontend-design` and `playwright` (claude-plugins-official). The marketplace allowlists both marketplaces in `allowCrossMarketplaceDependenciesOn`
 - `scripts/check-web-accessibility.sh`: 12 static checks (U1–U12) on HTML, JSX/TSX, Vue, Svelte, Astro and server templates, each mapped to a WCAG 2.2 criterion; `--core` raises U3 and U12 to High on core flows; comments, script bodies and capitalized components are skipped; every finding is "static" until the browser pass confirms it
 - `scripts/check-token-contrast.sh`: exact WCAG contrast (sRGB relative luminance, truncated, never rounded up) for token pairs per theme, from Design Tokens 2025.10 JSON or CSS custom properties, with pair files or inferred pairs; `scripts/tokens-to-css.sh`: Design Tokens JSON to CSS custom properties with light and dark blocks; shared parser `scripts/lib/tokens.awk`
@@ -29,19 +50,7 @@ Dates are in **America/New_York** timezone.
 - `make test-plugins` T5 also keeps every copy of the UX severity table (`ux-severity` markers) identical; new T12 fails on an unknown `plugin.json` key and on a dependency from another marketplace that is not allowlisted
 - `docs/framework/DECISIONS/INDEX.md`: ADR-011 shown as Accepted (it was accepted in v0.4.4)
 - `role-ui-ux-designer.md` points to `ascent-ux` as the single source of the role's checks
-
-### Planned
-
-- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges
-- `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
-- Plugin roadmap (decisions 2026-10-18; order confirmed 2026-10-24): `ascent-ux` next, then `ascent-ops`, `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`
-- `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
-- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
-- Phase 5 — Test harness with three eval scenarios
-- Phase 6 — Starter repo generation tooling
-- Phase 7 — First production project scaffolded from ASCENT
-
-See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+- ADR-012 Proposed → Accepted after the trial and re-trial (U-H)
 
 ---
 

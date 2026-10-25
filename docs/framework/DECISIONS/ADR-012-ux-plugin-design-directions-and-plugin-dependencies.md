@@ -1,6 +1,6 @@
 # ADR-012: UX plugin, design directions and plugin dependencies
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-25, after the read-only trial and re-trial of U-H)
 **Date:** 2026-10-24 (America/New_York)
 **Decider:** lloydbriantech
 
@@ -73,10 +73,11 @@ The architecture trial (ADR-011, decision E) showed which rules a review plugin 
 - Some Playwright setups block `file://`, and the Playwright server writes snapshots to `.playwright-mcp/` in its working directory. The skills ask the operator to serve static files on localhost when `file://` is blocked, and report any `.playwright-mcp/` folder rather than deleting it.
 - The static checks read markup with bash and awk. They are reliable for HTML and common template syntax, not for markup built at runtime, which is why the browser pass is authoritative.
 - The legal map and the standards status go stale. Both carry `as_of`, and the skill asks for a refresh after 90 days.
-- `make test-mutants` grows by 32 controls (P62–P93). To keep CI inside its timeout, a control that edits one plugin's files runs T11 for that plugin only (`ASCENT_T11_ONLY`). Running fewer tests can only make a control harder to kill, never easier; the baseline control and the real gate still run every plugin's tests.
+- The trial (U-H, 2026-10-24) ran the skills and the agent five times on two real repositories, and a re-trial (2026-10-25) checked the first calibration. They found gaps in the static checker and in the skill rules, not in the design: single-page-app views were invisible, one `:focus-visible` rule excused every outline removal, line numbers drifted after non-ASCII text, delegated click handlers were missed, and the browser pass could be skipped without a reason. Two calibration rounds fixed them before release, each pinned by rule tests and negative controls (P94–P117).
+- `make test-mutants` grows by 56 controls (P62–P117), to 183 in total; the macOS gate takes 18m39s of its 25-minute timeout. To keep CI inside its timeout, a control that edits one plugin's files runs T11 for that plugin only (`ASCENT_T11_ONLY`). Running fewer tests can only make a control harder to kill, never easier; the baseline control and the real gate still run every plugin's tests.
 
 ## Cost implications
 
-- About 1,800 lines of plugin (four skills, an agent, eight references, three scripts with a shared parser, five direction token files and a blueprint) and about 600 lines of tests, plus 32 negative controls (P62–P93) and a new gate check, T12.
+- About 1,800 lines of plugin (four skills, an agent, eight references, three scripts with a shared parser, five direction token files and a blueprint) and about 600 lines of tests, plus 56 negative controls (P62–P117) and a new gate check, T12.
 - Recurring: refresh the legal map and the standards status every 90 days, and review the direction token files when WCAG or the tokens format changes.
 - Runtime: the browser pass needs Node.js for the Playwright MCP server, which the `playwright` plugin already requires.
