@@ -61,10 +61,18 @@ Span attributes share names with log `ctx` fields where overlap exists. Trace ID
 
 Two endpoints, both unauthenticated, both fast (<10ms):
 
-- `GET /healthz` — liveness. Returns 200 if the process is running. **Never** checks downstream dependencies.
-- `GET /readyz` — readiness. Returns 200 if the service can accept traffic (DB connected, downstream healthy, warmup complete). Returns 503 otherwise.
+- `GET /-/health` — liveness. Returns 200 if the process is running. **Never** checks downstream dependencies.
+- `GET /-/ready` — readiness. Returns 200 if the service can accept traffic (DB connected, downstream healthy, warmup complete). Returns 503 otherwise.
 
-`/healthz` is for the orchestrator's restart logic. `/readyz` is for the load balancer's traffic-routing logic. Conflating them produces flapping pods: a slow DB query trips readiness, the orchestrator restarts the pod, the new pod fails readiness too, the service oscillates.
+`/-/health` is for the orchestrator's restart logic. `/-/ready` is for the load balancer's traffic-routing logic. Conflating them produces flapping pods: a slow DB query trips readiness, the orchestrator restarts the pod, the new pod fails readiness too, the service oscillates.
+
+A service with a slow warmup may add a third:
+
+- `GET /-/started` — startup. Returns 200 once warmup is done, and stays 200. The orchestrator holds the liveness probe until it passes, so a slow start isn't mistaken for a hang.
+
+**Why `/-/`.** Operational endpoints live under a reserved `/-/` prefix, so they can't collide with application routes (a `/health` resource, a `/ready` page), and one proxy rule (`location ^~ /-/`) can keep them off the public edge. The `z`-suffixed names (`/healthz`, `/readyz`) are not used (ADR-013).
+
+**Overrides.** A project that must keep other paths, such as a platform that probes fixed names, sets them in the `ops:` section of the project contract (`health_path`, `ready_path`, `started_path`). The `ascent-ops` plugin checks the endpoints against the contract, not against these defaults.
 
 Both endpoints emit a log entry on each call only at `debug` level — they're polled frequently and would otherwise drown out real events.
 
@@ -95,7 +103,7 @@ These events carry the same fields as regular logs with `event` set explicitly. 
 - **Metric labels with unbounded cardinality.** `user_id` as a metric label produces one time series per user — Prometheus explodes. Use logs for per-user diagnostics, metrics for aggregate.
 - **Tracing only successful paths.** If error paths don't trace, debugging production failures becomes guesswork. Trace every span; record the error attribute on failure.
 - **Health endpoints behind auth.** Orchestrators can't authenticate; the endpoint becomes useless.
-- **Conflating `/healthz` and `/readyz`.** See the Health endpoints section.
+- **Conflating `/-/health` and `/-/ready`.** See the Health endpoints section.
 
 ## Implementation hooks
 
@@ -104,7 +112,7 @@ Each scaffolded service ships with:
 - A structured-logger wrapper (level-aware, env-configurable)
 - A metrics middleware on the HTTP layer
 - A trace-propagation middleware
-- `/healthz` and `/readyz` handlers as part of the route table
+- `/-/health` and `/-/ready` handlers as part of the route table
 - Lifecycle-event emitters in the server startup/shutdown paths
 
 These wrappers and middleware live in `backend/observability/` per [feature-lifecycle.md](feature-lifecycle.md) Stage 3 (developer implementation). The architect picks the specific logger/metrics/tracing libraries at Stage 2 (design) — this contract specifies what they emit, not which library produces them.

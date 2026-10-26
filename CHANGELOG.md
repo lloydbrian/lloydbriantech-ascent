@@ -10,13 +10,21 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Added
+
+- `ascent-ops` 0.1.0 (plugin roadmap rank 3, ADR-013): `ops-review` rates operations against the `ops:` section of the project contract over six lenses; `iac-config-check` checks secure configuration in CloudFormation, Terraform, Docker, Compose and ECS task definitions (S1–S10: no literal secrets, NoEcho and sensitive, secrets from a store, safe Terraform state, no wildcard actions, rotation, per-environment configuration, no `.env` in images, drift checks, documented parameters); `runbook-check` checks operator scripts and runbooks (Z1–Z9: strict mode, `--help`, dry run, `read -rs`, guarded destructive commands, pinned versions, pre-flight and post-flight); `ops-manuals` creates and updates the Maintenance and Operations Manual and the Troubleshooting Manual with C4 context, container and deployment diagrams, a dependency map and a symptom table, and proves them current (M1–M8). A read-only `ops-reviewer` agent and an `operable-service` blueprint that passes all three checks. The scripts run under the stock macOS `/bin/bash` 3.2 (their awk programs are in `scripts/lib/`). Negative controls P118–P186 run as four CI groups (`ascent-ops-config`, `ascent-ops-scripts`, `ascent-ops-manuals`, `ascent-ops-review`), so each job stays inside its timeout
+
 ### Changed
 
+- Health endpoints are `/-/health` and `/-/ready` (and an optional `/-/started`) instead of `/healthz` and `/readyz`, overridable through `ops.health_path`, `ops.ready_path` and `ops.started_path` (ADR-013): the scaffold template's route, Dockerfile, Compose files, nginx configs, make targets and docs, the embedded `ascent-observability-check`, `ascent-reflect` and `ascent-self-audit` skills, and the references. A project scaffolded earlier keeps its paths until it migrates or sets the overrides
+- `ascent-architecture` 0.1.1: the Operations row of the principles asks for runbooks with pre-flight and post-flight checks, both operations manuals and secure configuration, and points to `ascent-ops`
+- `make test-plugins` T5 checks the operations severity table copies too, through one function for all three marked tables
 - CI runs the negative controls in parallel, one job per group and platform: `make test-mutants GROUP=<group>` runs `core` (embedded-skill rows and validator controls) or one plugin's section, `make test-mutants-groups` lists the groups for the CI matrix, and an unknown or empty group fails. The gate job keeps qa, the skill tests and the plugin gate, with a 15-minute timeout. Locally the longest group (`ascent-ux`, 57 controls) takes about 6.5 minutes; before, one macOS job ran all 183 in 18m39s of its 25 minutes
 
 ### Planned
 
-- `ascent-ops` next (plugin roadmap rank 3), then `ascent-quality`, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
+- Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes Z8 and Z3; and this repository's own `make/` scripts lack `--help` (Z3)
+- `ascent-quality` next (plugin roadmap rank 4), then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - `ascent-ux` 0.2.0 candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
 - `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges; runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated

@@ -68,7 +68,7 @@ The developer implements emission hooks per observability-contract.md:
 - Structured logger calls (level, ts, trace_id, msg, ctx)
 - Metrics middleware on the HTTP layer
 - Trace propagation in inbound and outbound requests
-- `/healthz` and `/readyz` handlers
+- `/-/health` and `/-/ready` handlers
 - Lifecycle event emissions on startup/shutdown
 
 Emission is the developer's job; collection and alerting belong to [role-devops.md](role-devops.md). The boundary is the wire format.

@@ -273,7 +273,7 @@ Seeing "§6 Backend layering — PASS (via ascent-layering-check: 6/6)" and movi
 
 ### Anti-pattern 4 — Over-relying on structural checks
 
-The audit checks structural properties (file existence, import patterns, configuration shapes). It does not verify runtime behavior. A /healthz endpoint that exists but crashes on every request passes the structural check. **What to do instead:** complement the audit with runtime tests (`make test-all`). The audit catches convention drift; tests catch behavioral bugs.
+The audit checks structural properties (file existence, import patterns, configuration shapes). It does not verify runtime behavior. A /-/health endpoint that exists but crashes on every request passes the structural check. **What to do instead:** complement the audit with runtime tests (`make test-all`). The audit catches convention drift; tests catch behavioral bugs.
 
 ### Anti-pattern 5 — Treating partial-project FAILs as bugs
 

@@ -1,0 +1,12 @@
+{
+  "name": "ascent-ops",
+  "version": "0.1.0",
+  "description": "Operations review for any repository: infrastructure as code with secure-by-design configuration, zero-touch scripts and runbooks with pre-flight and post-flight checks, a Maintenance and Operations Manual and a Troubleshooting Manual kept current with architecture diagrams and a dependency map, and a read-only ops-reviewer agent.",
+  "author": {
+    "name": "lloydbriantech"
+  },
+  "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["operations", "sre", "devops", "infrastructure-as-code", "runbooks", "secure-configuration", "terraform", "cloudformation", "ascent"]
+}

@@ -1,0 +1,61 @@
+# .ascent/contract.yml: the ops: section (ascent-ops). One project contract, one
+# section per ASCENT plugin (decision 2, 2026-10-18; ADR-013). Where ASCENT-named
+# files are not allowed, use .claude/contract.yml instead. Commit it: it is the
+# project's own statement of operations targets, and reviews are judged against it.
+#
+# ops-review proposes this section from what the repository already declares and
+# asks the operator to confirm it once (detect, don't ask). Every guessed value is
+# marked "# guess" until confirmed. Never put credentials, account ids, email
+# addresses, phone numbers or other personal data in this file.
+
+version: 1
+
+ops:
+  # enterprise (default) | standard | prototype. Anything the target requires but the
+  # project skips is a waiver: an ADR id under waivers below.
+  maturity_target: enterprise
+
+  environments: [dev, prod]            # every environment the IaC must describe
+
+  # tool: cloudformation | terraform | opentofu | compose | cdk | pulumi | none
+  # (cdk and pulumi are detected but not covered by the checks in 0.1.0).
+  iac:
+    tool: cloudformation
+    paths: [infra/]
+
+  # Where configuration and secrets live:
+  # aws-secrets-manager | aws-ssm | vault | compose-secrets | sops | none.
+  config_store: aws-secrets-manager
+
+  # Health endpoints (defaults shown). Override only when a platform probes fixed
+  # names; the checks follow these values.
+  health_path: /-/health               # liveness: the process runs; never checks a dependency
+  ready_path: /-/ready                 # readiness: dependencies reachable, warm-up done
+  started_path: ""                     # startup, for a slow start: e.g. /-/started
+
+  # Leave slos or alerts empty and the health lens is reported as "unmeasured".
+  slos: []
+  #   - name: availability
+  #     target: 99.5%
+  #     window: 30d
+  alerts: []
+  #   - name: ready-failing
+  #     runbook: docs/operations/runbooks/ready-failing.md
+
+  runbooks: docs/operations/runbooks/  # deploy, rollback and incident runbooks
+  manuals:
+    maintenance: docs/operations/MAINTENANCE-AND-OPERATIONS.md
+    troubleshooting: docs/operations/TROUBLESHOOTING.md
+
+  # exact (default): images, packages, providers and actions pinned to a version or
+  # digest | minor: a bounded range (~> 5.70) is accepted. check-ops-scripts.sh
+  # enforces the minor floor under both; under exact, ops-review flags ranges and
+  # major-version action tags (@v4) by reading.
+  version_pinning: exact
+
+  adr_dir: docs/adr/
+  waivers: []
+  # waivers:
+  #   - id: ADR-021
+  #     skips: rotation for the legacy API key until the vendor supports it
+  #     review_by: 2027-06-30

@@ -10,8 +10,8 @@
 #       Bash(git log:*)
 #   T5  every skill that classifies findings carries the shared severity table,
 #       and all copies are identical; every copy of the architecture severity
-#       table (arch-severity markers) and of the UX severity table (ux-severity
-#       markers) is identical too
+#       table (arch-severity markers), the UX severity table (ux-severity markers)
+#       and the operations severity table (ops-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
 #   T7  skill frontmatter passes qa-skill-frontmatter
@@ -166,24 +166,22 @@ for f in $(grep -rl 'severity-table:start' "$ROOT/plugins" "$ROOT/skills" 2>/dev
   if [ -n "$FIRST" ] && [ "$(table "$f")" != "$(table "$FIRST")" ]; then T5_OK=0; bad "T5 severity table in ${f#"$ROOT"/} differs"; fi
 done
 [ "$T5_OK" -eq 1 ] && ok "T5 severity table present in $N5 plugin skills and identical everywhere"
-atable() { awk '/<!-- arch-severity:start/{on=1; next} /<!-- arch-severity:end/{on=0} on' "$1"; }
-AFIRST=""; NA5=0; A5_OK=1
-for f in $(grep -rl 'arch-severity:start' "$ROOT/plugins" 2>/dev/null | LC_ALL=C sort || true); do
-  NA5=$((NA5 + 1))
-  if [ -z "$(atable "$f" | grep '^|' || true)" ]; then A5_OK=0; bad "T5 architecture severity table in ${f#"$ROOT"/} is empty"
-  elif [ -z "$AFIRST" ]; then AFIRST="$f"
-  elif [ "$(atable "$f")" != "$(atable "$AFIRST")" ]; then A5_OK=0; bad "T5 architecture severity table in ${f#"$ROOT"/} differs from ${AFIRST#"$ROOT"/}"; fi
-done
-[ "$NA5" -gt 0 ] && [ "$A5_OK" -eq 1 ] && ok "T5 architecture severity table identical in $NA5 files"
-utable() { awk '/<!-- ux-severity:start/{on=1; next} /<!-- ux-severity:end/{on=0} on' "$1"; }
-UFIRST=""; NU5=0; U5_OK=1
-for f in $(grep -rl 'ux-severity:start' "$ROOT/plugins" 2>/dev/null | LC_ALL=C sort || true); do
-  NU5=$((NU5 + 1))
-  if [ -z "$(utable "$f" | grep '^|' || true)" ]; then U5_OK=0; bad "T5 UX severity table in ${f#"$ROOT"/} is empty"
-  elif [ -z "$UFIRST" ]; then UFIRST="$f"
-  elif [ "$(utable "$f")" != "$(utable "$UFIRST")" ]; then U5_OK=0; bad "T5 UX severity table in ${f#"$ROOT"/} differs from ${UFIRST#"$ROOT"/}"; fi
-done
-[ "$NU5" -gt 0 ] && [ "$U5_OK" -eq 1 ] && ok "T5 UX severity table identical in $NU5 files"
+# marked_table MARKER LABEL — every copy of a table between <!-- MARKER:start --> and
+# <!-- MARKER:end --> in plugins/ is non-empty and identical to the first copy.
+marked_table() {
+  local m="$1" label="$2" f first="" n=0 good=1
+  for f in $(grep -rl "$m:start" "$ROOT/plugins" 2>/dev/null | LC_ALL=C sort || true); do
+    n=$((n + 1))
+    if [ -z "$(awk -v m="$m" 'index($0, "<!-- " m ":start") {on=1; next} index($0, "<!-- " m ":end") {on=0} on' "$f" | grep '^|' || true)" ]; then good=0; bad "T5 $label severity table in ${f#"$ROOT"/} is empty"
+    elif [ -z "$first" ]; then first="$f"
+    elif [ "$(awk -v m="$m" 'index($0, "<!-- " m ":start") {on=1; next} index($0, "<!-- " m ":end") {on=0} on' "$f")" != "$(awk -v m="$m" 'index($0, "<!-- " m ":start") {on=1; next} index($0, "<!-- " m ":end") {on=0} on' "$first")" ]; then good=0; bad "T5 $label severity table in ${f#"$ROOT"/} differs from ${first#"$ROOT"/}"; fi
+  done
+  [ "$n" -gt 0 ] && [ "$good" -eq 1 ] && ok "T5 $label severity table identical in $n files"
+  return 0
+}
+marked_table arch-severity architecture
+marked_table ux-severity UX
+marked_table ops-severity operations
 
 # T6 — links
 BROKEN=""

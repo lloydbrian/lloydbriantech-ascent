@@ -68,4 +68,4 @@ Every project defaults to the **enterprise** target (decision 10, 2026-10-18). A
 | Cost guardrail | — | budget alert | budget alert, dated estimate, throttling on public entry points |
 | Security baseline | secrets out of code | + TLS, headers, least privilege | + `ascent-security` strong rating, dependency scanning |
 | Decisions | — | ADRs for one-way doors | ADRs for one-way doors and every waiver |
-| Operations | — | deploy runbook | deploy, rollback and incident runbooks; pre-flight and post-flight checks (`ascent-ops`, planned) |
+| Operations | — | deploy and rollback runbooks; a current Maintenance and Operations Manual | deploy, rollback and incident runbooks with pre-flight and post-flight checks; current Maintenance and Operations and Troubleshooting manuals with diagrams and a dependency map; secure configuration (S1–S10); checked in depth by `ascent-ops` |

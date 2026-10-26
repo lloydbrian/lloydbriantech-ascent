@@ -1,0 +1,15 @@
+services:
+  app:
+    image: registry.example/app:1.4.2
+    environment:
+      NODE_ENV: production
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+  worker:
+    image: registry.example/worker:1.4.2
+    environment:
+      - QUEUE=jobs
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt

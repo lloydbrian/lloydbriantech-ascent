@@ -54,7 +54,7 @@ For ECS Fargate (the framework's default cloud target):
 - **Task definitions** versioned in `infra/aws/ecs/`
 - **Secrets** referenced via Secrets Manager ARNs in the task definition; never embedded
 - **IAM roles** scoped to least privilege; reviewed by [role-cybersecurity.md](role-cybersecurity.md)
-- **Healthchecks** map to `/healthz` (liveness) and `/readyz` (readiness) per [observability-contract.md](observability-contract.md)
+- **Healthchecks** map to `/-/health` (liveness), `/-/ready` (readiness) and, for slow starts, `/-/started` per [observability-contract.md](observability-contract.md); the project contract can override the paths
 - **Rolling deploys** with explicit minHealthy / maxSurge; no zero-downtime fiction
 
 For RDS, S3, SSM, SQS — vendor specifics live here, in this role's domain. The pattern remains external-services-integration.md (typed wrapper, retry, observability), specialized to AWS APIs.
@@ -103,6 +103,14 @@ Rollbacks are first-class. Every deploy target has a corresponding rollback path
 - **Secrets in task definitions.** Inline secret values. Always via Secrets Manager / SSM references; never raw.
 - **Observability theater.** Dashboards with no alerts; alerts with no runbooks; runbooks with no operators trained. Each layer needs the next.
 - **Deploys without post-deploy observation.** Code shipped without Stage 6 watch produces "shipped, not delivered" outcomes.
+
+## Checking this role in any repository
+
+The `ascent-ops` plugin (ADR-013) makes this role checkable in an existing repository:
+- `ops-review` rates operability against the `ops:` section of the project contract
+- `iac-config-check` covers infrastructure as code and secure configuration storage
+- `runbook-check` covers zero-touch scripts and runbooks with pre-flight and post-flight checks
+- `ops-manuals` keeps the Maintenance and Operations Manual and the Troubleshooting Manual current, with architecture diagrams and a dependency map
 
 ## What this role doesn't own
 

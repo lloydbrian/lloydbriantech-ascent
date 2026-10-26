@@ -11,10 +11,11 @@
 # so a kill always means the mutation was detected, not that the test was broken.
 #
 # Groups (one CI job each, run in parallel): "core" holds the embedded-skill rows
-# and the validator controls; each "mutant_group <plugin>" line below starts that
-# plugin's controls. ASCENT_MUTANT_GROUP (make test-mutants GROUP=<g>) runs one
-# group; unset runs every group. --groups-json prints the group list for the CI
-# matrix, so a new plugin section joins CI without a workflow change.
+# and the validator controls; each "mutant_group <name>" line below starts a
+# plugin's controls (a plugin with slow tests splits into several groups).
+# ASCENT_MUTANT_GROUP (make test-mutants GROUP=<g>) runs one group; unset runs
+# every group. --groups-json prints the group list for the CI matrix, so a new
+# plugin section joins CI without a workflow change.
 #
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
@@ -333,6 +334,89 @@ plugin_case P114-web-ring-none-accepted T11 "$UXW" 's/return v ~ \/\[1-9\]\/ \&\
 plugin_case P115-web-notes-dropped T11 "$UXW" '/^    printf "%s", NOTES\[k\]$/d'
 plugin_case P116-ux-review-notes-rated T11 "$UXR" 's/Each `NOTE` line is unrated/Each `NOTE` line is Low/'
 plugin_case P117-agent-delegated-dropped T11 "$UXA" 's/That includes delegated listeners/It covers inline handlers/'
+# ascent-ops runs as four groups so each CI job stays well inside its timeout:
+# one control runs the ops tests (about 20 s), against 7 s for the other plugins.
+OPS=plugins/ascent-ops
+OPI="$OPS/scripts/lib/check-iac-config.awk"
+OPZ="$OPS/scripts/lib/check-ops-scripts.awk"
+OPM="$OPS/scripts/lib/check-ops-manuals.awk"
+OPR="$OPS/skills/ops-review/SKILL.md"
+OPN="$OPS/skills/ops-manuals/SKILL.md"
+OPA="$OPS/agents/ops-reviewer.md"
+OPB="$OPS/blueprints/operable-service"
+mutant_group ascent-ops-config
+plugin_case P118-iac-noecho-ignored T11 "$OPI" 's/if (YK == "NoEcho" && /if (0 \&\& /'
+plugin_case P119-iac-literal-default-missed T11 "$OPI" 's/if (YK == "Default" && secretish(item)/if (0 \&\& secretish(item)/'
+plugin_case P120-iac-wildcard-allowed T11 "$OPI" 's/return tok == "\*" || /return 0 \&\& /'
+plugin_case P121-iac-policy-doc-wildcard-missed T11 "$OPI" 's/if (wildany(YV)) { if (rtype/if (0) { if (rtype/'
+plugin_case P122-iac-ignore-changes-missed T11 "$OPI" 's/if (line ~ \/ignore_changes \*= \*all\/)/if (0)/'
+plugin_case P123-iac-state-file-ignored T11 "$OPI" 's/if (ST\[j\] != "")/if (0)/'
+plugin_case P124-iac-backend-unencrypted T11 "$OPI" 's/if (!BENC) fail/if (0) fail/'
+plugin_case P125-iac-rotation-ignored T11 "$OPI" 's/if (!(SECRET\[j\] in ROT)) fail/if (0) fail/'
+plugin_case P126-iac-env-file-in-image T11 "$OPI" 's/fail("S8", "High", FN ":" dl, "an env file (" t ") is copied into the image"); break/break/'
+plugin_case P127-iac-password-not-secret T11 "$OPI" 's/return l ~ \/(password|passwd/return l ~ \/(xpassword|passwd/'
+plugin_case P128-iac-manual-not-compared T11 "$OPI" 's/if (nm > 0) fail("S10"/if (0) fail("S10"/'
+plugin_case P129-iac-severity-off-table T11 "$OPI" 's/fail("S6", "Low"/fail("S6", "Info"/'
+plugin_case P162-blueprint-latest-image T11 "$OPB/compose.yml" 's/nginx:1.27.2-alpine/nginx:latest/'
+plugin_case P163-blueprint-echoes-token T11 "$OPB/ops-script-template.sh" 's/read -rs -p "Registry token/read -r -p "Registry token/'
+plugin_case P164-blueprint-rotation-dropped T11 "$OPB/secure-parameters.yaml" '/^  DatabaseSecretRotation:$/,/^$/d'
+plugin_case P165-blueprint-deployment-diagram-dropped T11 "$OPB/MAINTENANCE-AND-OPERATIONS.md" 's/C4Deployment/flowchart LR/'
+mutant_group ascent-ops-scripts
+plugin_case P130-scripts-shebang-ignored T11 "$OPZ" 's/if (!SHEBANG) fail("Z1"/if (0) fail("Z1"/'
+plugin_case P131-scripts-pipefail-optional T11 "$OPZ" 's/(SP || POSIX)))/(1 || POSIX)))/'
+plugin_case P132-scripts-dry-run-ignored T11 "$OPZ" 's/if (!DRY) fail("Z4"/if (0) fail("Z4"/'
+plugin_case P133-scripts-read-always-silent T11 "$OPZ" 's/if (T\[j\] ~ \/^-\[A-Za-z\]\*s\/) silent = 1/silent = 1/'
+plugin_case P134-scripts-argument-secret-ok T11 "$OPZ" 's/fail("Z5", "High", at(), s " comes from/0 \&\& fail("Z5", "High", at(), s " comes from/'
+plugin_case P135-scripts-unguarded-destroy-ok T11 "$OPZ" 's/if (NDEST > 0 && !GUARD)/if (0)/'
+plugin_case P136-scripts-latest-from-ok T11 "$OPZ" 's/else if (floattag(t)) fail("Z8", "Medium", at(), "FROM/else if (0) fail("Z8", "Medium", at(), "FROM/'
+plugin_case P137-scripts-branch-action-ok T11 "$OPZ" 's/u ~ \/@(main|master|latest|HEAD|dev|develop|trunk)\$\/ ||/0 ||/'
+plugin_case P138-scripts-curl-pipe-ok T11 "$OPZ" 's/if (s ~ \/(curl|wget)/if (0 \&\& s ~ \/(curl|wget)/'
+plugin_case P139-scripts-unbounded-provider-ok T11 "$OPZ" 's/else if (v ~ \/>\/ && v !~ \/<\/ && v !~ \/~>\/) fail/else if (0) fail/'
+plugin_case P140-scripts-make-help-ignored T11 "$OPZ" 's/for (t in MT) if (!(t in MDOC)/for (t in MT) if (0/'
+plugin_case P141-scripts-herestring-is-heredoc T11 "$OPZ" 's/\/(^|\[^<\])<<-?/\/<<-?/'
+plugin_case P151-review-recommends-z-names T11 "$OPR" 's/Never recommend a `z`-suffixed name\./Prefer `z`-suffixed names./'
+plugin_case P152-manuals-skill-writes-more T11 "$OPN" 's/\*\*Two files only\.\*\*/**Files as needed.**/'
+plugin_case P153-runbook-check-runs-dry-run T11 "$OPS/skills/runbook-check/SKILL.md" 's/\*\*Never run the scripts or the runbook steps\*\*/**Run the scripts with --dry-run**/'
+plugin_case P154-iac-check-prints-values T11 "$OPS/skills/iac-config-check/SKILL.md" 's/\*\*Never print a value\.\*\*/**Print masked values.**/'
+plugin_case P155-ops-agent-drops-security-referral T11 "$OPA" 's/ Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`\.//'
+mutant_group ascent-ops-manuals
+plugin_case P142-manuals-access-key-missed T11 "$OPM" 's/if (line ~ \/AKIA/if (0 \&\& line ~ \/AKIA/'
+plugin_case P143-manuals-private-key-missed T11 "$OPM" 's/if (line ~ \/-----BEGIN/if (0 \&\& line ~ \/-----BEGIN/'
+plugin_case P144-manuals-age-ignored T11 "$OPM" 's/if (age > MAXAGE) fail/if (0) fail/'
+plugin_case P145-manuals-source-commits-ignored T11 "$OPM" 's/if (G\[1\] + 0 > 0) fail/if (0) fail/'
+plugin_case P146-manuals-days-ignore-day T11 "$OPM" 's/+ int((153 \* mm + 2) \/ 5) + dd - 719469/+ int((153 * mm + 2) \/ 5) - 719469/'
+plugin_case P147-manuals-context-level-missed T11 "$OPM" 's/if (t ~ \/^C4Context\/ || /if (0 \&\& /'
+plugin_case P148-manuals-undrawn-services-ok T11 "$OPM" 's/if (nm > 0) fail("M4"/if (0) fail("M4"/'
+plugin_case P149-manuals-front-matter-ignored T11 "$OPM" 's/if (!HASFM\[m\]) fail/if (0) fail/'
+plugin_case P150-manuals-symptom-columns T11 "$OPM" 's/SYMCOLS < 4/SYMCOLS < 1/'
+plugin_case P156-ops-agent-key-drift T11 "$OPA" 's/`started_path`, `slos`/`slos`/'
+plugin_case P157-ops-severity-copy-drift T5 "$OPA" 's/| A destructive command with no confirmation or explicit flag (Z6) | High |/| A destructive command with no confirmation or explicit flag (Z6) | Medium |/'
+plugin_case P158-ops-agent-can-write T4 "$OPA" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
+plugin_case P159-ops-agent-cites-missing-step T9 "$OPA" 's/(ops-review Step 4)/(ops-review Step 9)/'
+plugin_case P160-ops-skill-pre-approves-writes T4b "$OPN" 's/^allowed-tools: Read, Grep, Glob, /allowed-tools: Read, Grep, Glob, Write, /'
+plugin_case P161-ops-version-not-bumped T3 "$OPS/.claude-plugin/plugin.json" 's/"version": "0.1.0"/"version": "0.1.1"/'
+plugin_case_rm P166-ops-tests-removed T11 tests/plugins/ascent-ops
+mutant_group ascent-ops-review
+plugin_case P167-iac-kms-root-ignored T11 "$OPI" 's/kmsWild != "" && !kmsRoot/kmsWild != ""/'
+plugin_case P168-iac-kms-whole-key-exempt T11 "$OPI" 's/function kmsFlush() { if (kmsWild != "" \&\&/function kmsFlush() { if (0 \&\&/'
+plugin_case P169-iac-taskjson-env-never-closes T11 "$OPI" 's/else if (ch == "]" && --envDep == 0) { inEnv = 0; break }/else if (ch == "]") --envDep/'
+plugin_case P170-iac-docker-continuation-dropped T11 "$OPI" 's/dacc = dacc line; next/next/'
+plugin_case P171-iac-one-line-block-ignored T11 "$OPI" 's/one = (pre == 0 && tfB != "" && no > 0 && tfD == 0)/one = 0/'
+plugin_case P172-iac-inline-map-ignored T11 "$OPI" 's/if (!found && line ~ \/\\{\.\*/if (0 \&\& line ~ \/\\{.*/'
+plugin_case P173-iac-version-counts-as-rotation T11 "$OPI" 's/tfT == "aws_secretsmanager_secret_rotation" && match/match/'
+plugin_case P174-iac-store-type-ignored T11 "$OPI" 's/{ entStore = 1; penName = ""; next }/{ next }/'
+plugin_case P175-iac-time-units-are-secrets T11 "$OPI" 's/(seconds|minutes|hours|days)/(never)/'
+plugin_case P176-iac-drift-comments-count T11 "$OPI" 's/^  if (raw ~ \/^ \*(#|\\\/\\\/)\/) next$//'
+plugin_case P177-iac-drift-tests-count T11 "$OPS/scripts/check-iac-config.sh" 's#\*/tests/\*|#*/never/*|#'
+plugin_case P178-iac-local-override-is-prod T11 "$OPI" 's/ && lc(FN) !~ \/local|dev|test|example\/) fail/) fail/'
+plugin_case P179-scripts-token-is-a-guard T11 "$OPZ" 's/\^(confirm|confirmation|answer|reply|ok|yn|yesno|proceed|sure)\$/(confirm|answer|ok|yn)/'
+plugin_case P180-scripts-prompt-not-parsed T11 "$OPZ" 's/( +-\[A-Za-z\]+( +P)?)\*/( +-[A-Za-z]+)*/'
+plugin_case P181-scripts-prints-the-line T11 "$OPZ" 's/DESTC\[NDEST\] = destword(line)/DESTC[NDEST] = line/'
+plugin_case P182-scripts-build-not-exempt T11 "$OPZ" 's/if (!cBuild) {/if (1) {/'
+plugin_case P183-scripts-alpine-not-floating T11 "$OPZ" 's/ || t ~ \/:\[A-Za-z_-\]+\$\/ }/ }/'
+plugin_case P184-scripts-git-ssh-is-registry T11 "$OPZ" 's/|git::|git@|github/|git::|github/'
+plugin_case P185-manuals-fm-comment-kept T11 "$OPM" 's/^    sub(\/\[ \\t\]+#\.\*\$\/, "", line)$//'
+plugin_case P186-manuals-fm-comment-kept-in-bash T11 "$OPS/scripts/check-ops-manuals.sh" 's/{ sub(\/\[ \\t\]+#\.\*\$\/, ""); print }/{ print }/'
 
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s)\n" \

@@ -6,7 +6,7 @@ description: >-
   architecture-review flags a design concern. Detects the architecture style,
   then checks separation of concerns, coupling, object-oriented design,
   twelve-factor configuration and API design with file:line evidence. Read-only.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob
 ---
 

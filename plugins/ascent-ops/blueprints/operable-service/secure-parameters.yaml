@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  example-service configuration and secrets (blueprint operable-service). Secrets
+  are generated and rotated by Secrets Manager, encrypted with a customer key, and
+  readable only by the api task role. Configuration is separated per environment.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+  LogLevel:
+    Type: String
+    Default: info
+    AllowedValues: [debug, info, warn, error]
+  RotationLambdaArn:
+    Type: String
+    Description: The rotation function for the database secret.
+
+Resources:
+  AppKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: example-service configuration and secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AccountAdministration
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: kms:*
+            Resource: "*"
+
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    Properties:
+      Name: !Sub "example-service/${Environment}/db"
+      KmsKeyId: !Ref AppKey
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "app"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludePunctuation: true
+
+  DatabaseSecretRotation:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref DatabaseSecret
+      RotationLambdaARN: !Ref RotationLambdaArn
+      RotationRules:
+        AutomaticallyAfterDays: 30
+
+  LogLevelParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/example-service/${Environment}/log-level"
+      Type: String
+      Value: !Ref LogLevel
+
+  ApiTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: read-own-configuration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref DatabaseSecret
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !GetAtt AppKey.Arn
+              - Effect: Allow
+                Action:
+                  - ssm:GetParametersByPath
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/example-service/${Environment}/*"
+
+Outputs:
+  DatabaseSecretArn:
+    Value: !Ref DatabaseSecret
