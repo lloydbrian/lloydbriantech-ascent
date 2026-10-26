@@ -6,8 +6,6 @@ ASCENT's checks serve four outcomes: driving business value, compliance, trust a
 
 Every review is read-only. The architecture, ux and ops plugins judge against the targets in the project contract, `.ascent/contract.yml`, and an attribute with no target is reported as **unmeasured**, never as met. `ascent-delivery` reads its own contract, `.delivery-loop.yml`.
 
-`ascent-ops` 0.1.0 is in review and not released yet; its rows describe the version in that pull request.
-
 ---
 
 ## The four pillars at a glance

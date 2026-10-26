@@ -1,6 +1,6 @@
 # ADR-013: Operations plugin, operations manuals and health endpoint names
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-26, after the read-only trial on three repositories and two calibration rounds)
 **Date:** 2026-10-25 (America/New_York)
 **Decider:** lloydbriantech
 

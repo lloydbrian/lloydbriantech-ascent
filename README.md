@@ -183,7 +183,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | Release | Date | Highlights |
 |---|---|---|
-| Unreleased | — | `ascent-ops` 0.1.0, `ascent-architecture` 0.1.1, health endpoints renamed to `/-/health` and `/-/ready` |
+| v0.4.6 | 2026-10-26 | `ascent-ops` 0.1.0, `ascent-architecture` 0.1.1, health endpoints renamed to `/-/health` and `/-/ready`, the pillar map |
 | v0.4.5 | 2026-10-25 | `ascent-ux` 0.1.0: WCAG 2.2 evidence, token contrast, design directions |
 | v0.4.4 | 2026-10-24 | `ascent-architecture` 0.1.0 and the shared project contract |
 | v0.4.3 | 2026-10-18 | `ascent-delivery` 0.1.0, security rules, the plugin version gate |
@@ -195,7 +195,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 | v0.2.0 | 2026-05-15 | Phase 1: the parent skill and reference modules |
 | v0.1.0-alpha | 2026-05-14 | Phase 0: foundation and the first ADRs |
 
-**Plugin roadmap:** architecture ✅ · ux ✅ · ops (in review) · quality · session · adr · docs · node-stack.
+**Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality · session · adr · docs · node-stack.
 **Phases:** Phase 4, scripted scaffolding, waits for its go-signal; then the eval harness (5), the template repository (6) and a first production project (7, v1.0). Details and exit criteria: [ROADMAP.md](docs/framework/ROADMAP.md).
 
 ## Documentation
