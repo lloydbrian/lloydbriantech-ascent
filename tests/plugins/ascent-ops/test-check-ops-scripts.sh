@@ -128,7 +128,7 @@ matrix() {
   if printf '%s\n' "$OUT" | grep -q 'scripts/heal.sh:7 '; then ok; else bad "z9-var-at: the finding should point at the line that runs the variable: $(printf '%s\n' "$OUT" | grep '^FAIL  Z9' | head -1)"; fi
   mk z8-tfver;      edit z8-tfver infra/versions.tf "$(subst '"~> 1.9"' '">= 1.6"')" && expect_only z8-tfver Z8 Medium
   if printf '%s\n' "$OUT" | grep -q 'required_version ">= 1.6" has no upper bound'; then ok; else bad "z8-tfver: should name required_version: $(printf '%s\n' "$OUT" | grep '^FAIL  Z8' | head -1)"; fi
-  mk binary;        printf '\177ELF\000\000\001\002\n' > "$WORK/binary/scripts/tool"; expect_pass binary 'a binary file is not a script'
+  mk binary;        printf '#!/bin/sh\n\000\001\002\n' > "$WORK/binary/scripts/tool"; expect_pass binary 'a binary file is not a script, even with a shebang'
   if [ -s "$WORK/err" ]; then bad "binary: stderr should be empty: $(head -1 "$WORK/err")"; else ok; fi
 
   # The plugin's own scripts pass.

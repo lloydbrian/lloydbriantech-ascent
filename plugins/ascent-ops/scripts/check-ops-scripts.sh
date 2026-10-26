@@ -74,7 +74,9 @@ classify() {  # FILE EXPLICIT
     *.yml|*.yaml) case "$f" in */.github/workflows/*) add gha "$f"; return ;; esac ;;
   esac
   case "$lb" in *.*) ;; *)
-    first=$(head -n 1 "$f" 2>/dev/null | LC_ALL=C tr -d '\r\000' || true)
+    # A binary file (it contains a null byte) is never a script, whatever its first line.
+    LC_ALL=C grep -Iq . "$f" 2>/dev/null || return 0
+    first=$(head -n 1 "$f" 2>/dev/null | LC_ALL=C tr -d '\r' || true)
     case "$first" in '#!'*sh*) add sh "$f"; return ;; esac ;;
   esac
   if [ "$2" = 1 ]; then echo "check-ops-scripts: not a script, make, container, Terraform or workflow file: $f" >&2; exit 2; fi

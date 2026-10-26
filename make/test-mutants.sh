@@ -427,7 +427,7 @@ plugin_case P192-scripts-pre-by-position-ignored T11 "$OPZ" 's/if (CKMIN > 0 && 
 plugin_case P193-scripts-post-by-position-ignored T11 "$OPZ" 's/if (CKMAX > CF) POST = 1/POST = POST/'
 plugin_case P194-scripts-variable-command-missed T11 "$OPZ" 's/if (!hit) for (v in CMDV)/if (0) for (v in CMDV)/'
 plugin_case P195-scripts-required-version-ignored T11 "$OPZ" 's/fail("Z8", "Medium", at(), "terraform required_version/0 \&\& fail("Z8", "Medium", at(), "terraform required_version/'
-plugin_case P196-scripts-null-bytes-kept T11 "$OPS/scripts/check-ops-scripts.sh" 's/\\r\\000/\\r/'
+plugin_case P196-scripts-binary-read-as-script T11 "$OPS/scripts/check-ops-scripts.sh" 's/^    LC_ALL=C grep -Iq \. "\$f" 2>\/dev\/null || return 0$//'
 plugin_case P197-review-rollback-always-high T11 "$OPR" 's/\*\*Rollback is rated by what exists\.\*\*/**Rollback is always High.**/'
 plugin_case P198-review-proposes-z-paths T11 "$OPR" 's/Never propose a `z`-suffixed value\./Propose the detected value./'
 plugin_case P199-iac-trivy-runs-online T11 "$OPS/skills/iac-config-check/SKILL.md" 's/--skip-check-update --skip-version-check --quiet/--quiet/'
