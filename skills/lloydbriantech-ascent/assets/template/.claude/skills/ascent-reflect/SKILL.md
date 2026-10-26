@@ -173,7 +173,7 @@ Report: "Session state captured. session-state.md overwritten. working-memory.md
 **Context:** Developer spent the session fixing bugs, no architectural decisions made.
 
 **Interview responses:**
-- Focus: "Fixing the healthz endpoint regression"
+- Focus: "Fixing the health endpoint regression"
 - Decisions: "None this session"
 - Blockers: "None"
 - Next actions: "Run the full test suite and commit"

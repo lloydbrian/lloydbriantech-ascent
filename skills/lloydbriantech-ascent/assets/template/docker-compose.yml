@@ -33,7 +33,7 @@ services:
       - <<NETWORK_NAME>>
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:3001/healthz"]
+      test: ["CMD", "curl", "-sf", "http://localhost:3001/-/health"]
       interval: 10s
       timeout: 5s
       retries: 3

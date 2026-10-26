@@ -1,0 +1,5 @@
+services:
+  app:
+    image: registry.example/app:1.4.2
+  db:
+    image: "postgres:16.4"

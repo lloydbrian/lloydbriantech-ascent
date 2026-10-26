@@ -40,13 +40,13 @@ JSEOF
 import pinoHttp from 'pino-http';
 export const httpLogger = pinoHttp({ customProps: (req) => ({ trace_id: req.traceId }) });
 JSEOF
-  # Health routes — /healthz without DB, /readyz with DB
+  # Health routes — /-/health without DB, /-/ready with DB
   cat > "$FIXTURES_DIR/backend/routes/health.js" << 'JSEOF'
 import { Router } from 'express';
 import { getDb } from '../storage/db.js';
 export const healthRoutes = Router();
-healthRoutes.get('/healthz', (_req, res) => { res.json({ status: 'ok' }); });
-healthRoutes.get('/readyz', (_req, res) => {
+healthRoutes.get('/-/health', (_req, res) => { res.json({ status: 'ok' }); });
+healthRoutes.get('/-/ready', (_req, res) => {
   const db = getDb();
   db.prepare('SELECT 1').get();
   res.json({ status: 'ready' });
@@ -110,33 +110,33 @@ else
   assert_fail "missing trace_id should be detected"
 fi
 
-# Test 3: /healthz checking DB detected as violation
-# Fixture: /healthz handler contains getDb() and .prepare() calls.
-# Detection: extract the /healthz handler block and check for DB operations within it.
+# Test 3: /-/health checking DB detected as violation
+# Fixture: /-/health handler contains getDb() and .prepare() calls.
+# Detection: extract the /-/health handler block and check for DB operations within it.
 cleanup
 setup_valid_backend
 cat > "$FIXTURES_DIR/backend/routes/health.js" << 'JSEOF'
 import { Router } from 'express';
 import { getDb } from '../storage/db.js';
 export const healthRoutes = Router();
-healthRoutes.get('/healthz', (_req, res) => {
+healthRoutes.get('/-/health', (_req, res) => {
   const db = getDb();
   db.prepare('SELECT 1').get();
   res.json({ status: 'ok' });
 });
-healthRoutes.get('/readyz', (_req, res) => {
+healthRoutes.get('/-/ready', (_req, res) => {
   const db = getDb();
   db.prepare('SELECT 1').get();
   res.json({ status: 'ready' });
 });
 JSEOF
-# Extract lines between /healthz handler and the next handler (or EOF).
+# Extract lines between /-/health handler and the next handler (or EOF).
 # Then check if those lines contain DB operations (.prepare, getDb).
-HEALTHZ_BLOCK=$(sed -n "/healthz/,/healthRoutes\.\|^});$/p" "$FIXTURES_DIR/backend/routes/health.js" | head -6)
-if echo "$HEALTHZ_BLOCK" | grep -qE 'getDb|\.prepare|storage'; then
-  assert_pass "/healthz handler contains DB operations — violation detected"
+HEALTH_BLOCK=$(sed -n "/\/-\/health'/,/healthRoutes\.\|^});$/p" "$FIXTURES_DIR/backend/routes/health.js" | head -6)
+if echo "$HEALTH_BLOCK" | grep -qE 'getDb|\.prepare|storage'; then
+  assert_pass "/-/health handler contains DB operations — violation detected"
 else
-  assert_fail "/healthz checking DB should be detected within the handler block"
+  assert_fail "/-/health checking DB should be detected within the handler block"
 fi
 
 # Test 4: Backend with no observability layer handled gracefully

@@ -9,7 +9,7 @@ dev-up:  ## DEV: Start the dev stack
 	@printf "Starting <<PROJECT_TITLE>> dev stack...\n"
 	@$(ENGINE) compose up -d
 	@printf "dev-up: stack running\n"
-	@printf "  Backend:  http://localhost:3001/healthz\n"
+	@printf "  Backend:  http://localhost:3001/-/health\n"
 	@printf "  Frontend: http://localhost:3000\n"
 	@printf "  Proxy:    http://localhost:8080\n"
 

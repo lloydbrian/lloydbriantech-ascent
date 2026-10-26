@@ -41,7 +41,7 @@ ENV <<INSIDE_CONTAINER_MARKER>>=1
 EXPOSE 3001
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=10s \
-  CMD curl -sf http://localhost:3001/healthz || exit 1
+  CMD curl -sf http://localhost:3001/-/health || exit 1
 
 CMD ["node", "server.js"]
 
@@ -64,6 +64,6 @@ ENV <<INSIDE_CONTAINER_MARKER>>=1
 EXPOSE 3001
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=10s \
-  CMD curl -sf http://localhost:3001/healthz || exit 1
+  CMD curl -sf http://localhost:3001/-/health || exit 1
 
 CMD ["node", "--watch", "server.js"]

@@ -3,7 +3,7 @@ name: ascent-observability-check
 description: >-
   Use when asked "is my service observable?", "check logging" or "verify
   healthchecks", or before a deploy. Verifies the observability contract:
-  structured JSON logs with required fields, /healthz and /readyz, lifecycle
+  structured JSON logs with required fields, /-/health and /-/ready, lifecycle
   events (service.started, service.draining, service.stopped) and W3C trace-id
   propagation. Read-only.
 version: <<PROJECT_VERSION>>
@@ -73,33 +73,33 @@ The skill executes these checks in order. Each check produces PASS or FAIL. Step
 
 **Action on FAIL:** Report "FAIL: HTTP logger does not propagate trace_id — add `customProps: (req) => ({ trace_id: req.traceId })` or equivalent."
 
-### Step 4 — Verify /healthz endpoint exists (liveness, no DB)
+### Step 4 — Verify /-/health endpoint exists (liveness, no DB)
 
-**Condition:** `backend/routes/health.js` (or equivalent) exists and defines a `GET /healthz` route. The handler does NOT import or call any database module — it returns 200 if the process is responsive, nothing more.
+**Condition:** `backend/routes/health.js` (or equivalent) exists and defines a `GET /-/health` route. The handler does NOT import or call any database module — it returns 200 if the process is responsive, nothing more.
 
-**Action on PASS:** Report "/healthz endpoint present, no database dependency — PASS."
+**Action on PASS:** Report "/-/health endpoint present, no database dependency — PASS."
 
-**Action on FAIL (missing):** Report "FAIL: /healthz endpoint not found — create it in routes/health.js. It should return 200 with `{status: 'ok'}` and must NOT check the database."
+**Action on FAIL (missing):** Report "FAIL: /-/health endpoint not found — create it in routes/health.js. It should return 200 with `{status: 'ok'}` and must NOT check the database."
 
-**Action on FAIL (DB dependency):** Report "FAIL: /healthz imports database module — remove the dependency. /healthz is for liveness (is the process alive?), not readiness. A degraded backend (DB down) should still pass /healthz so the orchestrator doesn't restart it."
+**Action on FAIL (DB dependency):** Report "FAIL: /-/health imports database module — remove the dependency. /-/health is for liveness (is the process alive?), not readiness. A degraded backend (DB down) should still pass /-/health so the orchestrator doesn't restart it."
 
-### Step 5 — Verify /readyz endpoint exists (readiness, checks DB)
+### Step 5 — Verify /-/ready endpoint exists (readiness, checks DB)
 
-**Condition:** `backend/routes/health.js` defines a `GET /readyz` route. The handler checks database connectivity (e.g., `SELECT 1`) and schema initialization. Returns 200 when ready, 503 when not.
+**Condition:** `backend/routes/health.js` defines a `GET /-/ready` route. The handler checks database connectivity (e.g., `SELECT 1`) and schema initialization. Returns 200 when ready, 503 when not.
 
-**Action on PASS:** Report "/readyz endpoint present with database connectivity check — PASS."
+**Action on PASS:** Report "/-/ready endpoint present with database connectivity check — PASS."
 
-**Action on FAIL (missing):** Report "FAIL: /readyz endpoint not found — create it in routes/health.js with a DB connectivity check."
+**Action on FAIL (missing):** Report "FAIL: /-/ready endpoint not found — create it in routes/health.js with a DB connectivity check."
 
-**Action on FAIL (no DB check):** Report "FAIL: /readyz does not check database — it must verify DB is reachable and schema is initialized. Without this, the orchestrator routes traffic to an unready service."
+**Action on FAIL (no DB check):** Report "FAIL: /-/ready does not check database — it must verify DB is reachable and schema is initialized. Without this, the orchestrator routes traffic to an unready service."
 
-### Step 6 — Verify /healthz and /readyz are differentiated
+### Step 6 — Verify /-/health and /-/ready are differentiated
 
-**Condition:** `/healthz` does NOT check the database. `/readyz` DOES check the database. The two endpoints serve different purposes (liveness vs readiness) and must not be conflated.
+**Condition:** `/-/health` does NOT check the database. `/-/ready` DOES check the database. The two endpoints serve different purposes (liveness vs readiness) and must not be conflated.
 
-**Action on PASS:** Report "/healthz and /readyz correctly differentiated — PASS."
+**Action on PASS:** Report "/-/health and /-/ready correctly differentiated — PASS."
 
-**Action on FAIL:** Report "FAIL: /healthz and /readyz are not differentiated — /healthz checks DB (it shouldn't) or /readyz doesn't check DB (it should). See observability-contract.md for the distinction."
+**Action on FAIL:** Report "FAIL: /-/health and /-/ready are not differentiated — /-/health checks DB (it shouldn't) or /-/ready doesn't check DB (it should). See observability-contract.md for the distinction."
 
 ### Step 7 — Verify lifecycle events in server startup/shutdown
 
@@ -132,7 +132,7 @@ In standalone mode: print the full report with guidance for each violation.
 
 ### Example 1 — Full observability compliance
 
-**Input state:** Backend with pino logger (ISO timestamps, service name), request-id middleware (W3C traceparent extraction), pino-http middleware (trace_id propagation), /healthz (no DB), /readyz (DB + schema check), lifecycle events in server.js, error handler with production sanitization.
+**Input state:** Backend with pino logger (ISO timestamps, service name), request-id middleware (W3C traceparent extraction), pino-http middleware (trace_id propagation), /-/health (no DB), /-/ready (DB + schema check), lifecycle events in server.js, error handler with production sanitization.
 
 **Skill output:**
 ```
@@ -140,26 +140,26 @@ ascent-observability-check: 8/8 checks passing
   PASS: Logger module present with required field configuration
   PASS: Request-id middleware with W3C TraceContext support
   PASS: HTTP logger middleware propagates trace_id
-  PASS: /healthz endpoint present, no database dependency
-  PASS: /readyz endpoint present with database connectivity check
-  PASS: /healthz and /readyz correctly differentiated
+  PASS: /-/health endpoint present, no database dependency
+  PASS: /-/ready endpoint present with database connectivity check
+  PASS: /-/health and /-/ready correctly differentiated
   PASS: Lifecycle events (started, draining, stopped) present
   PASS: Error handler sanitizes production responses
 ```
 
-### Example 2 — /healthz checks database (common mistake)
+### Example 2 — /-/health checks database (common mistake)
 
-**Input state:** `routes/health.js` line 12: `const db = require('../storage/db.js')` inside the /healthz handler.
+**Input state:** `routes/health.js` line 12: `const db = require('../storage/db.js')` inside the /-/health handler.
 
 **Skill output:**
 ```
 ascent-observability-check: 6/8 checks passing (2 violations)
   ...
-  FAIL: /healthz endpoint present, no database dependency
-    → routes/health.js:12 imports '../storage/db.js' in /healthz handler
-    → Fix: remove the DB import from /healthz. Liveness checks must not depend on external services.
-  FAIL: /healthz and /readyz correctly differentiated
-    → Both endpoints check the database — they serve the same purpose. /healthz should be DB-free.
+  FAIL: /-/health endpoint present, no database dependency
+    → routes/health.js:12 imports '../storage/db.js' in /-/health handler
+    → Fix: remove the DB import from /-/health. Liveness checks must not depend on external services.
+  FAIL: /-/health and /-/ready correctly differentiated
+    → Both endpoints check the database — they serve the same purpose. /-/health should be DB-free.
   ...
 ```
 
@@ -190,9 +190,9 @@ ascent-observability-check: 0/8 checks passing (8 violations)
   FAIL: Logger module present — backend/observability/logger.js not found
   FAIL: Request-id middleware — backend/middleware/request-id.js not found
   FAIL: HTTP logger middleware — backend/middleware/logger.js not found
-  FAIL: /healthz endpoint — not found in routes/
-  FAIL: /readyz endpoint — not found in routes/
-  FAIL: /healthz and /readyz differentiated — neither endpoint exists
+  FAIL: /-/health endpoint — not found in routes/
+  FAIL: /-/ready endpoint — not found in routes/
+  FAIL: /-/health and /-/ready differentiated — neither endpoint exists
   FAIL: Lifecycle events — server.js does not emit service.started/draining/stopped
   FAIL: Error handler — backend/middleware/error-handler.js not found
 ```
@@ -201,15 +201,15 @@ ascent-observability-check: 0/8 checks passing (8 violations)
 
 ### Anti-pattern 1 — Placeholder observability
 
-A logger that emits the right field names but hardcodes empty values (`trace_id: ''`), or a /readyz endpoint that always returns 200 without checking the database. **Why it's tempting:** it passes structural checks while avoiding the work of real implementation. **What to do instead:** the check validates substantive implementation (Step 4 verifies /healthz doesn't import DB; Step 5 verifies /readyz does). Surface this: if an endpoint always returns 200, it's not a health check.
+A logger that emits the right field names but hardcodes empty values (`trace_id: ''`), or a /-/ready endpoint that always returns 200 without checking the database. **Why it's tempting:** it passes structural checks while avoiding the work of real implementation. **What to do instead:** the check validates substantive implementation (Step 4 verifies /-/health doesn't import DB; Step 5 verifies /-/ready does). Surface this: if an endpoint always returns 200, it's not a health check.
 
 ### Anti-pattern 2 — console.log as the logger
 
 Using `console.log` for application logging instead of a structured logger. **Why it's tempting:** console.log is zero-config and prints to stdout. **What to do instead:** use pino (or equivalent) — it emits structured JSON with the required fields. `console.log("user did X")` produces ungreppable, uncorrelated text. Step 1 catches this by checking for the logger module.
 
-### Anti-pattern 3 — Conflating /healthz and /readyz
+### Anti-pattern 3 — Conflating /-/health and /-/ready
 
-One endpoint that checks everything (process alive AND database reachable). **Why it's tempting:** one endpoint seems simpler. **What to do instead:** two endpoints, deliberately different. /healthz = liveness (restart the container if it fails). /readyz = readiness (stop routing traffic if it fails). Conflating them produces flapping pods.
+One endpoint that checks everything (process alive AND database reachable). **Why it's tempting:** one endpoint seems simpler. **What to do instead:** two endpoints, deliberately different. /-/health = liveness (restart the container if it fails). /-/ready = readiness (stop routing traffic if it fails). Conflating them produces flapping pods.
 
 ### Anti-pattern 4 — Logging request bodies
 

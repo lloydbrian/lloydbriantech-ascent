@@ -28,7 +28,7 @@ A scaffolded ASCENT project ships with all of the following on Day 1:
 - **Session resumption protocol** — `session-state.md` + `working-memory.md` so context survives across sessions
 - **Working test framework** — Vitest for backend unit tests, bash scripts for skill structural tests, `make test-all` runs everything
 - **nginx reverse proxy** — three config variants (dev, prod, dist) with security headers and caching
-- **Observability baseline** — pino JSON logging with W3C TraceContext, structured healthchecks (`/healthz` + `/readyz`)
+- **Observability baseline** — pino JSON logging with W3C TraceContext, structured healthchecks (`/-/health` + `/-/ready`)
 
 ## Quick start
 
@@ -46,7 +46,7 @@ cd my-new-project
 # The skill personalizes slugs, applies your option choices, writes .ascent-meta.json
 
 make dev-up
-# → http://localhost:3001/healthz responding ✓
+# → http://localhost:3001/-/health responding ✓
 ```
 
 Total time from `gh repo create` to running dev stack: typically under two minutes.
@@ -105,6 +105,7 @@ Some ASCENT skills also ship as Claude Code plugins that work in any repository,
 | [`ascent-delivery`](plugins/ascent-delivery/README.md) | `delivery-loop` skill (build, test with negative controls, gate, review, operator runbook, beta/prod, release record), a read-only `finding-verifier` agent, and a hook that blocks git writes and deploys for Claude |
 | [`ascent-architecture`](plugins/ascent-architecture/README.md) | `architecture-review`, `quality-attributes`, `design-principles-check` and `deployment-options` skills, a read-only `architecture-reviewer` agent, a CloudFormation static-site blueprint, a dated cost estimator and template checks |
 | [`ascent-ux`](plugins/ascent-ux/README.md) | `ux-review`, `accessibility-audit`, `design-system-check` and `design-directions` skills, a read-only `ux-reviewer` agent, WCAG 2.2 static checks, exact token contrast, five accessible design directions and an accessible page blueprint; installs `design`, `frontend-design` and `playwright` |
+| [`ascent-ops`](plugins/ascent-ops/README.md) | `ops-review`, `iac-config-check`, `runbook-check` and `ops-manuals` skills, a read-only `ops-reviewer` agent, secure-configuration, script and manual checks, and an operable-service blueprint with both operations manuals |
 
 Install `ascent-delivery` the same way: `/plugin install ascent-delivery@lloydbriantech-ascent`. While it is enabled, its hook blocks Claude from committing, pushing, tagging, merging and deploying in every session. The operator does those, from the runbook Claude writes.
 

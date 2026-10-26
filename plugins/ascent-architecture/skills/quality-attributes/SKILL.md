@@ -6,7 +6,7 @@ description: >-
   flags two or more attributes at risk. Sets measurable targets in the project
   contract, scores each quality attribute as met, at risk or unmeasured with
   file evidence, and ranks the gaps. Read-only.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob
 ---
 

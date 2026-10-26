@@ -69,7 +69,7 @@ The devops role ships the change through the deploy pipeline. The pipeline is it
 Deploy is not "press the button." It's:
 
 1. Run the deploy target
-2. Wait for healthchecks (`/healthz`, `/readyz`)
+2. Wait for healthchecks (`/-/health`, `/-/ready`)
 3. Verify smoke tests pass post-deploy
 4. Confirm dashboards show no regression in the first 5 minutes
 

@@ -1,0 +1,9 @@
+name: Drift
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - run: terraform -chdir=infra plan -detailed-exitcode -var-file=prod.tfvars

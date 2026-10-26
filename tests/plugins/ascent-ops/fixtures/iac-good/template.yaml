@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Fixture for check-iac-config.sh; every secret comes from Secrets Manager.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+  DbPassword:
+    Type: String
+    NoEcho: true
+    Description: Only for the first deploy; rotated by Secrets Manager afterwards.
+  ImageTag:
+    Type: String
+
+Resources:
+  AppSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "app/${Environment}/db"
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "app"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+
+  AppSecretRotation:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref AppSecret
+      RotationRules:
+        AutomaticallyAfterDays: 30
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: app
+          Image: !Sub "registry.example/app:${ImageTag}"
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: APP_ENV
+              Value: !Ref Environment
+          Secrets:
+            - Name: DB_PASSWORD
+              ValueFrom: !Ref AppSecret
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: read-own-secret
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref AppSecret
+
+  AppKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: kms:*
+            Resource: "*"
+
+  LogLevel:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/app/${Environment}/log-level"
+      Type: String
+      Value: info

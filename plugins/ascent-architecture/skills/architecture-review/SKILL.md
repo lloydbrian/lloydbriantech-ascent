@@ -7,7 +7,7 @@ description: >-
   design principles, deployment and cost against the project contract, rates
   findings by severity, and recommends deeper skills only where a surface
   check flags a concern. Read-only.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob
 ---
 

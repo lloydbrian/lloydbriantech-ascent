@@ -30,16 +30,16 @@ dev-status:  ## DEV: Full dev environment status check (~3-5s)
 	  printf "none running — run 'make dev-up'\n"; \
 	fi
 	@# Backend health
-	@printf "  %-24s" "Backend /healthz:"
-	@if curl -sf http://localhost:3001/healthz >/dev/null 2>&1; then \
-	  printf "OK (http://localhost:3001/healthz)\n"; \
+	@printf "  %-24s" "Backend /-/health:"
+	@if curl -sf http://localhost:3001/-/health >/dev/null 2>&1; then \
+	  printf "OK (http://localhost:3001/-/health)\n"; \
 	else \
 	  printf "UNREACHABLE — run 'make dev-up' then 'make dev-logs'\n"; \
 	fi
 	@# Backend readiness
-	@printf "  %-24s" "Backend /readyz:"
-	@if curl -sf http://localhost:3001/readyz >/dev/null 2>&1; then \
-	  printf "OK (http://localhost:3001/readyz)\n"; \
+	@printf "  %-24s" "Backend /-/ready:"
+	@if curl -sf http://localhost:3001/-/ready >/dev/null 2>&1; then \
+	  printf "OK (http://localhost:3001/-/ready)\n"; \
 	else \
 	  printf "NOT READY — check db connection and dependencies\n"; \
 	fi
@@ -87,7 +87,7 @@ dev-status:  ## DEV: Full dev environment status check (~3-5s)
 	  printf "  → Install Podman or Docker\n"; \
 	elif ! $(ENGINE) ps --filter label=project=<<PROJECT_LABEL>> --format '{{.Names}}' 2>/dev/null | grep -q .; then \
 	  printf "  → Run 'make dev-up' to start the dev stack\n"; \
-	elif ! curl -sf http://localhost:3001/healthz >/dev/null 2>&1; then \
+	elif ! curl -sf http://localhost:3001/-/health >/dev/null 2>&1; then \
 	  printf "  → Backend unhealthy — run 'make dev-logs' to investigate\n"; \
 	elif ! [ -f .env ]; then \
 	  printf "  → Copy .env.example to .env and fill in values\n"; \
@@ -98,5 +98,5 @@ dev-status:  ## DEV: Full dev environment status check (~3-5s)
 
 dev-status-quick:  ## DEV: Fast dev status check (~80ms, containers + port only)
 	@RUNNING=$$($(ENGINE) ps --filter label=project=<<PROJECT_LABEL>> --format '{{.Names}}' 2>/dev/null | wc -l | tr -d ' '); \
-	HEALTH=$$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:3001/healthz 2>/dev/null || echo "000"); \
-	printf "<<PROJECT_SLUG>> | containers: %s | /healthz: %s | engine: %s\n" "$$RUNNING" "$$HEALTH" "$(ENGINE)"
+	HEALTH=$$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:3001/-/health 2>/dev/null || echo "000"); \
+	printf "<<PROJECT_SLUG>> | containers: %s | /-/health: %s | engine: %s\n" "$$RUNNING" "$$HEALTH" "$(ENGINE)"
