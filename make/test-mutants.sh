@@ -334,7 +334,7 @@ plugin_case P114-web-ring-none-accepted T11 "$UXW" 's/return v ~ \/\[1-9\]\/ \&\
 plugin_case P115-web-notes-dropped T11 "$UXW" '/^    printf "%s", NOTES\[k\]$/d'
 plugin_case P116-ux-review-notes-rated T11 "$UXR" 's/Each `NOTE` line is unrated/Each `NOTE` line is Low/'
 plugin_case P117-agent-delegated-dropped T11 "$UXA" 's/That includes delegated listeners/It covers inline handlers/'
-# ascent-ops runs as four groups so each CI job stays well inside its timeout:
+# ascent-ops runs as five groups so each CI job stays well inside its timeout:
 # one control runs the ops tests (about 20 s), against 7 s for the other plugins.
 OPS=plugins/ascent-ops
 OPI="$OPS/scripts/lib/check-iac-config.awk"
@@ -417,6 +417,20 @@ plugin_case P183-scripts-alpine-not-floating T11 "$OPZ" 's/ || t ~ \/:\[A-Za-z_-
 plugin_case P184-scripts-git-ssh-is-registry T11 "$OPZ" 's/|git::|git@|github/|git::|github/'
 plugin_case P185-manuals-fm-comment-kept T11 "$OPM" 's/^    sub(\/\[ \\t\]+#\.\*\$\/, "", line)$//'
 plugin_case P186-manuals-fm-comment-kept-in-bash T11 "$OPS/scripts/check-ops-manuals.sh" 's/{ sub(\/\[ \\t\]+#\.\*\$\/, ""); print }/{ print }/'
+mutant_group ascent-ops-calibration
+plugin_case P187-scripts-help-helper-ignored T11 "$OPZ" 's/\[Hh\]elp\[A-Za-z0-9_\]\* +/[Hh]elpNEVER[A-Za-z0-9_]* +/'
+plugin_case P188-scripts-apply-not-a-dry-run T11 "$OPZ" 's/|--apply|(^|\[^A-Za-z_\])APPLY=|--preview|PREVIEW\//\//'
+plugin_case P189-scripts-quoted-text-is-a-command T11 "$OPZ" 's/"P", cl)/"P", cx)/'
+plugin_case P190-scripts-comment-is-a-command T11 "$OPZ" 's/^  sub(\/\[ \\t\]+#\.\*\$\/, "", cl)$//'
+plugin_case P191-scripts-ssh-text-masked T11 "$OPZ" 's/(ssh|(ba|z|da)?sh +-c|eval|sudo|su +-c|xargs)/(nevermatch)/'
+plugin_case P192-scripts-pre-by-position-ignored T11 "$OPZ" 's/if (CKMIN > 0 && CKMIN < CL) PRE = 1/PRE = PRE/'
+plugin_case P193-scripts-post-by-position-ignored T11 "$OPZ" 's/if (CKMAX > CF) POST = 1/POST = POST/'
+plugin_case P194-scripts-variable-command-missed T11 "$OPZ" 's/if (!hit) for (v in CMDV)/if (0) for (v in CMDV)/'
+plugin_case P195-scripts-required-version-ignored T11 "$OPZ" 's/fail("Z8", "Medium", at(), "terraform required_version/0 \&\& fail("Z8", "Medium", at(), "terraform required_version/'
+plugin_case P196-scripts-null-bytes-kept T11 "$OPS/scripts/check-ops-scripts.sh" 's/\\r\\000/\\r/'
+plugin_case P197-review-rollback-always-high T11 "$OPR" 's/\*\*Rollback is rated by what exists\.\*\*/**Rollback is always High.**/'
+plugin_case P198-review-proposes-z-paths T11 "$OPR" 's/Never propose a `z`-suffixed value\./Propose the detected value./'
+plugin_case P199-iac-trivy-runs-online T11 "$OPS/skills/iac-config-check/SKILL.md" 's/--skip-check-update --skip-version-check --quiet/--quiet/'
 
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s)\n" \

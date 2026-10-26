@@ -47,7 +47,7 @@ Read each runbook against [runbook-standard.md](../../references/runbook-standar
 - a pre-flight section before the first change and a post-flight section after the last
 - numbered steps, each with the command, **Expect** and **Stop if**
 - destructive steps flagged and explained before they run
-- a rollback with its own Expect and Stop if; no rollback path for production is High
+- a rollback with its own Expect and Stop if; no rollback path for a production deploy that exists is High, and Low while the deploy files are empty or stubs
 - no step that changes something by hand in a console
 - the date and release it was last run against
 

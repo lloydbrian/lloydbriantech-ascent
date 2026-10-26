@@ -9,7 +9,9 @@
 #   R4  a missing target is "unmeasured, never met", or at risk when the evidence shows a gap
 #   R5  fresh evidence and repository-relative file:line evidence
 #   R6  endpoint defaults are /-/health, /-/ready and /-/started everywhere; a z-suffixed
-#       name appears only as a contract override, and the scaffold template serves none
+#       name appears only as a contract override, and the scaffold template serves none;
+#       a non-default path is fixed by renaming it, and the contract proposal never
+#       carries one
 #   R7  ops-manuals writes only the two manuals, modifies rather than overwrites, shows
 #       the diff and never commits
 #   R8  every other skill is read-only, and runbook-check never runs the scripts
@@ -23,6 +25,9 @@
 #   R15 N/A is never a pass, and NOTE lines are unrated
 #   R16 every script parses and runs under the system /bin/bash (3.2 on macOS) with
 #       the same result as the bash on PATH
+#   R17 a missing rollback is High only for a production deploy that exists; while
+#       the deploy files are empty or stubs it is the Low maturity gap
+#   R18 trivy runs unasked only with the flags that keep it offline
 #
 # Prints "test-ops-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -202,6 +207,23 @@ if [ -x /bin/bash ]; then
   b=$(/bin/bash "$PLUGIN/scripts/check-ops-manuals.sh" --today 2026-10-25 "$BP/MAINTENANCE-AND-OPERATIONS.md" "$BP/TROUBLESHOOTING.md" "$BP" 2>&1; echo "rc=$?")
   if [ "$a" = "$b" ]; then ok; else bad "R16 check-ops-manuals.sh gives a different result under /bin/bash"; fi
 fi
+
+# R6 — a non-default endpoint is renamed, not kept through the contract
+has R6 "$REVIEW" 'the fix renames it to the contract path'
+has R6 "$REVIEW" 'Never propose a `z`-suffixed value.'
+has R6 "$AGENT" 'mark each detected path for rename'
+has R6 "$PLUGIN/references/sre-baseline.md" 'The fix is to rename them to the defaults.'
+
+# R17 — rollback is rated by what exists
+has R17 "$REVIEW" '**Rollback is rated by what exists.**'
+has R17 "$AGENT" '**Rollback is rated by what exists.**'
+has R17 "$REVIEW" '| No rollback path while no production deploy exists yet (deploy files empty or stubs) | Low |'
+has R17 "$PLUGIN/references/runbook-standard.md" '| no rollback path while no production deploy exists yet (deploy files empty or stubs) | Low |'
+has R17 "$RUNB" 'Low while the deploy files are empty or stubs'
+
+# R18 — trivy stays offline unless the operator agrees
+has R18 "$IAC" '`trivy config --skip-check-update --skip-version-check --quiet .`: run it without asking.'
+has R18 "$IAC" 'Plain `trivy config .` downloads its check bundle: ask first.'
 
 printf "test-ops-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

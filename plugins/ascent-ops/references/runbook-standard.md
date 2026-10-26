@@ -26,7 +26,8 @@ A runbook is a list of commands an operator can follow under pressure without gu
 
 | Gap | Severity |
 |---|---|
-| no rollback path for a production deploy | High |
+| no rollback path for a production deploy that exists | High |
+| no rollback path while no production deploy exists yet (deploy files empty or stubs) | Low |
 | a destructive step with no flag, explanation or confirmation | High |
 | a secret or personal value written in the runbook (→ ascent-security) | High |
 | no pre-flight or post-flight section, or steps without Expect and Stop if | Medium |

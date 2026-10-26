@@ -15,9 +15,11 @@
 # Checks (severity from the ops-review severity table):
 #   Z1  Medium  a script starts with a shebang
 #   Z2  Medium  strict mode: set -euo pipefail (bash), set -eu (sh)
-#   Z3  Low     the script answers --help (usage text)
+#   Z3  Low     the script answers --help (usage text), itself or through a shared
+#               help function it hands "$@" to
 #   Z4  Medium  a script that changes systems offers a dry run (--dry-run, DRY_RUN,
-#               --check, --plan, --what-if)
+#               --check, --plan, --what-if, or preview unless --apply). Quoted text
+#               is not a command, unless it goes to ssh, sh -c, eval or sudo
 #   Z5  High    secrets never come from arguments (positional or --password, --token
 #               options), are read with read -s, and are never printed to stdout
 #   Z6  High    destructive commands (rm -rf, terraform destroy, delete-stack, aws s3 rm,
@@ -28,13 +30,17 @@
 #   Z7  Low     every make target has "## help" text (make help lists it)
 #   Z8  Medium  no floating versions: :latest, untagged or version-less (:alpine) images
 #               (a Compose service with build: is exempt), @latest, actions on a
-#               branch, curl | sh installs, providers or modules without an upper bound
-#   Z9  Low     a script that changes systems runs pre-flight and post-flight checks
+#               branch, curl | sh installs, providers, modules or required_version
+#               without an upper bound
+#   Z9  Low     a script that changes systems runs pre-flight and post-flight checks:
+#               preflight/postflight names, or a gate, health, verify, check, require
+#               or *_ok call before the last change and after the first
 #
 # Output: FAIL lines (FAIL  Zk  SEVERITY  file:line  message), a PASS line per check
 # with no finding, N/A when a check found nothing to check, then
 # "check-ops-scripts: ...". Secret values are never printed.
 # Limits: static and line-based. Heredoc bodies and full-line comments are skipped.
+# Binary files are never read as scripts.
 # A command built at runtime, or run through a function or alias, is not seen.
 # Exit: 0 no FAIL; 1 at least one FAIL; 2 bad input.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk, run with LC_ALL=C.
@@ -68,7 +74,7 @@ classify() {  # FILE EXPLICIT
     *.yml|*.yaml) case "$f" in */.github/workflows/*) add gha "$f"; return ;; esac ;;
   esac
   case "$lb" in *.*) ;; *)
-    first=$(head -n 1 "$f" 2>/dev/null | LC_ALL=C tr -d '\r' || true)
+    first=$(head -n 1 "$f" 2>/dev/null | LC_ALL=C tr -d '\r\000' || true)
     case "$first" in '#!'*sh*) add sh "$f"; return ;; esac ;;
   esac
   if [ "$2" = 1 ]; then echo "check-ops-scripts: not a script, make, container, Terraform or workflow file: $f" >&2; exit 2; fi

@@ -16,8 +16,13 @@ function endsh() {
     CHK["Z2"]++
     if (!(SE && SU && (SP || POSIX))) fail("Z2", "Medium", FN ":1", "no strict mode (" (POSIX ? "set -eu" : "set -euo pipefail") "): missing" (SE ? "" : " -e") (SU ? "" : " -u") (SP || POSIX ? "" : " pipefail"))
     CHK["Z3"]++; if (!HELP) fail("Z3", "Low", FN ":1", "does not answer --help with usage text")
+    # A change stored in a variable counts where it is defined when no later line runs it.
+    if (CHANGE == "" && CHANGEV != "") { CHANGE = CHANGEV; CF = CVF; CL = CVF }
+    # A check before the last change is a pre-flight; a check after the first is a post-flight.
+    if (CKMIN > 0 && CKMIN < CL) PRE = 1
+    if (CKMAX > CF) POST = 1
     if (CHANGE != "") {
-      CHK["Z4"]++; if (!DRY) fail("Z4", "Medium", CHANGE, "changes systems but offers no dry run (--dry-run, DRY_RUN, --check, --plan)")
+      CHK["Z4"]++; if (!DRY) fail("Z4", "Medium", CHANGE, "changes systems but offers no dry run (--dry-run, DRY_RUN, --check, --plan, or preview unless --apply)")
       CHK["Z9"]++
       if (!PRE || !POST) fail("Z9", "Low", CHANGE, "changes systems without " (!PRE && !POST ? "pre-flight or post-flight checks" : (!PRE ? "a pre-flight check" : "a post-flight check")))
     }
@@ -28,7 +33,8 @@ function newfile() {
   endsh(); cflush(); cSvc = 0; cI = -1
   FN = FILENAME; sub(/^\.\//, "", FN); KN[K]++; PK = K
   SHEBANG = 0; SE = 0; SU = 0; SP = 0; POSIX = 0; HELP = 0; USAGE = 0; DRY = 0; PRE = 0; POST = 0; GUARD = 0
-  CHANGE = ""; NDEST = 0; HD = ""; split("", TMPV); split("", STAGES); inProv = 0; provBlk = ""; inDef = 0
+  CHANGE = ""; CHANGEV = ""; CF = 0; CL = 0; CVF = 0; CKMIN = 0; CKMAX = 0; split("", CMDV)
+  NDEST = 0; HD = ""; split("", TMPV); split("", STAGES); inProv = 0; provBlk = ""; inDef = 0
   b = FN; sub(/^.*\//, "", b)
   LIB = (K == "sh" && (FN ~ /(^|\/)lib\// || b ~ /^(lib.*|_.*|common)\.(sh|bash)$/ || b ~ /-lib\.(sh|bash)$/))
 }
@@ -51,8 +57,10 @@ K == "sh" {
       if (T[j] == "nounset") SU = 1
     }
   }
-  if (line ~ /--help/) HELP = 1
-  if (line ~ /--dry-run|DRY_RUN|dry_run|DRYRUN|--check|--plan|--what-if|--noop|NOOP/) DRY = 1
+  # --help, or "$@" handed to a shared help function (show_help "$@").
+  if (line ~ /--help/ || line ~ /(^|[ \t;&|])[A-Za-z_][A-Za-z0-9_]*[Hh]elp[A-Za-z0-9_]* +"?\$\{?[@*]\}?"?/) HELP = 1
+  # A script that previews by default and changes only with --apply has a dry run.
+  if (line ~ /--dry-run|DRY_RUN|dry_run|DRYRUN|--check|--plan|--what-if|--noop|NOOP|--apply|(^|[^A-Za-z_])APPLY=|--preview|PREVIEW/) DRY = 1
   if (line ~ /[Pp]re-?_?flight|PRE_?FLIGHT|preflight|precheck|pre-check/) PRE = 1
   if (line ~ /[Pp]ost-?_?flight|POST_?FLIGHT|postflight|postcheck|post-check|verify|smoke|health/) POST = 1
   if (line ~ /\$\{?REPLY/ || line ~ /--yes|--force\)|--apply|--execute|--confirm|CONFIRM=|ASSUME_YES|[Aa]re you sure|to confirm/) GUARD = 1
@@ -82,8 +90,20 @@ K == "sh" {
       if (secretish(v)) { CHK["Z5"]++; fail("Z5", "High", at(), "prints " v " to standard output; never print a secret (pipe it to the command that needs it)"); break }
     }
   }
-  # Z4 / Z9 — commands that change systems
-  if (CHANGE == "" && (line ~ /(terraform|tofu) +(-chdir=[^ ]+ +)?(apply|destroy|import|state +(rm|mv|push))/ || line ~ /aws +[a-z0-9-]+ +(create|delete|put|update|deploy|terminate|start|stop|reboot|modify|attach|detach|register|deregister|invoke|execute|send|run|restore|import|reset|enable|disable|set|tag|untag)-?/ || line ~ /aws +s3 +(rm|cp|mv|sync|rb|mb) / || line ~ /kubectl +(apply|delete|create|patch|replace|scale|rollout|drain|cordon|set) / || line ~ /helm +(install|upgrade|uninstall|rollback) / || line ~ /(docker|podman) +(rm|rmi|push|run|stop|kill|restart|system +prune|volume +rm|network +rm|compose +(up|down|rm|restart)|play +kube)( |$)/ || line ~ /(docker-compose|podman-compose) +(up|down|rm|restart)/ || line ~ /systemctl +(start|stop|restart|enable|disable|reload|mask) / || line ~ /curl [^|]*-X *(POST|PUT|DELETE|PATCH)/ || line ~ /git +(push|commit|tag|reset|clean) / || line ~ /(apt|apt-get|dnf|yum) +(-y +)?(install|remove|upgrade|purge)/ || line ~ /(^|[ \t;&|])(sudo +)?(reboot|shutdown)( |$)/ || line ~ /crontab +-/ || line ~ /scp +|rsync +/)) CHANGE = at()
+  # Z4 / Z9 — commands that change systems. Quoted text is masked (a message that says
+  # "reboot" changes nothing) unless the line hands it to ssh, sh -c, eval or sudo. A
+  # line that only stores a command in a variable is a change where the variable runs.
+  cl = line
+  if (line !~ /(ssh|(ba|z|da)?sh +-c|eval|sudo|su +-c|xargs)[^"']*["']/) gsub(/"[^"]*"|'[^']*'/, "P", cl)
+  sub(/[ \t]+#.*$/, "", cl)
+  if (line ~ /^[ \t]*(local +|export +|readonly +|declare +)?[A-Za-z_][A-Za-z0-9_]*=("[^"]*"|'[^']*')[ \t]*(#.*)?$/ && line !~ /\$\(|`/) {
+    if (ischange(line)) { v = line; sub(/^[ \t]*(local +|export +|readonly +|declare +)?/, "", v); sub(/=.*/, "", v); CMDV[v] = 1; if (CHANGEV == "") { CHANGEV = at(); CVF = FNR } }
+  } else {
+    hit = ischange(cl)
+    if (!hit) for (v in CMDV) if (index(line, "$" v) || index(line, "${" v "}")) { hit = 1; break }
+    if (hit) { if (CHANGE == "") { CHANGE = at(); CF = FNR }; CL = FNR }
+    else if (cl ~ /(^|[^A-Za-z0-9])(gate|health|healthy|verify|verification|validate|assert|check|checks|smoke|probe|ready|readiness|status|require)([^A-Za-z]|$)/ || cl ~ /[a-z]_ok([^A-Za-z]|$)/) { if (CKMIN == 0) CKMIN = FNR; CKMAX = FNR }
+  }
   # Z6 — destructive commands
   if (line ~ /(^|[ \t;&|(])(sudo +)?rm +(-[A-Za-z]*r[A-Za-z]*f|-[A-Za-z]*f[A-Za-z]*r|--recursive)/ || line ~ /(terraform|tofu) +(-chdir=[^ ]+ +)?destroy/ || line ~ /aws +[a-z0-9-]+ +(delete-|terminate-)/ || line ~ /aws +s3 +(rm|rb) / || line ~ /(DROP +(TABLE|DATABASE|SCHEMA)|TRUNCATE +TABLE)/ || line ~ /kubectl +delete / || line ~ /helm +uninstall / || line ~ /(docker|podman) +(system +prune|volume +(rm|prune)|image +prune +-a)/ || line ~ /mkfs|wipefs|shred / || line ~ /(^|[ \t;&|])dd +.*of=/ || line ~ /git +reset +--hard|git +clean +-[a-z]*f|git +push +.*(--force|-f( |$))/ || line ~ /gh +repo +delete/) {
     safe = 0
@@ -98,6 +118,9 @@ K == "sh" {
   }
   floating(line)
   next
+}
+function ischange(s) {
+  return (s ~ /(terraform|tofu) +(-chdir=[^ ]+ +)?(apply|destroy|import|state +(rm|mv|push))/ || s ~ /aws +[a-z0-9-]+ +(create|delete|put|update|deploy|terminate|start|stop|reboot|modify|attach|detach|register|deregister|invoke|execute|send|run|restore|import|reset|enable|disable|set|tag|untag)-?/ || s ~ /aws +s3 +(rm|cp|mv|sync|rb|mb) / || s ~ /kubectl +(apply|delete|create|patch|replace|scale|rollout|drain|cordon|set) / || s ~ /helm +(install|upgrade|uninstall|rollback) / || s ~ /(docker|podman) +(rm|rmi|push|run|stop|kill|restart|system +prune|volume +rm|network +rm|compose +(up|down|rm|restart)|play +kube)( |$)/ || s ~ /(docker-compose|podman-compose) +(up|down|rm|restart)/ || s ~ /systemctl +(start|stop|restart|enable|disable|reload|mask) / || s ~ /curl [^|]*-X *(POST|PUT|DELETE|PATCH)/ || s ~ /git +(push|commit|tag|reset|clean) / || s ~ /(apt|apt-get|dnf|yum) +(-y +)?(install|remove|upgrade|purge)/ || s ~ /(^|[ \t;&|"'])(sudo +)?(reboot|shutdown)([ "']|$)/ || s ~ /crontab +-/ || s ~ /scp +|rsync +/)
 }
 function destword(s) {
   if (match(s, /rm +-[A-Za-z-]+|(terraform|tofu) +(-chdir=[^ ]+ +)?destroy|aws +s3 +(rm|rb)|aws +[a-z0-9-]+ +(delete|terminate)-[a-z0-9-]+|DROP +(TABLE|DATABASE|SCHEMA)|TRUNCATE +TABLE|kubectl +delete|helm +uninstall|(docker|podman) +(system +prune|volume +(rm|prune)|image +prune)|mkfs[.a-z0-9]*|wipefs|shred|git +reset +--hard|git +clean +-[a-z]+|git +push|gh +repo +delete/)) return substr(s, RSTART, RLENGTH)
@@ -177,6 +200,11 @@ K == "gha" {
 }
 K == "tf" {
   if (line ~ /^[ \t]*(#|\/\/)/) next
+  if (match(line, /^ *required_version *= *"[^"]*"/)) {
+    v = substr(line, RSTART, RLENGTH); sub(/^[^"]*"/, "", v); sub(/"$/, "", v); CHK["Z8"]++
+    if (v ~ />/ && v !~ /</ && v !~ /~>/) fail("Z8", "Medium", at(), "terraform required_version \"" v "\" has no upper bound; use ~> or an exact version")
+    next
+  }
   if (line ~ /required_providers *\{/) { inProv = 1; pd = 1; next }
   if (inProv) {
     pd0 = pd; o = line; c = line; pd += gsub(/\{/, "", o) - gsub(/\}/, "", c)

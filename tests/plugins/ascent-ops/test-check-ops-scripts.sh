@@ -6,7 +6,9 @@
 # workflow) pass all nine checks. Each check then gets negative controls: a copy
 # broken in exactly one way fails that check and no other. Also covers exemptions
 # (mktemp and build-directory removal, heredoc bodies, here-strings, libraries,
-# test code), CRLF, the plugin's own scripts, and bad input.
+# test code), CRLF, the trial calibration (shared help, quoted text, preview by
+# default, checks by position, commands in variables, required_version, binary
+# files), the plugin's own scripts, and bad input.
 #
 # Runs with the default awk and every other awk found (mawk, gawk, BWK awk).
 # Prints "test-check-ops-scripts: N/N PASS" last (make/test-plugins.sh T11 requires it).
@@ -110,6 +112,24 @@ matrix() {
   mk from-alpine;   printf 'FROM nginx:alpine\n' > "$WORK/from-alpine/Dockerfile.proxy"; expect_only from-alpine Z8
   mk git-ssh;       printf 'module "vpc" {\n  source = "git@github.com:example/vpc.git?ref=v1.2.0"\n}\n' > "$WORK/git-ssh/infra/vpc.tf"; expect_pass git-ssh 'a git@ source pinned with ?ref='
   mk git-ssh-ref;   printf 'module "vpc" {\n  source = "git@github.com:example/vpc.git"\n}\n' > "$WORK/git-ssh-ref/infra/vpc.tf"; expect_only git-ssh-ref Z8
+
+  # Trial calibration (homelab-toolkit, aws-platform): shared help, quoted text,
+  # preview by default, checks found by position, commands kept in variables,
+  # required_version and binary files.
+  mk z3-helper;     printf '#!/usr/bin/env bash\nset -euo pipefail\nshow_help_if_asked "$@"\necho ok\n' > "$WORK/z3-helper/scripts/info.sh"; expect_pass z3-helper 'help through a shared function handed "$@"'
+  mk z4-message;    script z4-message notice.sh 'log_warn "a reboot is required"\necho "install it (apt install python3-yaml) and re-run"\ntouch /tmp/x  # reboot later'; expect_pass z4-message 'quoted text and comments are not commands'
+  mk z4-apply;      script z4-apply patch.sh 'APPLY=0\ncase "${1:-}" in --apply) APPLY=1 ;; esac\nrun_gate\n[ "$APPLY" = 1 ] || exit 0\nsystemctl restart app\nrun_gate'; expect_pass z4-apply 'preview by default, changes only with --apply'
+  mk z4-ssh;        script z4-ssh remote.sh 'run_gate\nssh host "sudo reboot"\nrun_gate'; expect_only z4-ssh Z4 Medium
+  mk z9-position;   script z9-position restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nrequire_tool systemctl\nsystemctl restart app\nservice_ok'; expect_pass z9-position 'a check before and after the change'
+  mk z9-after;      script z9-after restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nsystemctl restart app\nservice_ok'; expect_only z9-after Z9 Low
+  if printf '%s\n' "$OUT" | grep -q 'without a pre-flight check$'; then ok; else bad "z9-after: should name the missing pre-flight: $(printf '%s\n' "$OUT" | grep '^FAIL  Z9' | head -1)"; fi
+  mk z9-var;        script z9-var heal.sh 'DRY_RUN="${DRY_RUN:-0}"\nRESTART_CMD="systemctl restart app"\nif service_ok; then exit 0; fi\nremote_run host "${RESTART_CMD}"\nservice_ok'; expect_pass z9-var 'a command kept in a variable runs where it is used'
+  mk z9-var-at;     script z9-var-at heal.sh 'DRY_RUN="${DRY_RUN:-0}"\nRESTART_CMD="systemctl restart app"\nremote_run host "$RESTART_CMD"'; expect_only z9-var-at Z9
+  if printf '%s\n' "$OUT" | grep -q 'scripts/heal.sh:7 '; then ok; else bad "z9-var-at: the finding should point at the line that runs the variable: $(printf '%s\n' "$OUT" | grep '^FAIL  Z9' | head -1)"; fi
+  mk z8-tfver;      edit z8-tfver infra/versions.tf "$(subst '"~> 1.9"' '">= 1.6"')" && expect_only z8-tfver Z8 Medium
+  if printf '%s\n' "$OUT" | grep -q 'required_version ">= 1.6" has no upper bound'; then ok; else bad "z8-tfver: should name required_version: $(printf '%s\n' "$OUT" | grep '^FAIL  Z8' | head -1)"; fi
+  mk binary;        printf '\177ELF\000\000\001\002\n' > "$WORK/binary/scripts/tool"; expect_pass binary 'a binary file is not a script'
+  if [ -s "$WORK/err" ]; then bad "binary: stderr should be empty: $(head -1 "$WORK/err")"; else ok; fi
 
   # The plugin's own scripts pass.
   run "$PLUGIN/scripts"

@@ -11,7 +11,7 @@ What every service needs before it can be operated by someone who did not build 
 | `/-/started` | `ops.started_path` (optional) | startup: warm-up finished; the orchestrator holds the liveness probe until it passes | be required when the start is fast |
 
 - The `/-/` prefix is reserved for operational endpoints, so they cannot collide with application routes and one proxy rule can keep them off the public edge.
-- The `z`-suffixed names are not ASCENT defaults. A project that keeps `/healthz` and `/readyz` sets them in the contract; with no override they are a Low finding ("non-default paths with no contract override").
+- The `z`-suffixed names are not ASCENT defaults. The fix is to rename them to the defaults. A project that must keep `/healthz` and `/readyz` (a probe it does not control) sets them in the contract; with no override they are a Low finding ("non-default paths with no contract override").
 - Every probe uses the contract paths: the Dockerfile `HEALTHCHECK`, the Compose `healthcheck`, the ECS container `healthCheck`, the load balancer target group and the Kubernetes probes. A probe on another path is the same Medium finding as a missing endpoint.
 - Both endpoints are unauthenticated, fast (under 10 ms) and logged at debug level only.
 
@@ -35,6 +35,6 @@ Everything that runs is pinned (`ops.version_pinning`):
 ## Change and recovery
 
 - **Deploy** from a runbook (see [runbook-standard.md](runbook-standard.md)) with pre-flight and post-flight checks.
-- **Rollback** is a documented, rehearsed operation: a make target or script that restores the previous release. No rollback path for production is a High finding.
+- **Rollback** is a documented, rehearsed operation: a make target or script that restores the previous release. No rollback path for a production deploy that exists is a High finding; while the deploy files are empty or stubs it is a Low maturity gap.
 - **Backup and restore**: what is backed up, how often, how long it is kept, and the date of the last restore test.
 - **Drift**: a scheduled drift check (S9), so a change made by hand is found within a week.

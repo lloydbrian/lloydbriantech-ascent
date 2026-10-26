@@ -56,7 +56,7 @@ Read the IaC for the items in [secure-config-rules.md](../../references/secure-c
 When they are already installed, run them read-only and include the summary:
 - `cfn-lint <template>` for each CloudFormation template
 - `checkov -d . --compact --quiet` (it reads only)
-- `trivy config .` (ask first: it may download its check bundle)
+- `trivy config --skip-check-update --skip-version-check --quiet .`: run it without asking. With these flags it uses only the checks built into the installed binary and downloads nothing. Plain `trivy config .` downloads its check bundle: ask first. If the installed trivy rejects a flag, ask before running it without.
 
 Their findings are evidence for the rule they match (S1–S10); a finding that matches no rule goes under Other observations. Never treat a tool's silence as a pass for a rule it does not cover.
 

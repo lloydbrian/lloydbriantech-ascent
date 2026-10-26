@@ -33,7 +33,8 @@ Shared sources:
 - **Rate only with the severity table.** A concern that matches no row goes under **Other observations (unrated)** and does not count toward the rating. Never invent a severity.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **Never "met" without a target.** A lens whose target is missing from the contract is unmeasured, never met; it is at risk instead when the evidence shows a gap.
-- **Endpoints follow the contract.** The health, readiness and startup paths are `ops.health_path`, `ops.ready_path` and `ops.started_path`; the defaults are `/-/health`, `/-/ready` and `/-/started`. Never recommend a `z`-suffixed name.
+- **Endpoints follow the contract.** The health, readiness and startup paths are `ops.health_path`, `ops.ready_path` and `ops.started_path`; the defaults are `/-/health`, `/-/ready` and `/-/started`. Never recommend a `z`-suffixed name. A route or probe at another path is fixed by renaming it to the contract path; an override is only the alternative, when a probe the project does not control needs the old path.
+- **Rollback is rated by what exists.** The High needs a production deploy path that works: a deploy script, make target, CI job or IaC with content that ships to production. While the deploy files are empty or stubs, the missing rollback is the Low maturity gap; name the empty files as the evidence.
 - **Maturity gaps are always rated.** With no confirmed contract, rate them against the enterprise defaults (Step 5) and say so; never list them unrated.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one: name the key and the location, never the value. A secret that is already committed is `ascent-security`'s finding too: mark it `→ ascent-security`. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
 - **Cost and platform choice** are `ascent-architecture`'s (`deployment-options`): mark such items `→ ascent-architecture` under Other observations.
@@ -52,7 +53,7 @@ Every finding carries one of these severities. The other skills, the `ops-review
 | A .env file copied into an image (S8) | High |
 | A script that takes a secret as an argument, reads it without -s or prints it (Z5) | High |
 | A destructive command with no confirmation or explicit flag (Z6) | High |
-| No rollback path for a production deploy | High |
+| No rollback path for a production deploy that exists | High |
 | A sensitive parameter not marked NoEcho or sensitive (S2) | Medium |
 | A secret passed to a Compose service as an environment value instead of Compose secrets (S3) | Medium |
 | A wildcard IAM action (S5) | Medium |
@@ -69,6 +70,7 @@ Every finding carries one of these severities. The other skills, the `ops-review
 | A dependency map without versions (M5) | Low |
 | Health endpoints at non-default paths with no contract override | Low |
 | An ops target missing from the contract ("unmeasured") | Low |
+| No rollback path while no production deploy exists yet (deploy files empty or stubs) | Low |
 | Any other item the maturity target requires, missing with no waiver (Step 5) | Low |
 | A gap covered by a waiver ADR | Info |
 <!-- ops-severity:end -->
@@ -86,7 +88,7 @@ If it is missing, **detect, don't ask.** Propose the section from what the repos
 - **Environments:** `*.tfvars` names, workspaces, `environments/` or `envs/` directories, CloudFormation `Environment` parameters, `compose.<env>.yml`, CI deploy jobs.
 - **IaC:** `*.tf`, CloudFormation templates (`Resources:` with `AWS::` types), `compose*.yml`, `cdk.json`, `Pulumi.yaml`.
 - **Configuration store:** `AWS::SecretsManager::Secret`, `aws_secretsmanager_secret`, `AWS::SSM::Parameter`, `aws_ssm_parameter`, Compose `secrets:`, `vault` references, `.sops.yaml`.
-- **Endpoints:** the routes that answer health and readiness, and the probes (`HEALTHCHECK`, Compose `healthcheck`, `healthCheck`, target groups).
+- **Endpoints:** the routes that answer health and readiness, and the probes (`HEALTHCHECK`, Compose `healthcheck`, `healthCheck`, target groups). Propose the default paths even when the code serves others, and mark each detected path for rename (`# detected: <path:line>, rename to the default`). Never propose a `z`-suffixed value.
 - **Runbooks and manuals:** `docs/operations/`, `docs/runbooks/`, `RUNBOOK*.md`, `*runbook*` folders.
 
 Use only the keys and values of [contract-template.yml](../../references/contract-template.yml):
@@ -141,6 +143,8 @@ Search the code for the routes at `ops.health_path`, `ops.ready_path` and, when 
 - the route exists, unauthenticated
 - liveness does not touch the database or another dependency; readiness does
 - every probe (Dockerfile `HEALTHCHECK`, Compose `healthcheck`, ECS `healthCheck`, target group `health_check`, Kubernetes probes) calls the same path
+
+A route or probe at a non-default path: the fix renames it to the contract path, in the route, every probe and every caller. Setting the old path in the contract is the alternative only when renaming is not possible; say why.
 
 A service with no HTTP interface (a batch job, scripts for network devices) has no endpoints to check: say "health endpoints: not applicable (<reason>)" and check that its runs are observable instead (exit codes, logs, alerts).
 

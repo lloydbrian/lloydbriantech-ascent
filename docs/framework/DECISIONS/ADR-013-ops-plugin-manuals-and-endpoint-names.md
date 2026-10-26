@@ -87,14 +87,24 @@ The ux trial (ADR-012, decision 11) and the architecture trial (ADR-011, decisio
   - `check-ops-scripts.sh` counts a `read` as a confirmation only for a variable named like one (`confirm`, `answer`, `ok`, `yn`), reads `read -rp "…"` prompts, names a destructive command instead of printing its line, exempts Compose services with `build:`, and treats version-less tags (`:alpine`) as floating.
   - Front-matter comments are ignored, and comments and test code are not drift evidence.
   - The controls P167–P186 pin each fix.
+- The trial (2026-10-25, T1–T6 on the three repositories above) led to a second calibration round:
+  - `check-ops-scripts.sh` accepts `--help` handled by a shared help function the script hands `"$@"` to, and a script that previews by default and changes only with `--apply` as having a dry run.
+  - It no longer reads quoted text or trailing comments as commands, unless the line hands the text to `ssh`, `sh -c`, `eval` or `sudo`. A command kept in a variable counts where the variable runs.
+  - It finds pre-flight and post-flight checks by position: a gate, health, verify, check or require call before the last change and after the first.
+  - It flags an unbounded Terraform `required_version` (Z8), and it no longer reads binary files as scripts.
+  - On `homelab-toolkit` the script failures fell from 63 (most of them false positives) to 17, and the stderr warnings from 19 to none.
+  - A missing rollback is High only for a production deploy that exists. While the deploy files are empty or stubs, it is the Low maturity gap, which the trial had rated High twice.
+  - A non-default endpoint path is fixed by renaming it to the contract path. An override is the alternative only when a probe the project does not control needs the old path, and the contract proposal never carries a `z`-suffixed value.
+  - `iac-config-check` runs `trivy config --skip-check-update --skip-version-check --quiet .` without asking, because it downloads nothing; plain `trivy config .` still needs the operator's agreement.
+  - Rules R17 and R18 and the controls P187–P199 (group `ascent-ops-calibration`) pin each fix.
 - A fresh scaffold still fails Z8 four times (`nginx:alpine` in three files, the untagged distributed backend image) and Z3 once (`make/help.sh`). The operator chose a separate template change (2026-10-25), listed under Planned in the CHANGELOG.
 - Running `check-ops-scripts.sh` on this repository's own `make/` scripts finds missing `--help` (Z3) in eight scripts and `tokens-to-css.sh`. That is a follow-up for this repository, not a blocker: Z3 is Low.
-- `make test-mutants` gains 69 controls (P118–P186) in four groups, `ascent-ops-config`, `ascent-ops-scripts`, `ascent-ops-manuals` and `ascent-ops-review`, which CI picks up as parallel jobs through `--groups-json`. One control runs the ops tests in about 20 seconds, against about 7 for the other plugins, so a single group of 49 took 18m33s locally, past the CI job's 15-minute timeout; groups of 16 to 21 take 6 to 8 minutes each.
+- `make test-mutants` gains 82 controls (P118–P199) in five groups, `ascent-ops-config`, `ascent-ops-scripts`, `ascent-ops-manuals`, `ascent-ops-review` and `ascent-ops-calibration`, which CI picks up as parallel jobs through `--groups-json`. One control runs the ops tests in about 20 seconds, against about 7 for the other plugins, so a single group of 49 took 18m33s locally, past the CI job's 15-minute timeout; groups of 16 to 21 take 6 to 8 minutes each.
 - The plugin gate's T5 now checks three marked severity tables (architecture, UX, operations) through one function.
 
 ## Cost implications
 
-- About 2,700 lines of plugin (four skills, an agent, five references, three scripts with their awk programs, and a blueprint) and about 1,100 lines of tests and fixtures, plus 69 negative controls (P118–P186).
+- About 2,700 lines of plugin (four skills, an agent, five references, three scripts with their awk programs, and a blueprint) and about 1,100 lines of tests and fixtures, plus 82 negative controls (P118–P199).
 - The rename touches 21 files outside the plugin. Projects scaffolded earlier carry a small migration (or a contract override).
 - Recurring: review the S, Z and M rules when the IaC tools change their syntax, and refresh the references' standards status with the other plugins.
 - Runtime: bash, awk and git only. `cfn-lint`, `checkov` and `trivy` are used only when already installed.
