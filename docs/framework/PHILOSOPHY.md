@@ -102,6 +102,10 @@ The author's stated ambition is for ASCENT projects to be observably better than
 
 These are aspirational. The framework's job is to make them achievable. The author's job is to demonstrate they're achieved.
 
+## Checks travel further than scaffolds
+
+A scaffold helps only the projects that start from it. Most code already exists, so since v0.4.2 ASCENT also ships its checks as Claude Code plugins that run in any repository. The beliefs stay the same: write decisions down, measure against stated targets, prove every claim with evidence, and keep a human in charge of every irreversible step. Each plugin reads the repository as it is, proposes a contract from what it finds, and leaves the commits and deploys to the operator.
+
 ## Why the framework dogfoods itself
 
 ASCENT applies ASCENT to its own repository. The Makefile is the operator vocabulary; the ADRs are in the canonical format; the docs are persona-segmented; the contribution model uses Conventional Commits and semver. This is not a stunt.
@@ -114,7 +118,7 @@ It also means every commit to this repository tests a small slice of the framewo
 
 If this philosophy resonates, read:
 
-- [`PRINCIPLES.md`](PRINCIPLES.md) — the fourteen invariants the philosophy produces
+- [`PRINCIPLES.md`](PRINCIPLES.md) — the sixteen invariants the philosophy produces
 - [`SCOPE.md`](SCOPE.md) — what ASCENT is for and what it isn't
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — how the framework is built
 - [`ROADMAP.md`](ROADMAP.md) — where the framework is heading

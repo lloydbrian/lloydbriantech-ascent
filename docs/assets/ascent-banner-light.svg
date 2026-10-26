@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="t d">
+  <title id="t">ASCENT</title>
+  <desc id="d">ASCENT: an opinionated engineering framework and Claude Code plugins for disciplined delivery.</desc>
+  <rect width="1280" height="320" rx="16" fill="#F6F8FA"/>
+  <g stroke="#E3E8EE" stroke-width="1">
+    <path d="M0 80H1280M0 160H1280M0 240H1280M320 0V320M640 0V320M960 0V320"/>
+  </g>
+  <polyline points="760,262 860,214 940,232 1030,150 1110,172 1200,70" fill="none" stroke="#0B6E4F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#0B6E4F"><circle cx="760" cy="262" r="8"/><circle cx="860" cy="214" r="8"/><circle cx="940" cy="232" r="8"/><circle cx="1030" cy="150" r="8"/><circle cx="1110" cy="172" r="8"/><circle cx="1200" cy="70" r="11"/></g>
+  <text x="80" y="150" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="88" font-weight="800" letter-spacing="10" fill="#0D1B2A">ASCENT</text>
+  <text x="84" y="202" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="28" fill="#3D4C5C">Disciplined delivery for Claude Code, from Day 0 to Day 1000</text>
+  <text x="84" y="252" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="20" fill="#0B6E4F">security · delivery · architecture · ux · ops</text>
+</svg>

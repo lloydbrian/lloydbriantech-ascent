@@ -18,6 +18,7 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 - [ ] Reference module addition or change
 - [ ] Skill behavior change
 - [ ] Template asset change
+- [ ] Plugin change (skill, agent, script, hook or severity table)
 - [ ] Tooling / CI / build change
 - [ ] Architectural change (requires ADR — included in this PR)
 - [ ] Breaking change (would break existing scaffolded projects)
@@ -47,6 +48,14 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 - [ ] If this affects scaffolded projects' `ascent-*` skills, migration path documented
 - [ ] CHANGELOG.md entry added under `[Unreleased]`
 
+### For plugin PRs
+
+- [ ] `version` bumped in the plugin's `plugin.json` and its marketplace entry (or, for an unreleased version, its `make/plugins.lock` row refreshed)
+- [ ] Behavior tests cover every new or changed script, hook and rule
+- [ ] Every new rule has a `plugin_case` in `make/test-mutants.sh` that the gate kills
+- [ ] Severity table copies still match (T5), and agents stay read-only (T4)
+- [ ] CHANGELOG.md entry added under `[Unreleased]`
+
 ### For architectural PRs
 
 - [ ] ADR included in this PR, using the canonical template
@@ -59,9 +68,9 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 
 - [ ] Manual verification performed (describe below)
 - [ ] CI passes
-- [ ] `make qa`, `make test-skills` and `make test-mutants` pass locally
+- [ ] `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` pass locally
 - [ ] Skill tests use the `tests/skills/lib/portable.sh` helpers only (no direct `stat`, `touch -t/-d`, `date -d/-j/-v`, `sed -i`) — ADR-008
-- [ ] Every new or changed rule has a `make/mutants.tsv` row whose named test fails when the rule is broken
+- [ ] Every new or changed rule has a negative control whose named test fails when the rule is broken (a `make/mutants.tsv` row for embedded skills, a `plugin_case` in `make/test-mutants.sh` for plugins)
 - [ ] If this changes skill behavior, an eval scenario covers the change (Phase 5+)
 
 **What I tested:**

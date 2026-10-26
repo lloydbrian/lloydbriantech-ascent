@@ -6,6 +6,8 @@ labels: ['enhancement', 'new-skill']
 assignees: ['lloydbrian']
 ---
 
+> A check that should work in **any** repository, not only in scaffolded ASCENT projects, belongs in a plugin. Use the [plugin proposal](https://github.com/lloydbrian/lloydbriantech-ascent/issues/new?template=plugin-proposal.md) template instead.
+
 ## Type of skill
 
 - [ ] New project-embedded skill (`ascent-<name>`)
@@ -14,13 +16,13 @@ assignees: ['lloydbrian']
 
 ## Proposed name
 
-Following the [naming convention](../../docs/framework/DECISIONS/ADR-005-skill-naming.md):
+Following the [naming convention](https://github.com/lloydbrian/lloydbriantech-ascent/blob/main/docs/framework/DECISIONS/ADR-005-skill-naming.md):
 
 **Proposed name:** `ascent-_________` or `<role-name>`
 
 ## Problem this solves
 
-What gap in the current framework does this fill? Reference [`docs/framework/PRINCIPLES.md`](../../docs/framework/PRINCIPLES.md) if relevant.
+What gap in the current framework does this fill? Reference [`docs/framework/PRINCIPLES.md`](https://github.com/lloydbrian/lloydbriantech-ascent/blob/main/docs/framework/PRINCIPLES.md) if relevant.
 
 Be specific. "Better security" is not a problem; "no skill audits whether security headers are still applied after each deploy" is.
 
@@ -52,7 +54,7 @@ What does this skill NOT do? What overlap is there with existing skills, and whe
 
 ## Would require ADR
 
-Per [`CONTRIBUTING.md`](../../CONTRIBUTING.md), some additions require an ADR.
+Per [`CONTRIBUTING.md`](https://github.com/lloydbrian/lloydbriantech-ascent/blob/main/CONTRIBUTING.md), some additions require an ADR.
 
 - [ ] Yes, this requires an ADR (new role, new mode, new naming pattern, change to a documented invariant)
 - [ ] No, this fits within existing conventions
@@ -65,6 +67,6 @@ If you have a sense of how the skill would work, sketch it. Otherwise skip — t
 
 *Before submitting, please confirm:*
 
-- [ ] I've read [`docs/framework/PRINCIPLES.md`](../../docs/framework/PRINCIPLES.md) and confirmed this proposal aligns with the framework's character
+- [ ] I've read [`docs/framework/PRINCIPLES.md`](https://github.com/lloydbrian/lloydbriantech-ascent/blob/main/docs/framework/PRINCIPLES.md) and confirmed this proposal aligns with the framework's character
 - [ ] I've searched existing skills for overlap
 - [ ] I've articulated the gap in one or two specific sentences

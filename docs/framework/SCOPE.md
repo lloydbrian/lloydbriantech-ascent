@@ -19,6 +19,8 @@ ASCENT is built for a specific shape of project. If your project has these chara
 
 The framework's invariants pay off most when the project's lifespan is long enough to encounter handoff, drift, and accumulated debt.
 
+**The plugins have a wider fit.** The shape above applies to scaffolding a project. The `ascent-*` plugins work in any repository, including ones that would never adopt the full framework: a review needs no `.ascent-meta.json`, no containers and no particular stack. The architecture, ux and ops plugins rate the repository against its own stated targets in `.ascent/contract.yml`, or propose those targets from what the repository declares. Each plugin's README states what it covers.
+
 ## Project shapes that fit well
 
 These are the project shapes ASCENT was specifically designed around:

@@ -1,6 +1,6 @@
 # ASCENT Framework Architecture
 
-How the framework is built. This document describes the four-layer architecture of the framework itself — not the architecture of projects scaffolded by it. For project-level architecture, see the architect role's reference modules.
+How the framework is built. This document describes the four-layer architecture of the framework itself, and the plugin channel that ships its checks to any repository — not the architecture of projects scaffolded by it. For project-level architecture, see the architect role's reference modules.
 
 ---
 
@@ -69,8 +69,9 @@ Contains:
 - Framework documentation (`docs/framework/`)
 - Framework ADRs (`docs/framework/DECISIONS/`)
 - The parent skill source (`skills/lloydbriantech-ascent/`)
-- Build, test, and packaging tools (`tools/`)
-- Eval scenarios (`tests/`)
+- The Claude Code plugins and their marketplace (`plugins/`, `.claude-plugin/marketplace.json`); see [The plugin channel](#the-plugin-channel)
+- The gates and negative controls (`make/`), plugin behavior tests (`tests/plugins/`), and the Phase 2 smoke-test scaffold (`tools/scratch/`)
+- Eval scenarios arrive with Phase 5
 - Repository hygiene (CI workflows, issue templates, editor config)
 
 The meta-repository **applies ASCENT to itself** — Makefile-as-operator-vocabulary, ADR discipline, persona-segmented docs, dual licensing, phase-gated delivery.
@@ -96,7 +97,7 @@ skills/lloydbriantech-ascent/
 │   ├── role-tester.md
 │   ├── role-devops.md
 │   ├── role-cybersecurity.md
-│   ├── ASCENT-INVARIANTS.md       # The 14 principles
+│   ├── ASCENT-INVARIANTS.md       # The 16 principles
 │   ├── MAKE-NAMING.md             # The naming convention
 │   ├── SLUG-CONVENTIONS.md        # Slug taxonomy
 │   ├── PHASE-PROTOCOL.md          # Phase-gated delivery
@@ -104,20 +105,22 @@ skills/lloydbriantech-ascent/
 │   ├── ADR-TEMPLATE.md            # The canonical ADR format
 │   ├── feature-lifecycle.md       # How features traverse roles
 │   ├── observability-contract.md  # What every service emits
+│   ├── patterns.md                # Sibling, hybrid, detect-don't-ask, enumerate/summarize
+│   ├── session-protocol.md        # Session resumption (§15)
 │   ├── writing-style.md           # Doc voice/tense/anti-patterns
 │   ├── doc-architecture.md        # Persona navigation
 │   ├── audience-mapping.md        # Persona → doc mapping
 │   └── external-services-integration.md  # Vendor patterns
-├── assets/template/               # Files copied + slug-substituted into projects
-│   └── (the substantive baseline content)
-└── scripts/
-    ├── scaffold.py                # Performs scaffold mode
-    ├── bootstrap.py               # Personalizes a clone of the starter
-    ├── enhance.py                 # Performs enhance mode
-    └── migrate.py                 # Performs migrate mode
+└── assets/template/               # Files copied + slug-substituted into projects
+    ├── .claude/skills/ascent-*/   # The 28 project-embedded skills
+    └── (the substantive baseline content)
 ```
 
+The scaffolding scripts (`scripts/scaffold.py`, `bootstrap.py`, `enhance.py`, `migrate.py`) arrive in Phase 4. Until then, Claude performs each mode by following the skill and copying from `assets/template/`.
+
 ### Layer 3 — Template Repo
+
+**Status:** planned for Phase 6. The starter repository does not exist yet; this section describes the design.
 
 The `lloydbrian/lloydbriantech-ascent-starter` repository — a separate GitHub repo marked as a GitHub Template. Users `gh repo create --template` from it to get a 5-second working scaffold.
 
@@ -142,6 +145,51 @@ These projects are independent. They don't pull from the framework at runtime. T
 
 ---
 
+## The plugin channel
+
+The four layers deliver ASCENT to projects it scaffolds. Plugins deliver its checks to **any** repository, with no scaffold and no `.ascent-meta.json`. Since v0.4.2 they are the framework's main delivery channel.
+
+```mermaid
+flowchart TB
+    T["Template skills<br/>assets/template/.claude/skills"] -->|"make plugins (generated)"| SEC["ascent-security"]
+    H["Hand-written sources"] --> DEL["ascent-delivery"]
+    H --> ARC["ascent-architecture"]
+    H --> UX["ascent-ux"]
+    H --> OPS["ascent-ops"]
+    SEC & DEL & ARC & UX & OPS --> M[".claude-plugin/marketplace.json"]
+    M -->|"/plugin install"| R["Any repository"]
+    G["make test-plugins<br/>make test-mutants"] -. gates .-> SEC & DEL & ARC & UX & OPS
+```
+
+| Plugin | Source | Decision |
+|---|---|---|
+| `ascent-security` | Generated from the template's three security skills, so there is one source of truth | [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md) |
+| `ascent-delivery` | Hand-written; the delivery loop, the finding verifier and the operator-boundary hook | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) |
+| `ascent-architecture` | Hand-written; introduces the shared project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
+| `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`) | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md) |
+| `ascent-ops` | Hand-written; operations manuals and the `/-/health` endpoint names | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md) |
+
+### What the plugins share
+
+- **The project contract.** `.ascent/contract.yml` (or `.claude/contract.yml` where ASCENT-named files are not allowed) holds one section per plugin (`architecture:`, `ux:`, `ops:`) with measurable targets and a maturity target: enterprise, standard or prototype. A review with no contract proposes one from what the repository declares (detect, don't ask) and rates against enterprise defaults until the operator confirms it.
+- **Severity tables.** Each review plugin rates findings only from its table. In architecture, ux and ops the table is marked in the source so the gate can check that the skill's and the agent's copies are identical; the two `ascent-security` skills share one checked table, and its agent carries a summary. A concern that matches no row is listed as unrated.
+- **Read-only reviewer agents** (Read, Grep, Glob only) that the delivery loop uses as review lenses.
+- **The operator boundary.** Claude never runs git writes, `gh` writes, merges, tags, releases or deploys. While `ascent-delivery` is enabled, its `PreToolUse` hook blocks them; Claude writes a runbook instead.
+- **The four patterns** from Phase 3 ([patterns.md](../../skills/lloydbriantech-ascent/references/patterns.md)): sibling skills, a hybrid aggregator entry point, detect-don't-ask, and enumerate/summarize. The delivery loop's orchestration of reviewers is a candidate fifth pattern, the conductor.
+- **Four pillars.** Every check serves driving business value, compliance, trust and security, or resilience. [PILLARS.md](PILLARS.md) maps the quality attributes to the plugins that check them, and lists the gaps.
+
+### The plugin gate
+
+`make test-plugins` runs T1–T12 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), and manifests use only known keys (T12).
+
+`make test-mutants` holds the negative controls: each one breaks a rule in a copy of the repository and requires a named gate check to fail. Controls run in groups, one CI job per group and platform, listed by `make test-mutants-groups`.
+
+### Release path
+
+Every plugin goes through the delivery loop: hardened source, behavior tests, negative controls, the gate, an independent review checked by the finding verifier, a read-only trial on real repositories with calibration rounds, and a release record (CHANGELOG, ADR, tag). The marketplace lives in this repository until a dedicated `lloydbriantech-claude-marketplace` exists (ADR-009).
+
+---
+
 ## Cross-cutting concerns
 
 ### Versioning
@@ -150,10 +198,10 @@ Lockstep across layers:
 
 - Layer 1 — git tag on the meta-repo (`v0.3.0`)
 - Layer 2 — `version:` field in `SKILL.md` frontmatter (`0.3.0`)
-- Layer 3 — git tag on the starter repo (`v0.3.0`), force-pushed by CI
+- Layer 3 — git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4 — `framework_version` field in `.ascent-meta.json`
 
-Mismatches are CI failures.
+Plugins version independently: each has its own semver in `plugin.json` and the marketplace entry, and `make/plugins.lock` records the content hash per version (T10).
 
 ### Mode detection
 
@@ -232,4 +280,10 @@ ASCENT is for projects with one or a small handful of services. Service-to-servi
 | Why the naming conventions are what they are | [ADR-005](DECISIONS/ADR-005-skill-naming.md) |
 | Why dual MIT/Apache-2.0 licensing | [ADR-006](DECISIONS/ADR-006-dual-licensing.md) |
 | Why pair the skill with a template repo | [ADR-007](DECISIONS/ADR-007-template-repo-pairing.md) |
+| How skill tests prove they can fail | [ADR-008](DECISIONS/ADR-008-portable-skill-tests-and-negative-controls.md) |
+| Why plugins are generated from the template skills | [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md) |
+| Why Claude never commits or deploys | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) |
+| The project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
+| Plugin dependencies and design directions | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md) |
+| Operations manuals and endpoint names | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md) |
 | What's planned for future phases | [`ROADMAP.md`](ROADMAP.md) |
