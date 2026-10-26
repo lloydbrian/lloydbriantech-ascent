@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent` — the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 — Project-embedded skills (complete); v0.4.0
-**Version:** 0.4.0
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture and ux released; ops in review). Phase 4 awaits its go-signal.
+**Version:** 0.4.5
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -18,6 +18,7 @@
 This repository contains the **source of truth** for the ASCENT framework:
 
 - The parent skill `lloydbriantech-ascent` that scaffolds, enhances, and migrates projects
+- The `ascent-*` Claude Code plugins in `plugins/` and their marketplace (`.claude-plugin/marketplace.json`), usable in any repository
 - The reference modules consumed by the skill at runtime
 - The template assets shipped to scaffolded projects (with substantive baseline content, not skeletons)
 - The framework's own architectural decision records
@@ -59,20 +60,31 @@ lloydbriantech-ascent/
 ├── CONTRIBUTING.md                    # Contribution model
 ├── LICENSE, LICENSE-MIT, LICENSE-APACHE
 ├── .gitignore, .editorconfig
+├── .claude-plugin/marketplace.json    # Plugin marketplace (lists every plugin and its version)
 ├── .github/                           # Workflows, issue templates, PR template
 ├── .vscode/                           # Editor config (recommended extensions, tasks)
 ├── docs/
+│   ├── assets/                        # README banner (light and dark)
 │   └── framework/                     # Framework's own documentation
 │       ├── PRINCIPLES.md, PHILOSOPHY.md, SCOPE.md, ROADMAP.md, ARCHITECTURE.md
 │       └── DECISIONS/                 # Framework-level ADRs
-├── skills/                            # (Phase 1) Parent skill source
-│   └── lloydbriantech-ascent/
-├── tools/                             # (Phase 2+) Build, install, package, validate
-├── tests/                             # (Phase 5) Eval scenarios for the skill
-└── Makefile, make/                    # (Phase 1) Operator vocabulary for this repo
+├── skills/
+│   └── lloydbriantech-ascent/         # Parent skill: SKILL.md, references/, assets/template/
+├── plugins/                           # ascent-security (generated), ascent-delivery,
+│                                      # ascent-architecture, ascent-ux, ascent-ops (hand-written)
+├── tests/plugins/                     # Plugin behavior tests and fixtures
+├── tools/scratch/                     # Phase 2 smoke-test scaffold
+└── Makefile, make/                    # Operator vocabulary, gates and negative controls
 ```
 
-Items marked `(Phase N)` arrive in later phases per the roadmap.
+The embedded-skill tests live in the template (`skills/lloydbriantech-ascent/assets/template/tests/skills/`). The eval harness (Phase 5) and the scaffolding scripts (Phase 4) do not exist yet.
+
+## Plugin rules
+
+- **Generated or hand-written.** `ascent-security` is generated from the template skills by `make plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)): edit the template source, never the plugin copy. The other plugins are hand-written in `plugins/`.
+- **Every change bumps the version** in the plugin's `plugin.json` and its marketplace entry, or installed copies never update. `make test-plugins` (T10) compares content hashes with `make/plugins.lock`. For a version that has not been released yet, delete its lock row and run `make plugins` to refresh the hash instead of bumping.
+- **The delivery bar:** hardened source, behavior tests (Principle §16), negative controls in `make/test-mutants.sh` for every rule, the plugin gate, a read-only trial on real repositories, and a release record (CHANGELOG, ADR, tag).
+- **The operator boundary.** Claude never runs git writes, `gh` writes, merges, tags, releases or deploys; it writes a runbook the operator runs. `ascent-delivery`'s hook enforces this while the plugin is enabled.
 
 ## Working conventions
 
@@ -133,15 +145,15 @@ What does this decision cost — in time, money, complexity, or future flexibili
 
 A phase ends when its exit criteria (listed in [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md)) are all met. To transition:
 
-1. Verify exit criteria via `make phase-check` (Phase 1+)
+1. Verify exit criteria, with `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` green
 2. Update `CHANGELOG.md` with the phase summary
-3. Tag the release: `git tag v0.N.0 && git push --tags`
+3. The operator tags the release (`git tag v0.N.0 && git push --tags`) from the runbook Claude writes
 4. Wait for explicit signal: **"Proceed with Phase N+1"**
 5. Update phase status in this CLAUDE.md and in [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md)
 
 No phase begins implicitly. The signal is the gate.
 
-## Make operator vocabulary (Phase 1+)
+## Make operator vocabulary
 
 `make help` is the entry point. Sections in SDLC order:
 
@@ -155,11 +167,22 @@ DIST    — package the skill, build the starter repo
 RELEASE — tag, changelog, publish
 ```
 
-Phase 0 (this) does not ship a Makefile yet. Phase 1 introduces it.
+The targets used most:
+
+| Target | What it does |
+|---|---|
+| `make install` / `make uninstall` | Symlink the parent skill into `~/.claude/skills/`, or remove it |
+| `make qa` | Frontmatter, internal links and template placeholders |
+| `make test-skills` | Render the template and run the 28 embedded-skill tests |
+| `make plugins` | Regenerate the generated plugin skills and refresh `make/plugins.lock` |
+| `make test-plugins` | The plugin gate, T1–T12, including each plugin's behavior tests |
+| `make test-mutants [GROUP=<group>]` | Negative controls; `make test-mutants-groups` lists the groups CI runs in parallel |
+
+Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase planned when the stub was added, and some are out of date (`doc-stub` still says P2.0).
 
 ## What this repository is NOT
 
-- It is not the place to edit `lloydbriantech-ascent-starter` directly. That repo is generated from this one.
+- It is not the place to edit `lloydbriantech-ascent-starter` directly. That repository will be generated from this one (Phase 6); it does not exist yet.
 - It is not a place for projects scaffolded from ASCENT to live. Each scaffolded project gets its own repository.
 - It is not a sandbox for experimental skill ideas — those go on a feature branch and come in via PR.
 
@@ -170,7 +193,7 @@ Phase 0 (this) does not ship a Makefile yet. Phase 1 introduces it.
 3. Read [`docs/framework/ARCHITECTURE.md`](docs/framework/ARCHITECTURE.md) — understand how it's built
 4. Read [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) — understand where it's going
 5. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) — understand the contribution bar
-6. Pick an issue tagged `good-first-contribution` (Phase 1+) or open one to propose
+6. Pick an open issue, or open one to propose a change, skill or plugin
 
 ---
 

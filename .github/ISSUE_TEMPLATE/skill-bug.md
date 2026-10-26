@@ -1,6 +1,6 @@
 ---
 name: Skill bug report
-about: Report a bug in the parent skill or a project-embedded skill
+about: Report a bug in a plugin, the parent skill or a project-embedded skill
 title: '[skill-bug] '
 labels: ['bug', 'skill']
 assignees: ['lloydbrian']
@@ -8,6 +8,7 @@ assignees: ['lloydbrian']
 
 ## Which skill
 
+- [ ] Plugin (`ascent-<name>`) — plugin and skill: ____________
 - [ ] Parent skill (`lloydbriantech-ascent`)
 - [ ] Project-embedded skill (`ascent-<name>`) — name: ____________
 
@@ -27,7 +28,7 @@ The expected behavior.
 
 ## Environment
 
-- Framework version (from `.ascent-meta.json` or skill frontmatter): ____________
+- Plugin version (from `/plugin`), or framework version (from `.ascent-meta.json` or skill frontmatter): ____________
 - Claude client: Claude Code · Claude.ai · Claude mobile · API
 - OS: ____________
 - Container engine (if relevant): Podman · Docker · neither

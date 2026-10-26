@@ -23,6 +23,7 @@ ASCENT accepts these contribution types:
 | **Documentation fix** | Typo, broken link, stale reference | Lowest bar; merged quickly |
 | **Documentation improvement** | Clarifying example, expanded rationale, new diagram | Single concern per PR; preserves prior intent |
 | **Reference module addition** | New pattern document under `references/` | Must cite real-world use case; must align with existing principles or include an ADR explaining the divergence |
+| **Plugin or plugin skill** | A new `ascent-*` plugin, or a skill, check or rule in one | Requires an ADR for a new plugin; must clear the plugin delivery bar (see [Contributing a plugin](#contributing-a-plugin)) |
 | **Project-embedded skill addition** | New `ascent-<name>` SKILL.md scaffold | Must fill a documented gap; intent must fit one of the existing taxonomy categories or propose a new one via ADR |
 | **Role module change** | Changing what a parent-skill role owns | Requires ADR; affects framework version (minor or major) |
 | **New parent-skill role** | A tenth role | High bar; requires ADR demonstrating gap is large enough; affects framework version (major) |
@@ -42,10 +43,12 @@ The framework version is shared lockstep between:
 
 - This repository's git tags (`v0.1.0`, `v0.2.0`, etc.)
 - The `version:` field in `skills/lloydbriantech-ascent/SKILL.md` frontmatter (Phase 1+)
-- The starter repo's tagged release (`lloydbriantech-ascent-starter v0.1.0`)
+- The starter repo's tagged release (`lloydbriantech-ascent-starter v0.1.0`), from Phase 6; the starter repository does not exist yet
 - The `framework_version` field that scaffolded projects write into their `.ascent-meta.json`
 
 Mismatched versions are a CI failure.
+
+Plugins version independently. Any change to a plugin's files bumps the `version` in its `plugin.json` and its marketplace entry; `make test-plugins` (T10) fails until it does, because installed copies only update on a new version. A version that has not been released yet keeps its number: delete its row from `make/plugins.lock` and run `make plugins` to record the new hash.
 
 ---
 
@@ -80,9 +83,10 @@ Forward references to modules that haven't yet landed stay as code spans until t
 ### For new content (reference modules, project-embedded skills, role additions)
 
 1. **Open an issue first** using the appropriate template:
+   - `plugin-proposal` for a new plugin, or a new skill, check or rule in one
    - `new-skill-proposal` for a new project-embedded skill
    - `enhancement` for a role module change or new reference module
-   - `skill-bug` for skill behavior fixes
+   - `skill-bug` for plugin and skill behavior fixes
 2. Wait for maintainer acknowledgement and direction.
 3. Open a PR that references the issue.
 4. If the change requires an ADR, include the ADR in the same PR.
@@ -128,6 +132,20 @@ A contribution that meets this bar is more likely to be merged quickly:
 - [ ] ADR includes the "Cost implications" section.
 - [ ] If the change supersedes a prior ADR, both ADRs are updated (the new one references the old; the old one's status changes to "Superseded by ADR-XXX").
 
+### Contributing a plugin
+
+A plugin ships only when it clears the same bar as the ones already released. Propose it first with the [plugin proposal template](https://github.com/lloydbrian/lloydbriantech-ascent/issues/new?template=plugin-proposal.md); a new plugin needs an ADR.
+
+- [ ] **Hardened source.** Skills, agent and scripts follow the shared rules: read-only by default, `file:line` evidence, severities only from the plugin's marked severity table, no personal data in output.
+- [ ] **Read-only agent.** A reviewer agent with `tools: Read, Grep, Glob` only (T4), whose severity table is an identical, marked copy of the skill's (T5 checks the marked copies).
+- [ ] **Behavior tests** in `tests/plugins/<plugin>/test-*.sh` for every script and hook, ending with `<test>: N/N PASS` (T11), passing on macOS and Linux and under the stock macOS `/bin/bash` 3.2.
+- [ ] **Negative controls.** Every rule has a `plugin_case` in `make/test-mutants.sh` that breaks it and names the gate check that must fail. A plugin with slow tests splits its controls into groups so each CI job stays under its timeout.
+- [ ] **The gate is green:** `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants`, including the version check (T10).
+- [ ] **A real-repository trial.** The plugin runs read-only against real repositories, each in a fresh conversation, and calibration rounds fix what the reports get wrong. The trial repositories are never modified.
+- [ ] **A release record:** CHANGELOG entry, the ADR moved to Accepted, and a tag.
+
+Claude never commits, pushes, merges, tags or releases in this repository. Changes reach `main` through a patch, a hash manifest and a runbook that the maintainer runs.
+
 ---
 
 ## What "review" looks like
@@ -148,9 +166,9 @@ Be respectful. Engage with substance, not personality. Disagreements are resolve
 
 ---
 
-## Lessons codified from Phase 3
+## Lessons codified
 
-Three workflow disciplines emerged from Phase 3's implementation of 28 skills across 8 clusters. They are codified here as contribution guidance for future phases. See [`docs/framework/RETROSPECTIVES/PHASE-3.md`](docs/framework/RETROSPECTIVES/PHASE-3.md) for the narrative account of how each discipline emerged.
+Three workflow disciplines emerged from Phase 3's implementation of 28 skills across 8 clusters; the plugin releases since v0.4.2 added the delivery bar above. They are codified here as contribution guidance for future phases. See [`docs/framework/RETROSPECTIVES/PHASE-3.md`](docs/framework/RETROSPECTIVES/PHASE-3.md) for the narrative account of how each discipline emerged.
 
 ### Cluster-based contribution discipline
 
