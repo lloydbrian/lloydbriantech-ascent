@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.5, October 25, 2026. The operations plugin, `ascent-ops`, is in review after its trial; `ascent-quality` is next. Phase 4 awaits its go-signal.
+**Current state:** Operations plugin complete, v0.4.6, October 26, 2026. Next plugin: `ascent-quality`; Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -14,7 +14,7 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
-| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals | 🔍 In review (trial and calibration done) |
+| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals | ✅ v0.4.6 |
 | 4 | `ascent-quality` | To be scoped when it starts | ⏳ Next |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
@@ -160,9 +160,9 @@ Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macO
 
 `ascent-ux` 0.1.0 rates a web UI against the `ux:` section of the project contract, with WCAG 2.2 AA evidence from static checks, exact token contrast in every theme, and a Playwright browser pass that overrides both. It checks the design system and offers five predefined design directions as mocks of the project's own pages, each verified before it is shown ([ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md)). It is the first ASCENT plugin with dependencies: `design`, `frontend-design` and `playwright` install with it. A read-only trial on two real repositories and a re-trial drove two calibration rounds before release. Among the fixes: single-page-app views read from JS template literals, focus outlines judged per selector, line numbers that stay right after non-ASCII text, and delegated click handlers. Forty-six plugin controls (P62–P117) pin the result. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
-### Unreleased — Operations plugin
+### v0.4.6 — Operations plugin
 
-**Status:** 🔍 In review
+**Status:** ✅ Complete (October 26, 2026)
 
 `ascent-ops` 0.1.0 rates how a system is run, changed and recovered against the `ops:` section of the project contract: secure-by-design IaC configuration (S1–S10), zero-touch scripts and runbooks with pre-flight and post-flight checks (Z1–Z9), and a Maintenance and Operations Manual and a Troubleshooting Manual that a script can prove are current (M1–M8). Health endpoints become `/-/health` and `/-/ready` across the scaffold template ([ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), Proposed). A read-only trial on three real repositories drove a calibration round before release.
 

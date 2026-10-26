@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent` — the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture and ux released; ops in review). Phase 4 awaits its go-signal.
-**Version:** 0.4.5
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux and ops released). Phase 4 awaits its go-signal.
+**Version:** 0.4.6
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
