@@ -1,6 +1,6 @@
 # ASCENT Roadmap
 
-The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
+The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
 **Current state:** v0.4.8 (ownership registry and plugin-qualified rule ids), October 27, 2026. Next: `ascent-security` 0.2.0 (dependency check, v0.4.9), then `ascent-quality` (v0.4.10); Phase 4 awaits its go-signal.
 
@@ -38,7 +38,7 @@ Plugin releases are patch versions of the framework (v0.4.x) and do not need a p
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0: Foundation
 
 **Goal:** Establish framework identity, conventions, and architectural decisions. Ship the meta-repository foundation so future phases have a structured place to land.
 
@@ -50,13 +50,13 @@ Plugin releases are patch versions of the framework (v0.4.x) and do not need a p
 - [x] Framework documentation foundation (PHILOSOPHY, PRINCIPLES, SCOPE, ROADMAP, ARCHITECTURE)
 - [x] Framework ADRs 001 through 007 capturing the foundational decisions
 - [x] Tooling and CI scaffolding (.github workflows, issue/PR templates, .vscode config)
-- [x] No skill code, no template assets, no scripts — those are subsequent phases
+- [x] No skill code, no template assets, no scripts; those are subsequent phases
 
 **Version on completion:** v0.1.0-alpha
 
 ---
 
-## Phase 1 — Parent skill skeleton
+## Phase 1: Parent skill skeleton
 
 **Goal:** Ship the parent skill `lloydbriantech-ascent` with role-routing logic and the reference modules each role consumes. The skill won't yet scaffold anything; it can answer questions about ASCENT and route to roles.
 
@@ -73,13 +73,13 @@ Plugin releases are patch versions of the framework (v0.4.x) and do not need a p
 - [x] `make qa-skill-frontmatter` validates every SKILL.md
 - [x] `make qa-links` validates internal links
 - [x] Skill can answer "what role handles X?" correctly for representative prompts
-- [x] No scaffolding yet — the skill can talk but not yet write files
+- [x] No scaffolding yet: the skill can talk but not yet write files
 
 **Version on completion:** v0.2.0
 
 ---
 
-## Phase 2 — Template assets (substantive baseline)
+## Phase 2: Template assets (substantive baseline)
 
 **Goal:** Author the substantive baseline content for every file the architect role emits. After this phase, the architect role's scaffold mode can produce a working project.
 
@@ -98,13 +98,13 @@ Plugin releases are patch versions of the framework (v0.4.x) and do not need a p
   - 9 baseline project-embedded skill SKILL.md scaffolds + INTENT-MAP.md
 - [x] Every template file uses slug placeholders consistently
 - [x] A test scaffold of a hello-world project using these templates runs `make dev-up` successfully
-- [x] No `// TODO` files — every file ships substantive content
+- [x] No `// TODO` files; every file ships substantive content
 
 **Version on completion:** v0.3.0
 
 ---
 
-### v0.3.1 — Session resumption protocol
+### v0.3.1: Session resumption protocol
 
 **Status:** ✅ Complete (May 17, 2026)
 
@@ -114,19 +114,19 @@ Skill scaffold extensions: `ascent-delivery-status` reads session state; `ascent
 
 ---
 
-## Phase 3 — Project-embedded skills
+## Phase 3: Project-embedded skills
 
 **Goal:** Author the SKILL.md files for all 14 baseline project-embedded skills and the 14 specialized/conditional ones. Each skill is invocable inside a scaffolded project.
 
 **Status:** ✅ Complete (May 20, 2026)
 
-Note: §15 implementation extends `ascent-delivery-status` (read session state) and `ascent-feature-intake` (write to working memory) — covered as part of Phase 3 skill implementation work. The `.claude/commands/` slash-command files are deferred to Phase 4: the scaffolder is responsible for generating them when producing a scaffolded project, since they're project-level artifacts rather than parent-skill artifacts. Phase 3 ships the 28 skills they invoke. See [`PHASE-3-PLAN.md`](PHASE-3-PLAN.md) for the full 28-skill implementation plan across 8 clusters.
+Note: §15 implementation extends `ascent-delivery-status` (read session state) and `ascent-feature-intake` (write to working memory), covered as part of Phase 3 skill implementation work. The `.claude/commands/` slash-command files are deferred to Phase 4: the scaffolder is responsible for generating them when producing a scaffolded project, since they're project-level artifacts rather than parent-skill artifacts. Phase 3 ships the 28 skills they invoke. See [`PHASE-3-PLAN.md`](PHASE-3-PLAN.md) for the full 28-skill implementation plan across 8 clusters.
 
 **Exit criteria:**
 
 - [x] 14 baseline ascent-* SKILL.md files authored with substantive content
 - [x] 14 specialized/conditional ascent-* SKILL.md files authored
-- [ ] `.claude/commands/` slash-command files (one per skill) — deferred to Phase 4 (scaffolder generates these)
+- [ ] `.claude/commands/` slash-command files (one per skill), deferred to Phase 4 (scaffolder generates these)
 - [x] INTENT-MAP.md populated with all 28 skills, intent classification, cadence guidance
 - [x] Each skill's `allowed-tools` is minimal and explicit
 - [x] `ascent-skills-doctor` can self-check the skill collection inside a scaffolded project
@@ -135,44 +135,44 @@ Note: §15 implementation extends `ascent-delivery-status` (read session state) 
 
 ---
 
-### v0.4.1 — Phase 3 retrospective
+### v0.4.1: Phase 3 retrospective
 
 **Status:** ✅ Complete (May 21, 2026)
 
-Captures the 5 durable lessons from Phase 3 as framework artifacts: cluster-based PR discipline, four architectural patterns, process-leak class detection, behavior verification as Principle §16, and phase-plan discipline. Matches the v0.3.1 precedent — focused patch adding framework discipline between phase releases. See [`CHANGELOG.md`](../../CHANGELOG.md) for delivery record and [`RETROSPECTIVES/PHASE-3.md`](RETROSPECTIVES/PHASE-3.md) for the narrative account.
+Captures the 5 durable lessons from Phase 3 as framework artifacts: cluster-based PR discipline, four architectural patterns, process-leak class detection, behavior verification as Principle §16, and phase-plan discipline. Like v0.3.1, it is a focused patch adding framework discipline between phase releases. See [`CHANGELOG.md`](../../CHANGELOG.md) for delivery record and [`RETROSPECTIVES/PHASE-3.md`](RETROSPECTIVES/PHASE-3.md) for the narrative account.
 
-### v0.4.2 — Skill hardening and the first plugin
+### v0.4.2: Skill hardening and the first plugin
 
 **Status:** ✅ Complete (October 18, 2026)
 
 Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macOS and Linux, proved each one can fail with named negative controls, and runs the suite in CI on both platforms ([ADR-008](DECISIONS/ADR-008-portable-skill-tests-and-negative-controls.md)). Loop 2 hardened the three security skills and shipped them as the first plugin, `ascent-security`, generated from the template so there is one source of truth ([ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md)). A trial run on a real repository found two calibration gaps, fixed before release. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
-### v0.4.3 — Security rules, version gate and the delivery-loop plugin
+### v0.4.3: Security rules, version gate and the delivery-loop plugin
 
 **Status:** ✅ Complete (October 18, 2026)
 
-`ascent-security` 0.1.1 adds two rules surfaced by the trial run: short hardcoded secrets and dynamic code execution. A plugin version gate (`make/plugins.lock`, T10) makes sure installed copies receive every change. `ascent-delivery` 0.1.0 packages the delivery loop with a hook that blocks Claude from git writes and deploys, hardened after an adversarial review and verified on macOS and Linux ([ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md), Proposed). The plugin roadmap that follows — architecture, ux, ops, quality, session, adr, docs, node-stack — was decided the same day. See [`CHANGELOG.md`](../../CHANGELOG.md).
+`ascent-security` 0.1.1 adds two rules surfaced by the trial run: short hardcoded secrets and dynamic code execution. A plugin version gate (`make/plugins.lock`, T10) makes sure installed copies receive every change. `ascent-delivery` 0.1.0 packages the delivery loop with a hook that blocks Claude from git writes and deploys, hardened after an adversarial review and verified on macOS and Linux ([ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md), Proposed). The plugin roadmap that follows (architecture, ux, ops, quality, session, adr, docs, node-stack) was decided the same day. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
-### v0.4.4 — Architecture plugin
+### v0.4.4: Architecture plugin
 
 **Status:** ✅ Complete (October 24, 2026)
 
 `ascent-architecture` 0.1.0 reviews a repository's architecture against the project contract, `.ascent/contract.yml`, which every plugin will share. It maps the system, checks quality attributes, design principles, deployment and cost, and rates findings strong, moderate or weak. It compares deployment options with dated cost estimates and hands over a static-site blueprint on AWS ([ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md)). A read-only trial on a real repository ran five times and drove two calibration rounds before release. Among the fixes: severities only from the table, a pricing path the review skill could not find, and a missed High for secrets in client code. Thirty-two plugin controls pin the result. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
-### v0.4.5 — UX plugin
+### v0.4.5: UX plugin
 
 **Status:** ✅ Complete (October 25, 2026)
 
 `ascent-ux` 0.1.0 rates a web UI against the `ux:` section of the project contract, with WCAG 2.2 AA evidence from static checks, exact token contrast in every theme, and a Playwright browser pass that overrides both. It checks the design system and offers five predefined design directions as mocks of the project's own pages, each verified before it is shown ([ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md)). It is the first ASCENT plugin with dependencies: `design`, `frontend-design` and `playwright` install with it. A read-only trial on two real repositories and a re-trial drove two calibration rounds before release. Among the fixes: single-page-app views read from JS template literals, focus outlines judged per selector, line numbers that stay right after non-ASCII text, and delegated click handlers. Forty-six plugin controls (P62–P117) pin the result. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
-### v0.4.6 — Operations plugin
+### v0.4.6: Operations plugin
 
 **Status:** ✅ Complete (October 26, 2026)
 
 `ascent-ops` 0.1.0 rates how a system is run, changed and recovered against the `ops:` section of the project contract: secure-by-design IaC configuration (S1–S10), zero-touch scripts and runbooks with pre-flight and post-flight checks (Z1–Z9), and a Maintenance and Operations Manual and a Troubleshooting Manual that a script can prove are current (M1–M8). Health endpoints become `/-/health` and `/-/ready` across the scaffold template ([ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), Proposed). A read-only trial on three real repositories drove a calibration round before release.
 
 
-### v0.4.7 — Housekeeping
+### v0.4.7: Housekeeping
 
 **Status:** ✅ Complete (October 26, 2026)
 
@@ -180,7 +180,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 ---
 
-## Phase 4 — Scaffolding scripts
+## Phase 4: Scaffolding scripts
 
 **Goal:** Ship the executable scripts that perform scaffold, enhance, and migrate operations. Until this phase, the skill describes what to do; in this phase, it actually does it.
 
@@ -188,10 +188,10 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 **Exit criteria:**
 
-- [ ] `scripts/scaffold.py` — copies template assets, performs slug substitution, writes `.ascent-meta.json`
-- [ ] `scripts/bootstrap.py` — runs after `gh repo create --template` to personalize the starter
-- [ ] `scripts/enhance.py` — additive changes for existing ASCENT projects
-- [ ] `scripts/migrate.py` — brings non-ASCENT projects to ASCENT
+- [ ] `scripts/scaffold.py` copies template assets, performs slug substitution, writes `.ascent-meta.json`
+- [ ] `scripts/bootstrap.py` runs after `gh repo create --template` to personalize the starter
+- [ ] `scripts/enhance.py` makes additive changes for existing ASCENT projects
+- [ ] `scripts/migrate.py` brings non-ASCENT projects to ASCENT
 - [ ] All three modes are non-destructive (modify-not-overwrite invariant)
 - [ ] Dry-run mode (`--dry-run`) shows planned changes without writing
 - [ ] Three test scaffold operations succeed (one per mode) on representative inputs
@@ -200,7 +200,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 ---
 
-## Phase 5 — Test harness
+## Phase 5: Test harness
 
 **Goal:** Build the eval scenario suite that proves the skill produces working projects. After this phase, regressions in skill behavior fail in CI.
 
@@ -208,9 +208,9 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 **Exit criteria:**
 
-- [ ] `tests/scenarios/scaffold-basic.md` — eval a basic scaffold operation, verify ~30 assertions
-- [ ] `tests/scenarios/enhance-add-endpoint.md` — eval adding an endpoint to a scaffolded project
-- [ ] `tests/scenarios/migrate-from-bare.md` — eval migrating a non-ASCENT project
+- [ ] `tests/scenarios/scaffold-basic.md` evals a basic scaffold operation and verifies ~30 assertions
+- [ ] `tests/scenarios/enhance-add-endpoint.md` evals adding an endpoint to a scaffolded project
+- [ ] `tests/scenarios/migrate-from-bare.md` evals migrating a non-ASCENT project
 - [ ] `make test` runs all scenarios via Claude with the skill installed
 - [ ] CI workflow `.github/workflows/eval-scenarios.yml` runs the test harness on every PR
 - [ ] Variance analysis identifies flaky assertions; flakes either fixed or marked
@@ -219,7 +219,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 ---
 
-## Phase 6 — Starter repo generation
+## Phase 6: Starter repo generation
 
 **Goal:** Generate the paired `lloydbriantech-ascent-starter` repository from the skill via CI. Users can `gh repo create --template` for a 5-second working project.
 
@@ -237,7 +237,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 ---
 
-## Phase 7 — First production project
+## Phase 7: First production project
 
 **Goal:** Use ASCENT to scaffold and ship a real project to production. This is the framework's first real-world validation. The project's success or failure determines whether v1.0 is warranted.
 
@@ -245,7 +245,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 **Exit criteria:**
 
-- [ ] A real project (TBD — likely lawn-care-app, family tooling, or NHPTC platform) scaffolded from ASCENT
+- [ ] A real project (to be decided; likely lawn-care-app, family tooling, or NHPTC platform) scaffolded from ASCENT
 - [ ] The project completes its own first phase gate per ASCENT phase-delivery protocol
 - [ ] The project ships to production (ECS Fargate or local Podman deployment, depending on scope)
 - [ ] At least one bug, gap, or rough edge in ASCENT identified and patched as a result of real use
@@ -253,7 +253,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 **Version on completion:** v1.0.0
 
-This is the version that exits alpha. After v1.0, semver protections apply — breaking changes only at major version bumps.
+This is the version that exits alpha. After v1.0, semver protections apply: breaking changes come only with major version bumps.
 
 ---
 
@@ -288,4 +288,4 @@ Skipping a phase is not allowed. The dependency chain is explicit because the fr
 
 ---
 
-*This roadmap will be updated as phases complete. The latest version always reflects the current plan, not the original one — phases can be revised, but only via the explicit phase-transition protocol.*
+*This roadmap will be updated as phases complete. The latest version always reflects the current plan, not the original one. Phases can be revised, but only via the explicit phase-transition protocol.*

@@ -10,6 +10,10 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub-facing docs (README, CONTRIBUTING, CLAUDE.md, the `docs/framework` living docs and `.github`): a new tagline, "Disciplined delivery for Claude Code, from first commit to long after launch", in the README banner and its alt text; "Day 0 to Day 1000" rephrased in plain words; sentence dashes replaced with ordinary punctuation. No plugin or template change, no version bump
+
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
@@ -17,13 +21,13 @@ Dates are in **America/New_York** timezone.
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
 - `ascent-ux` 0.3.0: navigational integrity and cross-browser (ADR-014), plus candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
-- `ascent-delivery` 0.2.0 — a user acceptance sign-off record (ADR-014); read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
-- `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
+- `ascent-delivery` 0.2.0: a user acceptance sign-off record (ADR-014); read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
+- `ascent-security`: the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
 - `ascent-architecture` 0.3.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
-- Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
-- Phase 5 — Test harness with three eval scenarios
-- Phase 6 — Starter repo generation tooling
-- Phase 7 — First production project scaffolded from ASCENT
+- Phase 4: scaffolding scripts (`scaffold.py`, `bootstrap.py`)
+- Phase 5: test harness with three eval scenarios
+- Phase 6: starter repo generation tooling
+- Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
 

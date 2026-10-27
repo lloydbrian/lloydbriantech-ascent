@@ -32,11 +32,11 @@ A concrete scenario where this would be invoked. Bonus points for naming a real 
 
 ## Intent category (project-embedded skills only)
 
-- [ ] context — session bootstrap, daily-driver state synthesis
-- [ ] diagnostic — read-only inspection of project state
-- [ ] sweep — continuous hygiene scan
-- [ ] gate — pass/fail check that blocks progress until resolved
-- [ ] posture — ongoing security/cost/observability state
+- [ ] context: session bootstrap, daily-driver state synthesis
+- [ ] diagnostic: read-only inspection of project state
+- [ ] sweep: continuous hygiene scan
+- [ ] gate: pass/fail check that blocks progress until resolved
+- [ ] posture: ongoing security/cost/observability state
 
 ## Proposed cadence
 
@@ -61,7 +61,7 @@ Per [`CONTRIBUTING.md`](https://github.com/lloydbrian/lloydbriantech-ascent/blob
 
 ## Implementation sketch
 
-If you have a sense of how the skill would work, sketch it. Otherwise skip — the maintainer will design it during triage.
+If you have a sense of how the skill would work, sketch it. Otherwise skip it; the maintainer will design it during triage.
 
 ---
 

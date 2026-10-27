@@ -8,9 +8,9 @@ assignees: ['lloydbrian']
 
 ## Which skill
 
-- [ ] Plugin (`ascent-<name>`) — plugin and skill: ____________
+- [ ] Plugin (`ascent-<name>`), plugin and skill: ____________
 - [ ] Parent skill (`lloydbriantech-ascent`)
-- [ ] Project-embedded skill (`ascent-<name>`) — name: ____________
+- [ ] Project-embedded skill (`ascent-<name>`), name: ____________
 
 ## Which mode (parent skill only)
 
@@ -51,7 +51,7 @@ Paste any relevant error output. Use code fences for readability.
 
 ## Additional context
 
-Anything else that might help — recent framework changes, related issues, screenshots.
+Anything else that might help: recent framework changes, related issues, screenshots.
 
 ---
 

@@ -8,7 +8,7 @@ assignees: ['lloydbrian']
 
 ## What to improve
 
-What existing thing in the framework needs to change? Be specific — file path, skill name, or convention name.
+What existing thing in the framework needs to change? Be specific: file path, skill name, or convention name.
 
 ## Current behavior
 

@@ -1,6 +1,6 @@
 # ASCENT Framework Architecture
 
-How the framework is built. This document describes the four-layer architecture of the framework itself, and the plugin channel that ships its checks to any repository — not the architecture of projects scaffolded by it. For project-level architecture, see the architect role's reference modules.
+How the framework is built. This document describes the four-layer architecture of the framework itself, and the plugin channel that ships its checks to any repository. It does not cover the architecture of projects scaffolded by it. For project-level architecture, see the architect role's reference modules.
 
 ---
 
@@ -26,7 +26,7 @@ ASCENT is a four-layer system. Each layer has a single responsibility and a clea
 │                                                                  │
 │  LAYER 3 — Template Repo (lloydbriantech-ascent-starter)        │
 │  ──────────────────────────────────────────────────────────     │
-│   A pre-applied Day-0 scaffold as a GitHub template repo.        │
+│   A ready-made scaffold, published as a GitHub template.         │
 │   Users gh repo create --template for instant working stack.     │
 │   Generated from Layer 2 by CI on every framework tag.           │
 │   Force-pushed; never edited directly.                           │
@@ -74,13 +74,13 @@ Contains:
 - Eval scenarios arrive with Phase 5
 - Repository hygiene (CI workflows, issue templates, editor config)
 
-The meta-repository **applies ASCENT to itself** — Makefile-as-operator-vocabulary, ADR discipline, persona-segmented docs, dual licensing, phase-gated delivery.
+The meta-repository **applies ASCENT to itself**: Makefile-as-operator-vocabulary, ADR discipline, persona-segmented docs, dual licensing, phase-gated delivery.
 
 ### Layer 2 — Parent Skill
 
 The `lloydbriantech-ascent` skill, which lives at `skills/lloydbriantech-ascent/` inside Layer 1. When installed, it's symlinked into `~/.claude/skills/`.
 
-The skill is one Claude skill — not nine. It routes by user intent to one of nine role modules at runtime. This is the consequence of [ADR-001](DECISIONS/ADR-001-single-parent-skill.md) — having nine separate skills produces trigger collisions when the user describes a task that could plausibly land in multiple roles.
+The skill is one Claude skill, not nine. It routes by user intent to one of nine role modules at runtime. This is the consequence of [ADR-001](DECISIONS/ADR-001-single-parent-skill.md): nine separate skills would produce trigger collisions when the user describes a task that could plausibly land in multiple roles.
 
 Internal structure:
 
@@ -122,7 +122,7 @@ The scaffolding scripts (`scripts/scaffold.py`, `bootstrap.py`, `enhance.py`, `m
 
 **Status:** planned for Phase 6. The starter repository does not exist yet; this section describes the design.
 
-The `lloydbrian/lloydbriantech-ascent-starter` repository — a separate GitHub repo marked as a GitHub Template. Users `gh repo create --template` from it to get a 5-second working scaffold.
+The `lloydbrian/lloydbriantech-ascent-starter` repository is a separate GitHub repo marked as a GitHub Template. Users `gh repo create --template` from it to get a 5-second working scaffold.
 
 This layer is **generated**, not authored. The CI workflow `release.yml` runs `tools/build-starter.sh` on every framework tag, which:
 
@@ -130,18 +130,18 @@ This layer is **generated**, not authored. The CI workflow `release.yml` runs `t
 2. Resolves all slug placeholders to the default `ascent-starter` slug
 3. Force-pushes the result to the starter repo with a matching tag
 
-The starter repo is never edited directly. Direct edits would be lost on the next release. The pattern is identical to how generated artifacts are handled in any mature build system — you don't edit `dist/`, you edit `src/`.
+The starter repo is never edited directly. Direct edits would be lost on the next release. The pattern is identical to how generated artifacts are handled in any mature build system: you don't edit `dist/`, you edit `src/`.
 
 ### Layer 4 — Scaffolded Projects
 
 User-owned repositories that ASCENT has scaffolded. Each one contains:
 
 - `.ascent-meta.json` at the project root marking it as an ASCENT project
-- `.claude/skills/ascent-*/` directories — the project-embedded skills
+- `.claude/skills/ascent-*/` directories, the project-embedded skills
 - The full project tree per the architect role's defaults
 - Any project-level ADRs the user has added
 
-These projects are independent. They don't pull from the framework at runtime. The framework's role ends after scaffolding — from that point forward, the project is the user's, and they can run `lloydbriantech-ascent enhance` to add to it, run `migrate` to upgrade it, or stop using the framework entirely.
+These projects are independent. They don't pull from the framework at runtime. The framework's role ends after scaffolding. From that point forward, the project is the user's, and they can run `lloydbriantech-ascent enhance` to add to it, run `migrate` to upgrade it, or stop using the framework entirely.
 
 ---
 
@@ -196,10 +196,10 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 Lockstep across layers:
 
-- Layer 1 — git tag on the meta-repo (`v0.3.0`)
-- Layer 2 — `version:` field in `SKILL.md` frontmatter (`0.3.0`)
-- Layer 3 — git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
-- Layer 4 — `framework_version` field in `.ascent-meta.json`
+- Layer 1: git tag on the meta-repo (`v0.3.0`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.3.0`)
+- Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
+- Layer 4: `framework_version` field in `.ascent-meta.json`
 
 Plugins version independently: each has its own semver in `plugin.json` and the marketplace entry, and `make/plugins.lock` records the content hash per version (T10).
 

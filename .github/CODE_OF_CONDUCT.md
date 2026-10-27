@@ -4,10 +4,10 @@ This is a small project. The rules are simple.
 
 ## What we expect
 
-- **Engage with substance, not personality.** Argue about the code, the design, or the decisions — not about the person making them.
+- **Engage with substance, not personality.** Argue about the code, the design, or the decisions, not about the person making them.
 - **Assume good faith.** Most disagreements come from missing context, not from bad intent. Ask questions before reacting.
 - **Disagreement is welcome; rudeness is not.** Strong opinions, weakly held, expressed respectfully.
-- **No discrimination, harassment, or hostility** based on any characteristic — gender, race, sexuality, nationality, disability, age, religion, technical experience level, or anything else. This isn't negotiable.
+- **No discrimination, harassment, or hostility** based on any characteristic: gender, race, sexuality, nationality, disability, age, religion, technical experience level, or anything else. This isn't negotiable.
 
 ## What we don't expect
 

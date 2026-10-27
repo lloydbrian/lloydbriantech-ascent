@@ -2,7 +2,7 @@
 
 ## What this PR does
 
-One or two sentences. The diff shows the *what* — this section explains the *intent*.
+One or two sentences. The diff shows the *what*; this section explains the *intent*.
 
 ## Why
 
@@ -14,20 +14,20 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] Documentation (typo, broken link, clarification)
-- [ ] Documentation (substantive — new content or restructure)
+- [ ] Documentation (substantive: new content or restructure)
 - [ ] Reference module addition or change
 - [ ] Skill behavior change
 - [ ] Template asset change
 - [ ] Plugin change (skill, agent, script, hook or severity table)
 - [ ] Tooling / CI / build change
-- [ ] Architectural change (requires ADR — included in this PR)
+- [ ] Architectural change (requires an ADR, included in this PR)
 - [ ] Breaking change (would break existing scaffolded projects)
 
 ## Checklist
 
 ### For all PRs
 
-- [ ] One concern per PR — if this touches multiple unrelated areas, split it
+- [ ] One concern per PR. If this touches multiple unrelated areas, split it
 - [ ] Conventional Commits format on every commit
 - [ ] PR description explains the *why*, not just the *what*
 - [ ] Branch is up-to-date with `main`
@@ -69,7 +69,7 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 - [ ] Manual verification performed (describe below)
 - [ ] CI passes
 - [ ] `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` pass locally
-- [ ] Skill tests use the `tests/skills/lib/portable.sh` helpers only (no direct `stat`, `touch -t/-d`, `date -d/-j/-v`, `sed -i`) — ADR-008
+- [ ] Skill tests use the `tests/skills/lib/portable.sh` helpers only (no direct `stat`, `touch -t/-d`, `date -d/-j/-v`, `sed -i`), per ADR-008
 - [ ] Every new or changed rule has a negative control whose named test fails when the rule is broken (a `make/mutants.tsv` row for embedded skills, a `plugin_case` in `make/test-mutants.sh` for plugins)
 - [ ] If this changes skill behavior, an eval scenario covers the change (Phase 5+)
 
