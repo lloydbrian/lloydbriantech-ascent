@@ -42,9 +42,9 @@ ASCENT writes those patterns down as checks with evidence: a project contract wi
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | 0.1.1 | Trust and security, compliance | "any secrets committed?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution, plus a `security-auditor` agent |
-| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.0 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
-| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.1.1 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
-| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.1.0 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.1 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
+| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.1.2 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
+| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.1.1 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
 | [`ascent-ops`](plugins/ascent-ops/README.md) | 0.1.0 | Resilience, compliance, trust and security | "is this operable?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, and Maintenance and Troubleshooting manuals proven current, plus an operable-service blueprint |
 
 Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions.
@@ -183,6 +183,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.7 | 2026-10-26 | `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1, `ascent-ux` 0.1.1: housekeeping, stacked-PR runbook rule, `--help` for every script |
 | v0.4.6 | 2026-10-26 | `ascent-ops` 0.1.0, `ascent-architecture` 0.1.1, health endpoints renamed to `/-/health` and `/-/ready`, the pillar map |
 | v0.4.5 | 2026-10-25 | `ascent-ux` 0.1.0: WCAG 2.2 evidence, token contrast, design directions |
 | v0.4.4 | 2026-10-24 | `ascent-architecture` 0.1.0 and the shared project contract |

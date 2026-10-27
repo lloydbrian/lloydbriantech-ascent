@@ -10,6 +10,8 @@
 
 set -euo pipefail
 
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
+
 [ -d "${1:-}" ] || { echo "plugin-hash: no such directory: ${1:-}" >&2; exit 2; }
 
 if command -v shasum >/dev/null 2>&1; then

@@ -18,6 +18,8 @@
 
 set -euo pipefail
 
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
+
 HERE="$(cd "$(dirname "$0")" && pwd)"
 LIB="$HERE/lib/tokens.awk"
 [ -f "$LIB" ] || { echo "tokens-to-css: missing $LIB" >&2; exit 2; }

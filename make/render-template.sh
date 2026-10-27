@@ -10,6 +10,8 @@
 
 set -euo pipefail
 
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
+
 if [ $# -ne 1 ]; then
   echo "usage: $0 TARGET_DIR" >&2
   exit 2

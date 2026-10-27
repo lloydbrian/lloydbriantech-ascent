@@ -6,7 +6,7 @@ description: >-
   flags two or more attributes at risk. Sets measurable targets in the project
   contract, scores each quality attribute as met, at risk or unmeasured with
   file evidence, and ranks the gaps. Read-only.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -32,7 +32,7 @@ The list combines ISO/IEC 25010:2023 product quality characteristics with the op
 | Operability and observability | time to detect; alarm routed to a person | Alarms on errors, latency, saturation; structured logs; build stamp; runbooks |
 | Maintainability | change lead time; test coverage of core rules | Layering; tests; IaC; ADRs; small modules |
 | Flexibility (portability) | services with a named exit path | Standard protocols; IaC; data export path; [cloud-component-mapping.md](../../references/cloud-component-mapping.md) equivalents |
-| Interaction capability (usability, accessibility) | WCAG 2.2 AA; task success | Owned by `ascent-ux` (planned) and `design:accessibility-review`; list here, do not score |
+| Interaction capability (usability, accessibility) | WCAG 2.2 AA; task success | Owned by the `ascent-ux` plugin (`ux-review`, `accessibility-audit`) and `design:accessibility-review`; list here, do not score |
 | Compatibility | supported browsers and clients; API versioning | Versioned or additive-only API contracts; browser support statement |
 | Sustainability | idle capacity near zero | Serverless or right-sized resources; arm64 where available |
 | Safety | no harm to people or equipment when the system fails | Fail-safe defaults; human confirmation for physical or irreversible actions; usually out of scope for web systems, so say so |
@@ -81,4 +81,4 @@ Name the trade-offs explicitly. A second region raises availability and doubles 
 
 - Measure a live system or run load tests. It names the measurement; the operator or a delivery loop runs it.
 - Edit the contract. It proposes targets for the operator to commit.
-- Score accessibility or usability in depth: that is the `ascent-ux` plugin (planned) and `design:accessibility-review`.
+- Score accessibility or usability in depth: that is the `ascent-ux` plugin and `design:accessibility-review`.

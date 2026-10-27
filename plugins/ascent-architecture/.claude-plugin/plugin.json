@@ -1,6 +1,6 @@
 {
   "name": "ascent-architecture",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Architecture review for any repository: quality attributes against measurable targets, design principles, deployment options with dated cost estimates, a CloudFormation blueprint for a static site with a serverless API, mechanical template checks, and a read-only architecture-reviewer agent.",
   "author": {
     "name": "lloydbriantech"

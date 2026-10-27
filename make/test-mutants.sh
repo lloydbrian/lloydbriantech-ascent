@@ -228,6 +228,8 @@ plugin_case P26-hook-no-size-guard T11 "$HOOK" 's/if (nb > MAXB) {/if (0) {/'
 plugin_case P27-hook-ignores-stdin-shells T11 "$HOOK" 's/if (j > SN) { STDIN_SHELL = 1; return 0 }/if (j > SN) return 0/'
 plugin_case P28-hook-skips-unquoted-heredocs T11 "$HOOK" 's/if (!HQ\[k\]) scan_subs(b, HDBEND, 0)/if (0) scan_subs(b, HDBEND, 0)/'
 plugin_case P29-contract-denies-whole-chain T11 "$HOOK" 's/if (SN > 0 \&\& !inpipe) { dn = SN;/if (SN > 0 \&\& !inpipe \&\& dn == 0) { dn = SN;/'
+plugin_case P203-runbook-stacked-pr-rule-dropped T11 "$DEL/skills/delivery-loop/references/runbook-template.md" '/^- \*\*Stacked pull requests\.\*\*/,/Flag the force push as destructive/d'
+plugin_case P204-hook-exemption-unstated T11 "$HOOK" '/^# Exempt from ascent-ops Z2 and Z3 on purpose/d'
 mutant_group ascent-architecture
 ARC=plugins/ascent-architecture
 ARC_AGENT="$ARC/agents/architecture-reviewer.md"
@@ -268,6 +270,8 @@ plugin_case P58-review-skips-client-secrets T11 "$REVIEW" 's/, and secrets in cl
 plugin_case P59-agent-secrets-only-when-published T11 "$ARC_AGENT" 's/a hit is High whether or not the page is published yet/a hit is High once the page is published/'
 plugin_case P60-review-drops-security-referral T11 "$REVIEW" 's/ Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`\.//'
 plugin_case P61-agent-at-risk-rule-removed T11 "$ARC_AGENT" 's/; it is at risk instead when the evidence shows a gap\././'
+plugin_case P200-quality-attributes-calls-ux-planned T11 "$ARC/skills/quality-attributes/SKILL.md" 's/that is the `ascent-ux` plugin and/that is the `ascent-ux` plugin (planned) and/'
+plugin_case P201-cfn-check-no-help T11 "$ARC/scripts/check-cfn-static-site.sh" '/^case "\${1:-}" in -h|--help)/d'
 mutant_group ascent-ux
 UX=plugins/ascent-ux
 UXW="$UX/scripts/check-web-accessibility.sh"
@@ -334,6 +338,7 @@ plugin_case P114-web-ring-none-accepted T11 "$UXW" 's/return v ~ \/\[1-9\]\/ \&\
 plugin_case P115-web-notes-dropped T11 "$UXW" '/^    printf "%s", NOTES\[k\]$/d'
 plugin_case P116-ux-review-notes-rated T11 "$UXR" 's/Each `NOTE` line is unrated/Each `NOTE` line is Low/'
 plugin_case P117-agent-delegated-dropped T11 "$UXA" 's/That includes delegated listeners/It covers inline handlers/'
+plugin_case P202-tokens-to-css-no-help T11 "$UX/scripts/tokens-to-css.sh" '/^case "\${1:-}" in -h|--help)/d'
 # ascent-ops runs as five groups so each CI job stays well inside its timeout:
 # one control runs the ops tests (about 20 s), against 7 s for the other plugins.
 OPS=plugins/ascent-ops

@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** Operations plugin complete, v0.4.6, October 26, 2026. Next plugin: `ascent-quality`; Phase 4 awaits its go-signal.
+**Current state:** v0.4.7 (housekeeping), October 26, 2026. Next plugin: `ascent-quality`; Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -165,6 +165,13 @@ Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macO
 **Status:** ✅ Complete (October 26, 2026)
 
 `ascent-ops` 0.1.0 rates how a system is run, changed and recovered against the `ops:` section of the project contract: secure-by-design IaC configuration (S1–S10), zero-touch scripts and runbooks with pre-flight and post-flight checks (Z1–Z9), and a Maintenance and Operations Manual and a Troubleshooting Manual that a script can prove are current (M1–M8). Health endpoints become `/-/health` and `/-/ready` across the scaffold template ([ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), Proposed). A read-only trial on three real repositories drove a calibration round before release.
+
+
+### v0.4.7 — Housekeeping
+
+**Status:** ✅ Complete (October 26, 2026)
+
+Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-ux` 0.1.1, shipped in one pull request with the version bump: a stale "planned" mention, the stacked pull request rule in the delivery runbook template, and `--help` for every script in the repository.
 
 ---
 

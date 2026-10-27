@@ -33,6 +33,8 @@
 
 set -euo pipefail
 
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
+
 [ $# -eq 1 ] || { sed -n '7p' "$0" | sed 's/^# //' >&2; exit 2; }
 T="$1"
 [ -f "$T" ] || { echo "check-cfn-static-site: no such file: $T" >&2; exit 2; }
