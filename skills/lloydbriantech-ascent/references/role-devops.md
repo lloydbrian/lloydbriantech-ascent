@@ -76,7 +76,7 @@ Tags follow the framework's pattern: `v<MAJOR>.<MINOR>.<PATCH>`. Each tag has a 
 
 ```
 make release-tag       # creates the tag (per make/release.mk)
-git push --tags        # publishes
+git push origin v<version>   # publishes only this tag
 make release-notes     # generates GitHub release notes (lands in Phase 6+ tooling)
 ```
 

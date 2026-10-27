@@ -1,19 +1,22 @@
 # Review lenses
 
-Delivery-loop Step 4 runs one reviewer per lens, in parallel, against the diff and the acceptance criteria. For each lens, use the provider when it is installed in this session, and the fallback prompt when it is not. Detect providers from the skills and agents available in the session. Do not ask the operator, and do not install anything.
+Delivery-loop Step 4 runs one reviewer per lens, in parallel, against the diff and the acceptance criteria. For each lens, use the first provider in its list that is installed in this session, and the fallback prompt when none is. Detect providers from the skills and agents available in the session. Do not ask the operator, and do not install anything.
 
 ## Providers
 
-| Lens | Provider (use if installed) | Kind | Fallback |
-|---|---|---|---|
-| Correctness | `engineering:code-review` | skill | [Correctness](#correctness) |
-| Security and privacy | `ascent-security:security-auditor` | agent (read-only) | [Security and privacy](#security-and-privacy) |
-| Accessibility | `design:accessibility-review` | skill | [Accessibility](#accessibility) |
-| UX and navigation | none | — | [UX and navigation](#ux-and-navigation) |
-| Operational and deploy impact | `engineering:deploy-checklist` | skill | [Operational and deploy impact](#operational-and-deploy-impact) |
-| Tests | `engineering:testing-strategy` | skill | [Tests](#tests) |
+| Lens | Providers, first installed wins | Fallback |
+|---|---|---|
+| Correctness | `engineering:code-review` | [Correctness](#correctness) |
+| Security and privacy | `ascent-security:security-auditor` | [Security and privacy](#security-and-privacy) |
+| Architecture and cost | `ascent-architecture:architecture-reviewer` | [Architecture and cost](#architecture-and-cost) |
+| Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | [Accessibility](#accessibility) |
+| UX and navigation | `ascent-ux:ux-reviewer` | [UX and navigation](#ux-and-navigation) |
+| Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | [Operational and deploy impact](#operational-and-deploy-impact) |
+| Tests | `engineering:testing-strategy` | [Tests](#tests) |
 
-Run each lens as its own subagent, so the reviewers cannot see each other's findings. When a provider is a skill, the subagent's task is "apply `<skill>` to this diff". When it is an agent, launch that agent.
+The `ascent-*` providers are read-only agents from the ASCENT plugins; the others are skills. ASCENT's ownership registry (`docs/framework/OWNERSHIP.md` in the framework repository) owns this list, and its gate fails when this table drifts from it.
+
+Run each lens as its own subagent, so the reviewers cannot see each other's findings. When a provider is a skill, the subagent's task is "apply `<skill>` to this diff". When it is an agent, launch that agent. When one agent provides two lenses (`ascent-ux:ux-reviewer` for accessibility and UX), launch it once, name both lenses in its task, and file each finding under the lens it belongs to.
 
 **Wrap, don't rebuild.** Pass a provider's output through unedited, under this header:
 
@@ -51,6 +54,10 @@ Give each fallback reviewer the diff, the acceptance criteria, its prompt, and t
 ### Security and privacy
 
 > Lens: security and privacy. Look for injection (SQL, shell, template, path), missing authorization checks, secrets or credentials in code, config or logs, and personal data written to logs, analytics or third parties. Check unsafe deserialization or `eval`; CORS, CSP and cookie flags on changed endpoints; dependency additions with known risk; and data retained longer than needed. Never quote a secret value. Cite the `file:line` and the pattern.
+
+### Architecture and cost
+
+> Lens: architecture and cost. Check that the change keeps the system's boundaries: no new coupling across layers or services, no business logic in handlers or templates, configuration from the environment rather than code. Look for new infrastructure or managed services without a recorded decision, resources without limits, timeouts or retries, single points of failure on a path that had none, and anything that changes the monthly running cost (new always-on resources, larger instances, data transfer, log volume) without saying by how much.
 
 ### Accessibility
 

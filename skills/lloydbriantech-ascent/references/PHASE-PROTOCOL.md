@@ -20,7 +20,7 @@ When a phase's exit criteria are all met:
 
 1. **Verify.** Re-check every exit criterion against the current state. The owner does this, not the implementer — fresh eyes catch the "I thought I did that" cases.
 2. **Update `CHANGELOG.md`.** Add a phase-summary entry under a new version heading. The heading is the version that ships with this phase.
-3. **Tag the release.** `git tag v0.N.0 && git push --tags`. Tags are immutable — never force-push a tag.
+3. **Tag the release.** `git tag v0.N.0 && git push origin v0.N.0`. Push only that tag: `--tags` would also publish any stale local tag. Tags are immutable — never force-push a tag.
 4. **Wait for the signal.** The implementer pauses. No next-phase work begins until the literal "Proceed with Phase N+1" arrives.
 5. **Update phase status.** The next phase's first commit updates `.ascent-meta.json`'s `phase` field, the `CLAUDE.md` phase line, and the roadmap's current-state marker.
 

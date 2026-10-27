@@ -1,6 +1,6 @@
 # Runbook standard
 
-A runbook is a list of commands an operator can follow under pressure without guessing. `runbook-check` reads every runbook against this standard; the operator scripts it calls are checked by `check-ops-scripts.sh` (Z1–Z9).
+A runbook is a list of commands an operator can follow under pressure without guessing. `runbook-check` reads every runbook against this standard; the operator scripts it calls are checked by `check-ops-scripts.sh` (OPS-Z1–Z9).
 
 ## Shape
 

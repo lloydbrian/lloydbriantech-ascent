@@ -33,7 +33,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Attribute | Checked by | Evidence | Status |
 |---|---|---|---|
 | Functional suitability | `ascent-delivery` (definition of done); `quality-attributes` | Each acceptance criterion mapped to a test or a recorded manual check | Partial: the rule is stated, but has no behavior tests or negative controls yet |
-| Cost efficiency | `deployment-options`; `architecture-review` (C11, budget alert); `quality-attributes`; embedded `ascent-cost-posture` | A dated monthly estimate against `monthly_budget_usd`; budget alert in the IaC | Strong |
+| Cost efficiency | `deployment-options`; `architecture-review` (ARC-C11, budget alert); `quality-attributes`; embedded `ascent-cost-posture` | A dated monthly estimate against `monthly_budget_usd`; budget alert in the IaC | Strong |
 | Performance efficiency | `quality-attributes`; `ascent-ux` (Core Web Vitals) | `p95_latency_ms` target; CDN and cache policy; Core Web Vitals against a stated budget | Partial: read from design and config, not measured under load |
 | Scalability (capacity) | `quality-attributes` | `peak_rps` target; autoscaling or on-demand services; throttling limits | Partial: no load test |
 | Interaction capability (usability) | `ascent-ux` (`ux-review`) | Heuristic findings on core flows; error, empty and loading states | Partial: no task-success measurement |
@@ -46,10 +46,10 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Attribute | Checked by | Evidence | Status |
 |---|---|---|---|
 | Accessibility (WCAG 2.2 AA) | `ascent-ux` (`accessibility-audit`, `design-system-check`) | A criterion-by-criterion table; exact token contrast in every theme; a Playwright pass | Strong, and never stated as legal compliance |
-| Secure configuration | `ascent-ops` (`iac-config-check`, S1–S10) | Rules S1–S10 against the IaC with `file:line`; `trivy config` when installed | Strong |
+| Secure configuration | `ascent-ops` (`iac-config-check`, OPS-S1–S10) | Rules OPS-S1–S10 against the IaC with `file:line`; `trivy config` when installed | Strong |
 | Decision traceability | embedded `ascent-adr-conformance`, `ascent-adr-write` | ADRs for every constraining decision, and the code checked against them | Partial: scaffolded projects only, no negative controls yet |
 | Change audit trail | `ascent-delivery` | Runbooks, hash manifests and the release log for every shipped change | Partial: the rule is stated, but has no behavior tests or negative controls yet |
-| Version pinning | `ascent-ops` (Z8, `sre-baseline.md`) | Images, packages, providers and actions pinned | Strong at the `minor` floor; exact pinning is read, not tested |
+| Version pinning | `ascent-ops` (OPS-Z8, `sre-baseline.md`) | Images, packages, providers and actions pinned | Strong at the `minor` floor; exact pinning is read, not tested |
 | Regulatory regimes (HIPAA, PCI-DSS, SOC 2) | — | — | **Out of scope:** see [SCOPE.md](SCOPE.md). ASCENT produces evidence an auditor can use; it does not prepare certification |
 
 ### Trust and security
@@ -71,11 +71,11 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 |---|---|---|---|
 | Availability | `quality-attributes`; `ascent-ops` (Health and SLOs) | `availability` target; no single instance; health and readiness probes at `/-/health` and `/-/ready` | Partial: read from design and config |
 | Operability and observability | `ascent-ops` (`ops-review`, `ops-manuals`); embedded `ascent-observability-check` | SLOs, alerts linked to runbooks, current Maintenance and Troubleshooting manuals | Strong |
-| Change safety | `ascent-ops` (`runbook-check`); `ascent-delivery` | Zero-touch scripts (Z1–Z9); runbooks with pre-flight, post-flight, Expect and Stop if; beta before prod | Strong |
+| Change safety | `ascent-ops` (`runbook-check`); `ascent-delivery` | Zero-touch scripts (OPS-Z1–Z9); runbooks with pre-flight, post-flight, Expect and Stop if; beta before prod | Strong |
 | Rollback | `ascent-ops` (Change and recovery) | A documented rollback for every production deploy | Strong as documentation |
 | Recoverability (RPO, RTO) | `quality-attributes`; `ascent-ops` (Change and recovery) | `rpo` and `rto` targets; backups and retention; the date of the last restore test | Partial: the date is read, the restore is not proven |
 | Restore and failover proof | — | — | **Gap, committed:** see [ROADMAP.md](ROADMAP.md#committed-follow-ups) |
-| Drift | `ascent-ops` (S9) | A scheduled drift check | Strong |
+| Drift | `ascent-ops` (OPS-S9) | A scheduled drift check | Strong |
 | Flexibility (portability) | `quality-attributes`; `deployment-options` | Services with a named exit path; equivalents in other clouds | Partial |
 
 ---
@@ -89,5 +89,6 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 ## How this page stays true
 
 - A new plugin, skill or rule that closes a gap updates its row here in the same pull request.
+- `make test-plugins` (T13.9) fails when the "Checked by" column names a plugin, or a plugin's skill, that is not in [OWNERSHIP.md](OWNERSHIP.md) or the template.
 - A status changes to **Strong** only when the check has behavior tests and negative controls, which is the bar in [CONTRIBUTING.md](../../CONTRIBUTING.md#contributing-a-plugin).
 - The gaps are the input for scoping the next plugins in [ROADMAP.md](ROADMAP.md#plugin-roadmap).

@@ -8,7 +8,7 @@ description: >-
   project's own pages, every one checked for WCAG contrast and accessibility
   before it is shown, generates more on request, and turns the choice into an
   ADR draft and a token file. Writes mock files only, never tracked files.
-version: 0.1.1
+version: 0.2.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -41,7 +41,7 @@ From the contract and the repository:
 - any brand colors or logo in the repository
 - the current token source
 
-For an existing project, the current look is **D0 — current**. It is shown next to the catalog and checked the same way, so the comparison is honest.
+For an existing project, the current look is **UX-D0 — current**. It is shown next to the catalog and checked the same way, so the comparison is honest.
 
 ### Step 1 — Pages to mock
 
@@ -53,19 +53,19 @@ Pick the one to three pages that matter most: the home or landing page, and the 
 
 | Id | Direction | Feels like | Suits |
 |---|---|---|---|
-| D1 | Clean neutral | calm, generous white space, one accent | most apps; the safe default |
-| D2 | Bold brand | strong color, large type, high contrast | marketing and community sites |
-| D3 | Editorial | serif headings, reading first, comfortable line length | docs and content sites |
-| D4 | Soft friendly | rounded corners, warm palette, gentle motion | consumer and hobby apps |
-| D5 | Dense professional | compact spacing, data-first palette, crisp lines | dashboards and admin tools |
+| UX-D1 | Clean neutral | calm, generous white space, one accent | most apps; the safe default |
+| UX-D2 | Bold brand | strong color, large type, high contrast | marketing and community sites |
+| UX-D3 | Editorial | serif headings, reading first, comfortable line length | docs and content sites |
+| UX-D4 | Soft friendly | rounded corners, warm palette, gentle motion | consumer and hobby apps |
+| UX-D5 | Dense professional | compact spacing, data-first palette, crisp lines | dashboards and admin tools |
 
 Recommend the two that best fit the personas and core flows, with one reason each, but always build all five. The operator chooses.
 
-**Brand-adapted option.** When the project has its own brand colors (its current accent, logo colors, or colors the operator names), also offer **D<n>-brand**: the top recommendation with its accent and focus colors replaced by the brand hue, adjusted until every pair in `pairs.tsv` passes. Build it as a D6+ option (Step 6) and show it next to the catalog, so the operator can keep their identity without losing accessibility.
+**Brand-adapted option.** When the project has its own brand colors (its current accent, logo colors, or colors the operator names), also offer **D<n>-brand**: the top recommendation with its accent and focus colors replaced by the brand hue, adjusted until every pair in `pairs.tsv` passes. Build it as a UX-D6+ option (Step 6) and show it next to the catalog, so the operator can keep their identity without losing accessibility.
 
 ### Step 3 — Build the mocks
 
-For each direction, and for D0:
+For each direction, and for UX-D0:
 
 ```bash
 bash "$PLUGIN_ROOT/scripts/tokens-to-css.sh" \
@@ -84,7 +84,7 @@ bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" --pairs "$PLUGIN_ROOT/direct
 bash "$PLUGIN_ROOT/scripts/check-web-accessibility.sh" <mock dir>/<Dn>
 ```
 
-Then run the browser pass on each mock (`file://`): `browser_snapshot`, a short Tab walk, and 320 px reflow. The five shipped directions pass the contrast pairs by construction; the plugin's tests keep it that way. D0 often fails; its failures are findings, shown next to it.
+Then run the browser pass on each mock (`file://`): `browser_snapshot`, a short Tab walk, and 320 px reflow. The five shipped directions pass the contrast pairs by construction; the plugin's tests keep it that way. UX-D0 often fails; its failures are findings, shown next to it.
 
 ### Step 5 — Gallery
 
@@ -98,7 +98,7 @@ Give the operator the full path to open. If the session can publish a private pa
 
 ### Step 6 — More options
 
-If none fits, ask what is missing in the operator's words ("warmer", "less corporate", "use our green #2e7d32", "like D4 but more compact"). Generate **D6, D7 and so on** as new token files in the mock directory, on the same schema as the catalog (every token in `directions/D1-clean-neutral.light.tokens.json`, in light and dark), with `frontend-design` guidance.
+If none fits, ask what is missing in the operator's words ("warmer", "less corporate", "use our green #2e7d32", "like UX-D4 but more compact"). Generate **UX-D6, UX-D7 and so on** as new token files in the mock directory, on the same schema as the catalog (every token in `directions/D1-clean-neutral.light.tokens.json`, in light and dark), with `frontend-design` guidance.
 - Run Step 4 on each before showing it.
 - When a brand color cannot pass as text on the surface, keep it for large accents, borders or fills that pass at 3:1, and use a darker or lighter shade for text. Say which shade and why.
 - Add the new options to the gallery. Continue until the operator chooses, or stops.

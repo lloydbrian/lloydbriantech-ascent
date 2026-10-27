@@ -18,10 +18,10 @@ Installing it also installs and enables its companions: `design` (Anthropic dire
 | `design-system-check` | skill | token source, values that bypass tokens, contrast in every theme, theming, motion, component states |
 | `design-directions` | skill | five predefined directions shown as checked mocks of the project's pages, more on request, ADR and token hand-off |
 | `ux-reviewer` | agent, read-only | independent static review; a delivery-loop review lens for UI changes |
-| `check-web-accessibility.sh` | script | U1–U12 static checks on HTML, JSX/TSX, Vue, Svelte, Astro, server templates and HTML inside JS/TS template literals (single-page-app views) |
+| `check-web-accessibility.sh` | script | UX-U1–U12 static checks on HTML, JSX/TSX, Vue, Svelte, Astro, server templates and HTML inside JS/TS template literals (single-page-app views) |
 | `check-token-contrast.sh` | script | exact WCAG contrast for token pairs, per theme, from Design Tokens JSON or CSS custom properties |
 | `tokens-to-css.sh` | script | Design Tokens JSON to CSS custom properties, light and dark |
-| `directions/` | data | D1 Clean neutral, D2 Bold brand, D3 Editorial, D4 Soft friendly, D5 Dense professional |
+| `directions/` | data | UX-D1 Clean neutral, UX-D2 Bold brand, UX-D3 Editorial, UX-D4 Soft friendly, UX-D5 Dense professional |
 | `blueprints/accessible-page/` | blueprint | accessible page starter; the mock template |
 | `references/` | references | WCAG 2.2 checklist, ARIA patterns, heuristics, tokens, performance UX, dated law map, manual checklist, contract template |
 
@@ -37,7 +37,7 @@ No report claims WCAG conformance. Every report ends with the manual keyboard an
 
 | Item | Prototype | Standard | Enterprise (default) |
 |---|---|---|---|
-| Accessibility | semantic HTML; U1–U12 pass | WCAG 2.2 AA on core flows; a dated keyboard pass | WCAG 2.2 AA on every page in scope; dated keyboard **and** screen-reader passes; checks in CI |
+| Accessibility | semantic HTML; UX-U1–U12 pass | WCAG 2.2 AA on core flows; a dated keyboard pass | WCAG 2.2 AA on every page in scope; dated keyboard **and** screen-reader passes; checks in CI |
 | Design system | — | one token source; themes pass contrast | tokens plus documented components with states and accessibility notes |
 | States and content | error states on core flows | empty, loading, error and success on core flows | every screen; UX copy reviewed |
 | Performance UX | — | a page-weight budget | Core Web Vitals budgets, measured |

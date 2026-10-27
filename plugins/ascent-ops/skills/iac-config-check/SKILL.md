@@ -5,10 +5,10 @@ description: >-
   stored securely?", "check our Terraform or CloudFormation configuration",
   "is the Terraform state safe?", or when ops-review flags the IaC or
   secure-configuration lens. Checks IaC coverage and secure-by-design
-  configuration (S1–S10): no literal secrets, secret stores and rotation,
+  configuration (OPS-S1–S10): no literal secrets, secret stores and rotation,
   encrypted and locked state, least privilege, per-environment configuration,
   drift detection. Never prints a value. Read-only.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 ---
 
@@ -16,13 +16,13 @@ allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 
 The deep infrastructure-as-code and configuration check behind [ops-review](../ops-review/SKILL.md). It is a sibling that shares that skill's severity table, contract and evidence rules. It checks the mantra: infrastructure as code is the only way configuration changes, and every value and secret is stored securely by design.
 
-Sources: [secure-config-rules.md](../../references/secure-config-rules.md) (S1–S10 with fixes per tool) and the blueprint's [secure-parameters.yaml](../../blueprints/operable-service/secure-parameters.yaml), a template that passes every rule.
+Sources: [secure-config-rules.md](../../references/secure-config-rules.md) (OPS-S1–S10 with fixes per tool) and the blueprint's [secure-parameters.yaml](../../blueprints/operable-service/secure-parameters.yaml), a template that passes every rule.
 
 ## Rules
 
 - All `ops-review` rules apply: read-only; repository-relative `file:line` evidence; fresh evidence; severities only from the `ops-review` table; no personal data.
 - **Never print a value.** Name the key and its location. Do not quote the line when it holds a secret, not even partly or masked.
-- **Committed secrets are referred.** A literal secret (S1, S4 state files) is also `ascent-security`'s finding: mark it `→ ascent-security`, and say it must be rotated, not just deleted, because it stays in the history.
+- **Committed secrets are referred.** A literal secret (OPS-S1, OPS-S4 state files) is also `ascent-security`'s finding: mark it `→ ascent-security`, and say it must be rotated, not just deleted, because it stays in the history.
 - **Optional tools run only when present.** `cfn-lint`, `checkov` and `trivy` run only if the operator already has them on `PATH`; never install them or download their rules without asking.
 
 ## Steps
@@ -58,7 +58,7 @@ When they are already installed, run them read-only and include the summary:
 - `checkov -d . --compact --quiet` (it reads only)
 - `trivy config --skip-check-update --skip-version-check --quiet .`: run it without asking. With these flags it uses only the checks built into the installed binary and downloads nothing. Plain `trivy config .` downloads its check bundle: ask first. If the installed trivy rejects a flag, ask before running it without.
 
-Their findings are evidence for the rule they match (S1–S10); a finding that matches no rule goes under Other observations. Never treat a tool's silence as a pass for a rule it does not cover.
+Their findings are evidence for the rule they match (OPS-S1–S10); a finding that matches no rule goes under Other observations. Never treat a tool's silence as a pass for a rule it does not cover.
 
 ### Step 5 — Report
 

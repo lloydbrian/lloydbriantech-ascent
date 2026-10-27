@@ -66,105 +66,105 @@ matrix() {
   if [ "$RC" -eq 0 ] && [ "$(printf '%s\n' "$OUT" | grep -c '^PASS ')" -eq 10 ] && printf '%s\n' "$OUT" | grep -q ', 0 failure(s)$'; then ok
   else bad "good fixtures should pass all 10: exit $RC $(printf '%s\n' "$OUT" | grep -vE '^PASS' | tr '\n' ';')"; fi
 
-  # S1 — literal secrets
-  mk s1-cfn-default;  edit s1-cfn-default template.yaml "$(after '    NoEcho: true' '    Default: fixture-literal-value')" && expect_only s1-cfn-default S1 High
-  mk s1-cfn-prop;     edit s1-cfn-prop template.yaml "$(after '      Name: !Sub "app/${Environment}/db"' '      ApiToken: fixture-literal-value')" && expect_only s1-cfn-prop S1
-  mk s1-tf-default;   edit s1-tf-default infra/main.tf "$(after '  sensitive = true' '  default   = "fixture-literal-value"')" && expect_only s1-tf-default S1
-  mk s1-tf-provider;  printf 'provider "aws" {\n  region     = "us-east-1"\n  secret_key = "fixture-literal-value"\n}\n' > "$WORK/s1-tf-provider/infra/provider.tf"; expect_only s1-tf-provider S1
-  mk s1-tfvars;       printf 'db_password = "fixture-literal-value"\n' >> "$WORK/s1-tfvars/infra/prod.tfvars"; expect_only s1-tfvars S1
-  mk s1-docker-env;   edit s1-docker-env Dockerfile "$(after 'ENV NODE_ENV=production' 'ENV API_TOKEN=${API_TOKEN}')" && expect_only s1-docker-env S1
-  mk s1-docker-arg;   edit s1-docker-arg Dockerfile "$(subst 'ARG BUILD_VERSION' 'ARG GITHUB_TOKEN=fixture-literal-value')" && expect_only s1-docker-arg S1
-  mk s1-compose;      edit s1-compose compose.yml "$(after '      NODE_ENV: production' '      DB_PASSWORD: fixture-literal-value')" && expect_only s1-compose S1
+  # OPS-S1 — literal secrets
+  mk s1-cfn-default;  edit s1-cfn-default template.yaml "$(after '    NoEcho: true' '    Default: fixture-literal-value')" && expect_only s1-cfn-default OPS-S1 High
+  mk s1-cfn-prop;     edit s1-cfn-prop template.yaml "$(after '      Name: !Sub "app/${Environment}/db"' '      ApiToken: fixture-literal-value')" && expect_only s1-cfn-prop OPS-S1
+  mk s1-tf-default;   edit s1-tf-default infra/main.tf "$(after '  sensitive = true' '  default   = "fixture-literal-value"')" && expect_only s1-tf-default OPS-S1
+  mk s1-tf-provider;  printf 'provider "aws" {\n  region     = "us-east-1"\n  secret_key = "fixture-literal-value"\n}\n' > "$WORK/s1-tf-provider/infra/provider.tf"; expect_only s1-tf-provider OPS-S1
+  mk s1-tfvars;       printf 'db_password = "fixture-literal-value"\n' >> "$WORK/s1-tfvars/infra/prod.tfvars"; expect_only s1-tfvars OPS-S1
+  mk s1-docker-env;   edit s1-docker-env Dockerfile "$(after 'ENV NODE_ENV=production' 'ENV API_TOKEN=${API_TOKEN}')" && expect_only s1-docker-env OPS-S1
+  mk s1-docker-arg;   edit s1-docker-arg Dockerfile "$(subst 'ARG BUILD_VERSION' 'ARG GITHUB_TOKEN=fixture-literal-value')" && expect_only s1-docker-arg OPS-S1
+  mk s1-compose;      edit s1-compose compose.yml "$(after '      NODE_ENV: production' '      DB_PASSWORD: fixture-literal-value')" && expect_only s1-compose OPS-S1
   # The value itself is never printed.
   if printf '%s\n' "$OUT" | grep -q 'fixture-literal-value'; then bad "s1-compose: the secret value was printed"; else ok; fi
 
-  # S2 — sensitive parameters marked
-  mk s2-noecho;       edit s2-noecho template.yaml "$(drop '    NoEcho: true')" && expect_only s2-noecho S2 Medium
-  mk s2-tf-var;       edit s2-tf-var infra/main.tf "$(drop '  sensitive = true')" && expect_only s2-tf-var S2
-  mk s2-tf-output;    printf 'output "db_password" {\n  value = var.db_password\n}\n' >> "$WORK/s2-tf-output/infra/main.tf"; expect_only s2-tf-output S2
+  # OPS-S2 — sensitive parameters marked
+  mk s2-noecho;       edit s2-noecho template.yaml "$(drop '    NoEcho: true')" && expect_only s2-noecho OPS-S2 Medium
+  mk s2-tf-var;       edit s2-tf-var infra/main.tf "$(drop '  sensitive = true')" && expect_only s2-tf-var OPS-S2
+  mk s2-tf-output;    printf 'output "db_password" {\n  value = var.db_password\n}\n' >> "$WORK/s2-tf-output/infra/main.tf"; expect_only s2-tf-output OPS-S2
 
-  # S3 — secrets from a store, not plain environment values
-  mk s3-cfn-ecs;      edit s3-cfn-ecs template.yaml "$(after '              Value: production' '            - Name: API_TOKEN\n              Value: !Ref ImageTag')" && expect_only s3-cfn-ecs S3 High
-  mk s3-cfn-lambda;   printf '  Fn:\n    Type: AWS::Lambda::Function\n    Properties:\n      Environment:\n        Variables:\n          DB_PASSWORD: !Ref DbPassword\n' >> "$WORK/s3-cfn-lambda/template.yaml"; expect_only s3-cfn-lambda S3
-  mk s3-cfn-ssm;      edit s3-cfn-ssm template.yaml "$(subst '/log-level"' '/db-password"')" && expect_only s3-cfn-ssm S3
-  mk s3-tf-env;       edit s3-tf-env infra/main.tf "$(subst '{ name = "APP_ENV", value = var.environment }' '{ name = "APP_ENV", value = var.environment },\n        { name = "API_TOKEN", value = var.db_password }')" && expect_only s3-tf-env S3
-  mk s3-tf-ssm;       edit s3-tf-ssm infra/main.tf "$(subst '"SecureString"' '"String"')" && expect_only s3-tf-ssm S3
-  mk s3-taskjson;     edit s3-taskjson taskdef.json "$(subst '{ "name": "NODE_ENV", "value": "production" }' '{ "name": "NODE_ENV", "value": "production" },\n        { "name": "API_KEY", "value": "x" }')" && expect_only s3-taskjson S3
-  mk s3-compose;      edit s3-compose compose.yml "$(after '      - QUEUE=jobs' '      - DB_PASSWORD=${DB_PASSWORD}')" && expect_only s3-compose S3 Medium
+  # OPS-S3 — secrets from a store, not plain environment values
+  mk s3-cfn-ecs;      edit s3-cfn-ecs template.yaml "$(after '              Value: production' '            - Name: API_TOKEN\n              Value: !Ref ImageTag')" && expect_only s3-cfn-ecs OPS-S3 High
+  mk s3-cfn-lambda;   printf '  Fn:\n    Type: AWS::Lambda::Function\n    Properties:\n      Environment:\n        Variables:\n          DB_PASSWORD: !Ref DbPassword\n' >> "$WORK/s3-cfn-lambda/template.yaml"; expect_only s3-cfn-lambda OPS-S3
+  mk s3-cfn-ssm;      edit s3-cfn-ssm template.yaml "$(subst '/log-level"' '/db-password"')" && expect_only s3-cfn-ssm OPS-S3
+  mk s3-tf-env;       edit s3-tf-env infra/main.tf "$(subst '{ name = "APP_ENV", value = var.environment }' '{ name = "APP_ENV", value = var.environment },\n        { name = "API_TOKEN", value = var.db_password }')" && expect_only s3-tf-env OPS-S3
+  mk s3-tf-ssm;       edit s3-tf-ssm infra/main.tf "$(subst '"SecureString"' '"String"')" && expect_only s3-tf-ssm OPS-S3
+  mk s3-taskjson;     edit s3-taskjson taskdef.json "$(subst '{ "name": "NODE_ENV", "value": "production" }' '{ "name": "NODE_ENV", "value": "production" },\n        { "name": "API_KEY", "value": "x" }')" && expect_only s3-taskjson OPS-S3
+  mk s3-compose;      edit s3-compose compose.yml "$(after '      - QUEUE=jobs' '      - DB_PASSWORD=${DB_PASSWORD}')" && expect_only s3-compose OPS-S3 Medium
 
-  # S4 — Terraform state
-  mk s4-no-encrypt;   edit s4-no-encrypt infra/main.tf "$(drop 'encrypt      = true')" && expect_only s4-no-encrypt S4 High
-  mk s4-no-lock;      edit s4-no-lock infra/main.tf "$(drop 'use_lockfile = true')" && expect_only s4-no-lock S4
-  mk s4-local;        edit s4-local infra/main.tf "$(subst 'backend "s3"' 'backend "local"')" && expect_only s4-local S4
-  mk s4-no-backend;   edit s4-no-backend infra/main.tf '/backend "s3"/ { skip = 1 } skip { if ($0 ~ /^  }/) skip = 0; next } { print }' && expect_only s4-no-backend S4
-  mk s4-state;        printf '{"version": 4}\n' > "$WORK/s4-state/infra/terraform.tfstate"; expect_only s4-state S4
+  # OPS-S4 — Terraform state
+  mk s4-no-encrypt;   edit s4-no-encrypt infra/main.tf "$(drop 'encrypt      = true')" && expect_only s4-no-encrypt OPS-S4 High
+  mk s4-no-lock;      edit s4-no-lock infra/main.tf "$(drop 'use_lockfile = true')" && expect_only s4-no-lock OPS-S4
+  mk s4-local;        edit s4-local infra/main.tf "$(subst 'backend "s3"' 'backend "local"')" && expect_only s4-local OPS-S4
+  mk s4-no-backend;   edit s4-no-backend infra/main.tf '/backend "s3"/ { skip = 1 } skip { if ($0 ~ /^  }/) skip = 0; next } { print }' && expect_only s4-no-backend OPS-S4
+  mk s4-state;        printf '{"version": 4}\n' > "$WORK/s4-state/infra/terraform.tfstate"; expect_only s4-state OPS-S4
 
-  # S5 — wildcard actions (a KMS key policy is exempt; see the baseline)
-  mk s5-cfn-list;     edit s5-cfn-list template.yaml "$(subst '- secretsmanager:GetSecretValue' '- secretsmanager:*')" && expect_only s5-cfn-list S5 Medium
-  mk s5-cfn-inline;   edit s5-cfn-inline template.yaml "$(subst '                Action:' '                Action: "*"')" && expect_only s5-cfn-inline S5
-  mk s5-tf;           edit s5-tf infra/main.tf "$(subst '["secretsmanager:GetSecretValue"]' '["s3:GetObject", "s3:*"]')" && expect_only s5-tf S5
-  mk s5-tf-json;      printf 'resource "aws_iam_policy" "p" {\n  policy = jsonencode({\n    Statement = [{ Effect = "Allow", Action = "*", Resource = "*" }]\n  })\n}\n' >> "$WORK/s5-tf-json/infra/main.tf"; expect_only s5-tf-json S5
+  # OPS-S5 — wildcard actions (a KMS key policy is exempt; see the baseline)
+  mk s5-cfn-list;     edit s5-cfn-list template.yaml "$(subst '- secretsmanager:GetSecretValue' '- secretsmanager:*')" && expect_only s5-cfn-list OPS-S5 Medium
+  mk s5-cfn-inline;   edit s5-cfn-inline template.yaml "$(subst '                Action:' '                Action: "*"')" && expect_only s5-cfn-inline OPS-S5
+  mk s5-tf;           edit s5-tf infra/main.tf "$(subst '["secretsmanager:GetSecretValue"]' '["s3:GetObject", "s3:*"]')" && expect_only s5-tf OPS-S5
+  mk s5-tf-json;      printf 'resource "aws_iam_policy" "p" {\n  policy = jsonencode({\n    Statement = [{ Effect = "Allow", Action = "*", Resource = "*" }]\n  })\n}\n' >> "$WORK/s5-tf-json/infra/main.tf"; expect_only s5-tf-json OPS-S5
 
-  # S6 — rotation
-  mk s6-cfn;          edit s6-cfn template.yaml '/^  AppSecretRotation:/ { skip = 1; next } skip && /^  [A-Za-z]/ { skip = 0 } skip { next } { print }' && expect_only s6-cfn S6 Low
-  mk s6-tf;           edit s6-tf infra/main.tf '/aws_secretsmanager_secret_rotation/ { skip = 1; next } skip { if ($0 ~ /^}/) skip = 0; next } { print }' && expect_only s6-tf S6
+  # OPS-S6 — rotation
+  mk s6-cfn;          edit s6-cfn template.yaml '/^  AppSecretRotation:/ { skip = 1; next } skip && /^  [A-Za-z]/ { skip = 0 } skip { next } { print }' && expect_only s6-cfn OPS-S6 Low
+  mk s6-tf;           edit s6-tf infra/main.tf '/aws_secretsmanager_secret_rotation/ { skip = 1; next } skip { if ($0 ~ /^}/) skip = 0; next } { print }' && expect_only s6-tf OPS-S6
 
-  # S7 — per-environment configuration (renamed throughout, manual updated, so only S7 changes)
+  # OPS-S7 — per-environment configuration (renamed throughout, manual updated, so only OPS-S7 changes)
   mk s7;              edit s7 template.yaml "$(subst '  Environment:' '  Flavor:')" && edit s7 infra/main.tf "$(subst 'variable "environment"' 'variable "flavor"')" \
-    && mv "$WORK/s7/infra/prod.tfvars" "$WORK/s7/infra/values.tfvars" && printf '| Flavor | template.yaml | |\n| flavor | infra/main.tf | |\n' >> "$WORK/s7/manual.md" && expect_only s7 S7 Medium
+    && mv "$WORK/s7/infra/prod.tfvars" "$WORK/s7/infra/values.tfvars" && printf '| Flavor | template.yaml | |\n| flavor | infra/main.tf | |\n' >> "$WORK/s7/manual.md" && expect_only s7 OPS-S7 Medium
   mk s7-workspace;    edit s7-workspace template.yaml "$(subst '  Environment:' '  Flavor:')" && edit s7-workspace infra/main.tf "$(subst 'variable "environment"' 'variable "flavor"')" \
     && mv "$WORK/s7-workspace/infra/prod.tfvars" "$WORK/s7-workspace/infra/values.tfvars" && printf '| Flavor | | |\n| flavor | | |\n' >> "$WORK/s7-workspace/manual.md" \
     && printf 'locals {\n  stage = terraform.workspace\n}\n' >> "$WORK/s7-workspace/infra/main.tf"
   run --manual "$WORK/s7-workspace/manual.md" "$WORK/s7-workspace"
   if [ "$RC" -eq 0 ]; then ok; else bad "s7-workspace: terraform.workspace counts as per-environment configuration: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -2 | tr '\n' ';')"; fi
 
-  # S8 — .env files
-  mk s8-docker;       edit s8-docker Dockerfile "$(subst 'COPY .env.example ./' 'COPY .env ./')" && expect_only s8-docker S8 High
-  mk s8-compose-prod; printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env.prod\n' > "$WORK/s8-compose-prod/compose.prod.yml"; expect_only s8-compose-prod S8 Medium
+  # OPS-S8 — .env files
+  mk s8-docker;       edit s8-docker Dockerfile "$(subst 'COPY .env.example ./' 'COPY .env ./')" && expect_only s8-docker OPS-S8 High
+  mk s8-compose-prod; printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env.prod\n' > "$WORK/s8-compose-prod/compose.prod.yml"; expect_only s8-compose-prod OPS-S8 Medium
   mk s8-compose-dev;  printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env\n' > "$WORK/s8-compose-dev/compose.dev.yml"
   run --manual "$WORK/s8-compose-dev/manual.md" "$WORK/s8-compose-dev"
   if [ "$RC" -eq 0 ]; then ok; else bad "s8-compose-dev: env_file outside production should pass"; fi
 
-  # S9 — drift
-  mk s9-none;         rm -rf "$WORK/s9-none/.github"; expect_only s9-none S9 Medium
-  mk s9-hidden;       printf 'resource "aws_s3_bucket" "b" {\n  bucket = "x"\n  lifecycle {\n    ignore_changes = all\n  }\n}\n' >> "$WORK/s9-hidden/infra/main.tf"; expect_only s9-hidden S9
+  # OPS-S9 — drift
+  mk s9-none;         rm -rf "$WORK/s9-none/.github"; expect_only s9-none OPS-S9 Medium
+  mk s9-hidden;       printf 'resource "aws_s3_bucket" "b" {\n  bucket = "x"\n  lifecycle {\n    ignore_changes = all\n  }\n}\n' >> "$WORK/s9-hidden/infra/main.tf"; expect_only s9-hidden OPS-S9
   mk s9-cfn;          rm -rf "$WORK/s9-cfn/.github"; printf 'drift:\n\taws cloudformation detect-stack-drift --stack-name app\n' > "$WORK/s9-cfn/Makefile"
   run --manual "$WORK/s9-cfn/manual.md" "$WORK/s9-cfn"
   if [ "$RC" -eq 0 ]; then ok; else bad "s9-cfn: a make target running detect-stack-drift counts as drift detection"; fi
 
-  # S10 — documented in the manual
-  mk s10;             edit s10 template.yaml "$(after '  ImageTag:' '    Type: String\n  ReplicaCount:')" && expect_only s10 S10 Low
+  # OPS-S10 — documented in the manual
+  mk s10;             edit s10 template.yaml "$(after '  ImageTag:' '    Type: String\n  ReplicaCount:')" && expect_only s10 OPS-S10 Low
   run --manual "$WORK/no-such-manual.md" "$GOOD"
-  if [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -q '^FAIL  S10 .*manual not found'; then ok; else bad "missing manual should fail S10: $RC"; fi
+  if [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -q '^FAIL  OPS-S10 .*manual not found'; then ok; else bad "missing manual should fail OPS-S10: $RC"; fi
   run "$GOOD"
-  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   S10 .*no --manual given'; then ok; else bad "S10 should be N/A without --manual"; fi
+  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   OPS-S10 .*no --manual given'; then ok; else bad "OPS-S10 should be N/A without --manual"; fi
 
   # Review findings (ADR-013 calibration): parser shapes that were missed or misread.
   # Task definitions: an empty environment array, and a one-line array with a secret.
   mk tj-empty;   printf '{\n  "containerDefinitions": [\n    {\n      "name": "w",\n      "image": "registry.example/w:1.0.0",\n      "environment": [],\n      "secrets": [\n        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:000000000000:secret:w" }\n      ]\n    }\n  ]\n}\n' > "$WORK/tj-empty/worker.json"; expect_clean tj-empty
-  mk tj-oneline; printf '{ "containerDefinitions": [ { "name": "w", "image": "registry.example/w:1.0.0", "environment": [ { "name": "API_TOKEN", "value": "x" } ], "secrets": [] } ] }\n' > "$WORK/tj-oneline/worker.json"; expect_only tj-oneline S3 High
+  mk tj-oneline; printf '{ "containerDefinitions": [ { "name": "w", "image": "registry.example/w:1.0.0", "environment": [ { "name": "API_TOKEN", "value": "x" } ], "secrets": [] } ] }\n' > "$WORK/tj-oneline/worker.json"; expect_only tj-oneline OPS-S3 High
   # Dockerfile ENV continued over two lines.
-  mk docker-cont; edit docker-cont Dockerfile "$(subst 'ENV NODE_ENV=production' 'ENV NODE_ENV=production \\\n    DB_PASSWORD=fixture-literal-value')" && expect_only docker-cont S1 High && expect_at docker-cont S1 Dockerfile:4
+  mk docker-cont; edit docker-cont Dockerfile "$(subst 'ENV NODE_ENV=production' 'ENV NODE_ENV=production \\\n    DB_PASSWORD=fixture-literal-value')" && expect_only docker-cont OPS-S1 High && expect_at docker-cont OPS-S1 Dockerfile:4
   # One-line Terraform blocks.
   mk tf-oneline-default; printf 'variable "api_token" { default = "fixture-literal-value" }\n' >> "$WORK/tf-oneline-default/infra/main.tf"; printf '| api_token | infra/main.tf | |\n' >> "$WORK/tf-oneline-default/manual.md"
-  run --manual "$WORK/tf-oneline-default/manual.md" "$WORK/tf-oneline-default"; expect_at tf-oneline-default S1 main.tf:"$(grep -c '' "$WORK/tf-oneline-default/infra/main.tf")"
-  mk tf-oneline-var; printf 'variable "replica_count" {}\n' >> "$WORK/tf-oneline-var/infra/main.tf"; expect_only tf-oneline-var S10 Low
-  mk tf-lambda-map; printf 'resource "aws_lambda_function" "f" {\n  function_name = "f"\n  environment {\n    variables = { LOG_LEVEL = "info", DB_PASSWORD = "fixture-literal-value" }\n  }\n}\n' >> "$WORK/tf-lambda-map/infra/main.tf"; expect_only tf-lambda-map S3 High
+  run --manual "$WORK/tf-oneline-default/manual.md" "$WORK/tf-oneline-default"; expect_at tf-oneline-default OPS-S1 main.tf:"$(grep -c '' "$WORK/tf-oneline-default/infra/main.tf")"
+  mk tf-oneline-var; printf 'variable "replica_count" {}\n' >> "$WORK/tf-oneline-var/infra/main.tf"; expect_only tf-oneline-var OPS-S10 Low
+  mk tf-lambda-map; printf 'resource "aws_lambda_function" "f" {\n  function_name = "f"\n  environment {\n    variables = { LOG_LEVEL = "info", DB_PASSWORD = "fixture-literal-value" }\n  }\n}\n' >> "$WORK/tf-lambda-map/infra/main.tf"; expect_only tf-lambda-map OPS-S3 High
   # Rotation: a secret version is not a rotation; the CloudFormation long-form Ref is.
-  mk tf-version-only; edit tf-version-only infra/main.tf "$(subst 'resource "aws_secretsmanager_secret_rotation" "db"' 'resource "aws_secretsmanager_secret_version" "db"')" && expect_only tf-version-only S6 Low
+  mk tf-version-only; edit tf-version-only infra/main.tf "$(subst 'resource "aws_secretsmanager_secret_rotation" "db"' 'resource "aws_secretsmanager_secret_version" "db"')" && expect_only tf-version-only OPS-S6 Low
   mk cfn-long-ref; edit cfn-long-ref template.yaml "$(subst 'SecretId: !Ref AppSecret' 'SecretId:\n        Ref: AppSecret')" && expect_clean cfn-long-ref
   # Token validity units and CodeBuild variables from Secrets Manager are not secrets.
   mk cognito; printf '  Client:\n    Type: AWS::Cognito::UserPoolClient\n    Properties:\n      TokenValidityUnits:\n        AccessToken: hours\n        IdToken: hours\n        RefreshToken: days\n' >> "$WORK/cognito/template.yaml"
   printf 'resource "aws_cognito_user_pool_client" "c" {\n  name = "c"\n  token_validity_units {\n    access_token  = "hours"\n    refresh_token = "days"\n  }\n}\n' >> "$WORK/cognito/infra/main.tf"; expect_clean cognito
   mk codebuild; printf '  Build:\n    Type: AWS::CodeBuild::Project\n    Properties:\n      Environment:\n        EnvironmentVariables:\n          - Name: GITHUB_TOKEN\n            Type: SECRETS_MANAGER\n            Value: ci/github\n' >> "$WORK/codebuild/template.yaml"; expect_clean codebuild
-  mk codebuild-plain; printf '  Build:\n    Type: AWS::CodeBuild::Project\n    Properties:\n      Environment:\n        EnvironmentVariables:\n          - Name: GITHUB_TOKEN\n            Type: PLAINTEXT\n            Value: ci/github\n' >> "$WORK/codebuild-plain/template.yaml"; expect_only codebuild-plain S3 High
+  mk codebuild-plain; printf '  Build:\n    Type: AWS::CodeBuild::Project\n    Properties:\n      Environment:\n        EnvironmentVariables:\n          - Name: GITHUB_TOKEN\n            Type: PLAINTEXT\n            Value: ci/github\n' >> "$WORK/codebuild-plain/template.yaml"; expect_only codebuild-plain OPS-S3 High
   # A key policy: only the account-root statement may use kms:*.
-  mk kms-any; edit kms-any template.yaml "$(subst ':root"' ':role/ops"')" && expect_only kms-any S5 Medium
+  mk kms-any; edit kms-any template.yaml "$(subst ':root"' ':role/ops"')" && expect_only kms-any OPS-S5 Medium
   mk kms-tf-root; printf 'data "aws_iam_policy_document" "key" {\n  statement {\n    sid       = "Root"\n    actions   = ["kms:*"]\n    resources = ["*"]\n    principals {\n      type        = "AWS"\n      identifiers = ["arn:aws:iam::000000000000:root"]\n    }\n  }\n}\n' >> "$WORK/kms-tf-root/infra/main.tf"; expect_clean kms-tf-root
-  mk kms-tf-any; printf 'data "aws_iam_policy_document" "key" {\n  statement {\n    sid       = "Everyone"\n    actions   = ["kms:*"]\n    resources = ["*"]\n  }\n}\n' >> "$WORK/kms-tf-any/infra/main.tf"; expect_only kms-tf-any S5 Medium
+  mk kms-tf-any; printf 'data "aws_iam_policy_document" "key" {\n  statement {\n    sid       = "Everyone"\n    actions   = ["kms:*"]\n    resources = ["*"]\n  }\n}\n' >> "$WORK/kms-tf-any/infra/main.tf"; expect_only kms-tf-any OPS-S5 Medium
   # Drift evidence: a comment or a test is not a drift check.
-  mk drift-comment; rm -rf "$WORK/drift-comment/.github"; printf '#!/usr/bin/env bash\n# TODO: run terraform plan -detailed-exitcode in CI\n' > "$WORK/drift-comment/notes.sh"; expect_only drift-comment S9 Medium
-  mk drift-test; rm -rf "$WORK/drift-test/.github"; mkdir -p "$WORK/drift-test/tests"; printf '#!/usr/bin/env bash\nterraform plan -detailed-exitcode\n' > "$WORK/drift-test/tests/drift.sh"; expect_only drift-test S9 Medium
+  mk drift-comment; rm -rf "$WORK/drift-comment/.github"; printf '#!/usr/bin/env bash\n# TODO: run terraform plan -detailed-exitcode in CI\n' > "$WORK/drift-comment/notes.sh"; expect_only drift-comment OPS-S9 Medium
+  mk drift-test; rm -rf "$WORK/drift-test/.github"; mkdir -p "$WORK/drift-test/tests"; printf '#!/usr/bin/env bash\nterraform plan -detailed-exitcode\n' > "$WORK/drift-test/tests/drift.sh"; expect_only drift-test OPS-S9 Medium
   # A local override is not a production Compose file.
   mk compose-prod-local; printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env\n' > "$WORK/compose-prod-local/docker-compose.prod.local.yml"; expect_clean compose-prod-local
 
@@ -183,7 +183,7 @@ matrix() {
   mk utf8; { printf 'services:\n'; i=0; while [ $i -lt 30 ]; do printf '  # caf\303\251 \342\206\222 r\303\251sum\303\251\n'; i=$((i + 1)); done
     printf '  app:\n    image: x:1\n    environment:\n      DB_PASSWORD: fixture-literal-value\n'; } > "$WORK/utf8/compose.yml"
   run --manual "$WORK/utf8/manual.md" "$WORK/utf8"
-  if printf '%s\n' "$OUT" | grep -q '^FAIL  S1 .*compose.yml:35 '; then ok; else bad "utf8: expected S1 at compose.yml:35: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -1)"; fi
+  if printf '%s\n' "$OUT" | grep -q '^FAIL  OPS-S1 .*compose.yml:35 '; then ok; else bad "utf8: expected OPS-S1 at compose.yml:35: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -1)"; fi
 
   # A path containing "=" is a file, not an awk assignment.
   mkdir -p "$WORK/a=b"; cp "$GOOD/template.yaml" "$WORK/a=b/template.yaml"

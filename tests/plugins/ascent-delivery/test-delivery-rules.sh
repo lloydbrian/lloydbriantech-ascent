@@ -4,7 +4,7 @@
 #   D1  the runbook template tells the writer how to handle a stacked pull request:
 #       retarget before the base merges, reopen to start CI, and replay with
 #       `git rebase --onto` after a squash merge, flagging the force push
-#   D2  the operator-boundary hook states why it is exempt from ascent-ops Z2 and Z3
+#   D2  the operator-boundary hook states why it is exempt from ascent-ops OPS-Z2 and OPS-Z3
 #   D3  every references/<file> the skill links to exists
 #
 # Prints "test-delivery-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
@@ -35,8 +35,8 @@ has D1 "$TEMPLATE" 'Retargeting does not start CI. Close and reopen the pull req
 has D1 "$TEMPLATE" 'git rebase --onto origin/main <old base tip> <branch>'
 has D1 "$TEMPLATE" 'Flag the force push as destructive in the runbook.'
 
-# D2 — the hook's Z2/Z3 exemption is stated, and the hook still runs with set -u
-has D2 "$HOOK" '# Exempt from ascent-ops Z2 and Z3 on purpose'
+# D2 — the hook's OPS-Z2/Z3 exemption is stated, and the hook still runs with set -u
+has D2 "$HOOK" '# Exempt from ascent-ops OPS-Z2 and OPS-Z3 on purpose'
 if grep -qx 'set -u' "$HOOK"; then ok; else bad "D2 hooks/operator-boundary.sh no longer runs with 'set -u'"; fi
 
 # D3 — linked references exist

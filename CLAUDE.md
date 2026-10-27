@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent` — the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux and ops released). Phase 4 awaits its go-signal.
-**Version:** 0.4.7
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux and ops released; ownership registry since v0.4.8). Phase 4 awaits its go-signal.
+**Version:** 0.4.8
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -65,7 +65,7 @@ lloydbriantech-ascent/
 ├── .vscode/                           # Editor config (recommended extensions, tasks)
 ├── docs/
 │   ├── assets/                        # README banner (light and dark)
-│   └── framework/                     # Framework's own documentation
+│   └── framework/                     # Framework's own documentation, OWNERSHIP.md (the registry)
 │       ├── PRINCIPLES.md, PHILOSOPHY.md, SCOPE.md, ROADMAP.md, ARCHITECTURE.md
 │       └── DECISIONS/                 # Framework-level ADRs
 ├── skills/
@@ -73,6 +73,7 @@ lloydbriantech-ascent/
 ├── plugins/                           # ascent-security (generated), ascent-delivery,
 │                                      # ascent-architecture, ascent-ux, ascent-ops (hand-written)
 ├── tests/plugins/                     # Plugin behavior tests and fixtures
+├── tests/meta/                        # Tests for this repository's own gate scripts
 ├── tools/scratch/                     # Phase 2 smoke-test scaffold
 └── Makefile, make/                    # Operator vocabulary, gates and negative controls
 ```
@@ -83,6 +84,7 @@ The embedded-skill tests live in the template (`skills/lloydbriantech-ascent/ass
 
 - **Generated or hand-written.** `ascent-security` is generated from the template skills by `make plugins` ([ADR-009](docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md)): edit the template source, never the plugin copy. The other plugins are hand-written in `plugins/`.
 - **Every change bumps the version** in the plugin's `plugin.json` and its marketplace entry, or installed copies never update. `make test-plugins` (T10) compares content hashes with `make/plugins.lock`. For a version that has not been released yet, delete its lock row and run `make plugins` to refresh the hash instead of bumping.
+- **Register first.** Every plugin, skill, agent, hook, rule-id family, contract section, domain and review lens has a row in [`docs/framework/OWNERSHIP.md`](docs/framework/OWNERSHIP.md), added in the same change. `make test-plugins` (T13, [ADR-015](docs/framework/DECISIONS/ADR-015-ownership-registry-and-gate.md)) fails on drift. Rule ids are plugin-qualified, `<CODE>-<family><n>` (`OPS-S3`, `UX-D2`); scripts keep short internal keys and add the code where they print.
 - **The delivery bar:** hardened source, behavior tests (Principle §16), negative controls in `make/test-mutants.sh` for every rule, the plugin gate, a read-only trial on real repositories, and a release record (CHANGELOG, ADR, tag).
 - **The operator boundary.** Claude never runs git writes, `gh` writes, merges, tags, releases or deploys; it writes a runbook the operator runs. `ascent-delivery`'s hook enforces this while the plugin is enabled.
 
@@ -147,7 +149,7 @@ A phase ends when its exit criteria (listed in [`docs/framework/ROADMAP.md`](doc
 
 1. Verify exit criteria, with `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` green
 2. Update `CHANGELOG.md` with the phase summary
-3. The operator tags the release (`git tag v0.N.0 && git push --tags`) from the runbook Claude writes
+3. The operator tags the release (`git tag v0.N.0 && git push origin v0.N.0`) from the runbook Claude writes
 4. Wait for explicit signal: **"Proceed with Phase N+1"**
 5. Update phase status in this CLAUDE.md and in [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md)
 
@@ -175,7 +177,8 @@ The targets used most:
 | `make qa` | Frontmatter, internal links and template placeholders |
 | `make test-skills` | Render the template and run the 28 embedded-skill tests |
 | `make plugins` | Regenerate the generated plugin skills and refresh `make/plugins.lock` |
-| `make test-plugins` | The plugin gate, T1–T12, including each plugin's behavior tests |
+| `make test-plugins` | The plugin gate, T1–T13, including each plugin's behavior tests and the ownership check |
+| `make ownership` | The ownership check (T13) alone: `docs/framework/OWNERSHIP.md` against the repository |
 | `make test-mutants [GROUP=<group>]` | Negative controls; `make test-mutants-groups` lists the groups CI runs in parallel |
 
 Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase or plugin that will implement them (`doc-stub` lands with the `ascent-docs` plugin).

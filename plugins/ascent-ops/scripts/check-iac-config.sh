@@ -8,33 +8,33 @@
 #
 # PATH is a file or a directory (searched, skipping node_modules, .git, .terraform,
 # vendor, dist, build and virtualenvs). --manual names the Maintenance and
-# Operations Manual for S10. CI workflows, Makefiles and shell scripts found under
-# PATH (outside tests/ and fixtures/) are read for drift detection (S9) only;
+# Operations Manual for OPS-S10. CI workflows, Makefiles and shell scripts found under
+# PATH (outside tests/ and fixtures/) are read for drift detection (OPS-S9) only;
 # comment lines do not count.
 #
 # Checks (severity from the ops-review severity table):
-#   S1  High    no secret value written as a literal or a default (parameter Default,
+#   OPS-S1  High    no secret value written as a literal or a default (parameter Default,
 #               variable default, attribute, tfvars, ENV/ARG, Compose environment)
-#   S2  Medium  sensitive parameters are marked: NoEcho: true; sensitive = true on
+#   OPS-S2  Medium  sensitive parameters are marked: NoEcho: true; sensitive = true on
 #               variables and outputs
-#   S3  High    secrets reach tasks and functions from Secrets Manager or SSM
+#   OPS-S3  High    secrets reach tasks and functions from Secrets Manager or SSM
 #               SecureString, never as plain environment values; no secret in an SSM
 #               String parameter. Medium for a Compose environment value (use
 #               Compose secrets)
-#   S4  High    Terraform state is remote, encrypted and locked; no state file in the
+#   OPS-S4  High    Terraform state is remote, encrypted and locked; no state file in the
 #               repository
-#   S5  Medium  IAM policies grant no wildcard actions ("*", "service:*"); in a KMS key
+#   OPS-S5  Medium  IAM policies grant no wildcard actions ("*", "service:*"); in a KMS key
 #               policy, only the statement that names the account root is exempt
-#   S6  Low     every Secrets Manager secret has a rotation schedule
-#   S7  Medium  configuration is separated per environment (an environment parameter
+#   OPS-S6  Low     every Secrets Manager secret has a rotation schedule
+#   OPS-S7  Medium  configuration is separated per environment (an environment parameter
 #               or variable, per-environment tfvars or parameter files, workspaces, or
 #               environment directories)
-#   S8  High    no .env file is copied into an image; Medium for env_file in a
+#   OPS-S8  High    no .env file is copied into an image; Medium for env_file in a
 #               production Compose file
-#   S9  Medium  drift is visible: a drift check runs (terraform plan
+#   OPS-S9  Medium  drift is visible: a drift check runs (terraform plan
 #               -detailed-exitcode, detect-stack-drift, driftctl), and no
 #               lifecycle ignore_changes = all hides it
-#   S10 Low     every parameter and variable is documented in the manual (--manual)
+#   OPS-S10 Low     every parameter and variable is documented in the manual (--manual)
 #
 # Values are never printed: a finding names the key and its file:line only.
 # Output: FAIL lines (FAIL  Sk  SEVERITY  file:line  message, or "absent" for a

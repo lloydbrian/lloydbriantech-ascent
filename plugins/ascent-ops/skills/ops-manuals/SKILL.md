@@ -8,7 +8,7 @@ description: >-
   repository, with Mermaid C4 diagrams (context, containers, deployment), a
   dependency map with versions and a symptom table; checks whether they are
   current. Writes only those two files, with surgical edits; never commits.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
@@ -16,7 +16,7 @@ allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 
 Keeps the two operations manuals at their latest and greatest. It is a sibling of [ops-review](../ops-review/SKILL.md) and shares its severity table and evidence rules. It is the only `ascent-ops` skill that writes, and it writes exactly two files.
 
-Sources: [manual-sections.md](../../references/manual-sections.md) (front matter, sections, diagrams, staleness) and the blueprint's [Maintenance and Operations Manual](../../blueprints/operable-service/MAINTENANCE-AND-OPERATIONS.md) and [Troubleshooting Manual](../../blueprints/operable-service/TROUBLESHOOTING.md), a worked example that passes M1–M8.
+Sources: [manual-sections.md](../../references/manual-sections.md) (front matter, sections, diagrams, staleness) and the blueprint's [Maintenance and Operations Manual](../../blueprints/operable-service/MAINTENANCE-AND-OPERATIONS.md) and [Troubleshooting Manual](../../blueprints/operable-service/TROUBLESHOOTING.md), a worked example that passes OPS-M1–M8.
 
 ## Rules
 
@@ -42,13 +42,13 @@ When the manuals exist, run the check and include its output verbatim:
 bash "$PLUGIN_ROOT/scripts/check-ops-manuals.sh" --repo . <maintenance manual> <troubleshooting manual> .
 ```
 
-`PLUGIN_ROOT` is two directories above this skill's base directory. Each `FAIL` line is something this run must fix. For M6, `git log --oneline <describes>..HEAD -- <sources>` lists the changes the update must cover; read those commits first.
+`PLUGIN_ROOT` is two directories above this skill's base directory. Each `FAIL` line is something this run must fix. For OPS-M6, `git log --oneline <describes>..HEAD -- <sources>` lists the changes the update must cover; read those commits first.
 
 ### Step 3 — Gather the facts
 
-- **Diagrams:** the system context (users, operators, external systems), the containers (each Compose service and each service-like IaC resource, with its technology and how they talk), and the deployment (hosts, accounts, regions, what runs where). Every service in the IaC and Compose files appears by name (M4). With no IaC or Compose, draw from the inventory of hosts and devices the scripts and runbooks name.
+- **Diagrams:** the system context (users, operators, external systems), the containers (each Compose service and each service-like IaC resource, with its technology and how they talk), and the deployment (hosts, accounts, regions, what runs where). Every service in the IaC and Compose files appears by name (OPS-M4). With no IaC or Compose, draw from the inventory of hosts and devices the scripts and runbooks name.
 - **Dependency map:** one row per dependency from the manifests, with the pinned version and the file it comes from.
-- **Configuration and secrets:** every parameter and variable, where it lives, whether it is a secret, its rotation (S10).
+- **Configuration and secrets:** every parameter and variable, where it lives, whether it is a secret, its rotation (OPS-S10).
 - **Deploy, rollback, backup, maintenance, upgrades, access:** from the runbooks, scripts and make targets, citing them.
 - **Symptoms:** from the runbooks' Stop-if lines, the scripts' error messages, the health endpoints and known issues in the docs or the backlog.
 

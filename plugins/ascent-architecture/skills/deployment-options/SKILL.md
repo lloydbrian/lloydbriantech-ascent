@@ -7,7 +7,7 @@ description: >-
   deployment options by setup effort, dated monthly cost estimate, operations
   burden and maturity fit, recommends one, drafts the ADR, and hands over a
   blueprint the operator deploys. Read-only.
-version: 0.1.2
+version: 0.2.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -33,15 +33,15 @@ If `engineering:architecture` is installed, use it to format the ADR in Step 5. 
 
 | Id | Option | Typical fit | Fixed monthly floor | Setup effort | Ops burden |
 |---|---|---|---|---|---|
-| O1 | Static site on S3 + CloudFront | Content with no server logic | under 1 USD (the Route 53 zone is 0.50 USD) | hours | very low: no servers |
-| O2 | O1 + serverless API (API Gateway HTTP API + Lambda + DynamoDB) — **blueprint `static-site-serverless-aws`** | Sites with forms, scores, light CRUD; spiky or low traffic | under 1 USD at small scale (blueprint estimate) | half a day | low: runtime upgrades yearly |
-| O3 | Serverless containers (ECS on Fargate + Application Load Balancer) | Long-running requests, custom runtimes, steady traffic | load balancer and at least one task run all month | one to two days | medium: images, patching base images, scaling rules |
-| O4 | Single virtual machine (EC2 or Lightsail) | Legacy apps, fixed IP, very steady small load | the instance runs all month | a day | high: OS patching, backups, monitoring, no failover |
-| O5 | Kubernetes (EKS) | Organizations that already run a platform team | cluster control plane plus nodes | days to weeks | very high unless a platform team owns it |
+| ARC-O1 | Static site on S3 + CloudFront | Content with no server logic | under 1 USD (the Route 53 zone is 0.50 USD) | hours | very low: no servers |
+| ARC-O2 | ARC-O1 + serverless API (API Gateway HTTP API + Lambda + DynamoDB) — **blueprint `static-site-serverless-aws`** | Sites with forms, scores, light CRUD; spiky or low traffic | under 1 USD at small scale (blueprint estimate) | half a day | low: runtime upgrades yearly |
+| ARC-O3 | Serverless containers (ECS on Fargate + Application Load Balancer) | Long-running requests, custom runtimes, steady traffic | load balancer and at least one task run all month | one to two days | medium: images, patching base images, scaling rules |
+| ARC-O4 | Single virtual machine (EC2 or Lightsail) | Legacy apps, fixed IP, very steady small load | the instance runs all month | a day | high: OS patching, backups, monitoring, no failover |
+| ARC-O5 | Kubernetes (EKS) | Organizations that already run a platform team | cluster control plane plus nodes | days to weeks | very high unless a platform team owns it |
 
-The pricing file covers O1 and O2 only (decision C). For O3–O5, look the prices up live and label them, or state "not estimated: outside the pricing file" — never fill in a number from memory.
+The pricing file covers ARC-O1 and ARC-O2 only (decision C). For ARC-O3–O5, look the prices up live and label them, or state "not estimated: outside the pricing file" — never fill in a number from memory.
 
-**Variants.** When one component of a catalog option does not fit (for example relational data where O2 has DynamoDB), name the variant `O<n>′`, state the swap and why, price the swapped component live with its source and date (it is outside the pricing file), and in Step 6 say which C-checks become N/A for the adapted template. Swapping more than one component is a different option: describe it with [cloud-component-mapping.md](../../references/cloud-component-mapping.md) instead.
+**Variants.** When one component of a catalog option does not fit (for example relational data where ARC-O2 has DynamoDB), name the variant `O<n>′`, state the swap and why, price the swapped component live with its source and date (it is outside the pricing file), and in Step 6 say which C-checks become N/A for the adapted template. Swapping more than one component is a different option: describe it with [cloud-component-mapping.md](../../references/cloud-component-mapping.md) instead.
 
 ## Steps
 
@@ -51,7 +51,7 @@ From the contract (`architecture:`), the code and the docs, list the deciding re
 
 ### Step 2 — Shortlist
 
-Eliminate options that break a requirement, with the reason (O2 is out for 20-minute jobs: Lambda's limit is 15 minutes). Keep two or three. If nothing in the catalog fits, say so and describe the nearest pattern with [cloud-component-mapping.md](../../references/cloud-component-mapping.md); do not force a blueprint.
+Eliminate options that break a requirement, with the reason (ARC-O2 is out for 20-minute jobs: Lambda's limit is 15 minutes). Keep two or three. If nothing in the catalog fits, say so and describe the nearest pattern with [cloud-component-mapping.md](../../references/cloud-component-mapping.md); do not force a blueprint.
 
 ### Step 3 — Cost estimate
 

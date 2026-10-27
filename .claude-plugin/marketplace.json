@@ -19,28 +19,28 @@
       "name": "ascent-delivery",
       "source": "./plugins/ascent-delivery",
       "description": "The ASCENT delivery loop for any repository: build, test with negative controls, gate, independent review with a finding verifier, and an operator runbook. A hook blocks git writes and deploys for Claude.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-architecture",
       "source": "./plugins/ascent-architecture",
       "description": "Architecture review for any repository: quality attributes against measurable targets, design principles, deployment options with dated cost estimates, a CloudFormation static-site blueprint with template checks, and a read-only architecture-reviewer agent.",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-ux",
       "source": "./plugins/ascent-ux",
       "description": "UX review for any web UI: WCAG 2.2 AA evidence with static checks and a Playwright browser pass, design-token contrast checks, five accessible design directions shown as mocks, and a read-only ux-reviewer agent.",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-ops",
       "source": "./plugins/ascent-ops",
       "description": "Operations review for any repository: infrastructure as code with secure-by-design configuration, zero-touch scripts and runbooks with pre-flight and post-flight checks, Maintenance and Operations and Troubleshooting manuals kept current with diagrams and a dependency map, and a read-only ops-reviewer agent.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "license": "MIT OR Apache-2.0"
     }
   ]

@@ -13,8 +13,8 @@ It is part of the [ASCENT framework](../../README.md), and you don't need an ASC
 | `architecture-reviewer` | agent (read-only) | An independent review in a separate context, also usable as a delivery-loop review lens. |
 | `static-site-serverless-aws` | blueprint | CloudFormation for S3 + CloudFront (Origin Access Control, security headers) + HTTP API + Lambda + DynamoDB, with retention, throttling, alarm and budget. Passes all 12 template checks. |
 | `estimate-cost.sh` | script | Monthly estimate from a dated pricing file and a usage profile; compares CloudFront flat-rate plans; warns when prices are over 90 days old. |
-| `check-cfn-static-site.sh` | script | 12 read-only checks (C1–C12) on a CloudFormation YAML template for the static-site pattern. |
-| `architecture-principles.md`, `cloud-component-mapping.md`, `contract-template.yml` | references | Principles P1–P12, Well-Architected pillars, Solutions Architect Professional lens, maturity targets; AWS ↔ Azure ↔ Google Cloud mapping; the `architecture:` section of `.ascent/contract.yml`. |
+| `check-cfn-static-site.sh` | script | 12 read-only checks (ARC-C1–C12) on a CloudFormation YAML template for the static-site pattern. |
+| `architecture-principles.md`, `cloud-component-mapping.md`, `contract-template.yml` | references | Principles ARC-P1–P12, Well-Architected pillars, Solutions Architect Professional lens, maturity targets; AWS ↔ Azure ↔ Google Cloud mapping; the `architecture:` section of `.ascent/contract.yml`. |
 
 ## Install
 

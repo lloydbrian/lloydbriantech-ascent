@@ -7,7 +7,7 @@ function secretish(n,   l) {
   if (l ~ /(arn|id|name|path|file|url|uri|ttl|length|len|version|ref|type|count|days|prefix|suffix|endpoint|header|dir|env|var|store)$/) return 0
   return l ~ /(password|passwd|passphrase|secret|token|apikey|api_key|private_key|access_key|secret_key|credential|auth_key|signing_key)/
 }
-function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s  %s\n", k, sev, where, msg); NF_[k]++; NFAIL++ }
+function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-7s %-6s %s  %s\n", "OPS-" k, sev, where, msg); NF_[k]++; NFAIL++ }
 function at() { return FN ":" FNR }
 function endsh() {
   if (FN == "" || PK != "sh") return
@@ -65,14 +65,14 @@ K == "sh" {
   if (line ~ /[Pp]ost-?_?flight|POST_?FLIGHT|postflight|postcheck|post-check|verify|smoke|health/) POST = 1
   if (line ~ /\$\{?REPLY/ || line ~ /--yes|--force\)|--apply|--execute|--confirm|CONFIRM=|ASSUME_YES|[Aa]re you sure|to confirm/) GUARD = 1
   if (match(line, /[A-Za-z_][A-Za-z0-9_]*=["'(]*\$\( *mktemp/)) { v = substr(line, RSTART, RLENGTH); sub(/=.*/, "", v); TMPV[v] = 1 }
-  # Z5 — secrets from arguments, read without -s, printed
+  # OPS-Z5 — secrets from arguments, read without -s, printed
   # Quoted prompts are masked first, so read -rp "Token: " NAME parses like read -r -p P NAME.
   t = line; gsub(/"[^"]*"|'[^']*'/, "P", t)
   if (match(t, /(^|[ \t;])read( +-[A-Za-z]+( +P)?)* +[A-Za-z_][A-Za-z0-9_]*/)) {
     s = substr(t, RSTART, RLENGTH); n = split(s, T, " "); silent = 0; vars = ""
     for (j = 1; j <= n; j++) { if (T[j] ~ /^-[A-Za-z]*s/) silent = 1 }
     nm = T[n]
-    # A confirmation prompt guards the file's destructive commands (Z6).
+    # A confirmation prompt guards the file's destructive commands (OPS-Z6).
     if (tolower(nm) ~ /^(confirm|confirmation|answer|reply|ok|yn|yesno|proceed|sure)$/) GUARD = 1
     if (secretish(nm)) { CHK["Z5"]++; if (!silent) fail("Z5", "High", at(), "reads " nm " without -s, so the secret is echoed to the terminal; use read -rs") }
   }
@@ -90,7 +90,7 @@ K == "sh" {
       if (secretish(v)) { CHK["Z5"]++; fail("Z5", "High", at(), "prints " v " to standard output; never print a secret (pipe it to the command that needs it)"); break }
     }
   }
-  # Z4 / Z9 — commands that change systems. Quoted text is masked (a message that says
+  # OPS-Z4 / OPS-Z9 — commands that change systems. Quoted text is masked (a message that says
   # "reboot" changes nothing) unless the line hands it to ssh, sh -c, eval or sudo. A
   # line that only stores a command in a variable is a change where the variable runs.
   cl = line
@@ -104,7 +104,7 @@ K == "sh" {
     if (hit) { if (CHANGE == "") { CHANGE = at(); CF = FNR }; CL = FNR }
     else if (cl ~ /(^|[^A-Za-z0-9])(gate|health|healthy|verify|verification|validate|assert|check|checks|smoke|probe|ready|readiness|status|require)([^A-Za-z]|$)/ || cl ~ /[a-z]_ok([^A-Za-z]|$)/) { if (CKMIN == 0) CKMIN = FNR; CKMAX = FNR }
   }
-  # Z6 — destructive commands
+  # OPS-Z6 — destructive commands
   if (line ~ /(^|[ \t;&|(])(sudo +)?rm +(-[A-Za-z]*r[A-Za-z]*f|-[A-Za-z]*f[A-Za-z]*r|--recursive)/ || line ~ /(terraform|tofu) +(-chdir=[^ ]+ +)?destroy/ || line ~ /aws +[a-z0-9-]+ +(delete-|terminate-)/ || line ~ /aws +s3 +(rm|rb) / || line ~ /(DROP +(TABLE|DATABASE|SCHEMA)|TRUNCATE +TABLE)/ || line ~ /kubectl +delete / || line ~ /helm +uninstall / || line ~ /(docker|podman) +(system +prune|volume +(rm|prune)|image +prune +-a)/ || line ~ /mkfs|wipefs|shred / || line ~ /(^|[ \t;&|])dd +.*of=/ || line ~ /git +reset +--hard|git +clean +-[a-z]*f|git +push +.*(--force|-f( |$))/ || line ~ /gh +repo +delete/) {
     safe = 0
     if (line ~ /(^|[ \t;&|(])(sudo +)?rm +/ && line !~ /destroy|delete|DROP|TRUNCATE|prune|mkfs|dd /) {
@@ -252,8 +252,8 @@ END {
   for (j = 1; j <= 9; j++) {
     k = ORDER[j]
     if (NF_[k] > 0) printf "%s", OUT[k]
-    else if (CHK[k] > 0) printf "PASS  %-4s %s (%d checked)\n", k, D[k], CHK[k]
-    else printf "N/A   %-4s %s (nothing to check)\n", k, D[k]
+    else if (CHK[k] > 0) printf "PASS  %-7s %s (%d checked)\n", "OPS-" k, D[k], CHK[k]
+    else printf "N/A   %-7s %s (nothing to check)\n", "OPS-" k, D[k]
   }
   printf "check-ops-scripts: %d script(s), %d make file(s), %d Dockerfile(s), %d Compose file(s), %d Terraform file(s), %d workflow(s), %d failure(s)\n", \
     KN["sh"], KN["make"], KN["docker"], KN["compose"], KN["tf"], KN["gha"], NFAIL

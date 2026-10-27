@@ -12,7 +12,7 @@ BEGIN {
 }
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function norm(s) { s = tolower(s); gsub(/[^a-z0-9]/, "", s); return s }
-function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s  %s\n", k, sev, where, msg); NF_[k]++; NFAIL++ }
+function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-7s %-6s %s  %s\n", "OPS-" k, sev, where, msg); NF_[k]++; NFAIL++ }
 function secretish(n,   l) {
   l = tolower(n); gsub(/-/, "_", l)
   if (l ~ /(arn|id|name|path|file|url|ttl|length|version|ref|type|store|manager|policy|rotation)$/) return 0
@@ -54,7 +54,7 @@ K == "mo" || K == "ts" {
       if (t ~ /^C4Deployment/ || tolower(MERHEAD) ~ /deployment/) LEVEL["deployment"] = 1
     }
   }
-  # M8 — credential-like values, in prose and code alike
+  # OPS-M8 — credential-like values, in prose and code alike
   if (line ~ /-----BEGIN [A-Z ]*PRIVATE KEY-----/) fail("M8", "High", FN ":" FNR, "private key block in the manual; remove it and rotate the key (→ ascent-security)")
   if (line ~ /AKIA[0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z]/) fail("M8", "High", FN ":" FNR, "AWS access key id in the manual; remove it and rotate the key (→ ascent-security)")
   tt = line
@@ -132,24 +132,24 @@ END {
       if (NSRC[m] + 0 == 0) miss = miss " sources"
       if (miss != "") fail("M1", "Medium", PATHOF[m] ":1", "front matter is missing" miss)
     }
-    # M2 — sections
+    # OPS-M2 — sections
     CHK["M2"]++; miss = ""
     for (j = 1; j <= NREQ[m]; j++) if (!((m, j) in HAVE)) miss = miss (miss == "" ? "" : ", ") (m == "mo" ? RN_mo[j] : RN_ts[j])
     if (miss != "") fail("M2", "Medium", PATHOF[m] ":1", role(m) " is missing sections: " miss)
-    # M6 — current
+    # OPS-M6 — current
     CHK["M6"]++
     if (ASOF[m] ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) {
       age = days(TODAY) - days(ASOF[m])
       if (age > MAXAGE) fail("M6", "Medium", PATHOF[m] ":" ASOFL[m], "out of date: as_of " ASOF[m] " is " age " days old (limit " MAXAGE ")")
     }
     g = GIT[m]; ng = split(g, G, "\t")
-    if (G[1] == "NOTE") { NOTES = NOTES sprintf("NOTE  M6   -      %s:1  %s\n", PATHOF[m], G[2]); if (ng >= 3 && G[3] != "") fail("M6", "Medium", PATHOF[m] ":1", "sources no longer exist:" G[3]) }
+    if (G[1] == "NOTE") { NOTES = NOTES sprintf("NOTE  OPS-M6  -      %s:1  %s\n", PATHOF[m], G[2]); if (ng >= 3 && G[3] != "") fail("M6", "Medium", PATHOF[m] ":1", "sources no longer exist:" G[3]) }
     else if (g != "") {
       if (G[1] + 0 > 0) fail("M6", "Medium", PATHOF[m] ":1", "out of date: " G[1] " commit(s) changed its sources since " DESC[m] (G[2] != "" ? " (" trim(G[2]) ")" : ""))
       if (G[3] != "") fail("M6", "Medium", PATHOF[m] ":1", "sources no longer exist:" G[3])
     }
   }
-  # M3, M4, M5 — MO manual
+  # OPS-M3, OPS-M4, OPS-M5 — MO manual
   if ("mo" in SEEN) {
     CHK["M3"]++; miss = ""
     if (!("context" in LEVEL)) miss = miss " system context"
@@ -180,9 +180,9 @@ END {
   for (j = 1; j <= 8; j++) {
     k = ORDER[j]
     if (NF_[k] > 0) printf "%s", OUT[k]
-    else if (k == "M4" && NSVC == 0 && ("mo" in SEEN)) printf "N/A   %-4s %s (no IaC or Compose services found%s; check the diagrams against the system by reading)\n", k, D[k], (NIAC > 0 ? " in " NIAC " file(s)" : "")
-    else if (CHK[k] > 0) printf "PASS  %-4s %s (%d checked)\n", k, D[k], CHK[k]
-    else printf "N/A   %-4s %s (nothing to check)\n", k, D[k]
+    else if (k == "M4" && NSVC == 0 && ("mo" in SEEN)) printf "N/A   %-7s %s (no IaC or Compose services found%s; check the diagrams against the system by reading)\n", "OPS-" k, D[k], (NIAC > 0 ? " in " NIAC " file(s)" : "")
+    else if (CHK[k] > 0) printf "PASS  %-7s %s (%d checked)\n", "OPS-" k, D[k], CHK[k]
+    else printf "N/A   %-7s %s (nothing to check)\n", "OPS-" k, D[k]
   }
   printf "%s", NOTES
   printf "check-ops-manuals: 2 manual(s) expected, %d found, %d service(s) to draw, %d failure(s)\n", ("mo" in SEEN) + ("ts" in SEEN), NSVC, NFAIL

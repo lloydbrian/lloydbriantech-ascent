@@ -8,7 +8,7 @@ description: >-
   design system, usability, states and performance, runs the static checks and
   a Playwright browser pass, and reports strong, moderate or weak with WCAG
   evidence. For a quick design-level critique, design:accessibility-review fits.
-version: 0.1.1
+version: 0.2.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -40,7 +40,7 @@ The companion plugins are installed with this one: `design`, `frontend-design` a
 - **No conformance claims from automation.** Automated checks find only part of WCAG failures. The report never says "conforms to WCAG 2.2 AA". It says what was checked, what failed, and what the manual checklist must still cover.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **Never "met" without a target.** A lens or attribute whose target is missing from the contract is unmeasured, or at risk when the evidence shows a gap. Good evidence alone never makes it met.
-- **Guessed core flows are labelled.** Until the operator confirms the contract, every severity that depends on a core flow (High for U3, U12 and the first severity row) carries "(core flow guessed)".
+- **Guessed core flows are labelled.** Until the operator confirms the contract, every severity that depends on a core flow (High for UX-U3, UX-U12 and the first severity row) carries "(core flow guessed)".
 - **One contrast finding per failing foreground token**, listing every background and theme it fails on. The fix is one token change, so it is one finding.
 - **Maturity gaps are always rated.** With no confirmed contract, rate them against the enterprise defaults (Step 5) and say so; never list them unrated.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Credentials in client code are `ascent-security`'s and `ascent-architecture`'s finding: cite the location, mark it `→ ascent-security`, and never print the value.
@@ -125,11 +125,11 @@ bash "$PLUGIN_ROOT/scripts/check-web-accessibility.sh" --core <core-flow file> <
 bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" [--pairs <contract contrast_pairs>] <token files or CSS>
 ```
 
-- Pass `--core` once for each file of a core flow, so U3 and U12 failures there are High.
+- Pass `--core` once for each file of a core flow, so UX-U3 and UX-U12 failures there are High.
 - Each static `FAIL` line is a finding with the severity it prints, marked "static".
 - Each `NOTE` line is unrated: list it under Other observations and settle it in the browser pass (an `<h1>` rendered by a script, a box-shadow focus ring whose contrast is not computed).
 - Contrast `FAIL` lines are Medium findings (1.4.3 or 1.4.11). Pairs marked "inferred" came from CSS rules or token names; say so.
-- If Bash is unavailable or the operator declines it, apply U1–U12 by reading the markup and say "checks applied by reading; scripts not run". Never estimate a contrast ratio by eye: say "contrast not computed".
+- If Bash is unavailable or the operator declines it, apply UX-U1–U12 by reading the markup and say "checks applied by reading; scripts not run". Never estimate a contrast ratio by eye: say "contrast not computed".
 
 ### Step 4 — Browser pass (authoritative)
 

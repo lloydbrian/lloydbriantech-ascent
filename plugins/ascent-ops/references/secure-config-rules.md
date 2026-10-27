@@ -1,4 +1,4 @@
-# Secure-by-design configuration: S1–S10
+# Secure-by-design configuration: OPS-S1–S10
 
 Infrastructure as code is the only way configuration changes. These rules keep configuration values and secrets out of the code, out of the images and out of anyone's terminal history. `check-iac-config.sh` applies them mechanically; `iac-config-check` reads what the script cannot see. Severities come from the [ops-review](../skills/ops-review/SKILL.md) table.
 
@@ -6,16 +6,16 @@ A finding names the key and its `file:line`. It never contains the value, even w
 
 | Rule | Severity | The rule | Why |
 |---|---|---|---|
-| S1 | High | No secret value is written as a literal or a default: parameter `Default`, variable `default`, an attribute, a tfvars entry, `ENV` or `ARG` in a Dockerfile, a Compose `environment` value | a value in the repository is a value in every clone, fork and backup; `ENV` persists in every image layer |
-| S2 | Medium | Sensitive parameters are marked: `NoEcho: true`; `sensitive = true` on variables and outputs | unmarked values are printed in plans, events and console pages |
-| S3 | High | Secrets reach tasks and functions from Secrets Manager or SSM SecureString (`Secrets`/`valueFrom`, or a runtime read); no secret is stored in an SSM `String`. Medium for Compose: use Compose `secrets:` (a mounted file) | plain environment values show in the console, in `describe` output and in crash dumps |
-| S4 | High | Terraform state is remote, encrypted and locked (`encrypt = true`, `use_lockfile = true` or a lock table); no state file is in the repository | state holds every secret Terraform touched, in plain text |
-| S5 | Medium | IAM policies grant no wildcard actions (`*`, `service:*`); each reader can get only its own secrets. The account-root statement of a KMS key policy is exempt | a wildcard turns one compromised role into every secret |
-| S6 | Low | Every Secrets Manager secret has a rotation schedule | a secret that never rotates stays valid after every leak |
-| S7 | Medium | Configuration is separated per environment: an environment parameter or variable, per-environment tfvars or parameter files, workspaces or environment directories | shared values let a dev change reach production |
-| S8 | High | No `.env` file is copied into an image. Medium: a production Compose file reads an `env_file` | an image is pushed, cached and shared; a host file has no rotation or audit |
-| S9 | Medium | Drift is visible: a scheduled `terraform plan -detailed-exitcode`, `aws cloudformation detect-stack-drift` or `driftctl`; no `lifecycle { ignore_changes = all }` | changes made by hand in a console are the changes nobody can reproduce |
-| S10 | Low | Every parameter and variable is documented in the Maintenance and Operations Manual (where it lives, secret or not, rotation) | the next operator has to know what each value does before changing it |
+| OPS-S1 | High | No secret value is written as a literal or a default: parameter `Default`, variable `default`, an attribute, a tfvars entry, `ENV` or `ARG` in a Dockerfile, a Compose `environment` value | a value in the repository is a value in every clone, fork and backup; `ENV` persists in every image layer |
+| OPS-S2 | Medium | Sensitive parameters are marked: `NoEcho: true`; `sensitive = true` on variables and outputs | unmarked values are printed in plans, events and console pages |
+| OPS-S3 | High | Secrets reach tasks and functions from Secrets Manager or SSM SecureString (`Secrets`/`valueFrom`, or a runtime read); no secret is stored in an SSM `String`. Medium for Compose: use Compose `secrets:` (a mounted file) | plain environment values show in the console, in `describe` output and in crash dumps |
+| OPS-S4 | High | Terraform state is remote, encrypted and locked (`encrypt = true`, `use_lockfile = true` or a lock table); no state file is in the repository | state holds every secret Terraform touched, in plain text |
+| OPS-S5 | Medium | IAM policies grant no wildcard actions (`*`, `service:*`); each reader can get only its own secrets. The account-root statement of a KMS key policy is exempt | a wildcard turns one compromised role into every secret |
+| OPS-S6 | Low | Every Secrets Manager secret has a rotation schedule | a secret that never rotates stays valid after every leak |
+| OPS-S7 | Medium | Configuration is separated per environment: an environment parameter or variable, per-environment tfvars or parameter files, workspaces or environment directories | shared values let a dev change reach production |
+| OPS-S8 | High | No `.env` file is copied into an image. Medium: a production Compose file reads an `env_file` | an image is pushed, cached and shared; a host file has no rotation or audit |
+| OPS-S9 | Medium | Drift is visible: a scheduled `terraform plan -detailed-exitcode`, `aws cloudformation detect-stack-drift` or `driftctl`; no `lifecycle { ignore_changes = all }` | changes made by hand in a console are the changes nobody can reproduce |
+| OPS-S10 | Low | Every parameter and variable is documented in the Maintenance and Operations Manual (where it lives, secret or not, rotation) | the next operator has to know what each value does before changing it |
 
 ## Fixes, by tool
 

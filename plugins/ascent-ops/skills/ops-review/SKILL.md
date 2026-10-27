@@ -8,7 +8,7 @@ description: >-
   configuration stores, scripts, runbooks, manuals and health endpoints,
   checks six lenses, runs the IaC, script and manual checks, and reports
   strong, moderate or weak with file:line evidence. Read-only.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
@@ -19,7 +19,7 @@ One review of how a system is run, changed and recovered, judged against the pro
 It makes the ASCENT devops role checkable: infrastructure as code is the only way configuration changes, secrets are secure by design, every operation is a zero-touch command with pre-flight and post-flight checks, and two manuals let someone who did not build the system run it.
 
 Shared sources:
-- [secure-config-rules.md](../../references/secure-config-rules.md): S1–S10
+- [secure-config-rules.md](../../references/secure-config-rules.md): OPS-S1–S10
 - [sre-baseline.md](../../references/sre-baseline.md): health endpoints, SLOs, alerts, pinning, change and recovery
 - [runbook-standard.md](../../references/runbook-standard.md)
 - [manual-sections.md](../../references/manual-sections.md)
@@ -28,7 +28,7 @@ Shared sources:
 ## Rules
 
 - **Read-only.** Never edit files, run a deploy, apply a plan, start or stop a service, or call a cloud API that changes anything. `git log` and `git ls-files` are the only commands pre-approved; the three scripts only read.
-- **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory) or "absent: searched <paths>", the rule it breaks (S1–S10, Z1–Z9, M1–M8, or the baseline item), a concrete failure scenario (what goes wrong, for whom, when), and a fix.
+- **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory) or "absent: searched <paths>", the rule it breaks (OPS-S1–S10, OPS-Z1–Z9, OPS-M1–M8, or the baseline item), a concrete failure scenario (what goes wrong, for whom, when), and a fix.
 - **Fresh evidence.** Re-read the evidence for every finding in this run. Never carry findings over from an earlier pass, an agent's report or another session.
 - **Rate only with the severity table.** A concern that matches no row goes under **Other observations (unrated)** and does not count toward the rating. Never invent a severity.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
@@ -47,27 +47,27 @@ Every finding carries one of these severities. The other skills, the `ops-review
 <!-- ops-severity:start -->
 | Finding | Severity |
 |---|---|
-| A secret value written in IaC, a Dockerfile, a Compose file, a script or a manual (S1, M8); the leak itself → ascent-security | High |
-| A secret passed as a plain environment value to a task or function, or stored as an SSM String (S3) | High |
-| Terraform state local, unencrypted, unlocked or committed (S4) | High |
-| A .env file copied into an image (S8) | High |
-| A script that takes a secret as an argument, reads it without -s or prints it (Z5) | High |
-| A destructive command with no confirmation or explicit flag (Z6) | High |
+| A secret value written in IaC, a Dockerfile, a Compose file, a script or a manual (OPS-S1, OPS-M8); the leak itself → ascent-security | High |
+| A secret passed as a plain environment value to a task or function, or stored as an SSM String (OPS-S3) | High |
+| Terraform state local, unencrypted, unlocked or committed (OPS-S4) | High |
+| A .env file copied into an image (OPS-S8) | High |
+| A script that takes a secret as an argument, reads it without -s or prints it (OPS-Z5) | High |
+| A destructive command with no confirmation or explicit flag (OPS-Z6) | High |
 | No rollback path for a production deploy that exists | High |
-| A sensitive parameter not marked NoEcho or sensitive (S2) | Medium |
-| A secret passed to a Compose service as an environment value instead of Compose secrets (S3) | Medium |
-| A wildcard IAM action (S5) | Medium |
-| No per-environment configuration (S7), or an env file in a production Compose file (S8) | Medium |
-| No drift check, or drift hidden by ignore_changes = all (S9) | Medium |
-| An operator script without a shebang or strict mode (Z1, Z2), or one that changes systems without a dry run (Z4) | Medium |
-| A floating version: a :latest or untagged image, @latest, an action on a branch, a remote script piped to a shell, an unbounded provider (Z8) | Medium |
+| A sensitive parameter not marked NoEcho or sensitive (OPS-S2) | Medium |
+| A secret passed to a Compose service as an environment value instead of Compose secrets (OPS-S3) | Medium |
+| A wildcard IAM action (OPS-S5) | Medium |
+| No per-environment configuration (OPS-S7), or an env file in a production Compose file (OPS-S8) | Medium |
+| No drift check, or drift hidden by ignore_changes = all (OPS-S9) | Medium |
+| An operator script without a shebang or strict mode (OPS-Z1, OPS-Z2), or one that changes systems without a dry run (OPS-Z4) | Medium |
+| A floating version: a :latest or untagged image, @latest, an action on a branch, a remote script piped to a shell, an unbounded provider (OPS-Z8) | Medium |
 | A liveness or readiness endpoint missing at the contract path, a probe on another path, or a liveness check that depends on the database | Medium |
 | A runbook without pre-flight or post-flight checks, or steps without Expect and Stop if | Medium |
-| A manual missing, without front matter or a required section, out of date, without the three diagram levels, with a service missing from the diagrams, or without a symptom table (M1–M4, M6, M7) | Medium |
+| A manual missing, without front matter or a required section, out of date, without the three diagram levels, with a service missing from the diagrams, or without a symptom table (OPS-M1–M4, OPS-M6, OPS-M7) | Medium |
 | Production infrastructure not in IaC (built by hand) at the standard or enterprise target | Medium |
-| A secret without rotation (S6), or configuration not documented in the manual (S10) | Low |
-| A script without --help (Z3), a make target without ## help (Z7), or a changing script without pre-flight and post-flight checks (Z9) | Low |
-| A dependency map without versions (M5) | Low |
+| A secret without rotation (OPS-S6), or configuration not documented in the manual (OPS-S10) | Low |
+| A script without --help (OPS-Z3), a make target without ## help (OPS-Z7), or a changing script without pre-flight and post-flight checks (OPS-Z9) | Low |
+| A dependency map without versions (OPS-M5) | Low |
 | Health endpoints at non-default paths with no contract override | Low |
 | An ops target missing from the contract ("unmeasured") | Low |
 | No rollback path while no production deploy exists yet (deploy files empty or stubs) | Low |
@@ -112,9 +112,9 @@ List the environments; the IaC files and what each provisions; the configuration
 
 One line per lens: what the contract asks, the evidence found, and the status **met**, **at risk** or **unmeasured**. A lens whose target is missing from the contract is unmeasured, never met; it is at risk instead when the evidence shows a gap. Report these six lenses, in this order, and no others:
 
-- **Infrastructure as code:** every environment in IaC; nothing built by hand; state handled safely (S4).
-- **Secure configuration:** S1–S10 ([secure-config-rules.md](../../references/secure-config-rules.md)).
-- **Scripts and runbooks:** zero-touch scripts (Z1–Z9) and runbooks with pre-flight, post-flight, Expect and Stop if ([runbook-standard.md](../../references/runbook-standard.md)).
+- **Infrastructure as code:** every environment in IaC; nothing built by hand; state handled safely (OPS-S4).
+- **Secure configuration:** OPS-S1–S10 ([secure-config-rules.md](../../references/secure-config-rules.md)).
+- **Scripts and runbooks:** zero-touch scripts (OPS-Z1–Z9) and runbooks with pre-flight, post-flight, Expect and Stop if ([runbook-standard.md](../../references/runbook-standard.md)).
 - **Health and SLOs:** endpoints at the contract paths, liveness free of dependencies, probes on the same paths, SLOs and alerts each linked to a runbook, pinned versions ([sre-baseline.md](../../references/sre-baseline.md)).
 - **Manuals:** both manuals present, current and complete, with diagrams and a dependency map ([manual-sections.md](../../references/manual-sections.md)).
 - **Change and recovery:** deploy, rollback, backup and restore (with a restore-test date), drift check.
@@ -134,7 +134,7 @@ bash "$PLUGIN_ROOT/scripts/check-ops-manuals.sh" --repo . <ops.manuals.maintenan
 - Each `FAIL` line is a finding with the severity it prints, under the rule id it names.
 - An `absent` location means the control is missing everywhere searched: cite it as "absent: searched <paths>".
 - `NOTE` lines are unrated: list them under Other observations (IaC the checks do not cover, source changes not checked).
-- `N/A` is never a pass. Say what had nothing to check; for M4 with no IaC, check the diagrams against the Step 1 inventory by reading.
+- `N/A` is never a pass. Say what had nothing to check; for OPS-M4 with no IaC, check the diagrams against the Step 1 inventory by reading.
 - If Bash is unavailable or the operator declines it, apply the rules by reading and say "checks applied by reading; scripts not run".
 
 ### Step 4 — Health endpoints

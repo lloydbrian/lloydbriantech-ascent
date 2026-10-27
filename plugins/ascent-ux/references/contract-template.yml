@@ -32,7 +32,7 @@ ux:
   tokens: design/tokens/                # Design Tokens JSON files, a CSS variables sheet, or tailwind.config.*
   themes: [light, dark]
   contrast_pairs: design/tokens/pairs.tsv   # foreground<TAB>background<TAB>text|large-text|ui
-  direction: D1                         # chosen with design-directions; D1-D5, or D6+ for a custom one
+  direction: UX-D1                      # chosen with design-directions; UX-D1–D5, or UX-D6 onward for a custom one
 
   browsers: [last-2-evergreen, ios-safari-17]
   viewports: [320, 768, 1280]          # 320 px is WCAG 1.4.10 Reflow

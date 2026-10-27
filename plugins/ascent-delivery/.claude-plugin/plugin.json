@@ -1,6 +1,6 @@
 {
   "name": "ascent-delivery",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The ASCENT delivery loop for any repository: decide, build with a file-modification audit, test with negative controls, gate, independent review with a finding verifier, and a hand-off runbook the operator runs. A hook blocks git writes and deploys so the operator keeps that boundary.",
   "author": {
     "name": "lloydbriantech"

@@ -1,6 +1,6 @@
 {
   "name": "ascent-ux",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "UX review for any web UI: WCAG 2.2 AA evidence with static checks and a Playwright browser pass, a design-token and contrast check, and five accessible design directions shown as mocks, with a read-only ux-reviewer agent.",
   "author": {
     "name": "lloydbriantech"

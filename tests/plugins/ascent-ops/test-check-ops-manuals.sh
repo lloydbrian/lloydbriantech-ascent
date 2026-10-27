@@ -74,61 +74,61 @@ matrix() {
   if [ "$RC" -eq 0 ] && [ "$(printf '%s\n' "$OUT" | grep -c '^PASS ')" -eq 8 ]; then ok
   else bad "blueprint manuals should pass all 8: exit $RC $(printf '%s\n' "$OUT" | grep -vE '^PASS' | tr '\n' ';')"; fi
 
-  # M1 — presence and front matter
-  mk m1-absent;    rm "$WORK/m1-absent/$MO"; chk m1-absent; expect_only m1-absent M1 Medium
-  mk m1-nofm;      edit m1-nofm "$TS" 'NR == 1, /^---$/ && NR > 1 { next } { print }' && chk m1-nofm && expect_only m1-nofm M1
-  if printf '%s\n' "$OUT" | grep -q '^FAIL  M1 .*TROUBLESHOOTING.md:1  no front matter'; then ok; else bad "m1-nofm: should say there is no front matter: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -1)"; fi
-  mk m1-describes; edit m1-describes "$MO" "$(drop 'describes:')" && chk m1-describes && expect_only m1-describes M1
-  mk m1-sources;   edit m1-sources "$MO" '/^sources:/ { s = 1; next } s && /^  - / { next } { s = 0; print }' && chk m1-sources && expect_only m1-sources M1
+  # OPS-M1 — presence and front matter
+  mk m1-absent;    rm "$WORK/m1-absent/$MO"; chk m1-absent; expect_only m1-absent OPS-M1 Medium
+  mk m1-nofm;      edit m1-nofm "$TS" 'NR == 1, /^---$/ && NR > 1 { next } { print }' && chk m1-nofm && expect_only m1-nofm OPS-M1
+  if printf '%s\n' "$OUT" | grep -q '^FAIL  OPS-M1 .*TROUBLESHOOTING.md:1  no front matter'; then ok; else bad "m1-nofm: should say there is no front matter: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -1)"; fi
+  mk m1-describes; edit m1-describes "$MO" "$(drop 'describes:')" && chk m1-describes && expect_only m1-describes OPS-M1
+  mk m1-sources;   edit m1-sources "$MO" '/^sources:/ { s = 1; next } s && /^  - / { next } { s = 0; print }' && chk m1-sources && expect_only m1-sources OPS-M1
 
-  # M2 — sections
-  mk m2-mo;        edit m2-mo "$MO" "$(subst '## Rollback' '## Going back')" && chk m2-mo && expect_only m2-mo M2 Medium
-  mk m2-ts;        edit m2-ts "$TS" "$(subst '## Known issues' '## Quirks')" && chk m2-ts && expect_only m2-ts M2
+  # OPS-M2 — sections
+  mk m2-mo;        edit m2-mo "$MO" "$(subst '## Rollback' '## Going back')" && chk m2-mo && expect_only m2-mo OPS-M2 Medium
+  mk m2-ts;        edit m2-ts "$TS" "$(subst '## Known issues' '## Quirks')" && chk m2-ts && expect_only m2-ts OPS-M2
 
-  # M3 — the three C4 levels
-  mk m3;           edit m3 "$MO" "$(subst '### Deployment' '### Hosting')" && edit m3 "$MO" "$(subst 'C4Deployment' 'flowchart TB')" && chk m3 && expect_only m3 M3 Medium
+  # OPS-M3 — the three C4 levels
+  mk m3;           edit m3 "$MO" "$(subst '### Deployment' '### Hosting')" && edit m3 "$MO" "$(subst 'C4Deployment' 'flowchart TB')" && chk m3 && expect_only m3 OPS-M3 Medium
 
-  # M4 — every service drawn
-  mk m4-compose;   printf 'services:\n  cache:\n    image: docker.io/library/redis:7.4\n' > "$WORK/m4-compose/compose.cache.yml"; chk m4-compose; expect_only m4-compose M4 Medium
+  # OPS-M4 — every service drawn
+  mk m4-compose;   printf 'services:\n  cache:\n    image: docker.io/library/redis:7.4\n' > "$WORK/m4-compose/compose.cache.yml"; chk m4-compose; expect_only m4-compose OPS-M4 Medium
   if printf '%s\n' "$OUT" | grep -q 'cache (.*compose.cache.yml:2)'; then ok; else bad "m4-compose: the missing service should be named with its file:line"; fi
-  mk m4-tf;        printf 'resource "aws_sqs_queue" "jobs" {\n  name = "jobs"\n}\n' > "$WORK/m4-tf/queue.tf"; chk m4-tf; expect_only m4-tf M4
-  mk m4-generic;   printf 'resource "aws_s3_bucket" "this" {\n  bucket = "x"\n}\n' > "$WORK/m4-generic/bucket.tf"; chk m4-generic; expect_only m4-generic M4
+  mk m4-tf;        printf 'resource "aws_sqs_queue" "jobs" {\n  name = "jobs"\n}\n' > "$WORK/m4-tf/queue.tf"; chk m4-tf; expect_only m4-tf OPS-M4
+  mk m4-generic;   printf 'resource "aws_s3_bucket" "this" {\n  bucket = "x"\n}\n' > "$WORK/m4-generic/bucket.tf"; chk m4-generic; expect_only m4-generic OPS-M4
   mk m4-generic-ok; printf 'resource "aws_s3_bucket" "this" {\n  bucket = "x"\n}\n' > "$WORK/m4-generic-ok/bucket.tf"
   edit m4-generic-ok "$MO" "$(after '    ContainerDb(db, "db", "PostgreSQL 16", "Volume db-data, backed up nightly")' '    Container(bk, "backup bucket", "S3")')" && chk m4-generic-ok && expect_pass m4-generic-ok 'a generic resource name is matched by its kind (s3)'
   run --today "$AS_OF" --repo "$BP" "$BP/$MO" "$BP/$TS"
-  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   M4 .*no IaC or Compose services found; check the diagrams against the system by reading'; then ok
-  else bad "M4 should be N/A without IaC: $(printf '%s\n' "$OUT" | grep 'M4')"; fi
+  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   OPS-M4 .*no IaC or Compose services found; check the diagrams against the system by reading'; then ok
+  else bad "OPS-M4 should be N/A without IaC: $(printf '%s\n' "$OUT" | grep 'OPS-M4')"; fi
 
-  # M5 — dependency map
-  mk m5;           edit m5 "$MO" "$(subst '| Dependency | Kind | Version |' '| Dependency | Kind | Release |')" && chk m5 && expect_only m5 M5 Low
+  # OPS-M5 — dependency map
+  mk m5;           edit m5 "$MO" "$(subst '| Dependency | Kind | Version |' '| Dependency | Kind | Release |')" && chk m5 && expect_only m5 OPS-M5 Low
 
-  # M6 — current
+  # OPS-M6 — current
   TODAY=2027-01-23; mk m6-edge; chk m6-edge; expect_pass m6-edge 'exactly 90 days old'
-  TODAY=2027-01-24; mk m6-old; chk m6-old; expect_only m6-old M6 Medium; TODAY=""
-  mk m6-missing;   rm "$WORK/m6-missing/ops-script-template.sh"; chk m6-missing; expect_only m6-missing M6
+  TODAY=2027-01-24; mk m6-old; chk m6-old; expect_only m6-old OPS-M6 Medium; TODAY=""
+  mk m6-missing;   rm "$WORK/m6-missing/ops-script-template.sh"; chk m6-missing; expect_only m6-missing OPS-M6
   if printf '%s\n' "$OUT" | grep -q 'sources no longer exist: ops-script-template.sh'; then ok; else bad "m6-missing: should name the missing source"; fi
   GITSHIM="$WORK/gitshim"
-  mk m6-git;       FAKE_LOG="a1 b2" FAKE_DIFF="compose.yml" chk m6-git; expect_only m6-git M6
-  if printf '%s\n' "$OUT" | grep -q '2 commit(s) changed its sources since v1.0.0 (compose.yml)'; then ok; else bad "m6-git: should report 2 commits and the changed source: $(printf '%s\n' "$OUT" | grep M6 | head -1)"; fi
+  mk m6-git;       FAKE_LOG="a1 b2" FAKE_DIFF="compose.yml" chk m6-git; expect_only m6-git OPS-M6
+  if printf '%s\n' "$OUT" | grep -q '2 commit(s) changed its sources since v1.0.0 (compose.yml)'; then ok; else bad "m6-git: should report 2 commits and the changed source: $(printf '%s\n' "$OUT" | grep OPS-M6 | head -1)"; fi
   mk m6-git-clean; FAKE_LOG="" chk m6-git-clean; expect_pass m6-git-clean 'no commits since the described release'
   if ! printf '%s\n' "$OUT" | grep -q '^NOTE '; then ok; else bad "m6-git-clean: no NOTE expected when git answers"; fi
   # Trailing comments in the front matter (as in references/manual-sections.md) are dropped.
   mk fm-comments;  edit fm-comments "$MO" '/^(as_of|describes|sources):/ && !d[$1]++ { $0 = $0 "   # a comment" } { print }' \
-    && FAKE_LOG="a1 b2" FAKE_DIFF="compose.yml" chk fm-comments && expect_only fm-comments M6
+    && FAKE_LOG="a1 b2" FAKE_DIFF="compose.yml" chk fm-comments && expect_only fm-comments OPS-M6
   if printf '%s\n' "$OUT" | grep -q "$MO:1  out of date: 2 commit(s) changed its sources since v1.0.0 (compose.yml)"; then ok; else bad "fm-comments: as_of, describes and sources should parse: $(printf '%s\n' "$OUT" | grep -E '^(FAIL|NOTE)' | head -2 | tr '\n' ';')"; fi
   mk m6-noref;     FAKE_NOREF=1 chk m6-noref; expect_pass m6-noref 'an unknown describes value is a NOTE, not a failure'
-  if printf '%s\n' "$OUT" | grep -q '^NOTE  M6 .*describes "v1.0.0" is not a commit or tag'; then ok; else bad "m6-noref: expected a NOTE"; fi
+  if printf '%s\n' "$OUT" | grep -q '^NOTE  OPS-M6 .*describes "v1.0.0" is not a commit or tag'; then ok; else bad "m6-noref: expected a NOTE"; fi
   GITSHIM=""
 
-  # M7 — symptom table
-  mk m7-cols;      edit m7-cols "$TS" "$(subst '| Symptom | Where to look | Likely cause | Fix or escalation |' '| Symptom | Where to look | Fix |')" && chk m7-cols && expect_only m7-cols M7 Medium
-  mk m7-rows;      edit m7-rows "$TS" '/^## Symptoms/ { s = 1 } /^## Diagnostic/ { s = 0 } s && /^\|/ && !/^\| Symptom/ && !/^\|---/ { next } { print }' && chk m7-rows && expect_only m7-rows M7
+  # OPS-M7 — symptom table
+  mk m7-cols;      edit m7-cols "$TS" "$(subst '| Symptom | Where to look | Likely cause | Fix or escalation |' '| Symptom | Where to look | Fix |')" && chk m7-cols && expect_only m7-cols OPS-M7 Medium
+  mk m7-rows;      edit m7-rows "$TS" '/^## Symptoms/ { s = 1 } /^## Diagnostic/ { s = 0 } s && /^\|/ && !/^\| Symptom/ && !/^\|---/ { next } { print }' && chk m7-rows && expect_only m7-rows OPS-M7
 
-  # M8 — credential-like values (never printed)
-  mk m8;           edit m8 "$MO" "$(after 'Secrets are never written' 'Emergency: DB_PASSWORD=hunter2-fixture-value')" && chk m8 && expect_only m8 M8 High
+  # OPS-M8 — credential-like values (never printed)
+  mk m8;           edit m8 "$MO" "$(after 'Secrets are never written' 'Emergency: DB_PASSWORD=hunter2-fixture-value')" && chk m8 && expect_only m8 OPS-M8 High
   if printf '%s\n' "$OUT" | grep -q 'hunter2-fixture-value'; then bad "m8: the value was printed"; else ok; fi
-  mk m8-akia;      printf '\naws_access_key_id = AKIAABCDEFGHIJKLMNOP\n' >> "$WORK/m8-akia/$TS"; chk m8-akia; expect_only m8-akia M8
-  mk m8-pem;       printf '\n-----BEGIN OPENSSH PRIVATE KEY-----\n' >> "$WORK/m8-pem/$TS"; chk m8-pem; expect_only m8-pem M8
+  mk m8-akia;      printf '\naws_access_key_id = AKIAABCDEFGHIJKLMNOP\n' >> "$WORK/m8-akia/$TS"; chk m8-akia; expect_only m8-akia OPS-M8
+  mk m8-pem;       printf '\n-----BEGIN OPENSSH PRIVATE KEY-----\n' >> "$WORK/m8-pem/$TS"; chk m8-pem; expect_only m8-pem OPS-M8
   mk m8-prose;     printf '\npassword: stored in Secrets Manager, never here\nDB_PASSWORD=<from Secrets Manager>\ntoken: ${API_TOKEN}\napi_token = ***\n' >> "$WORK/m8-prose/$TS"; chk m8-prose; expect_pass m8-prose 'prose, placeholders and references are not values'
 
   # Bad input and help.

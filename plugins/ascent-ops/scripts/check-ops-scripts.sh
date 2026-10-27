@@ -10,29 +10,29 @@
 # .git, .terraform, vendor, dist, build, virtualenvs, and test code (tests/, test/,
 # fixtures/, test-*.sh, *_test.sh) unless --include-tests. A file named on the
 # command line is always checked. A sourced library (under lib/, or named lib*.sh,
-# *-lib.sh, _*.sh, common.sh) is checked for Z5 and Z6 only.
+# *-lib.sh, _*.sh, common.sh) is checked for OPS-Z5 and OPS-Z6 only.
 #
 # Checks (severity from the ops-review severity table):
-#   Z1  Medium  a script starts with a shebang
-#   Z2  Medium  strict mode: set -euo pipefail (bash), set -eu (sh)
-#   Z3  Low     the script answers --help (usage text), itself or through a shared
+#   OPS-Z1  Medium  a script starts with a shebang
+#   OPS-Z2  Medium  strict mode: set -euo pipefail (bash), set -eu (sh)
+#   OPS-Z3  Low     the script answers --help (usage text), itself or through a shared
 #               help function it hands "$@" to
-#   Z4  Medium  a script that changes systems offers a dry run (--dry-run, DRY_RUN,
+#   OPS-Z4  Medium  a script that changes systems offers a dry run (--dry-run, DRY_RUN,
 #               --check, --plan, --what-if, or preview unless --apply). Quoted text
 #               is not a command, unless it goes to ssh, sh -c, eval or sudo
-#   Z5  High    secrets never come from arguments (positional or --password, --token
+#   OPS-Z5  High    secrets never come from arguments (positional or --password, --token
 #               options), are read with read -s, and are never printed to stdout
-#   Z6  High    destructive commands (rm -rf, terraform destroy, delete-stack, aws s3 rm,
+#   OPS-Z6  High    destructive commands (rm -rf, terraform destroy, delete-stack, aws s3 rm,
 #               DROP TABLE, kubectl delete, prune, git reset --hard, ...) sit behind a
 #               confirmation or an explicit flag (--yes, --force, --apply, CONFIRM, or
 #               a read into confirm, answer, ok or yn); removing a mktemp directory is
 #               exempt. A finding names the command, never the line
-#   Z7  Low     every make target has "## help" text (make help lists it)
-#   Z8  Medium  no floating versions: :latest, untagged or version-less (:alpine) images
+#   OPS-Z7  Low     every make target has "## help" text (make help lists it)
+#   OPS-Z8  Medium  no floating versions: :latest, untagged or version-less (:alpine) images
 #               (a Compose service with build: is exempt), @latest, actions on a
 #               branch, curl | sh installs, providers, modules or required_version
 #               without an upper bound
-#   Z9  Low     a script that changes systems runs pre-flight and post-flight checks:
+#   OPS-Z9  Low     a script that changes systems runs pre-flight and post-flight checks:
 #               preflight/postflight names, or a gate, health, verify, check, require
 #               or *_ok call before the last change and after the first
 #

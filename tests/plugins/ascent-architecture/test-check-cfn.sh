@@ -56,28 +56,28 @@ matrix() {
   if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '12/12 applicable checks passing (0 not applicable)'; then ok
   else bad "blueprint should pass 12/12: exit $RC $(printf '%s\n' "$OUT" | grep -E '^FAIL|passing' | tr '\n' ';')"; fi
 
-  mutate c1-public    "$(SUBP 'RestrictPublicBuckets: true' 'true' 'false')" && expect_only c1-public C1
-  mutate c2-website   '{ print } /^      VersioningConfiguration:/ && !d { print "      WebsiteConfiguration:"; print "        IndexDocument: index.html"; d = 1 }' && expect_only c2-website C2
-  mutate c2-no-oac    "$(DELN 'OriginAccessControlId: !GetAtt' 1)" && expect_only c2-no-oac C2
-  mutate c3-http      "$(SUBP 'ViewerProtocolPolicy: redirect-to-https' 'redirect-to-https' 'allow-all')" && expect_only c3-http C3
-  mutate c4-old-tls   "$(SUBP 'MinimumProtocolVersion: TLSv1.2_2021' 'TLSv1.2_2021' 'TLSv1_2016')" && expect_only c4-old-tls C4
-  mutate c4-no-tls    "$(DELN 'MinimumProtocolVersion:' 1)" && expect_only c4-no-tls C4
-  mutate c5-no-source "$(SUBP 'AWS:SourceArn:' 'AWS:SourceArn:' 'aws:Referer:')" && expect_only c5-no-source C5
-  mutate c6-headers   '/ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy/ { next } { print }' && expect_only c6-headers C6
-  mutate c7-bucket    "$(DELN '^    DeletionPolicy: Retain' 1)" && expect_only c7-bucket C7
-  mutate c7-table     "$(DELN '^    DeletionPolicy: Retain' 2)" && expect_only c7-table C7
-  mutate c8-pitr      "$(SUBP 'PointInTimeRecoveryEnabled: true' 'true' 'false')" && expect_only c8-pitr C8
-  mutate c8-commented "$(SUBP 'PointInTimeRecoveryEnabled: true' 'PointInTimeRecoveryEnabled' '# PointInTimeRecoveryEnabled')" && expect_only c8-commented C8
-  mutate c9-retention "$(DELN 'RetentionInDays: !Ref LogRetentionDays' 1)" && expect_only c9-retention C9
-  mutate c9-lambda    "$(DELN 'LogGroup: !Ref ApiFunctionLogGroup' 1)" && expect_only c9-lambda C9
-  mutate c10-throttle "$(DELN 'ThrottlingBurstLimit:' 1)" && expect_only c10-throttle C10
-  mutate c11-budget   "$(SUBP 'Type: AWS::Budgets::Budget$' 'AWS::Budgets::Budget' 'AWS::Budgets::BudgetsAction')" && expect_only c11-budget C11
-  mutate c12-logs     "$(SUBP 'LogType: ACCESS_LOGS' 'ACCESS_LOGS' 'CONNECTION_LOGS')" && expect_only c12-logs C12
+  mutate c1-public    "$(SUBP 'RestrictPublicBuckets: true' 'true' 'false')" && expect_only c1-public ARC-C1
+  mutate c2-website   '{ print } /^      VersioningConfiguration:/ && !d { print "      WebsiteConfiguration:"; print "        IndexDocument: index.html"; d = 1 }' && expect_only c2-website ARC-C2
+  mutate c2-no-oac    "$(DELN 'OriginAccessControlId: !GetAtt' 1)" && expect_only c2-no-oac ARC-C2
+  mutate c3-http      "$(SUBP 'ViewerProtocolPolicy: redirect-to-https' 'redirect-to-https' 'allow-all')" && expect_only c3-http ARC-C3
+  mutate c4-old-tls   "$(SUBP 'MinimumProtocolVersion: TLSv1.2_2021' 'TLSv1.2_2021' 'TLSv1_2016')" && expect_only c4-old-tls ARC-C4
+  mutate c4-no-tls    "$(DELN 'MinimumProtocolVersion:' 1)" && expect_only c4-no-tls ARC-C4
+  mutate c5-no-source "$(SUBP 'AWS:SourceArn:' 'AWS:SourceArn:' 'aws:Referer:')" && expect_only c5-no-source ARC-C5
+  mutate c6-headers   '/ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy/ { next } { print }' && expect_only c6-headers ARC-C6
+  mutate c7-bucket    "$(DELN '^    DeletionPolicy: Retain' 1)" && expect_only c7-bucket ARC-C7
+  mutate c7-table     "$(DELN '^    DeletionPolicy: Retain' 2)" && expect_only c7-table ARC-C7
+  mutate c8-pitr      "$(SUBP 'PointInTimeRecoveryEnabled: true' 'true' 'false')" && expect_only c8-pitr ARC-C8
+  mutate c8-commented "$(SUBP 'PointInTimeRecoveryEnabled: true' 'PointInTimeRecoveryEnabled' '# PointInTimeRecoveryEnabled')" && expect_only c8-commented ARC-C8
+  mutate c9-retention "$(DELN 'RetentionInDays: !Ref LogRetentionDays' 1)" && expect_only c9-retention ARC-C9
+  mutate c9-lambda    "$(DELN 'LogGroup: !Ref ApiFunctionLogGroup' 1)" && expect_only c9-lambda ARC-C9
+  mutate c10-throttle "$(DELN 'ThrottlingBurstLimit:' 1)" && expect_only c10-throttle ARC-C10
+  mutate c11-budget   "$(SUBP 'Type: AWS::Budgets::Budget$' 'AWS::Budgets::Budget' 'AWS::Budgets::BudgetsAction')" && expect_only c11-budget ARC-C11
+  mutate c12-logs     "$(SUBP 'LogType: ACCESS_LOGS' 'ACCESS_LOGS' 'CONNECTION_LOGS')" && expect_only c12-logs ARC-C12
 
   # N/A: a bucket-only template has no CDN, API, table or log checks to apply.
   printf 'Resources:\n  B:\n    Type: AWS::S3::Bucket\n    DeletionPolicy: Retain\n    Properties:\n      PublicAccessBlockConfiguration:\n        BlockPublicAcls: true\n        BlockPublicPolicy: true\n        IgnorePublicAcls: true\n        RestrictPublicBuckets: true\n  Budget:\n    Type: AWS::Budgets::Budget\n' > "$WORK/bucket-only.yaml"
   run "$WORK/bucket-only.yaml"
-  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   C3 ' && printf '%s\n' "$OUT" | grep -q '^N/A   C10 ' && printf '%s\n' "$OUT" | grep -q '4/4 applicable checks passing (8 not applicable)'; then ok
+  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   ARC-C3 ' && printf '%s\n' "$OUT" | grep -q '^N/A   ARC-C10 ' && printf '%s\n' "$OUT" | grep -q '4/4 applicable checks passing (8 not applicable)'; then ok
   else bad "bucket-only template: expected 4/4 with 8 N/A, got exit $RC $(printf '%s\n' "$OUT" | grep passing)"; fi
 
   # Layout variants of the compliant blueprint must still pass 12/12: indentation
@@ -96,22 +96,22 @@ matrix() {
   done
 
   # Defects the first version missed: each must fail its check, and only that check.
-  mutate c2-second-origin '{ print } /^              OriginAccessIdentity: ""/ && !d { print "          - Id: legacy"; print "            DomainName: !GetAtt SiteBucket.RegionalDomainName"; print "            S3OriginConfig:"; print "              OriginAccessIdentity: \"\""; d = 1 }' && expect_only c2-second-origin C2
-  mutate c2-oai-sub '{ sub(/OriginAccessIdentity: ""/, "OriginAccessIdentity: !Sub \"origin-access-identity/cloudfront/${Oai}\""); print }' && expect_only c2-oai-sub C2
-  mutate c3-if-branch '{ sub(/ViewerProtocolPolicy: https-only/, "ViewerProtocolPolicy: !If [UseAlias, https-only, allow-all]"); print }' && expect_only c3-if-branch C3
-  mutate c3-tab '{ sub(/ViewerProtocolPolicy: https-only/, "ViewerProtocolPolicy:\tallow-all"); print }' && expect_only c3-tab C3
-  mutate c5-other-bucket '{ sub(/Bucket: !Ref SiteBucket/, "Bucket: !Ref OtherBucket"); print }' && expect_only c5-other-bucket C5
-  mutate c9-unmanaged '{ sub(/LogGroup: !Ref ApiFunctionLogGroup/, "LogGroup: /aws/lambda/unmanaged"); print }' && expect_only c9-unmanaged C9
-  mutate c12-other-dist '{ if ($0 ~ /ResourceArn: .*distribution/) sub(/[{]Distribution[}]/, "{OtherDistribution}"); print }' && expect_only c12-other-dist C12
+  mutate c2-second-origin '{ print } /^              OriginAccessIdentity: ""/ && !d { print "          - Id: legacy"; print "            DomainName: !GetAtt SiteBucket.RegionalDomainName"; print "            S3OriginConfig:"; print "              OriginAccessIdentity: \"\""; d = 1 }' && expect_only c2-second-origin ARC-C2
+  mutate c2-oai-sub '{ sub(/OriginAccessIdentity: ""/, "OriginAccessIdentity: !Sub \"origin-access-identity/cloudfront/${Oai}\""); print }' && expect_only c2-oai-sub ARC-C2
+  mutate c3-if-branch '{ sub(/ViewerProtocolPolicy: https-only/, "ViewerProtocolPolicy: !If [UseAlias, https-only, allow-all]"); print }' && expect_only c3-if-branch ARC-C3
+  mutate c3-tab '{ sub(/ViewerProtocolPolicy: https-only/, "ViewerProtocolPolicy:\tallow-all"); print }' && expect_only c3-tab ARC-C3
+  mutate c5-other-bucket '{ sub(/Bucket: !Ref SiteBucket/, "Bucket: !Ref OtherBucket"); print }' && expect_only c5-other-bucket ARC-C5
+  mutate c9-unmanaged '{ sub(/LogGroup: !Ref ApiFunctionLogGroup/, "LogGroup: /aws/lambda/unmanaged"); print }' && expect_only c9-unmanaged ARC-C9
+  mutate c12-other-dist '{ if ($0 ~ /ResourceArn: .*distribution/) sub(/[{]Distribution[}]/, "{OtherDistribution}"); print }' && expect_only c12-other-dist ARC-C12
 
-  mutate c2-oac-on-other-origin '/OriginAccessControlId: !GetAtt SiteOriginAccessControl.Id/ { next } { print } /^          - Id: api/ && !d { print "            OriginAccessControlId: !GetAtt FnOac.Id"; d = 1 }' && expect_only c2-oac-on-other-origin C2
-  mutate c3-if-block '/ViewerProtocolPolicy: https-only/ { print "            ViewerProtocolPolicy: !If"; print "              - UseAlias"; print "              - https-only"; print "              - allow-all"; next } { print }' && expect_only c3-if-block C3
-  mutate c5-sub-origin '{ sub(/DomainName: !GetAtt SiteBucket.RegionalDomainName/, "DomainName: !Sub \"${SiteBucket}.s3.${AWS::Region}.amazonaws.com\""); sub(/Bucket: !Ref SiteBucket/, "Bucket: !Ref OtherBucket"); print }' && expect_only c5-sub-origin C5
-  # An origin bucket that lives outside the template leaves C5 not applicable.
+  mutate c2-oac-on-other-origin '/OriginAccessControlId: !GetAtt SiteOriginAccessControl.Id/ { next } { print } /^          - Id: api/ && !d { print "            OriginAccessControlId: !GetAtt FnOac.Id"; d = 1 }' && expect_only c2-oac-on-other-origin ARC-C2
+  mutate c3-if-block '/ViewerProtocolPolicy: https-only/ { print "            ViewerProtocolPolicy: !If"; print "              - UseAlias"; print "              - https-only"; print "              - allow-all"; next } { print }' && expect_only c3-if-block ARC-C3
+  mutate c5-sub-origin '{ sub(/DomainName: !GetAtt SiteBucket.RegionalDomainName/, "DomainName: !Sub \"${SiteBucket}.s3.${AWS::Region}.amazonaws.com\""); sub(/Bucket: !Ref SiteBucket/, "Bucket: !Ref OtherBucket"); print }' && expect_only c5-sub-origin ARC-C5
+  # An origin bucket that lives outside the template leaves ARC-C5 not applicable.
   awk '/^  SiteBucket:$/ { s = 1 } /^  SiteBucketPolicy:/ { s = 2 } /^  SiteOriginAccessControl:/ { s = 0 } s { next } { sub(/DomainName: !GetAtt SiteBucket.RegionalDomainName/, "DomainName: existing-bucket.s3.us-east-1.amazonaws.com"); print }' "$BP" > "$WORK/external.yaml"
   run "$WORK/external.yaml"
-  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   C5 '; then ok; else bad "external origin bucket: expected C5 N/A and exit 0, got $RC $(printf '%s\n' "$OUT" | grep -E '^FAIL|C5' | head -2 | tr '\n' ';')"; fi
-  # The default Lambda log group name with retention also satisfies C9.
+  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^N/A   ARC-C5 '; then ok; else bad "external origin bucket: expected ARC-C5 N/A and exit 0, got $RC $(printf '%s\n' "$OUT" | grep -E '^FAIL|ARC-C5' | head -2 | tr '\n' ';')"; fi
+  # The default Lambda log group name with retention also satisfies ARC-C9.
   awk '/^      LoggingConfig:/ { skip = 2; next } skip > 0 { skip--; next } { sub(/LogGroupName: !Sub "\/\$\{ProjectName\}\/api-function"/, "LogGroupName: !Sub \"/aws/lambda/${ApiFunction}\""); print }' "$BP" > "$WORK/defaultlg.yaml"
   run "$WORK/defaultlg.yaml"
   if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '12/12 applicable'; then ok; else bad "default Lambda log group: expected 12/12, got $RC $(printf '%s\n' "$OUT" | grep -E '^FAIL' | head -2 | tr '\n' ';')"; fi
@@ -131,13 +131,13 @@ matrix() {
 
   # Severities agree in three places: the script header, the architecture-review
   # mapping table, and what a failing check prints.
-  hdr=$(awk '/^#   C[0-9]+ +(High|Medium|Low) / { print $2, $3 }' "$CHECK" | LC_ALL=C sort)
-  tbl=$(awk -F'|' '/^ *\| C[0-9]+ \|/ { gsub(/ /, "", $2); gsub(/ /, "", $3); print $2, $3 }' "$SKILL" | LC_ALL=C sort)
+  hdr=$(awk '/^#   ARC-C[0-9]+ +(High|Medium|Low) / { print $2, $3 }' "$CHECK" | LC_ALL=C sort)
+  tbl=$(awk -F'|' '/^ *\| ARC-C[0-9]+ \|/ { gsub(/ /, "", $2); gsub(/ /, "", $3); print $2, $3 }' "$SKILL" | LC_ALL=C sort)
   if [ -n "$hdr" ] && [ "$hdr" = "$tbl" ] && [ "$(printf '%s\n' "$hdr" | grep -c .)" -eq 12 ]; then ok
   else bad "check severities differ between the script header and architecture-review: header [$(printf '%s' "$hdr" | tr '\n' ',')] table [$(printf '%s' "$tbl" | tr '\n' ',')]"; fi
-  for id in C1 C3 C8; do
+  for id in ARC-C1 ARC-C3 ARC-C8; do
     want=$(printf '%s\n' "$hdr" | awk -v i="$id" '$1 == i { print $2 }')
-    case "$id" in C1) m=c1-public ;; C3) m=c3-http ;; C8) m=c8-pitr ;; esac
+    case "$id" in ARC-C1) m=c1-public ;; ARC-C3) m=c3-http ;; ARC-C8) m=c8-pitr ;; esac
     run "$WORK/$m.yaml"
     if printf '%s\n' "$OUT" | grep -q "^FAIL  $id *\[$want\]"; then ok; else bad "$id prints a severity other than its header ($want)"; fi
   done

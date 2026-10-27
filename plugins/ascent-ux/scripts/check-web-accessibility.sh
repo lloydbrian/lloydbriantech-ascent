@@ -8,27 +8,27 @@
 # PATH is a file or a directory (searched for markup, CSS and JS/TS, skipping
 # node_modules, dist, build, .git, vendor, *.min.* and *.test.*/*.spec.*). In
 # .js/.ts/.mjs/.cjs files only HTML inside template literals is checked (views of
-# single-page apps); those findings say "[js template]", and U7 and U8 are not applied
+# single-page apps); those findings say "[js template]", and UX-U7 and UX-U8 are not applied
 # there because one file holds many separate templates. --core marks a file as part
-# of a core user flow (with or without a leading ./): U3 and U12 failures there are
+# of a core user flow (with or without a leading ./): UX-U3 and UX-U12 failures there are
 # High instead of Medium.
 #
 # Checks (severity from the ux-review severity table; WCAG 2.2 criterion):
-#   U1  Medium  <html> declares lang                                  3.1.1
-#   U2  Medium  every <img> has alt (alt="" when decorative)          1.1.1
-#   U3  Medium  form controls have a label, aria-label or aria-labelledby   1.3.1, 4.1.2
-#   U4  Medium  buttons and links have an accessible name             4.1.2, 2.4.4
-#   U5  Medium  the viewport meta tag allows zoom                     1.4.4
-#   U6  Low     no positive tabindex                                  2.4.3
-#   U7  Low     heading levels do not skip; a full page has an <h1> (or a scanned JS
+#   UX-U1  Medium  <html> declares lang                                  3.1.1
+#   UX-U2  Medium  every <img> has alt (alt="" when decorative)          1.1.1
+#   UX-U3  Medium  form controls have a label, aria-label or aria-labelledby   1.3.1, 4.1.2
+#   UX-U4  Medium  buttons and links have an accessible name             4.1.2, 2.4.4
+#   UX-U5  Medium  the viewport meta tag allows zoom                     1.4.4
+#   UX-U6  Low     no positive tabindex                                  2.4.3
+#   UX-U7  Low     heading levels do not skip; a full page has an <h1> (or a scanned JS
 #               template renders one: a NOTE, to confirm in the browser)  1.3.1, 2.4.6
-#   U8  Low     id values are unique within a file                    4.1.2
-#   U9  Medium  a full page has a non-empty <title>                   2.4.2
-#   U10 Medium  autoplay media is muted and has controls              1.4.2, 2.2.2
-#   U11 Medium  an outline removed on a selector is replaced by a :focus-visible style for
+#   UX-U8  Low     id values are unique within a file                    4.1.2
+#   UX-U9  Medium  a full page has a non-empty <title>                   2.4.2
+#   UX-U10 Medium  autoplay media is muted and has controls              1.4.2, 2.2.2
+#   UX-U11 Medium  an outline removed on a selector is replaced by a :focus-visible style for
 #               that selector (or a universal :focus-visible rule), or by a box-shadow
 #               ring in the same :focus rule (a NOTE: ring contrast not computed)   2.4.7, 2.4.11
-#   U12 Medium  click handlers sit on elements a keyboard can reach (role, tabindex, key
+#   UX-U12 Medium  click handlers sit on elements a keyboard can reach (role, tabindex, key
 #               handler), including elements a JS click listener in the same file finds
 #               with closest() or matches() on [attr], .class or #id ("[delegated]")   2.1.1
 #
@@ -215,9 +215,9 @@ function val(tag, re,   t, v) {
 function dynamic(v) { return v ~ /[{]/ || v ~ /^\$/ }
 function fail(k, pos, msg, sev) {
   NF_[k]++; NFAIL++
-  OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s:%d  %s%s\n", k, (sev == "") ? SEV[k] : sev, FILE, line_at(pos), msg, ISJS ? " [js template]" : "")
+  OUT[k] = OUT[k] sprintf("FAIL  %-7s %-6s %s:%d  %s%s\n", "UX-" k, (sev == "") ? SEV[k] : sev, FILE, line_at(pos), msg, ISJS ? " [js template]" : "")
 }
-function note(k, pos, msg) { NOTES[k] = NOTES[k] sprintf("NOTE  %-4s %-6s %s:%d  %s\n", k, "-", FILE, line_at(pos), msg) }
+function note(k, pos, msg) { NOTES[k] = NOTES[k] sprintf("NOTE  %-7s %-6s %s:%d  %s\n", "UX-" k, "-", FILE, line_at(pos), msg) }
 function named_content(c) {
   if (c ~ /[{]/ || tolower(c) ~ /<slot/) return 1
   if (match(tolower(c), /alt[ \t]*=[ \t]*["\047][^"\047]+["\047]/) || tolower(c) ~ /aria-label(ledby)?[ \t]*=/ || tolower(c) ~ /<title[ >]/) return 1
@@ -350,8 +350,8 @@ END {
   for (i = 1; i <= 12; i++) {
     k = ORDER[i]
     if (NF_[k] > 0) printf "%s", OUT[k]
-    else if (CHK[k] > 0) printf "PASS  %-4s %s (%d checked)\n", k, D[k], CHK[k]
-    else printf "N/A   %-4s %s (nothing to check)\n", k, D[k]
+    else if (CHK[k] > 0) printf "PASS  %-7s %s (%d checked)\n", "UX-" k, D[k], CHK[k]
+    else printf "N/A   %-7s %s (nothing to check)\n", "UX-" k, D[k]
     printf "%s", NOTES[k]
   }
   printf "check-web-accessibility: %d file(s), %d failure(s) (static checks; confirm in the browser pass)\n", NFILES, NFAIL

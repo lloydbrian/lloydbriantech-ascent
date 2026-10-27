@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal — the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.7 (housekeeping), October 26, 2026. Next plugin: `ascent-quality`; Phase 4 awaits its go-signal.
+**Current state:** v0.4.8 (ownership registry and plugin-qualified rule ids), October 27, 2026. Next: `ascent-security` 0.2.0 (dependency check, v0.4.9), then `ascent-quality` (v0.4.10); Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -10,12 +10,12 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 
 | Rank | Plugin | Scope | Status |
 |---|---|---|---|
-| — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code | ✅ v0.4.2, 0.1.1 in v0.4.3 |
+| — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds a dependency and vulnerability check (`SEC-D`, ADR-014) | ✅ v0.4.2, 0.1.1 in v0.4.3; 0.2.0 ⏳ Next (v0.4.9) |
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
-| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals | ✅ v0.4.6 |
-| 4 | `ascent-quality` | To be scoped when it starts | ⏳ Next |
+| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014) | ✅ v0.4.6; 0.3.0 ⏳ Planned (v0.4.11) |
+| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014) | ⏳ Scoped (v0.4.10) |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
 | 7 | `ascent-docs` | To be scoped when it starts | ⏳ Planned |
@@ -27,7 +27,12 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 
 | Follow-up | Pillar | Why | Status |
 |---|---|---|---|
-| Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ⏳ Committed on 2026-10-26, to be scoped |
+| Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ⏳ Scoped in ADR-014: `ascent-ops` 0.3.0, v0.4.11 |
+| Auditability for projects | Compliance | Project-facing governance: a waiver ledger with expiry dates, dated review records, a required-plugin floor in the contract (a floor, never a ceiling) and a bash checker a project can run in its own CI. Closes the Partial rows "Decision traceability" and "Change audit trail" (ADR-015) | ⏳ Committed on 2026-10-27, to be scoped |
+| The governance conductor | Business value | `ascent-governance` (agent `governance-conductor`, skills `governance-review` and `launch-readiness`) reads the ownership registry and the auditability evidence for a go or no-go. Ships when launch readiness is scoped (ADR-015) | ⏳ Deferred; name and code `GOV` reserved |
+| Recommended next names missing plugins | Business value | Each plugin's "Recommended next" line also names an uninstalled plugin whose signals the repository shows, from [OWNERSHIP.md](OWNERSHIP.md#which-plugins-do-i-need) | ⏳ Committed on 2026-10-27 |
+| Navigational integrity and cross-browser | Business value | `ascent-ux` 0.3.0: broken links, dead ends and lost state across flows, and a cross-browser pass (ADR-014) | ⏳ Planned |
+| User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 
@@ -273,7 +278,7 @@ The phase-delivery protocol applies here too:
 
 1. The owner verifies all exit criteria for the current phase
 2. The owner updates `CHANGELOG.md` with the phase summary
-3. The owner tags the release (`git tag v0.N.0 && git push --tags`)
+3. The owner tags the release (`git tag v0.N.0 && git push origin v0.N.0`)
 4. The release workflow creates the GitHub release with the CHANGELOG entry
 5. The owner waits for explicit signal: **"Proceed with Phase N+1"**
 6. Phase status updates in `CLAUDE.md` and this ROADMAP.md

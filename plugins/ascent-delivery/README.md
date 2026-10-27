@@ -62,16 +62,19 @@ To lift the boundary you have to disable the plugin. There is no bypass variable
 
 ## Review providers it wraps
 
-At the review step, the skill uses these when they are installed, and a built-in single-lens prompt when they are not. Provider output is passed through under a thin header, not rewritten:
+At the review step, the skill uses the first provider of each lens that is installed, and a built-in single-lens prompt when none is. The ASCENT agents come from [ascent-security](../ascent-security/README.md), [ascent-architecture](../ascent-architecture/README.md), [ascent-ux](../ascent-ux/README.md) and [ascent-ops](../ascent-ops/README.md). Provider output is passed through under a thin header, not rewritten:
 
-| Lens | Provider |
+| Lens | Providers, first installed wins |
 |---|---|
 | Correctness | `engineering:code-review` |
-| Security and privacy | `ascent-security:security-auditor` (agent, from [ascent-security](../ascent-security/README.md)) |
-| Accessibility | `design:accessibility-review` |
-| Operational and deploy impact | `engineering:deploy-checklist` |
+| Security and privacy | `ascent-security:security-auditor` |
+| Architecture and cost | `ascent-architecture:architecture-reviewer` |
+| Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` |
+| UX and navigation | `ascent-ux:ux-reviewer` |
+| Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` |
 | Tests | `engineering:testing-strategy` |
-| UX and navigation | built-in prompt only |
+
+The list is owned by the framework's [ownership registry](../../docs/framework/OWNERSHIP.md).
 
 ## The project contract
 

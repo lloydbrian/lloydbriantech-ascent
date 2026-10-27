@@ -12,25 +12,25 @@
 # fixes the date for tests; --max-age defaults to 90 days.
 #
 # Checks (severity from the ops-review severity table):
-#   M1  Medium  each manual exists and has front matter: as_of (YYYY-MM-DD), describes
+#   OPS-M1  Medium  each manual exists and has front matter: as_of (YYYY-MM-DD), describes
 #               (the version or commit it describes) and a non-empty sources list
-#   M2  Medium  each manual has its required sections (MO: overview, architecture,
+#   OPS-M2  Medium  each manual has its required sections (MO: overview, architecture,
 #               dependency map, environments, configuration and secrets, deploy,
 #               rollback, backup and restore, scheduled maintenance, upgrades, access,
 #               escalation and contacts, change history; TS: symptoms, diagnostic
 #               commands, known issues, escalation)
-#   M3  Medium  the MO manual has Mermaid diagrams at the three C4 levels: system
+#   OPS-M3  Medium  the MO manual has Mermaid diagrams at the three C4 levels: system
 #               context, containers and deployment
-#   M4  Medium  every service in the IaC and Compose files appears in a diagram; N/A
+#   OPS-M4  Medium  every service in the IaC and Compose files appears in a diagram; N/A
 #               when there is no IaC or Compose to map (then read the diagrams
 #               against the system)
-#   M5  Low     the dependency map is a table with a version column and at least one row
-#   M6  Medium  each manual is current: as_of no older than --max-age days, every
+#   OPS-M5  Low     the dependency map is a table with a version column and at least one row
+#   OPS-M6  Medium  each manual is current: as_of no older than --max-age days, every
 #               source still exists, and no source changed since the commit it
 #               describes
-#   M7  Medium  the TS manual has a symptom table (symptom, where to look, likely cause,
+#   OPS-M7  Medium  the TS manual has a symptom table (symptom, where to look, likely cause,
 #               fix or escalation) with at least one row
-#   M8  High    no credential-like value in either manual (the value is never printed)
+#   OPS-M8  High    no credential-like value in either manual (the value is never printed)
 #
 # Output: FAIL lines (FAIL  Mk  SEVERITY  file:line  message), a PASS line per check
 # with no finding, N/A when a check found nothing to check, NOTE lines (unrated) when

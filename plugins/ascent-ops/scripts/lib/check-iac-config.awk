@@ -31,7 +31,7 @@ function literal(v, yaml,   q, inner) {
 }
 function wild(tok) { tok = trim(tok); gsub(/["',\[\]]/, "", tok); sub(/^- */, "", tok); tok = trim(tok); return tok == "*" || tok ~ /^[A-Za-z0-9-]+:\*$/ }
 function wildany(s,   n, T, i) { gsub(/[\[\],]/, " ", s); n = split(s, T, " "); for (i = 1; i <= n; i++) if (wild(T[i])) return 1; return 0 }
-function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-4s %-6s %s  %s\n", k, sev, where, msg); NF_[k]++; NFAIL++ }
+function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-7s %-6s %s  %s\n", "OPS-" k, sev, where, msg); NF_[k]++; NFAIL++ }
 function at() { return FN ":" FNR }
 function yamlkey(s) {   # sets YK and YV; returns 1 for a "key: value" line
   if (!match(s, /^ *(- +)?["']?[A-Za-z0-9_.\/@-]+["']? *:/)) return 0
@@ -293,7 +293,7 @@ END {
   cfnEnd()
   NIAC = KN["cfn"] + KN["tf"]
   CHK["S1"] += KN["cfn"] + KN["tf"] + KN["tfvars"] + KN["docker"] + KN["compose"] + KN["taskjson"]
-  # S4 — Terraform state
+  # OPS-S4 — Terraform state
   ns = split(STATES, ST, "\n")
   for (j = 1; j <= ns; j++) if (ST[j] != "") { s = ST[j]; sub(/^\.\//, "", s); CHK["S4"]++; fail("S4", "High", s ":1", "Terraform state file in the repository (it can hold secrets; remove it and rotate them → ascent-security)") }
   if (KN["tf"] > 0) {
@@ -305,19 +305,19 @@ END {
       if (!BLOCK) fail("S4", "High", BACKAT, "S3 backend without locking (use_lockfile = true or dynamodb_table)")
     }
   }
-  # S6 — rotation
+  # OPS-S6 — rotation
   for (j = 1; j <= NSEC; j++) { CHK["S6"]++; if (!(SECRET[j] in ROT)) fail("S6", "Low", SECAT[j], "secret " SECRET[j] " has no rotation schedule") }
-  # S7 — per-environment configuration
+  # OPS-S7 — per-environment configuration
   if (NIAC > 0) {
     CHK["S7"]++
     if (ENVHINT == "" && ENVFILES == "") fail("S7", "Medium", "absent", "no per-environment configuration: no environment parameter or variable, per-environment tfvars or parameter files, workspace or environment directory")
   }
-  # S9 — drift detection
+  # OPS-S9 — drift detection
   if (NIAC > 0) {
     CHK["S9"]++
     if (DRIFT == "") fail("S9", "Medium", "absent", "no drift check found in CI, make targets or scripts (terraform plan -detailed-exitcode, aws cloudformation detect-stack-drift, driftctl)")
   }
-  # S10 — configuration documented in the manual
+  # OPS-S10 — configuration documented in the manual
   if (MANUAL != "" && NPARAM + NVAR > 0) {
     if (MTEXT == "") fail("S10", "Low", MANUAL, "manual not found")
     else {
@@ -343,9 +343,9 @@ END {
   for (j = 1; j <= 10; j++) {
     k = ORDER[j]
     if (NF_[k] > 0) printf "%s", OUT[k]
-    else if (k == "S10" && MANUAL == "") printf "N/A   %-4s %s (no --manual given)\n", k, D[k]
-    else if (CHK[k] > 0) printf "PASS  %-4s %s (%d checked)\n", k, D[k], CHK[k]
-    else printf "N/A   %-4s %s (nothing to check)\n", k, D[k]
+    else if (k == "S10" && MANUAL == "") printf "N/A   %-7s %s (no --manual given)\n", "OPS-" k, D[k]
+    else if (CHK[k] > 0) printf "PASS  %-7s %s (%d checked)\n", "OPS-" k, D[k], CHK[k]
+    else printf "N/A   %-7s %s (nothing to check)\n", "OPS-" k, D[k]
   }
   printf "%s", NOTES
   printf "check-iac-config: %d file(s) (CloudFormation %d, Terraform %d, tfvars %d, Dockerfile %d, Compose %d, task definition %d), %d failure(s)\n", \
