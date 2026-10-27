@@ -118,8 +118,10 @@ plugin_copy() {  # DIR — fresh copy of the repository without .git
   rm -rf "$1"; mkdir -p "$1"
   (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) | (cd "$1" && tar -xf -)
 }
+# T13.0 (the ownership checker's fixture tests) is skipped unless a control sets
+# T13_SELFTEST=1: only the controls that edit the checker or its tests need it.
 plugin_gate() {  # DIR — run test-plugins on a copy; output to $WORK/plugin-out
-  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
+  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" ASCENT_T13_SELFTEST="${T13_SELFTEST:-0}" bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
 }
 if [ "$GROUP" != core ]; then
 plugin_copy "$WORK/p-baseline"
@@ -136,6 +138,7 @@ fi
 fi
 
 t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every plugin's tests)
+  if [ -n "${T11_FORCE:-}" ]; then T11_ONLY=$T11_FORCE; return; fi   # set by a group whose controls never need T11
   case "$1" in
     plugins/*) T11_ONLY=${1#plugins/}; T11_ONLY=${T11_ONLY%%/*} ;;
     tests/plugins/*) T11_ONLY=${1#tests/plugins/}; T11_ONLY=${T11_ONLY%%/*} ;;
@@ -194,7 +197,7 @@ plugin_case P01-hand-edited-skill T1 "$SEC/skills/env-audit/SKILL.md" '$a\
 Hand edit that bypasses the template source.'
 plugin_case P02-agent-can-write T4 "$AGENT" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
 plugin_case P03-severity-drift T5 "$TPL/ascent-sec-posture/SKILL.md" 's/| No `.env.example` (no secrets inventory) | Low |/| No `.env.example` (no secrets inventory) | Medium |/' rebuild
-plugin_case P04-version-mismatch T3 .claude-plugin/marketplace.json 's/"version": "0.1.1"/"version": "0.1.2"/'
+plugin_case P04-version-mismatch T3 .claude-plugin/marketplace.json 's/"version": "\([0-9][0-9.]*\)"/"version": "\1-x"/'
 plugin_case P05-agent-links-template T6 "$AGENT" '$a\
 See [sec-posture](../skills/ascent-sec-posture/SKILL.md).'
 plugin_case P06-source-not-rebuilt T1 "$TPL/ascent-env-audit/SKILL.md" 's/never echo the value/never print the value/'
@@ -229,7 +232,7 @@ plugin_case P27-hook-ignores-stdin-shells T11 "$HOOK" 's/if (j > SN) { STDIN_SHE
 plugin_case P28-hook-skips-unquoted-heredocs T11 "$HOOK" 's/if (!HQ\[k\]) scan_subs(b, HDBEND, 0)/if (0) scan_subs(b, HDBEND, 0)/'
 plugin_case P29-contract-denies-whole-chain T11 "$HOOK" 's/if (SN > 0 \&\& !inpipe) { dn = SN;/if (SN > 0 \&\& !inpipe \&\& dn == 0) { dn = SN;/'
 plugin_case P203-runbook-stacked-pr-rule-dropped T11 "$DEL/skills/delivery-loop/references/runbook-template.md" '/^- \*\*Stacked pull requests\.\*\*/,/Flag the force push as destructive/d'
-plugin_case P204-hook-exemption-unstated T11 "$HOOK" '/^# Exempt from ascent-ops Z2 and Z3 on purpose/d'
+plugin_case P204-hook-exemption-unstated T11 "$HOOK" '/^# Exempt from ascent-ops OPS-Z2 and OPS-Z3 on purpose/d'
 mutant_group ascent-architecture
 ARC=plugins/ascent-architecture
 ARC_AGENT="$ARC/agents/architecture-reviewer.md"
@@ -250,7 +253,7 @@ plugin_case P40-blueprint-readme-cost-drift T11 "$BPT/README.md" 's/\*\*0\.86 US
 plugin_case P41-pricing-changed-no-bump T10 "$ARC/pricing/aws-us-east-1.tsv" 's/^\(lambda_requests.\{1,20\}\)0\.20/\10.25/'
 plugin_case_rm P42-arch-tests-removed T11 tests/plugins/ascent-architecture
 plugin_case P43-arch-skill-links-missing-ref T6 "$ARC/skills/architecture-review/SKILL.md" 's|(../../references/architecture-principles.md)|(../../references/architecture-principle.md)|'
-plugin_case P44-cfn-severity-drift T11 "$CFN" 's/^#   C8  High /#   C8  Medium /'
+plugin_case P44-cfn-severity-drift T11 "$CFN" 's/^#   ARC-C8  High /#   ARC-C8  Medium /'
 plugin_case P45-estimate-ignores-pools T11 "$EST" 's/if (pool\[k\] != "") { if (f > left\[pool\[k\]\]) f = left\[pool\[k\]\] }/if (0) f = 0/'
 plugin_case P46-estimate-ignores-plan-needs T11 "$EST" 's/if (pr\[col\[nl\[j\]\]\] != "yes") fits = 0/if (0) fits = 0/'
 plugin_case P47-cfn-one-oac-hides-another T11 "$CFN" 's/nbad = s3_without_oac(r)/nbad = ncfg - noac/'
@@ -312,7 +315,7 @@ plugin_case P88-conformance-claimed T11 "$UXR" 's/\*\*No conformance claims from
 plugin_case P89-law-map-undated T11 "$UX/references/accessibility-law-map.md" 's/\*\*as_of: /**updated: /'
 plugin_case P90-ux-agent-cites-missing-step T9 "$UXA" 's/(ux-review Step 4)/(ux-review Step 9)/'
 plugin_case P91-ux-agent-can-write T4 "$UXA" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
-plugin_case P92-directions-catalog-drift T11 "$UXD" '/^| D5 | Dense professional/d'
+plugin_case P92-directions-catalog-drift T11 "$UXD" '/^| UX-D5 | Dense professional/d'
 plugin_case_rm P93-ux-tests-removed T11 tests/plugins/ascent-ux
 plugin_case P94-web-skips-js-templates T11 "$UXW" 's/^  if (ISJS) B = js_templates(B)$/  if (ISJS) B = blank(B)/'
 plugin_case P95-web-u11-global-again T11 "$UXW" 's/^  if (FVALL) return 1$/  return 1/'
@@ -395,11 +398,11 @@ plugin_case P148-manuals-undrawn-services-ok T11 "$OPM" 's/if (nm > 0) fail("M4"
 plugin_case P149-manuals-front-matter-ignored T11 "$OPM" 's/if (!HASFM\[m\]) fail/if (0) fail/'
 plugin_case P150-manuals-symptom-columns T11 "$OPM" 's/SYMCOLS < 4/SYMCOLS < 1/'
 plugin_case P156-ops-agent-key-drift T11 "$OPA" 's/`started_path`, `slos`/`slos`/'
-plugin_case P157-ops-severity-copy-drift T5 "$OPA" 's/| A destructive command with no confirmation or explicit flag (Z6) | High |/| A destructive command with no confirmation or explicit flag (Z6) | Medium |/'
+plugin_case P157-ops-severity-copy-drift T5 "$OPA" 's/| A destructive command with no confirmation or explicit flag (OPS-Z6) | High |/| A destructive command with no confirmation or explicit flag (OPS-Z6) | Medium |/'
 plugin_case P158-ops-agent-can-write T4 "$OPA" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
 plugin_case P159-ops-agent-cites-missing-step T9 "$OPA" 's/(ops-review Step 4)/(ops-review Step 9)/'
 plugin_case P160-ops-skill-pre-approves-writes T4b "$OPN" 's/^allowed-tools: Read, Grep, Glob, /allowed-tools: Read, Grep, Glob, Write, /'
-plugin_case P161-ops-version-not-bumped T3 "$OPS/.claude-plugin/plugin.json" 's/"version": "0.1.0"/"version": "0.1.1"/'
+plugin_case P161-ops-version-not-bumped T3 "$OPS/.claude-plugin/plugin.json" 's/"version": "\([0-9][0-9.]*\)"/"version": "\1-x"/'
 plugin_case_rm P166-ops-tests-removed T11 tests/plugins/ascent-ops
 mutant_group ascent-ops-review
 plugin_case P167-iac-kms-root-ignored T11 "$OPI" 's/kmsWild != "" && !kmsRoot/kmsWild != ""/'
@@ -436,6 +439,66 @@ plugin_case P196-scripts-binary-read-as-script T11 "$OPS/scripts/check-ops-scrip
 plugin_case P197-review-rollback-always-high T11 "$OPR" 's/\*\*Rollback is rated by what exists\.\*\*/**Rollback is always High.**/'
 plugin_case P198-review-proposes-z-paths T11 "$OPR" 's/Never propose a `z`-suffixed value\./Propose the detected value./'
 plugin_case P199-iac-trivy-runs-online T11 "$OPS/skills/iac-config-check/SKILL.md" 's/--skip-check-update --skip-version-check --quiet/--quiet/'
+
+# Ownership gate T13 (ADR-015). Every control expects one T13 rule; T11 is
+# skipped (T11_FORCE names no plugin) because no control here is about behavior
+# tests. The checker-code controls at the end set T13_SELFTEST=1 and expect the
+# fixture tests (T13.0) to catch them.
+mutant_group ownership
+T11_FORCE=none
+OWN=docs/framework/OWNERSHIP.md
+CHKO=make/check-ownership.sh
+DLS=plugins/ascent-delivery/skills/delivery-loop
+# The T13.0 controls below are judged on T13.0, so T13.0 must pass unmutated first.
+if in_group; then
+  total=$((total + 1)); T11_ONLY=none
+  if T13_SELFTEST=1 plugin_gate "$WORK/p-baseline"; then
+    printf "  control      %-28s unmodified copy passes test-plugins with T13.0\n" "P00-ownership-baseline"; killed=$((killed + 1))
+  else
+    printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins with T13.0:\n" "P00-ownership-baseline"
+    grep '^FAIL' "$WORK/plugin-out" | sed 's/^/                 /'; survived=$((survived + 1))
+  fi
+fi
+plugin_case_rm P205-registry-removed T13.1 "$OWN"
+plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
+plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `SEC-D` | `ascent-security` | v0.4.9 |$/| `SEC-D` | `ascent-security` |/'
+plugin_case P208-plugin-row-dropped T13.2 "$OWN" '/^| `ascent-ops` | `OPS` | released /d'
+plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-quality` | `QA` | planned |/| `ascent-quality` | `QA` | released |/'
+plugin_case P210-marketplace-entry-renamed T13.2 .claude-plugin/marketplace.json 's/"name": "ascent-ops",/"name": "ascent-operations",/'
+plugin_case P211-signal-row-dropped T13.2 "$OWN" '/^| HTML, JSX, Vue or Svelte templates/d'
+plugin_case P212-skill-unregistered T13.3 "$OWN" '/^| `ascent-ops` | skill | `ops-manuals` |$/d'
+plugin_case P213-hook-unregistered T13.3 "$OWN" '/^| `ascent-delivery` | hook | `operator-boundary` |$/d'
+plugin_case P214-agent-misnamed T13.3 "$OWN" 's/^| `ascent-delivery` | agent | `finding-verifier` |$/| `ascent-delivery` | agent | `finding-checker` |/'
+plugin_case P215-code-duplicated T13.4 "$OWN" 's/^| `ascent-governance` | `GOV` |/| `ascent-governance` | `OPS` |/'
+plugin_case P216-family-wrong-plugin T13.4 "$OWN" 's/^| `UX-H` | `ascent-ux` |/| `UX-H` | `ascent-ops` |/'
+plugin_case P217-family-definition-lost T13.4 "$OWN" 's#^\(| `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/\)usability-heuristics.md#\1design-tokens.md#'
+plugin_case P218-reserved-wrong-plugin T13.4 "$OWN" 's/^| `OPS-R` | `ascent-ops` |/| `OPS-R` | `ascent-quality` |/'
+plugin_case P219-family-duplicated T13.4 "$OWN" 's/^| `ARC-B` | .*$/&\
+&/'
+plugin_case P220-contract-extra-section T13.5 plugins/ascent-ux/references/contract-template.yml '$a\
+quality:\
+  maturity_target: enterprise'
+plugin_case P221-contract-section-claimed-twice T13.5 "$OWN" 's/^| `ascent-quality` | `QA` | planned | hand-written | `quality` |/| `ascent-quality` | `QA` | planned | hand-written | `ux` |/'
+plugin_case P222-marker-names-planned T13.6 plugins/ascent-ops/references/runbook-standard.md 's/(→ ascent-security)/(→ ascent-quality)/'
+plugin_case P223-domain-duplicated T13.7 "$OWN" 's/^| design principles |/| design tokens and contrast |/'
+plugin_case P224-domain-owner-unknown T13.7 "$OWN" 's/^| mutation evidence | — | `ascent-quality` |/| mutation evidence | — | `ascent-qualty` |/'
+plugin_case P225-lens-dropped-in-skill T13.8 "$DLS/SKILL.md" '/^| Architecture and cost | /d'
+plugin_case P226-lens-order-in-reference T13.8 "$DLS/references/review-lenses.md" 's/`ascent-ux:ux-reviewer`, `design:accessibility-review`/`design:accessibility-review`, `ascent-ux:ux-reviewer`/'
+plugin_case P227-lens-dropped-in-readme T13.8 plugins/ascent-delivery/README.md '/^| UX and navigation | /d'
+plugin_case P228-lens-provider-unregistered T13.8 "$OWN" 's/^| `ascent-architecture` | agent | `architecture-reviewer` |$/| `ascent-architecture` | agent | `architecture-critic` |/'
+plugin_case P229-readme-version-stale T13.9 README.md 's#^| \[`ascent-ops`\](plugins/ascent-ops/README.md) | 0.2.0 |#| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.1.0 |#'
+plugin_case P230-pillars-unknown-plugin T13.9 docs/framework/PILLARS.md 's/^\(| Change safety | `ascent-ops` (`runbook-check`)\); `ascent-delivery` |/\1; `ascent-delivry` |/'
+plugin_case P231-pillars-unknown-component T13.9 docs/framework/PILLARS.md 's/| Change safety | `ascent-ops` (`runbook-check`)/| Change safety | `ascent-ops` (`runbook-checks`)/'
+plugin_case P232-rule-cell-unqualified T13.10 plugins/ascent-ops/references/secure-config-rules.md 's/^| OPS-S1 | High |/| S1 | High |/'
+plugin_case P233-script-header-unqualified T13.10 plugins/ascent-architecture/scripts/check-cfn-static-site.sh 's/^#   ARC-C8  High /#   C8  High /'
+plugin_case P234-prefix-unregistered T13.10 plugins/ascent-ux/references/contract-template.yml 's/^  direction: UX-D1 /  direction: UX-Q1 /'
+plugin_case P235-checker-stops-early T13 "$CHKO" 's/^# T13.6 — cross-plugin markers$/exit 0/'
+T13_SELFTEST=1 plugin_case P236-checker-keeps-cr T13.0 "$CHKO" 's/sub(\/\\r\$\/, "", line)/sub(\/NEVERCR\/, "", line)/g'
+T13_SELFTEST=1 plugin_case P237-checker-ignores-cell-count T13.0 "$CHKO" 's/if (NC != want) printf/if (0) printf/'
+T13_SELFTEST=1 plugin_case P238-checker-ignores-lens-claims T13.0 "$CHKO" "s/| grep -q 'delivery-loop review lens' || continue/| grep -q 'never-matches' || continue/"
+T13_SELFTEST=1 plugin_case P239-checker-skips-readme-lenses T13.0 "$CHKO" 's# "$ROOT/plugins/ascent-delivery/README.md"; do$#; do#'
+T13_SELFTEST=1 plugin_case_rm P240-checker-tests-removed T13.0 tests/meta/test-check-ownership.sh
+T11_FORCE=""
 
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s)\n" \

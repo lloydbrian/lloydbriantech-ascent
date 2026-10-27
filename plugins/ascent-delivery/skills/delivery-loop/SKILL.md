@@ -8,7 +8,7 @@ description: >-
   finding verifier, fix and re-test, definition of done, an operator runbook,
   beta verification, prod and a release record. Claude never runs git writes or
   deploys: the operator does, from the runbook.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -78,15 +78,16 @@ Before renaming or removing anything, search the whole repository for references
 
 Run the full `gate` and record the exact totals. A red gate means back to Step 2, not on to review.
 
-Then launch reviewers **in parallel**, one lens each, against the diff and the acceptance criteria. Use the provider for a lens when it is installed, and the built-in fallback prompt when it is not. Detect what is installed from the skills and agents available in this session; do not ask. The table, fallback prompts and finding format are in [review-lenses.md](references/review-lenses.md).
+Then launch reviewers **in parallel**, one lens each, against the diff and the acceptance criteria. For each lens, use the first provider in its list that is installed, and the built-in fallback prompt when none is. Detect what is installed from the skills and agents available in this session; do not ask. When one agent provides two lenses, run it once and give it both. The table, fallback prompts and finding format are in [review-lenses.md](references/review-lenses.md); the list of lenses and providers is owned by ASCENT's ownership registry.
 
-| Lens | Provider if installed | Otherwise |
+| Lens | Providers, first installed wins | Otherwise |
 |---|---|---|
 | Correctness | `engineering:code-review` | fallback prompt |
-| Security and privacy | `ascent-security:security-auditor` agent | fallback prompt |
-| Accessibility | `design:accessibility-review` | fallback prompt |
-| UX and navigation | — | fallback prompt |
-| Operational and deploy impact | `engineering:deploy-checklist` | fallback prompt |
+| Security and privacy | `ascent-security:security-auditor` | fallback prompt |
+| Architecture and cost | `ascent-architecture:architecture-reviewer` | fallback prompt |
+| Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | fallback prompt |
+| UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
+| Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
 | Tests | `engineering:testing-strategy` | fallback prompt |
 
 Skip a lens only when it cannot apply (no UI means no accessibility lens), and say so. A provider's output is passed through unedited, under a thin header naming the lens and the provider.

@@ -7,7 +7,7 @@ description: >-
   bypass it, checks theming through tokens and reduced motion, computes WCAG
   contrast for every token pair in every theme, and checks component states.
   Read-only.
-version: 0.1.1
+version: 0.2.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -67,7 +67,7 @@ bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" --pairs <ux.contrast_pairs> 
 
 - **Theming through tokens:** themes change token values, not component markup. `<Button variant="dark">`, `.btn-dark` or per-component dark overrides are Low findings, as the role's anti-pattern.
 - **Motion:** durations and easing come from tokens, and a `prefers-reduced-motion: reduce` rule removes or shortens animation (2.3.3, and 2.2.2 for anything that moves for more than 5 seconds).
-- **Focus:** one `:focus-visible` style built from a focus-ring token (2.4.7). Removed outlines with no replacement are a finding (U11).
+- **Focus:** one `:focus-visible` style built from a focus-ring token (2.4.7). Removed outlines with no replacement are a finding (UX-U11).
 
 ### Step 5 — Component states
 

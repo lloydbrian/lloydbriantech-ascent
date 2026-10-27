@@ -6,7 +6,7 @@ A one-page starter that shows the ASCENT UX baseline working. It is also the tem
 |---|---|
 | `index.html` | the page: skip link, header, navigation with `aria-current`, main with `h1` and `h2`s, a captioned table with `th scope`, a labelled form (select, text input with hint and error, a radio group in a `fieldset`), a live status region, an empty state, and a footer with help (3.2.6) |
 | `page.css` | layout and components, **built only from tokens**: one `:focus-visible` style, 44px targets, 3:1 input borders, a `prefers-reduced-motion` rule, and reflow at 320px |
-| `tokens.css` | generated from D1 with `scripts/tokens-to-css.sh`; swap it to change direction |
+| `tokens.css` | generated from UX-D1 with `scripts/tokens-to-css.sh`; swap it to change direction |
 
 ## What it demonstrates
 

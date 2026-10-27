@@ -5,7 +5,7 @@
 # cubicBezier, numbers), alias resolution, the light block and both dark blocks
 # (media query and [data-theme=dark]) with only the tokens that change, group
 # $type inheritance, every shipped direction converting cleanly, the blueprint's
-# tokens.css staying identical to the D1 output (no drift), and bad input.
+# tokens.css staying identical to the UX-D1 output (no drift), and bad input.
 #
 # Runs with the default awk and every other awk found (mawk, gawk, BWK awk).
 # Prints "test-tokens-to-css: N/N PASS" last (make/test-plugins.sh T11).
@@ -75,13 +75,13 @@ matrix() {
   rc light-only 0
   lacks light-only "prefers-color-scheme"
 
-  # Every direction converts; the blueprint sheet is exactly the D1 output.
+  # Every direction converts; the blueprint sheet is exactly the UX-D1 output.
   for f in "$DIRS"/*.light.tokens.json; do
     run "$f" "${f%.light.tokens.json}.dark.tokens.json"
     if [ "$RC" -eq 0 ] && [ "$(printf '%s\n' "$OUT" | grep -c -- '^  --')" -ge 40 ]; then ok; else bad "direction $(basename "$f"): exit $RC, $(printf '%s\n' "$OUT" | grep -c -- '^  --') properties"; fi
   done
   run "$DIRS/D1-clean-neutral.light.tokens.json" "$DIRS/D1-clean-neutral.dark.tokens.json"
-  if printf '%s\n' "$OUT" | cmp -s - "$BP/tokens.css"; then ok; else bad "blueprints/accessible-page/tokens.css drifted from the D1 tokens: regenerate it with tokens-to-css.sh"; fi
+  if printf '%s\n' "$OUT" | cmp -s - "$BP/tokens.css"; then ok; else bad "blueprints/accessible-page/tokens.css drifted from the UX-D1 tokens: regenerate it with tokens-to-css.sh"; fi
 
   # Bad input stops with exit 2.
   printf '{ "a": { "$value": "{nope.x}" } }' > "$WORK/alias.tokens.json"; run "$WORK/alias.tokens.json"; rc badalias 2

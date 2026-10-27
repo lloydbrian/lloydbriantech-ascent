@@ -28,7 +28,7 @@
 #   Re-trial calibration (2026-10-25):
 #   R22 the three scripts run awk with LC_ALL=C (line numbers after non-ASCII text)
 #   R23 NOTE lines from check-web-accessibility.sh are unrated and never a pass
-#   R24 the agent applies U11 per selector with box-shadow rings, and U12 to delegated listeners
+#   R24 the agent applies UX-U11 per selector with box-shadow rings, and UX-U12 to delegated listeners
 #
 # Prints "test-ux-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -134,7 +134,7 @@ done
 
 # R12 — the catalog in design-directions matches the shipped files
 SHIPPED=$(cd "$PLUGIN/directions" && ls ./*.light.tokens.json 2>/dev/null | sed 's|^\./||; s/-.*//' | LC_ALL=C sort | tr '\n' ' ')
-LISTED=$(sed -n 's/^| \(D[0-9][0-9]*\) | .*/\1/p' "$DIRECT" | LC_ALL=C sort | tr '\n' ' ')
+LISTED=$(sed -n 's/^| UX-\(D[0-9][0-9]*\) | .*/\1/p' "$DIRECT" | LC_ALL=C sort | tr '\n' ' ')
 if [ -n "$SHIPPED" ] && [ "$SHIPPED" = "$LISTED" ]; then ok; else bad "R12 design-directions lists '$LISTED' but directions/ ships '$SHIPPED'"; fi
 for d in $SHIPPED; do
   ls "$PLUGIN/directions/$d"-*.dark.tokens.json >/dev/null 2>&1 && ok || bad "R12 $d has no dark tokens file"

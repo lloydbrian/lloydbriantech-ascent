@@ -61,40 +61,40 @@ matrix() {
   if [ "$RC" -eq 0 ] && [ "$(printf '%s\n' "$OUT" | grep -c '^PASS ')" -eq 9 ]; then ok
   else bad "good fixtures should pass all 9: exit $RC $(printf '%s\n' "$OUT" | grep -vE '^PASS' | tr '\n' ';')"; fi
 
-  mk z1;          edit z1 scripts/deploy.sh 'NR == 1 { next } { print }' && expect_only z1 Z1 Medium
-  mk z2;          edit z2 scripts/deploy.sh "$(subst 'set -euo pipefail' 'set -eu')" && expect_only z2 Z2 Medium
-  mk z2-sh;       edit z2-sh scripts/status.sh "$(subst 'set -eu' 'set -e')" && expect_only z2-sh Z2
-  mk z2-none;     edit z2-none scripts/deploy.sh "$(drop 'set -euo pipefail')" && expect_only z2-none Z2
-  mk z3;          edit z3 scripts/status.sh "$(subst '-h|--help|"")' '"")')" && expect_only z3 Z3 Low
-  mk z4;          script z4 restart.sh 'preflight() { systemctl is-active app; }\npreflight\nsystemctl restart app\ncurl -sf http://localhost:8080/-/health'; expect_only z4 Z4 Medium
-  mk z5-read;     edit z5-read scripts/deploy.sh "$(after 'read -rs -p' 'read -r -p "DB password: " DB_PASSWORD')" && expect_only z5-read Z5 High
-  mk z5-arg;      edit z5-arg scripts/deploy.sh "$(after 'WORK="$(mktemp -d)"' 'API_TOKEN="${1:-}"')" && expect_only z5-arg Z5
-  mk z5-opt;      edit z5-opt scripts/deploy.sh "$(after '    --yes) YES=1; shift ;;' '    --password) shift 2 ;;')" && expect_only z5-opt Z5
-  mk z5-echo;     edit z5-echo scripts/deploy.sh "$(after 'read -rs -p' 'echo "token is $REGISTRY_TOKEN"')" && expect_only z5-echo Z5
+  mk z1;          edit z1 scripts/deploy.sh 'NR == 1 { next } { print }' && expect_only z1 OPS-Z1 Medium
+  mk z2;          edit z2 scripts/deploy.sh "$(subst 'set -euo pipefail' 'set -eu')" && expect_only z2 OPS-Z2 Medium
+  mk z2-sh;       edit z2-sh scripts/status.sh "$(subst 'set -eu' 'set -e')" && expect_only z2-sh OPS-Z2
+  mk z2-none;     edit z2-none scripts/deploy.sh "$(drop 'set -euo pipefail')" && expect_only z2-none OPS-Z2
+  mk z3;          edit z3 scripts/status.sh "$(subst '-h|--help|"")' '"")')" && expect_only z3 OPS-Z3 Low
+  mk z4;          script z4 restart.sh 'preflight() { systemctl is-active app; }\npreflight\nsystemctl restart app\ncurl -sf http://localhost:8080/-/health'; expect_only z4 OPS-Z4 Medium
+  mk z5-read;     edit z5-read scripts/deploy.sh "$(after 'read -rs -p' 'read -r -p "DB password: " DB_PASSWORD')" && expect_only z5-read OPS-Z5 High
+  mk z5-arg;      edit z5-arg scripts/deploy.sh "$(after 'WORK="$(mktemp -d)"' 'API_TOKEN="${1:-}"')" && expect_only z5-arg OPS-Z5
+  mk z5-opt;      edit z5-opt scripts/deploy.sh "$(after '    --yes) YES=1; shift ;;' '    --password) shift 2 ;;')" && expect_only z5-opt OPS-Z5
+  mk z5-echo;     edit z5-echo scripts/deploy.sh "$(after 'read -rs -p' 'echo "token is $REGISTRY_TOKEN"')" && expect_only z5-echo OPS-Z5
   mk z5-check;    edit z5-check scripts/deploy.sh "$(after 'read -rs -p' 'echo "token set: ${REGISTRY_TOKEN:+yes}"')" && expect_pass z5-check '${VAR:+...} does not print the value'
-  mk z6;          script z6 nuke.sh 'DRY_RUN=0\npreflight() { :; }\npostflight() { :; }\npreflight\nterraform -chdir=infra destroy -auto-approve\npostflight'; expect_only z6 Z6 High
-  mk z6-rm;       script z6-rm wipe.sh 'rm -rf /srv/app/data'; expect_only z6-rm Z6
-  mk z6-sql;      script z6-sql reset-db.sh 'psql -c "DROP TABLE items"'; expect_only z6-sql Z6
+  mk z6;          script z6 nuke.sh 'DRY_RUN=0\npreflight() { :; }\npostflight() { :; }\npreflight\nterraform -chdir=infra destroy -auto-approve\npostflight'; expect_only z6 OPS-Z6 High
+  mk z6-rm;       script z6-rm wipe.sh 'rm -rf /srv/app/data'; expect_only z6-rm OPS-Z6
+  mk z6-sql;      script z6-sql reset-db.sh 'psql -c "DROP TABLE items"'; expect_only z6-sql OPS-Z6
   mk z6-build;    script z6-build clean.sh 'rm -rf node_modules dist\nT="$(mktemp -d)"\nrm -rf "$T"'; expect_pass z6-build 'build directories and mktemp directories are exempt'
   mk z6-guarded;  script z6-guarded nuke.sh 'DRY_RUN=0\npreflight() { :; }\npostflight() { :; }\nread -r -p "Type the stack name to confirm: " ANSWER\npreflight\nterraform destroy -auto-approve\npostflight'; expect_pass z6-guarded 'a typed confirmation guards it'
-  mk z7;          printf 'clean:\n\trm -f out.txt\n' >> "$WORK/z7/Makefile"; expect_only z7 Z7 Low
-  mk z8-latest;   edit z8-latest Dockerfile "$(subst 'node:22.11.0-alpine' 'node:latest')" && expect_only z8-latest Z8 Medium
-  mk z8-untagged; edit z8-untagged Dockerfile "$(subst 'node:22.11.0-alpine' 'node')" && expect_only z8-untagged Z8
-  mk z8-compose;  edit z8-compose compose.yml "$(subst '"postgres:16.4"' 'postgres')" && expect_only z8-compose Z8
-  mk z8-npx;      edit z8-npx .github/workflows/ci.yml "$(subst '@0.14.0' '@latest')" && expect_only z8-npx Z8
-  mk z8-action;   edit z8-action .github/workflows/ci.yml "$(subst 'actions/checkout@v4' 'actions/checkout@main')" && expect_only z8-action Z8
-  mk z8-floor;    edit z8-floor infra/versions.tf "$(subst '"~> 5.70"' '">= 5.0"')" && expect_only z8-floor Z8
-  mk z8-nover;    edit z8-nover infra/versions.tf "$(drop 'version = "3.6.3"')" && expect_only z8-nover Z8
-  mk z8-git;      edit z8-git infra/versions.tf "$(subst '?ref=v1.2.0' '')" && expect_only z8-git Z8
-  mk z8-module;   edit z8-module infra/versions.tf "$(drop 'version = "5.13.0"')" && expect_only z8-module Z8
-  mk z8-curl;     edit z8-curl scripts/deploy.sh "$(after 'trap ' 'curl -fsSL https://get.example.dev/install.sh | sh')" && expect_only z8-curl Z8
+  mk z7;          printf 'clean:\n\trm -f out.txt\n' >> "$WORK/z7/Makefile"; expect_only z7 OPS-Z7 Low
+  mk z8-latest;   edit z8-latest Dockerfile "$(subst 'node:22.11.0-alpine' 'node:latest')" && expect_only z8-latest OPS-Z8 Medium
+  mk z8-untagged; edit z8-untagged Dockerfile "$(subst 'node:22.11.0-alpine' 'node')" && expect_only z8-untagged OPS-Z8
+  mk z8-compose;  edit z8-compose compose.yml "$(subst '"postgres:16.4"' 'postgres')" && expect_only z8-compose OPS-Z8
+  mk z8-npx;      edit z8-npx .github/workflows/ci.yml "$(subst '@0.14.0' '@latest')" && expect_only z8-npx OPS-Z8
+  mk z8-action;   edit z8-action .github/workflows/ci.yml "$(subst 'actions/checkout@v4' 'actions/checkout@main')" && expect_only z8-action OPS-Z8
+  mk z8-floor;    edit z8-floor infra/versions.tf "$(subst '"~> 5.70"' '">= 5.0"')" && expect_only z8-floor OPS-Z8
+  mk z8-nover;    edit z8-nover infra/versions.tf "$(drop 'version = "3.6.3"')" && expect_only z8-nover OPS-Z8
+  mk z8-git;      edit z8-git infra/versions.tf "$(subst '?ref=v1.2.0' '')" && expect_only z8-git OPS-Z8
+  mk z8-module;   edit z8-module infra/versions.tf "$(drop 'version = "5.13.0"')" && expect_only z8-module OPS-Z8
+  mk z8-curl;     edit z8-curl scripts/deploy.sh "$(after 'trap ' 'curl -fsSL https://get.example.dev/install.sh | sh')" && expect_only z8-curl OPS-Z8
   mk z8-old;      edit z8-old infra/versions.tf "$(subst 'random = {' 'null = "~> 3.2"\n    random = {')" && expect_pass z8-old 'the string form of a provider constraint is read'
-  mk z9;          script z9 restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nsystemctl restart app'; expect_only z9 Z9 Low
+  mk z9;          script z9 restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nsystemctl restart app'; expect_only z9 OPS-Z9 Low
 
   # Exemptions and parsing.
   mk heredoc;     printf '#!/bin/sh\n# Usage: notes.sh\nset -eu\n[ "${1:-}" = --help ] && exit 0\ncat <<EOF\nnever run: rm -rf /srv/data and terraform destroy\nEOF\n' > "$WORK/heredoc/scripts/notes.sh"; expect_pass heredoc 'heredoc bodies are text, not commands'
-  mk herestring;  script herestring check.sh 'grep -q x <<<"$1"\nrm -rf /srv/app/data'; expect_only herestring Z6
-  mk herestring2; script herestring2 check.sh 'grep -q x <<<yes\nrm -rf /srv/app/data'; expect_only herestring2 Z6
+  mk herestring;  script herestring check.sh 'grep -q x <<<"$1"\nrm -rf /srv/app/data'; expect_only herestring OPS-Z6
+  mk herestring2; script herestring2 check.sh 'grep -q x <<<yes\nrm -rf /srv/app/data'; expect_only herestring2 OPS-Z6
   mk tests;       run --include-tests "$WORK/tests"
   if [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -q 'tests/test-deploy.sh:1'; then ok; else bad "--include-tests should check tests/test-deploy.sh"; fi
   mk crlf;        awk '{ printf "%s\r\n", $0 }' "$GOOD/scripts/deploy.sh" > "$WORK/crlf/scripts/deploy.sh"; expect_pass crlf 'CRLF line endings'
@@ -102,16 +102,16 @@ matrix() {
   # Review findings (ADR-013 calibration). CHG marks a changing script as dry-run
   # capable and checked before and after, so only the check under test can fail.
   CHG='DRY_RUN="${DRY_RUN:-0}"\npreflight() { :; }\npostflight() { :; }\n'
-  mk guard-token;   script guard-token teardown.sh "${CHG}"'read -rsp "Vault token: " VAULT_TOKEN\nterraform destroy -auto-approve'; expect_only guard-token Z6 High
+  mk guard-token;   script guard-token teardown.sh "${CHG}"'read -rsp "Vault token: " VAULT_TOKEN\nterraform destroy -auto-approve'; expect_only guard-token OPS-Z6 High
   mk guard-answer;  script guard-answer teardown.sh "${CHG}"'read -rp "Proceed? " answer\n[ "$answer" = yes ] || exit 1\nterraform destroy -auto-approve'; expect_pass guard-answer 'a read into answer is a confirmation'
-  mk read-rp;       script read-rp login.sh 'read -rp "API token: " API_TOKEN'; expect_only read-rp Z5 High
-  mk z6-no-line;    script z6-no-line reset.sh 'PGPASSWORD=fixture-literal-value psql -c "DROP TABLE users"'; expect_only z6-no-line Z6 High
-  if printf '%s\n' "$OUT" | grep -q 'fixture-literal-value'; then bad "z6-no-line: the line (and its secret) was printed"; elif printf '%s\n' "$OUT" | grep -q 'flag (--yes, --apply, CONFIRM): DROP TABLE$'; then ok; else bad "z6-no-line: the finding should name DROP TABLE: $(printf '%s\n' "$OUT" | grep '^FAIL  Z6' | head -1)"; fi
+  mk read-rp;       script read-rp login.sh 'read -rp "API token: " API_TOKEN'; expect_only read-rp OPS-Z5 High
+  mk z6-no-line;    script z6-no-line reset.sh 'PGPASSWORD=fixture-literal-value psql -c "DROP TABLE users"'; expect_only z6-no-line OPS-Z6 High
+  if printf '%s\n' "$OUT" | grep -q 'fixture-literal-value'; then bad "z6-no-line: the line (and its secret) was printed"; elif printf '%s\n' "$OUT" | grep -q 'flag (--yes, --apply, CONFIRM): DROP TABLE$'; then ok; else bad "z6-no-line: the finding should name DROP TABLE: $(printf '%s\n' "$OUT" | grep '^FAIL  OPS-Z6' | head -1)"; fi
   mk compose-build; printf 'services:\n  web:\n    build: ./web\n    image: app-web\n' > "$WORK/compose-build/compose.dev.yml"; expect_pass compose-build 'a service with build: names its own image'
-  mk compose-alpine; printf 'services:\n  proxy:\n    image: nginx:alpine\n' > "$WORK/compose-alpine/compose.proxy.yml"; expect_only compose-alpine Z8 Medium
-  mk from-alpine;   printf 'FROM nginx:alpine\n' > "$WORK/from-alpine/Dockerfile.proxy"; expect_only from-alpine Z8
+  mk compose-alpine; printf 'services:\n  proxy:\n    image: nginx:alpine\n' > "$WORK/compose-alpine/compose.proxy.yml"; expect_only compose-alpine OPS-Z8 Medium
+  mk from-alpine;   printf 'FROM nginx:alpine\n' > "$WORK/from-alpine/Dockerfile.proxy"; expect_only from-alpine OPS-Z8
   mk git-ssh;       printf 'module "vpc" {\n  source = "git@github.com:example/vpc.git?ref=v1.2.0"\n}\n' > "$WORK/git-ssh/infra/vpc.tf"; expect_pass git-ssh 'a git@ source pinned with ?ref='
-  mk git-ssh-ref;   printf 'module "vpc" {\n  source = "git@github.com:example/vpc.git"\n}\n' > "$WORK/git-ssh-ref/infra/vpc.tf"; expect_only git-ssh-ref Z8
+  mk git-ssh-ref;   printf 'module "vpc" {\n  source = "git@github.com:example/vpc.git"\n}\n' > "$WORK/git-ssh-ref/infra/vpc.tf"; expect_only git-ssh-ref OPS-Z8
 
   # Trial calibration (homelab-toolkit, aws-platform): shared help, quoted text,
   # preview by default, checks found by position, commands kept in variables,
@@ -119,15 +119,15 @@ matrix() {
   mk z3-helper;     printf '#!/usr/bin/env bash\nset -euo pipefail\nshow_help_if_asked "$@"\necho ok\n' > "$WORK/z3-helper/scripts/info.sh"; expect_pass z3-helper 'help through a shared function handed "$@"'
   mk z4-message;    script z4-message notice.sh 'log_warn "a reboot is required"\necho "install it (apt install python3-yaml) and re-run"\ntouch /tmp/x  # reboot later'; expect_pass z4-message 'quoted text and comments are not commands'
   mk z4-apply;      script z4-apply patch.sh 'APPLY=0\ncase "${1:-}" in --apply) APPLY=1 ;; esac\nrun_gate\n[ "$APPLY" = 1 ] || exit 0\nsystemctl restart app\nrun_gate'; expect_pass z4-apply 'preview by default, changes only with --apply'
-  mk z4-ssh;        script z4-ssh remote.sh 'run_gate\nssh host "sudo reboot"\nrun_gate'; expect_only z4-ssh Z4 Medium
+  mk z4-ssh;        script z4-ssh remote.sh 'run_gate\nssh host "sudo reboot"\nrun_gate'; expect_only z4-ssh OPS-Z4 Medium
   mk z9-position;   script z9-position restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nrequire_tool systemctl\nsystemctl restart app\nservice_ok'; expect_pass z9-position 'a check before and after the change'
-  mk z9-after;      script z9-after restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nsystemctl restart app\nservice_ok'; expect_only z9-after Z9 Low
-  if printf '%s\n' "$OUT" | grep -q 'without a pre-flight check$'; then ok; else bad "z9-after: should name the missing pre-flight: $(printf '%s\n' "$OUT" | grep '^FAIL  Z9' | head -1)"; fi
+  mk z9-after;      script z9-after restart.sh 'DRY_RUN="${DRY_RUN:-0}"\nsystemctl restart app\nservice_ok'; expect_only z9-after OPS-Z9 Low
+  if printf '%s\n' "$OUT" | grep -q 'without a pre-flight check$'; then ok; else bad "z9-after: should name the missing pre-flight: $(printf '%s\n' "$OUT" | grep '^FAIL  OPS-Z9' | head -1)"; fi
   mk z9-var;        script z9-var heal.sh 'DRY_RUN="${DRY_RUN:-0}"\nRESTART_CMD="systemctl restart app"\nif service_ok; then exit 0; fi\nremote_run host "${RESTART_CMD}"\nservice_ok'; expect_pass z9-var 'a command kept in a variable runs where it is used'
-  mk z9-var-at;     script z9-var-at heal.sh 'DRY_RUN="${DRY_RUN:-0}"\nRESTART_CMD="systemctl restart app"\nremote_run host "$RESTART_CMD"'; expect_only z9-var-at Z9
-  if printf '%s\n' "$OUT" | grep -q 'scripts/heal.sh:7 '; then ok; else bad "z9-var-at: the finding should point at the line that runs the variable: $(printf '%s\n' "$OUT" | grep '^FAIL  Z9' | head -1)"; fi
-  mk z8-tfver;      edit z8-tfver infra/versions.tf "$(subst '"~> 1.9"' '">= 1.6"')" && expect_only z8-tfver Z8 Medium
-  if printf '%s\n' "$OUT" | grep -q 'required_version ">= 1.6" has no upper bound'; then ok; else bad "z8-tfver: should name required_version: $(printf '%s\n' "$OUT" | grep '^FAIL  Z8' | head -1)"; fi
+  mk z9-var-at;     script z9-var-at heal.sh 'DRY_RUN="${DRY_RUN:-0}"\nRESTART_CMD="systemctl restart app"\nremote_run host "$RESTART_CMD"'; expect_only z9-var-at OPS-Z9
+  if printf '%s\n' "$OUT" | grep -q 'scripts/heal.sh:7 '; then ok; else bad "z9-var-at: the finding should point at the line that runs the variable: $(printf '%s\n' "$OUT" | grep '^FAIL  OPS-Z9' | head -1)"; fi
+  mk z8-tfver;      edit z8-tfver infra/versions.tf "$(subst '"~> 1.9"' '">= 1.6"')" && expect_only z8-tfver OPS-Z8 Medium
+  if printf '%s\n' "$OUT" | grep -q 'required_version ">= 1.6" has no upper bound'; then ok; else bad "z8-tfver: should name required_version: $(printf '%s\n' "$OUT" | grep '^FAIL  OPS-Z8' | head -1)"; fi
   mk binary;        printf '#!/bin/sh\n\000\001\002\n' > "$WORK/binary/scripts/tool"; expect_pass binary 'a binary file is not a script, even with a shebang'
   if [ -s "$WORK/err" ]; then bad "binary: stderr should be empty: $(head -1 "$WORK/err")"; else ok; fi
 

@@ -4,11 +4,11 @@ description: >-
   Use when asked "check our runbooks", "are our scripts zero-touch?", "do our
   deploys have pre-flight and post-flight checks?", "is there a rollback?",
   or when ops-review flags the scripts and runbooks lens. Checks operator
-  scripts (Z1–Z9: strict mode, --help, dry run, secrets with read -rs,
+  scripts (OPS-Z1–Z9: strict mode, --help, dry run, secrets with read -rs,
   guarded destructive commands, pinned versions), make targets, and runbooks
   against the runbook standard: pre-flight, numbered steps with Expect and
   Stop if, flagged destructive steps, post-flight and rollback. Read-only.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 ---
 
@@ -16,7 +16,7 @@ allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 
 The deep scripts and runbooks check behind [ops-review](../ops-review/SKILL.md). It is a sibling that shares that skill's severity table, contract and evidence rules. It checks that every operation is a zero-touch command an operator can follow under pressure, with checks before and after each change.
 
-Sources: [runbook-standard.md](../../references/runbook-standard.md) and the blueprint's [ops-script-template.sh](../../blueprints/operable-service/ops-script-template.sh), a script that passes Z1–Z9.
+Sources: [runbook-standard.md](../../references/runbook-standard.md) and the blueprint's [ops-script-template.sh](../../blueprints/operable-service/ops-script-template.sh), a script that passes OPS-Z1–Z9.
 
 ## Rules
 
@@ -28,7 +28,7 @@ Sources: [runbook-standard.md](../../references/runbook-standard.md) and the blu
 
 ### Step 1 — Inventory
 
-List the operator scripts (`scripts/`, `bin/`, `ops/`, `tools/`, files with a shell shebang), the make targets that change systems, and the runbooks (`ops.runbooks`, `docs/operations/`, `docs/runbooks/`, `RUNBOOK*.md`, `*-runbook.md`). For each runbook, name the scripts or targets it calls. Mark sourced libraries (they are checked for Z5 and Z6 only) and test code (not operator scripts).
+List the operator scripts (`scripts/`, `bin/`, `ops/`, `tools/`, files with a shell shebang), the make targets that change systems, and the runbooks (`ops.runbooks`, `docs/operations/`, `docs/runbooks/`, `RUNBOOK*.md`, `*-runbook.md`). For each runbook, name the scripts or targets it calls. Mark sourced libraries (they are checked for OPS-Z5 and OPS-Z6 only) and test code (not operator scripts).
 
 ### Step 2 — Mechanical checks
 
@@ -38,7 +38,7 @@ Run the script from the repository root and include its output verbatim:
 bash "$PLUGIN_ROOT/scripts/check-ops-scripts.sh" .
 ```
 
-`PLUGIN_ROOT` is two directories above this skill's base directory. Each `FAIL` line is a finding at the severity it prints. Z8 covers images, workflows and Terraform versions as well as scripts.
+`PLUGIN_ROOT` is two directories above this skill's base directory. Each `FAIL` line is a finding at the severity it prints. OPS-Z8 covers images, workflows and Terraform versions as well as scripts.
 
 ### Step 3 — Runbooks against the standard
 
@@ -55,4 +55,4 @@ Then check that each step calls a script or make target that exists, with flags 
 
 ### Step 4 — Report
 
-Use the `ops-review` Step 6 format, limited to the scripts and runbooks lens: the inventory, findings with rule ids (Z1–Z9, or the runbook-standard row), Other observations, and the script output verbatim. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
+Use the `ops-review` Step 6 format, limited to the scripts and runbooks lens: the inventory, findings with rule ids (OPS-Z1–Z9, or the runbook-standard row), Other observations, and the script output verbatim. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.

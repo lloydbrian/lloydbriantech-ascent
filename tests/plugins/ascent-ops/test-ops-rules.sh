@@ -160,13 +160,13 @@ NIDS=0
 for s in "$PLUGIN"/scripts/*.sh; do
   while read -r id sev; do
     [ -n "$id" ] || continue
-    NIDS=$((NIDS + 1)); L=$(printf '%s' "$id" | cut -c1); n=$(printf '%s' "$id" | tr -cd '0-9'); hit=0
+    NIDS=$((NIDS + 1)); L=$(printf '%s' "${id#OPS-}" | cut -c1); n=$(printf '%s' "$id" | tr -cd '0-9'); hit=0
     while IFS= read -r row; do
       [ -n "$row" ] || continue
       named=0
       if printf '%s\n' "$row" | grep -qE "[(, ]$id([,) ]|$(printf '\342\200\223'))"; then named=1
       else
-        for r in $(printf '%s\n' "$row" | grep -oE "$L[0-9]+$(printf '\342\200\223')$L[0-9]+" || true); do
+        for r in $(printf '%s\n' "$row" | grep -oE "OPS-$L[0-9]+$(printf '\342\200\223')$L[0-9]+" || true); do
           lo=$(printf '%s' "${r%%$(printf '\342\200\223')*}" | tr -cd '0-9'); hi=$(printf '%s' "${r##*$(printf '\342\200\223')}" | tr -cd '0-9')
           [ "$n" -ge "$lo" ] && [ "$n" -le "$hi" ] && named=1
         done
@@ -178,9 +178,9 @@ $TABLE
 EOF_ROWS
     if [ "$hit" = 1 ]; then ok; else bad "R13 $(basename "$s") prints $id as $sev, but no severity-table row names $id at $sev"; fi
   done <<EOF_IDS
-$( { sed -nE 's/^#   ([SZM][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s"
+$( { sed -nE 's/^#   (OPS-[SZM][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s"
       lib="$PLUGIN/scripts/lib/$(basename "$s" .sh).awk"
-      [ -f "$lib" ] && grep -ohE 'fail\("[SZM][0-9]+", "[A-Za-z]+"' "$lib" | sed -E 's/fail\("([^"]+)", "([^"]+)"/\1 \2/'; } | LC_ALL=C sort -u)
+      [ -f "$lib" ] && grep -ohE 'fail\("[SZM][0-9]+", "[A-Za-z]+"' "$lib" | sed -E 's/fail\("([^"]+)", "([^"]+)"/OPS-\1 \2/'; } | LC_ALL=C sort -u)
 EOF_IDS
 done
 [ "$NIDS" -ge 27 ] || bad "R13 expected at least 27 check ids in the script headers, found $NIDS"

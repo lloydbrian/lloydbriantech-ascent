@@ -136,11 +136,12 @@ A contribution that meets this bar is more likely to be merged quickly:
 
 A plugin ships only when it clears the same bar as the ones already released. Propose it first with the [plugin proposal template](https://github.com/lloydbrian/lloydbriantech-ascent/issues/new?template=plugin-proposal.md); a new plugin needs an ADR.
 
+- [ ] **Registered first.** The plugin, its skills, agent and hooks, its rule-id families, contract section, domains and any review lens have rows in [OWNERSHIP.md](docs/framework/OWNERSHIP.md), added in the same pull request. Rule ids are plugin-qualified, `<CODE>-<family><n>` (`OPS-S3`). `make ownership` (T13) names any missing row.
 - [ ] **Hardened source.** Skills, agent and scripts follow the shared rules: read-only by default, `file:line` evidence, severities only from the plugin's marked severity table, no personal data in output.
 - [ ] **Read-only agent.** A reviewer agent with `tools: Read, Grep, Glob` only (T4), whose severity table is an identical, marked copy of the skill's (T5 checks the marked copies).
 - [ ] **Behavior tests** in `tests/plugins/<plugin>/test-*.sh` for every script and hook, ending with `<test>: N/N PASS` (T11), passing on macOS and Linux and under the stock macOS `/bin/bash` 3.2.
 - [ ] **Negative controls.** Every rule has a `plugin_case` in `make/test-mutants.sh` that breaks it and names the gate check that must fail. A plugin with slow tests splits its controls into groups so each CI job stays under its timeout.
-- [ ] **The gate is green:** `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants`, including the version check (T10).
+- [ ] **The gate is green:** `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants`, including the version check (T10) and the ownership check (T13).
 - [ ] **A real-repository trial.** The plugin runs read-only against real repositories, each in a fresh conversation, and calibration rounds fix what the reports get wrong. The trial repositories are never modified.
 - [ ] **A release record:** CHANGELOG entry, the ADR moved to Accepted, and a tag.
 

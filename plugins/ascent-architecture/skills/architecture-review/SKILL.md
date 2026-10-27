@@ -7,7 +7,7 @@ description: >-
   design principles, deployment and cost against the project contract, rates
   findings by severity, and recommends deeper skills only where a surface
   check flags a concern. Read-only.
-version: 0.1.2
+version: 0.2.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -15,7 +15,7 @@ allowed-tools: Read, Grep, Glob
 
 One review of the whole system, judged against the project's own targets. It is the entry point of the `ascent-architecture` plugin: it runs lightweight surface checks itself, and recommends [quality-attributes](../quality-attributes/SKILL.md), [design-principles-check](../design-principles-check/SKILL.md) or [deployment-options](../deployment-options/SKILL.md) only for the areas where a surface check found something (the hybrid pattern). It never invokes them; they read the same sources.
 
-Shared sources: [architecture-principles.md](../../references/architecture-principles.md) (principles P1–P12, Well-Architected pillars, maturity targets) and [contract-template.yml](../../references/contract-template.yml) (the `architecture:` section of `.ascent/contract.yml`). The pricing files are in `pricing/` and the blueprints in `blueprints/`, both under `PLUGIN_ROOT` (see Rules).
+Shared sources: [architecture-principles.md](../../references/architecture-principles.md) (principles ARC-P1–P12, Well-Architected pillars, maturity targets) and [contract-template.yml](../../references/contract-template.yml) (the `architecture:` section of `.ascent/contract.yml`). The pricing files are in `pricing/` and the blueprints in `blueprints/`, both under `PLUGIN_ROOT` (see Rules).
 
 If `engineering:system-design` or `engineering:architecture` is installed, use them for generic design advice and ADR formatting. This skill keeps the ASCENT parts: the contract, the severity table, the maturity target and the report format (decision 5, extend don't duplicate).
 
@@ -25,7 +25,7 @@ If `engineering:system-design` or `engineering:architecture` is installed, use t
 - **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory), or "absent: searched <paths>", and a concrete failure scenario.
 - **Fresh evidence.** Re-read the evidence for every finding in this run. Never carry findings over from an earlier pass, an agent's report or another session.
 - **Rate only with the severity table.** A concern that matches no row goes under **Other observations (unrated)** in the report and does not count toward the rating. Never invent a severity.
-- **Cite principles by their id** in [architecture-principles.md](../../references/architecture-principles.md): P1–P12 for system principles, the section 4 row name (for example "API design: idempotent writes") for software design. Cite one only when its text matches the finding.
+- **Cite principles by their id** in [architecture-principles.md](../../references/architecture-principles.md): ARC-P1–P12 for system principles, the section 4 row name (for example "API design: idempotent writes") for software design. Cite one only when its text matches the finding.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Cite the location.
 - **Security depth belongs to `ascent-security`.** Flag what the architecture exposes (public origins, missing TLS, secrets in client code); leave credential scanning to that plugin. Security-only concerns that match no row (authorization roles, network binding, CI permissions, request size limits, identifiers in docs) go under Other observations marked `→ ascent-security`. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
@@ -113,20 +113,20 @@ bash "$PLUGIN_ROOT/scripts/check-cfn-static-site.sh" <template.yaml>
 
   | Check | Severity | Table row |
   |---|---|---|
-  | C1 | High | Origin storage reachable without the CDN |
-  | C2 | High | Origin storage reachable without the CDN |
-  | C3 | Medium | Plain HTTP allowed |
-  | C4 | Medium | TLS policy older than TLSv1.2_2019 |
-  | C5 | High | Origin storage reachable without the CDN |
-  | C6 | Medium | No security headers policy |
-  | C7 | High | Stateful data deleted with its stack |
-  | C8 | High | Stateful data with no point-in-time recovery |
-  | C9 | Low | Log groups without retention |
-  | C10 | Medium | Public entry point with no throttling |
-  | C11 | Medium | No cost guardrail |
-  | C12 | Low | No access logs at the CDN |
+  | ARC-C1 | High | Origin storage reachable without the CDN |
+  | ARC-C2 | High | Origin storage reachable without the CDN |
+  | ARC-C3 | Medium | Plain HTTP allowed |
+  | ARC-C4 | Medium | TLS policy older than TLSv1.2_2019 |
+  | ARC-C5 | High | Origin storage reachable without the CDN |
+  | ARC-C6 | Medium | No security headers policy |
+  | ARC-C7 | High | Stateful data deleted with its stack |
+  | ARC-C8 | High | Stateful data with no point-in-time recovery |
+  | ARC-C9 | Low | Log groups without retention |
+  | ARC-C10 | Medium | Public entry point with no throttling |
+  | ARC-C11 | Medium | No cost guardrail |
+  | ARC-C12 | Low | No access logs at the CDN |
 
-  If Bash is unavailable or the operator declines it, apply C1–C12 by reading the template and say "checks applied by reading; script not run". With no template but setup scripts that create the same resources, apply C1–C12 by reading those scripts and say "checks applied by reading <path>; live configuration not verified".
+  If Bash is unavailable or the operator declines it, apply ARC-C1–C12 by reading the template and say "checks applied by reading; script not run". With no template but setup scripts that create the same resources, apply ARC-C1–C12 by reading those scripts and say "checks applied by reading <path>; live configuration not verified".
 - If the contract names a `usage_profile`, run the estimate (deployment-options Step 3 has the command) and compare the total with `monthly_budget_usd`.
 - With no usage profile, say "no usage profile" and, when the system resembles the blueprint, offer an illustrative estimate from the blueprint's sample profile:
 
@@ -158,7 +158,7 @@ Quality attributes (Step 2): <one line per attribute: target | evidence | status
 
 Findings, most severe first:
 A<n>  <severity>  <file>:<line or "absent">
-      Attribute/principle: <e.g. Reliability, P11>
+      Attribute/principle: <e.g. Reliability, ARC-P11>
       Scenario: <what goes wrong, for whom>
       Fix: <smallest change that closes it>
 

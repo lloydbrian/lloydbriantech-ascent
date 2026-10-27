@@ -35,19 +35,21 @@ You can use it in two ways:
 
 Most frameworks optimize for Day 0, the scaffold. ASCENT optimizes for **Day 0 through Day 1000**: the long stretch where decisions turn into lore, documentation drifts from the code, and quality slips. Most of that slippage is not a skill problem. It is a consistency problem under fatigue, handoff and time pressure.
 
-ASCENT writes those patterns down as checks with evidence: a project contract with measurable targets, severity tables that leave no room for invented ratings, operator runbooks with pre-flight and post-flight checks, and ADRs for every decision someone might later question. The framework is built with its own rules: 13 ADRs, phase-gated delivery, and a plugin gate with hundreds of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
+ASCENT writes those patterns down as checks with evidence: a project contract with measurable targets, severity tables that leave no room for invented ratings, operator runbooks with pre-flight and post-flight checks, and ADRs for every decision someone might later question. The framework is built with its own rules: 15 ADRs, phase-gated delivery, and a plugin gate with hundreds of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
 
 ## Plugins for any repository
 
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | 0.1.1 | Trust and security, compliance | "any secrets committed?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution, plus a `security-auditor` agent |
-| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.1 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
-| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.1.2 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
-| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.1.1 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
-| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.1.0 | Resilience, compliance, trust and security | "is this operable?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, and Maintenance and Troubleshooting manuals proven current, plus an operable-service blueprint |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.2 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
+| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.0 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
+| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.2.0 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
+| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.2.0 | Resilience, compliance, trust and security | "is this operable?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, and Maintenance and Troubleshooting manuals proven current, plus an operable-service blueprint |
 
-Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions.
+Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions. Not sure which to install? [Which plugins do I need?](docs/framework/OWNERSHIP.md#which-plugins-do-i-need) maps what your repository contains to the plugin that checks it. Each plugin works on its own, and one you have not installed leaves its review unmeasured, never blocked.
+
+Every finding carries a plugin-qualified rule id, such as `OPS-S3` or `UX-D2`, so you can always tell which plugin raised it.
 
 The pillars are the four outcomes the checks serve: driving business value, compliance, trust and security, and resilience. [PILLARS.md](docs/framework/PILLARS.md) maps each quality attribute to the plugin or skill that checks it, the evidence it produces and the gaps that remain.
 
@@ -183,6 +185,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.8 | 2026-10-27 | The ownership registry and gate check T13; plugin-qualified rule ids (`OPS-S3`) in `ascent-architecture`, `ascent-ops` and `ascent-ux` 0.2.0; `ascent-delivery` 0.1.2 uses the ASCENT reviewers as lenses |
 | v0.4.7 | 2026-10-26 | `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1, `ascent-ux` 0.1.1: housekeeping, stacked-PR runbook rule, `--help` for every script |
 | v0.4.6 | 2026-10-26 | `ascent-ops` 0.1.0, `ascent-architecture` 0.1.1, health endpoints renamed to `/-/health` and `/-/ready`, the pillar map |
 | v0.4.5 | 2026-10-25 | `ascent-ux` 0.1.0: WCAG 2.2 evidence, token contrast, design directions |

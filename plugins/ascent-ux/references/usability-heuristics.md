@@ -6,16 +6,16 @@ These are the heuristic lens of `ux-review` Step 2. A heuristic concern that bre
 
 | # | Heuristic | Evidence you can see in code | Typical finding |
 |---|---|---|---|
-| H1 | Visibility of system status | loading indicators, `aria-busy`, progress for long tasks, a confirmation after saving | a submit with no feedback until the page reloads |
-| H2 | Match between the system and the real world | labels in the users' words (from personas); dates and units in local formats | internal codes ("PTC-W7-C1") shown to users |
-| H3 | User control and freedom | cancel, undo, back links, a dialog close button, Escape | multi-step form with no way back |
-| H4 | Consistency and standards | one component per job; the same words for the same action; platform conventions | two different date pickers; "Delete" and "Remove" for one action |
-| H5 | Error prevention | constraints (`type`, `min`, `pattern`), confirmation for destructive actions, disabled states with reasons | destructive action with no confirmation |
-| H6 | Recognition rather than recall | visible options, defaults, recent items, labels that stay visible while typing | placeholder-only labels that vanish |
-| H7 | Flexibility and efficiency of use | keyboard shortcuts with an off switch (WCAG 2.1.4), saved filters, bulk actions | power task needing twenty clicks |
-| H8 | Aesthetic and minimalist design | one primary action per view; content hierarchy from tokens | three competing primary buttons |
-| H9 | Help users recognize, diagnose and recover from errors | error text that says what happened and how to fix it, placed at the field | "Something went wrong" with no next step |
-| H10 | Help and documentation | a consistent help link (WCAG 3.2.6), inline hints at the point of need | help only in a separate PDF |
+| UX-H1 | Visibility of system status | loading indicators, `aria-busy`, progress for long tasks, a confirmation after saving | a submit with no feedback until the page reloads |
+| UX-H2 | Match between the system and the real world | labels in the users' words (from personas); dates and units in local formats | internal codes ("PTC-W7-C1") shown to users |
+| UX-H3 | User control and freedom | cancel, undo, back links, a dialog close button, Escape | multi-step form with no way back |
+| UX-H4 | Consistency and standards | one component per job; the same words for the same action; platform conventions | two different date pickers; "Delete" and "Remove" for one action |
+| UX-H5 | Error prevention | constraints (`type`, `min`, `pattern`), confirmation for destructive actions, disabled states with reasons | destructive action with no confirmation |
+| UX-H6 | Recognition rather than recall | visible options, defaults, recent items, labels that stay visible while typing | placeholder-only labels that vanish |
+| UX-H7 | Flexibility and efficiency of use | keyboard shortcuts with an off switch (WCAG 2.1.4), saved filters, bulk actions | power task needing twenty clicks |
+| UX-H8 | Aesthetic and minimalist design | one primary action per view; content hierarchy from tokens | three competing primary buttons |
+| UX-H9 | Help users recognize, diagnose and recover from errors | error text that says what happened and how to fix it, placed at the field | "Something went wrong" with no next step |
+| UX-H10 | Help and documentation | a consistent help link (WCAG 3.2.6), inline hints at the point of need | help only in a separate PDF |
 
 ## ISO 9241-110:2020 interaction principles
 

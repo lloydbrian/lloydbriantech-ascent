@@ -32,6 +32,10 @@
 #       every dependency on another marketplace is allowlisted in the
 #       marketplace's allowCrossMarketplaceDependenciesOn (without it the plugin
 #       installs but fails to load; ADR-012)
+#   T13 the ownership registry docs/framework/OWNERSHIP.md matches the
+#       repository (ADR-015): T13.1-T13.10 from make/check-ownership.sh, one
+#       result each, and T13.0 runs that checker's own fixture tests
+#       (tests/meta/test-check-ownership.sh)
 #
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
@@ -39,6 +43,8 @@
 #        ASCENT_T11_ONLY=<plugin> runs T11 for that plugin only. make test-mutants sets it
 #        when a control edits one plugin's files, which keeps the suite fast; running
 #        fewer tests can only make a control harder to kill, never easier.
+#        ASCENT_T13_SELFTEST=0 skips T13.0. make test-mutants sets it, except for the
+#        controls that edit the ownership checker itself.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
 set -euo pipefail
@@ -309,6 +315,30 @@ for p in $PLUGINS; do
   done
   if [ -z "$problems" ]; then ok "T12 $p: manifest keys known, cross-marketplace dependencies allowlisted"; else bad "T12 $p:$problems"; fi
 done
+
+# T13 — ownership registry (ADR-015)
+if [ "${ASCENT_T13_SELFTEST:-1}" != 0 ]; then
+  ST="$ROOT/tests/meta/test-check-ownership.sh"
+  if [ ! -f "$ST" ]; then bad "T13.0 checker self-test: tests/meta/test-check-ownership.sh not found"
+  elif out=$(bash "$ST" "$ROOT/make/check-ownership.sh" 2>&1) && last=$(printf '%s\n' "$out" | tail -1) \
+       && n=$(printf '%s' "$last" | sed -n 's|^test-check-ownership: \([1-9][0-9]*\)/\([0-9]*\) PASS.*|\1 \2|p') \
+       && [ -n "$n" ] && [ "${n% *}" = "${n#* }" ]; then
+    ok "T13.0 checker self-test: ${last#test-check-ownership: }"
+  else
+    bad "T13.0 checker self-test: $(printf '%s\n' "$out" | grep '^FAIL' | head -3 | tr '\n' ';')"
+  fi
+fi
+N13=0
+while IFS= read -r line; do
+  case "$line" in
+    "PASS  T13."*) N13=$((N13 + 1)); ok "${line#PASS  }" ;;
+    "FAIL  T13."*) N13=$((N13 + 1)); bad "${line#FAIL  }" ;;
+  esac
+done <<EOF_T13
+$(bash "$ROOT/make/check-ownership.sh" "$ROOT" 2>&1 || true)
+EOF_T13
+# A checker that stops early must not pass by printing less (T13.1 alone when the registry is missing).
+[ "$N13" -ge 10 ] || bad "T13 ownership checker printed $N13 of 10 results"
 
 printf "\ntest-plugins: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

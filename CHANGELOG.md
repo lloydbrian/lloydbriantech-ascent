@@ -12,19 +12,57 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes Z8 and Z3; and this repository's own `make/` scripts lack `--help` (Z3)
-- `ascent-quality` next (plugin roadmap rank 4), then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
-- `ascent-ux` 0.2.0 candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
-- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
+- Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
+- v0.4.9 `ascent-security` 0.2.0, a hand-written dependency and vulnerability check (`SEC-D`); v0.4.10 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.11 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014
+- Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
+- Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
+- `ascent-ux` 0.3.0: navigational integrity and cross-browser (ADR-014), plus candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
+- `ascent-delivery` 0.2.0 — a user acceptance sign-off record (ADR-014); read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
-- `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
-- Restore and failover proof (Resilience pillar, committed 2026-10-26): a drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`; today `ascent-ops` and `quality-attributes` only read the date of the last restore test. See `docs/framework/PILLARS.md` for the other gaps
+- `ascent-architecture` 0.3.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5 — Test harness with three eval scenarios
 - Phase 6 — Starter repo generation tooling
 - Phase 7 — First production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.8] — 2026-10-27
+
+**Ownership registry and plugin-qualified rule ids.** Every plugin, component, rule-id family, contract section, domain and review lens now has one registered owner, and the plugin gate fails when the repository drifts from the registry ([ADR-015](docs/framework/DECISIONS/ADR-015-ownership-registry-and-gate.md)). Rule ids name the plugin that raised them. Plugins: `ascent-architecture`, `ascent-ops` and `ascent-ux` 0.2.0 (report output changes), `ascent-delivery` 0.1.2; `ascent-security` is unchanged at 0.1.1.
+
+### Added
+
+- `docs/framework/OWNERSHIP.md`, the ownership registry: seven marked tables (repository signals, plugins with their codes, components, rule-id families, reserved names, domains and testing types, review lenses). Its "Which plugins do I need?" section maps what a repository contains to the plugin that checks it; the README links to it
+- Gate check T13 in `make test-plugins`, from `make/check-ownership.sh` (`make ownership` runs it alone): T13.1 registry well-formed, T13.2 plugins, T13.3 components, T13.4 codes and families, T13.5 contract sections, T13.6 cross-plugin markers, T13.7 domains, T13.8 delivery lenses, T13.9 README versions and PILLARS names, T13.10 qualified ids. T13.0 runs the checker's fixture tests, `tests/meta/test-check-ownership.sh` (69 cases on every awk installed), and the gate fails if the checker prints fewer than ten results
+- `ascent-delivery` 0.1.2: an "Architecture and cost" review lens served by `ascent-architecture:architecture-reviewer`, with its own fallback prompt
+- ADR-014 (testing ownership across plugins; the dependency scan in `ascent-security`, test strategy in `ascent-quality`, restore proof in `ascent-ops`), accepted and built from v0.4.9; its rule-id families are reserved in the registry. ADR-015 (the registry and gate)
+- `make test-mutants` gains the `ownership` group, controls P205–P240: one or more for every T13 rule, five that break the checker itself and must be caught by T13.0, and a group baseline that runs T13.0 unmutated. P04 and P161 no longer depend on a version number
+
+### Changed
+
+- **Rule ids are plugin-qualified, `<CODE>-<family><n>`.** Codes: `SEC`, `DEL`, `ARC`, `UX`, `OPS`; `QA` and `GOV` reserved. Every definition, report line, reference, test and negative control is renamed; no aliases are kept. Anyone parsing report output must update:
+
+  | Plugin | Before | After |
+  |---|---|---|
+  | `ascent-architecture` | template checks C1–C12, principles P1–P12, deployment options O1–O5, component mapping B1 | `ARC-C1`–`ARC-C12`, `ARC-P1`–`ARC-P12`, `ARC-O1`–`ARC-O5`, `ARC-B1` |
+  | `ascent-ops` | secure configuration S1–S10, scripts Z1–Z9, manuals M1–M8 | `OPS-S1`–`OPS-S10`, `OPS-Z1`–`OPS-Z9`, `OPS-M1`–`OPS-M8` |
+  | `ascent-ux` | static checks U1–U12, heuristics H1–H10, design directions D0–D7 | `UX-U1`–`UX-U12`, `UX-H1`–`UX-H10`, `UX-D0`–`UX-D7` |
+
+  Report lines read `FAIL  OPS-S3  High  …`; the id column is seven characters wide. The `ux.direction` contract value is now `UX-D1` (it was `D1`). Gate check ids (T), negative controls (P) and validator cases (V) are internal and keep their form. Past CHANGELOG entries, accepted ADRs and closed plans keep the old ids as history
+- `ascent-delivery` 0.1.2: the lens tables in the skill, `review-lenses.md` and the plugin README list providers in preference order, ASCENT reviewers first: `ux-reviewer` for accessibility and for UX and navigation (launched once when it serves both), `ops-reviewer` for operational and deploy impact, `architecture-reviewer` for the new architecture and cost lens. At v0.4.7 the tables named none of them
+- `make release-tag` and the release docs say `git push origin v<version>`, not `git push --tags`, which would also publish any stale local tag (`make/release.mk`, CLAUDE.md, ROADMAP, the skill's `PHASE-PROTOCOL.md` and `role-devops.md`)
+- CONTRIBUTING and CLAUDE.md: a new plugin, skill, agent, hook, rule family, contract section or lens starts with a registry row
+- PILLARS: T13.9 keeps the "Checked by" names true. ROADMAP: the release order v0.4.9 to v0.4.11, and committed follow-ups for project auditability, the `ascent-governance` conductor, "Recommended next" naming missing plugins, navigational integrity and UAT sign-off
+
+### Notes
+
+- T13 was proven against `main` at v0.4.7 with only the registry added: it failed T13.4 (no family defined by a qualified id), T13.8 (the lens drift in all three delivery tables) and T13.10 (unqualified ids), and passed every other rule
+- The migration was checked by reversing it: stripping the codes from v0.4.8 reproduces v0.4.7 exactly in 382 files, and the remaining differences are the intended non-id changes listed above
+- Gate totals, under `/bin/bash` 3.2 and the macOS awk: `make qa` OK (452 internal links), `make test-skills` 28/28, `make test-plugins` 65/65 (T13.0 69/69), `make test-mutants` 307 controls, 307 killed, 0 survived, 0 anchor misses
+- An independent review (correctness and tests lenses, checked by `finding-verifier`) found 15 issues, all fixed before release: bare skill names in PILLARS were not checked, nested marketplace names, backticked unqualified ids, rows without a leading pipe, a missing marketplace aborting the checker, padded lens headers, nine untested checker branches, and four imprecise controls
 
 ---
 

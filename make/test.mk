@@ -1,6 +1,6 @@
 # TEST — eval scenarios for the skill (lands in Phase 5)
 
-.PHONY: test test-skills test-mutants test-mutants-groups test-plugins plugins
+.PHONY: test test-skills test-mutants test-mutants-groups test-plugins ownership plugins
 
 test:  ## TEST: Run eval scenarios against the skill [STUB lands in P5.0]
 	@printf "[STUB] make test lands in Phase 5 (v0.6.0)\n"
@@ -17,8 +17,11 @@ test-mutants:  ## TEST: Negative controls — every named mutant must be killed 
 test-mutants-groups:  ## TEST: List the negative-control groups as JSON (one CI job per group)
 	@bash make/test-mutants.sh --groups-json
 
-test-plugins:  ## TEST: Plugin gate — drift, placeholders, names, read-only agents, links (ADR-009)
+test-plugins:  ## TEST: Plugin gate — drift, placeholders, names, read-only agents, links, ownership (ADR-009)
 	@bash make/test-plugins.sh
+
+ownership:  ## TEST: Ownership gate T13 alone — OWNERSHIP.md against the repository (ADR-015)
+	@bash make/check-ownership.sh
 
 plugins:  ## DIST: Regenerate plugin skills from the template sources (ADR-009)
 	@bash make/build-plugins.sh

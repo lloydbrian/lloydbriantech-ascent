@@ -7,19 +7,19 @@
 # Usage: check-cfn-static-site.sh TEMPLATE.yaml
 #
 # Checks (severity from the architecture-review severity table):
-#   C1  High    every S3 bucket blocks all four kinds of public access
-#   C2  High    no S3 website hosting; every S3 origin uses Origin Access Control
-#   C3  Medium  no CloudFront behavior allows plain HTTP (allow-all)
-#   C4  Medium  a custom certificate uses TLS 1.2 (2019 or later policy) or TLS 1.3
-#   C5  High    each S3 origin bucket has a policy limiting reads to CloudFront (AWS:SourceArn)
-#   C6  Medium  every distribution attaches a response headers policy (security headers)
-#   C7  High    every S3 bucket and DynamoDB table has DeletionPolicy Retain or Snapshot
-#   C8  High    every DynamoDB table has point-in-time recovery enabled
-#   C9  Low     every log group sets RetentionInDays; every Lambda function logs to one of them
+#   ARC-C1  High    every S3 bucket blocks all four kinds of public access
+#   ARC-C2  High    no S3 website hosting; every S3 origin uses Origin Access Control
+#   ARC-C3  Medium  no CloudFront behavior allows plain HTTP (allow-all)
+#   ARC-C4  Medium  a custom certificate uses TLS 1.2 (2019 or later policy) or TLS 1.3
+#   ARC-C5  High    each S3 origin bucket has a policy limiting reads to CloudFront (AWS:SourceArn)
+#   ARC-C6  Medium  every distribution attaches a response headers policy (security headers)
+#   ARC-C7  High    every S3 bucket and DynamoDB table has DeletionPolicy Retain or Snapshot
+#   ARC-C8  High    every DynamoDB table has point-in-time recovery enabled
+#   ARC-C9  Low     every log group sets RetentionInDays; every Lambda function logs to one of them
 #               (LoggingConfig.LogGroup, or a group named /aws/lambda/${Function})
-#   C10 Medium  every API Gateway stage sets throttling (burst and rate)
-#   C11 Medium  the template defines an AWS::Budgets::Budget (cost guardrail)
-#   C12 Low     every distribution has access logging (Logging, or its own log delivery source)
+#   ARC-C10 Medium  every API Gateway stage sets throttling (burst and rate)
+#   ARC-C11 Medium  the template defines an AWS::Budgets::Budget (cost guardrail)
+#   ARC-C12 Low     every distribution has access logging (Logging, or its own log delivery source)
 #
 # A check whose resources are absent is N/A, never PASS or FAIL.
 # Limits: block-style YAML only (convert JSON with cfn-flip; a flow-style resource
@@ -68,9 +68,9 @@ function s3_without_oac(r,   L, nL, k, li, oi, inO, open, s3, oac, bad) {
 }
 function die(msg) { print "check-cfn-static-site: " msg > "/dev/stderr"; err = 1; exit 2 }
 function out(id, sev, desc, fails, napplic, nres) {
-  if (napplic) { printf "N/A   %-4s %s\n", id, desc; na++; return }
-  if (fails == "") { printf "PASS  %-4s %s (%d checked)\n", id, desc, nres; pass++ }
-  else { printf "FAIL  %-4s [%s] %s: %s\n", id, sev, desc, fails; fail++ }
+  if (napplic) { printf "N/A   %-7s %s\n", "ARC-" id, desc; na++; return }
+  if (fails == "") { printf "PASS  %-7s %s (%d checked)\n", "ARC-" id, desc, nres; pass++ }
+  else { printf "FAIL  %-7s [%s] %s: %s\n", "ARC-" id, sev, desc, fails; fail++ }
 }
 {
   line = $0
@@ -134,7 +134,7 @@ END {
         if (!has(r, "MinimumProtocolVersion: *TLSv1\\.(2_20(19|21|25)|3)") || has(r, "MinimumProtocolVersion:[^\n]*(SSLv3|TLSv1_2016|TLSv1\\.1_2016|TLSv1\\.2_2018|TLSv1( |,|\\]|\n|$))")) f4 = list_add(f4, r)
       }
       if (!has(r, "ResponseHeadersPolicyId:")) f6 = list_add(f6, r)
-      # C5: every bucket in this template used as an S3 origin needs a CloudFront-only policy.
+      # ARC-C5: every bucket in this template used as an S3 origin needs a CloudFront-only policy.
       if (ncfg > 0 || noac > 0) {
         found = 0
         for (j = 1; j <= n; j++) {
@@ -146,7 +146,7 @@ END {
         }
         if (!found && nb > 0) { n5++; f5 = list_add(f5, r " (an S3 origin is not linked to a bucket in this template; reference it as !GetAtt <Bucket>.RegionalDomainName)") }
       }
-      # C12: Logging in the distribution, or a delivery source that names it.
+      # ARC-C12: Logging in the distribution, or a delivery source that names it.
       if (!has(r, "\n *Logging:")) {
         ok12 = 0
         for (q = 1; q <= nsrc; q++) if (body[logsrc[q]] ~ ("[{ ]" r "[}.]")) ok12 = 1

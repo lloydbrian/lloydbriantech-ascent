@@ -2,23 +2,23 @@
 
 AWS first, with the nearest Azure and Google Cloud equivalent (decision 7, 2026-10-18). Equivalents are close, not identical: limits, pricing models and defaults differ, so re-check quality targets and cost when you move a design across clouds. Service names as of 2026-10; confirm a name before quoting it to a customer.
 
-Rows marked **B1** are the components of blueprint [static-site-serverless-aws](../blueprints/static-site-serverless-aws/README.md).
+Rows marked **ARC-B1** are the components of blueprint [static-site-serverless-aws](../blueprints/static-site-serverless-aws/README.md).
 
 | Capability | AWS | Azure | Google Cloud |
 |---|---|---|---|
-| Object storage (B1) | Amazon S3 | Blob Storage | Cloud Storage |
-| CDN (B1) | Amazon CloudFront | Azure Front Door | Cloud CDN |
+| Object storage (ARC-B1) | Amazon S3 | Blob Storage | Cloud Storage |
+| CDN (ARC-B1) | Amazon CloudFront | Azure Front Door | Cloud CDN |
 | Edge logic | CloudFront Functions, Lambda@Edge | Front Door rules engine | Cloud CDN edge features, Media CDN |
-| Functions (B1) | AWS Lambda | Azure Functions | Cloud Run functions |
-| HTTP API front door (B1) | Amazon API Gateway (HTTP API) | Azure API Management | API Gateway |
-| Key-value / document database (B1) | Amazon DynamoDB | Azure Cosmos DB | Firestore |
-| DNS (B1) | Amazon Route 53 | Azure DNS | Cloud DNS |
-| TLS certificates (B1) | AWS Certificate Manager | Front Door managed certificates, Key Vault | Certificate Manager |
+| Functions (ARC-B1) | AWS Lambda | Azure Functions | Cloud Run functions |
+| HTTP API front door (ARC-B1) | Amazon API Gateway (HTTP API) | Azure API Management | API Gateway |
+| Key-value / document database (ARC-B1) | Amazon DynamoDB | Azure Cosmos DB | Firestore |
+| DNS (ARC-B1) | Amazon Route 53 | Azure DNS | Cloud DNS |
+| TLS certificates (ARC-B1) | AWS Certificate Manager | Front Door managed certificates, Key Vault | Certificate Manager |
 | Web application firewall | AWS WAF | Azure Web Application Firewall | Google Cloud Armor |
-| Logs, metrics, alarms (B1) | Amazon CloudWatch | Azure Monitor (Log Analytics, Application Insights) | Cloud Logging, Cloud Monitoring |
-| Notifications (B1) | Amazon SNS | Azure Monitor action groups | Cloud Monitoring notification channels |
-| Budgets (B1) | AWS Budgets | Cost Management budgets | Cloud Billing budgets |
-| Infrastructure as code (B1) | AWS CloudFormation, AWS CDK | Bicep (ARM templates) | Infrastructure Manager (Terraform) |
+| Logs, metrics, alarms (ARC-B1) | Amazon CloudWatch | Azure Monitor (Log Analytics, Application Insights) | Cloud Logging, Cloud Monitoring |
+| Notifications (ARC-B1) | Amazon SNS | Azure Monitor action groups | Cloud Monitoring notification channels |
+| Budgets (ARC-B1) | AWS Budgets | Cost Management budgets | Cloud Billing budgets |
+| Infrastructure as code (ARC-B1) | AWS CloudFormation, AWS CDK | Bicep (ARM templates) | Infrastructure Manager (Terraform) |
 | Cross-cloud IaC | Terraform, OpenTofu | Terraform, OpenTofu | Terraform, OpenTofu |
 | Secrets | AWS Secrets Manager, SSM Parameter Store | Azure Key Vault | Secret Manager |
 | End-user sign-in | Amazon Cognito | Microsoft Entra External ID | Identity Platform |

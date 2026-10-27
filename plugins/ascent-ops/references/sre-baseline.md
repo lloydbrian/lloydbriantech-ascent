@@ -30,11 +30,11 @@ Everything that runs is pinned (`ops.version_pinning`):
 - GitHub Actions to a release tag or a commit, never a branch (under `exact`, a full release or a commit, not `@v4`)
 - no `curl … | sh` installers without a pinned version and a checksum
 
-`check-ops-scripts.sh` (Z8) enforces the `minor` floor: it accepts `~>` and `@v4`. Under `exact` (the default), read the provider constraints and action refs it passed and report ranges and major-version tags as Z8.
+`check-ops-scripts.sh` (OPS-Z8) enforces the `minor` floor: it accepts `~>` and `@v4`. Under `exact` (the default), read the provider constraints and action refs it passed and report ranges and major-version tags as OPS-Z8.
 
 ## Change and recovery
 
 - **Deploy** from a runbook (see [runbook-standard.md](runbook-standard.md)) with pre-flight and post-flight checks.
 - **Rollback** is a documented, rehearsed operation: a make target or script that restores the previous release. No rollback path for a production deploy that exists is a High finding; while the deploy files are empty or stubs it is a Low maturity gap.
 - **Backup and restore**: what is backed up, how often, how long it is kept, and the date of the last restore test.
-- **Drift**: a scheduled drift check (S9), so a change made by hand is found within a week.
+- **Drift**: a scheduled drift check (OPS-S9), so a change made by hand is found within a week.
