@@ -13,7 +13,7 @@ Once v1.0 ships, the support window will be defined explicitly: latest minor ver
 
 ## Reporting a vulnerability
 
-If you believe you've found a security issue in ASCENT — in the parent skill, in template assets, in scaffolded-project defaults, or in the scaffolding scripts — please report it privately.
+If you believe you've found a security issue in ASCENT, whether in the parent skill, template assets, scaffolded-project defaults or the scaffolding scripts, please report it privately.
 
 **Preferred channel:** GitHub's [private vulnerability reporting](https://github.com/lloydbrian/lloydbriantech-ascent/security/advisories/new). This opens a confidential advisory visible only to maintainers.
 

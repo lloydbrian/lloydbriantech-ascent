@@ -9,7 +9,7 @@ Thank you for your interest in contributing. ASCENT is currently a single-author
 - **Owner:** lloydbriantech
 - **Decision authority:** Currently sole. As the project matures, governance may formalize into a small group.
 
-All architectural decisions are captured as ADRs in [`docs/framework/DECISIONS/`](docs/framework/DECISIONS/). If you disagree with a decision, the path forward is a new ADR that proposes superseding the existing one — not a PR that reverses behavior unilaterally.
+All architectural decisions are captured as ADRs in [`docs/framework/DECISIONS/`](docs/framework/DECISIONS/). If you disagree with a decision, the path forward is a new ADR that proposes superseding the existing one, not a PR that reverses behavior unilaterally.
 
 ---
 
@@ -35,8 +35,8 @@ ASCENT accepts these contribution types:
 
 ASCENT follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 
-- **MAJOR** version (1.0 → 2.0): Breaking changes — old `.ascent-meta.json` files won't work, naming conventions changed, role inventory changed, or any change that would break a scaffolded project's existing skill invocations.
-- **MINOR** version (0.1 → 0.2): Backward-compatible additions — new reference modules, new project-embedded skills, new role capabilities, new template content.
+- **MAJOR** version (1.0 → 2.0): breaking changes, such as old `.ascent-meta.json` files that no longer work, changed naming conventions, a changed role inventory, or any other change that would break a scaffolded project's existing skill invocations.
+- **MINOR** version (0.1 → 0.2): backward-compatible additions, such as new reference modules, new project-embedded skills, new role capabilities, new template content.
 - **PATCH** version (0.1.0 → 0.1.1): Backward-compatible bug fixes, doc improvements, internal refactors.
 
 The framework version is shared lockstep between:
@@ -59,14 +59,14 @@ Reference modules under `skills/lloydbriantech-ascent/references/` form a naviga
 The rules:
 
 1. **First mention per module gets linked.** Subsequent mentions of the same target stay as code spans or plain text. This keeps prose readable while ensuring every referenced document is one click away.
-2. **Link to sibling modules** in `references/` when mentioned in another reference module — within a reference module, the link text and the relative target are typically identical (e.g., visible text `ENV-DISCIPLINE.md`, target `ENV-DISCIPLINE.md`).
+2. **Link to sibling modules** in `references/` when mentioned in another reference module. Within a reference module, the link text and the relative target are typically identical (e.g., visible text `ENV-DISCIPLINE.md`, target `ENV-DISCIPLINE.md`).
 3. **Link to ADRs** once per module (first mention), at `../../../docs/framework/DECISIONS/ADR-NNN-<slug>.md`.
 4. **Link to `docs/framework/` documents** once per module (first mention of PRINCIPLES.md, ARCHITECTURE.md, ROADMAP.md, etc.), at `../../../docs/framework/<doc>.md`.
-5. **Don't link to files outside the framework** — no GitHub URLs, no third-party sources, no external library docs.
-6. **Don't link `make/*.mk` files, scripts, or code paths** — those stay as inline-code spans. The path is documentation in itself.
-7. **Don't link skill mentions** (e.g., `` `ascent-self-audit` ``) — their SKILL.md files live in scaffolded projects, not in this repo.
+5. **Don't link to files outside the framework**: no GitHub URLs, no third-party sources, no external library docs.
+6. **Don't link `make/*.mk` files, scripts, or code paths.** They stay as inline-code spans. The path is documentation in itself.
+7. **Don't link skill mentions** (e.g., `` `ascent-self-audit` ``). Their SKILL.md files live in scaffolded projects, not in this repo.
 
-Header citation links (the 1–2 authoritative links at the top of each module under a `> ` blockquote) are exempt from the first-mention rule — they're provenance metadata, not in-flow references.
+Header citation links (the 1–2 authoritative links at the top of each module under a `> ` blockquote) are exempt from the first-mention rule, because they're provenance metadata, not in-flow references.
 
 Forward references to modules that haven't yet landed stay as code spans until the target exists. Promotion to a markdown link happens as a surgical edit in the chunk's PR that introduces the target.
 
@@ -113,7 +113,7 @@ A contribution that meets this bar is more likely to be merged quickly:
 
 ### For documentation contributions
 
-- [ ] Prose reads as if a seasoned engineer wrote it for other seasoned engineers — no marketing language, no "simply just," no obvious-stating.
+- [ ] Prose reads as if a seasoned engineer wrote it for other seasoned engineers: no marketing language, no "simply just," no obvious-stating.
 - [ ] Tables used for comparison; prose used for rationale; bullets used sparingly.
 - [ ] Internal links use repo-relative paths, not absolute URLs to github.com.
 - [ ] Doc changes preserve the persona-segmented navigation (see [`docs/framework/PRINCIPLES.md`](docs/framework/PRINCIPLES.md)).
@@ -173,18 +173,18 @@ Three workflow disciplines emerged from Phase 3's implementation of 28 skills ac
 
 ### Cluster-based contribution discipline
 
-When a phase delivers multiple related artifacts, group them into clusters and ship each cluster as a single reviewed PR. The cluster is the unit of review — one proposal, one implementation, one review packet, one merge.
+When a phase delivers multiple related artifacts, group them into clusters and ship each cluster as a single reviewed PR. The cluster is the unit of review: one proposal, one implementation, one review packet, one merge.
 
 **The workflow:**
 
-1. **Propose** — surface design decisions as lettered questions (Decision A, Decision B, etc.) with options and rationale. Wait for approval before implementation.
-2. **Implement** — build all artifacts in the cluster on a feature branch.
-3. **Review packet** — before pushing, ship a review packet containing:
+1. **Propose.** Surface design decisions as lettered questions (Decision A, Decision B, etc.) with options and rationale. Wait for approval before implementation.
+2. **Implement.** Build all artifacts in the cluster on a feature branch.
+3. **Review packet.** Before pushing, ship a review packet containing:
    - Verbatim file content for every new or modified file (not summaries, not "read the file" placeholders)
    - Validator outputs (`make qa-skill-frontmatter`, `make qa-links`, `make qa-template-placeholders`) and test outputs (`make test-skills`, `make test-mutants`)
    - Confirmations checklist naming each design decision by letter and confirming it landed
-4. **Pre-push spot-check** — run validators locally, run tests locally (`make test-skills`, `make test-mutants`), export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend (not before — Cluster 2's stale-file incident established this discipline).
-5. **Push and PR** — open the PR with a substantive description capturing architectural decisions, validator output, and phase-progress update.
+4. **Pre-push spot-check.** Run validators and tests locally (`make test-skills`, `make test-mutants`), then export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend, not before. Cluster 2's stale-file incident established this discipline.
+5. **Push and PR.** Open the PR with a substantive description capturing architectural decisions, validator output, and phase-progress update.
 
 **What this does NOT prescribe:** Cluster size, skill count per cluster, or PR description format. The discipline is about the propose → approve → implement → review → push flow. Phase 4 clusters may be larger or smaller than Phase 3 clusters.
 
@@ -192,18 +192,18 @@ When a phase delivers multiple related artifacts, group them into clusters and s
 
 Some artifacts are updated across multiple PRs or phases. When a plan claims a file will be updated, the implementation must actually touch that file. Phase 3 identified two instances where this discipline failed:
 
-- **INTENT-MAP.md** — every Cluster 1-8 proposal stated INTENT-MAP would gain rows; none of the 8 PRs updated it. The gap compounded across 8 PRs and was caught only in the closing chunk.
-- **ASCENT-INVARIANTS.md** — v0.3.1 introduced Principle §15 but did not update ASCENT-INVARIANTS.md from "fourteen" to "fifteen." The catch-up landed in v0.4.0's closing chunk.
+- **INTENT-MAP.md.** Every Cluster 1-8 proposal stated INTENT-MAP would gain rows; none of the 8 PRs updated it. The gap compounded across 8 PRs and was caught only in the closing chunk.
+- **ASCENT-INVARIANTS.md.** v0.3.1 introduced Principle §15 but did not update ASCENT-INVARIANTS.md from "fourteen" to "fifteen." The catch-up landed in v0.4.0's closing chunk.
 
 **The cross-cutting files that need verification:**
 
-- `INTENT-MAP.md` — when skills are added or renamed, or a description's trigger phrases change
-- `ASCENT-INVARIANTS.md` — when principles are added or changed
-- `PRINCIPLES.md` — when principles are added (including the relate-to-framework table)
-- `README.md` — when skill counts, version, or phase status change
-- `CHANGELOG.md` — when a release ships
+- `INTENT-MAP.md`, when skills are added or renamed, or a description's trigger phrases change
+- `ASCENT-INVARIANTS.md`, when principles are added or changed
+- `PRINCIPLES.md`, when principles are added (including the relate-to-framework table)
+- `README.md`, when skill counts, version, or phase status change
+- `CHANGELOG.md`, when a release ships
 
-**The verification mechanism:** Run `make qa-claimed-vs-actual PLAN=<plan-file>` against the phase plan at the closing chunk. The validator checks that every artifact path claimed in the plan's artifact catalog table exists in the repo. It does not verify content — only structural existence.
+**The verification mechanism:** Run `make qa-claimed-vs-actual PLAN=<plan-file>` against the phase plan at the closing chunk. The validator checks that every artifact path claimed in the plan's artifact catalog table exists in the repo. It checks that files exist, not what they contain.
 
 **When to run:** At the closing chunk of each phase or release, not at every PR. Per-PR verification is optional but recommended when the PR touches cross-cutting files.
 

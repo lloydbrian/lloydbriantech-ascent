@@ -13,9 +13,9 @@ ASCENT is built for a specific shape of project. If your project has these chara
 | **Long-lived** | Expected to run for years, not weeks |
 | **Multi-stakeholder** | Has, or will have, more than one engineer touching it |
 | **Service-shaped** | A backend (or backend + frontend + maybe agent) deployed as containers |
-| **Production-relevant** | Will actually face real users at some point — not a throwaway prototype |
+| **Production-relevant** | Will actually face real users at some point, not a throwaway prototype |
 | **Engineering-discipline-valued** | The owner cares about ADRs, conventions, and the long arc, not just speed |
-| **Modest-to-medium scale** | One service or a small handful of services — not a large microservices fleet |
+| **Modest-to-medium scale** | One service or a small handful of services, not a large microservices fleet |
 
 The framework's invariants pay off most when the project's lifespan is long enough to encounter handoff, drift, and accumulated debt.
 
@@ -25,12 +25,12 @@ The framework's invariants pay off most when the project's lifespan is long enou
 
 These are the project shapes ASCENT was specifically designed around:
 
-- **Internal tools** at a company — dashboards, admin UIs, operational tools
-- **Side projects with longevity intent** — projects the author plans to maintain for years
-- **Small SaaS products** — single-tenant or early multi-tenant, single backend service
-- **Agentic applications** — AI-driven systems with one or more autonomous agents
-- **Educational and training platforms** — content-heavy applications with structured progression
-- **Family / community tooling** — applications used by a small known group over time
+- **Internal tools** at a company: dashboards, admin UIs, operational tools
+- **Side projects with longevity intent**: projects the author plans to maintain for years
+- **Small SaaS products**: single-tenant or early multi-tenant, single backend service
+- **Agentic applications**: AI-driven systems with one or more autonomous agents
+- **Educational and training platforms**: content-heavy applications with structured progression
+- **Family / community tooling**: applications used by a small known group over time
 
 The OpenClaw codebase that informed ASCENT is roughly in this shape. The lawn-care-app mentioned in the mature `make/` reference is another.
 
@@ -49,7 +49,7 @@ ASCENT is explicitly **not** the right framework for these:
 | **Large microservices fleets** | ASCENT optimizes for one or a small handful of services; coordination overhead at fleet scale needs different tooling | Service-mesh tooling, polyrepo orchestration, internal developer platforms |
 | **Static sites / marketing pages** | Containerization is overkill; the framework's machinery exceeds the project's complexity | Astro, Next.js static export, Hugo, Jekyll |
 | **One-off scripts and notebooks** | Short-lived, low-stakes; ASCENT's discipline costs more than the project is worth | Plain Python script; Jupyter; ad-hoc tooling |
-| **Throwaway prototypes** | Optimization-for-Day-1000 returns nothing if Day 1000 never comes | Whatever's fastest; come back to ASCENT if the prototype gets adopted |
+| **Throwaway prototypes** | Optimizing for years in production returns nothing if the project never gets there | Whatever's fastest; come back to ASCENT if the prototype gets adopted |
 
 ## Project shapes that partially fit
 
@@ -63,7 +63,7 @@ These are gray-area cases where ASCENT *might* fit with adaptation:
 | **Projects facing strict compliance regimes** (HIPAA, PCI-DSS, SOC 2) | The cybersecurity role covers OWASP-level baselines but not compliance certification preparation. ASCENT helps but doesn't suffice. |
 | **Projects with stringent latency requirements** (sub-millisecond) | The tester role's performance discipline is in scope, but extreme performance engineering may exceed what the framework supports. |
 
-For gray-area cases, the answer is "try it on a small slice and see." ASCENT is opinionated but not all-or-nothing — using the architect role for ADR discipline without using the tester role for load testing is perfectly fine.
+For gray-area cases, the answer is "try it on a small slice and see." ASCENT is opinionated but not all-or-nothing. Using the architect role for ADR discipline without using the tester role for load testing is perfectly fine.
 
 ## The size limit
 
@@ -80,13 +80,13 @@ Past these scales, the framework's machinery becomes overhead. Large engineering
 
 If ASCENT stops serving your project, here is the exit:
 
-### Soft exit — stop using new features
+### Soft exit: stop using new features
 
-ASCENT is not adhesive. You can stop running `lloydbriantech-ascent enhance` and stop invoking the `ascent-*` skills, and the project continues working. The Makefile, the directory structure, the ADRs — these remain useful artifacts regardless of whether the framework is "active."
+ASCENT is not adhesive. You can stop running `lloydbriantech-ascent enhance` and stop invoking the `ascent-*` skills, and the project continues working. The Makefile, the directory structure and the ADRs remain useful artifacts regardless of whether the framework is "active."
 
 This is the right exit for projects that have outgrown the framework but still benefit from the existing structure.
 
-### Hard exit — remove the framework
+### Hard exit: remove the framework
 
 If you want ASCENT completely out of the project:
 
@@ -107,11 +107,11 @@ This is deliberate. A framework that locks you in is a framework whose authors d
 
 If you have an existing project that wasn't built with ASCENT and you're wondering whether to migrate:
 
-**Migrate if** the project has accumulated the problems ASCENT solves — inconsistent operator vocabulary, decisions whose rationale was lost, documentation that doesn't reflect reality, new contributors who can't onboard, multiple log formats, no clear release readiness gate.
+**Migrate if** the project has accumulated the problems ASCENT solves: inconsistent operator vocabulary, decisions whose rationale was lost, documentation that doesn't reflect reality, new contributors who can't onboard, multiple log formats, no clear release readiness gate.
 
 **Don't migrate if** the project works well as-is and the existing engineering hygiene is solid. ASCENT's value is in the discipline it codifies; if you already have that discipline expressed in different conventions, the migration churn isn't worth it.
 
-The `migrate` mode of the parent skill handles the mechanical work of bringing an existing project up to ASCENT conventions. It is non-destructive — it preserves existing code and structure where possible, adds the framework's artifacts alongside, and lets you delete what you no longer need on your own schedule.
+The `migrate` mode of the parent skill handles the mechanical work of bringing an existing project up to ASCENT conventions. It is non-destructive. It preserves existing code and structure where possible, adds the framework's artifacts alongside, and lets you delete what you no longer need on your own schedule.
 
 ---
 
@@ -119,6 +119,6 @@ The `migrate` mode of the parent skill handles the mechanical work of bringing a
 
 There is a temptation, when building a framework, to evangelize. "Every project should use ASCENT." This is unwise. Frameworks that try to be universal end up being mediocre at everything. ASCENT's strength is its opinion, and its opinion fits a specific shape of project.
 
-If your project doesn't fit the shape, find a framework that does — or build your project without one. The author would rather see a project succeed without ASCENT than fail with it.
+If your project doesn't fit the shape, find a framework that does, or build your project without one. The author would rather see a project succeed without ASCENT than fail with it.
 
 The framework is not the goal. The goal is good software, built by engineers who can sleep at night because the system they shipped is one they understand and can defend. ASCENT is one path to that. Many other paths exist.

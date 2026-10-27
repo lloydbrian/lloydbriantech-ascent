@@ -1,7 +1,7 @@
 <h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ascent-banner-dark.svg">
-  <img alt="ASCENT: disciplined delivery for Claude Code, from Day 0 to Day 1000" src="docs/assets/ascent-banner-light.svg" width="100%">
+  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch" src="docs/assets/ascent-banner-light.svg" width="100%">
 </picture>
 </h1>
 
@@ -33,7 +33,7 @@ You can use it in two ways:
 
 ## Why ASCENT
 
-Most frameworks optimize for Day 0, the scaffold. ASCENT optimizes for **Day 0 through Day 1000**: the long stretch where decisions turn into lore, documentation drifts from the code, and quality slips. Most of that slippage is not a skill problem. It is a consistency problem under fatigue, handoff and time pressure.
+Most frameworks optimize for the first commit and the scaffold. ASCENT optimizes for **what comes after**: the years in production where decisions turn into lore, documentation drifts from the code, and quality slips. Most of that slippage is not a skill problem. It is a consistency problem under fatigue, handoff and time pressure.
 
 ASCENT writes those patterns down as checks with evidence: a project contract with measurable targets, severity tables that leave no room for invented ratings, operator runbooks with pre-flight and post-flight checks, and ADRs for every decision someone might later question. The framework is built with its own rules: 15 ADRs, phase-gated delivery, and a plugin gate with hundreds of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
 
@@ -150,7 +150,7 @@ my-new-project/
 | §1 | Containerization-first | The dev environment is the container; `make dev-up` from a bare host |
 | §2 | Make as operator vocabulary | One `make` target per operation, the same name in dev, CI and runbooks |
 | §3 | SDLC-sectioned help | `make help` groups targets by lifecycle stage |
-| §4 | Stub-first naming | Future targets ship under their final name from Day 1 |
+| §4 | Stub-first naming | Future targets ship under their final name from the start |
 | §5 | `.env` discipline | `.env` never committed; `.env.example` with empty defaults only |
 | §6 | Strict backend layering | routes → controllers → services → storage; only storage writes |
 | §7 | ADR discipline | Every constraining decision gets an ADR |

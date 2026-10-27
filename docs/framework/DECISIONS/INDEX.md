@@ -1,4 +1,4 @@
-# Architectural Decision Records — Index
+# Architectural Decision Records
 
 All architectural decisions for the ASCENT framework itself. Project-level ADRs live in scaffolded projects, not here.
 
@@ -39,7 +39,7 @@ If the new ADR supersedes an existing one:
 
 - The new ADR cites the old one in its Context section
 - The old ADR's status changes to `Superseded by ADR-NNN`
-- The old ADR keeps its number — never renumbered
+- The old ADR keeps its number and is never renumbered
 
 ## The canonical template
 

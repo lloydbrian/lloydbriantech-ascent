@@ -1,12 +1,12 @@
 # ASCENT Principles
 
-The sixteen invariants that define an ASCENT project. These are not aspirations or recommendations — they are the conditions that must hold for a project to be considered ASCENT-compliant.
+The sixteen invariants that define an ASCENT project. These are not aspirations or recommendations. They are the conditions that must hold for a project to be considered ASCENT-compliant.
 
 If a project breaks any of these invariants, either the project is broken or the principle has been deliberately superseded by a project-level ADR. The framework provides the default; the project retains the right to override with explicit justification.
 
-The principles are numbered for reference. The numbering is not a priority order — every principle is load-bearing.
+The principles are numbered for reference. The numbering is not a priority order; every principle is load-bearing.
 
-Patterns — recurring interaction shapes that emerged from Phase 3's skill implementation — are documented separately in [`patterns.md`](../../skills/lloydbriantech-ascent/references/patterns.md). Patterns are descriptive conventions; principles are invariants.
+Patterns, the recurring interaction shapes that emerged from Phase 3's skill implementation, are documented separately in [`patterns.md`](../../skills/lloydbriantech-ascent/references/patterns.md). Patterns are descriptive conventions; principles are invariants.
 
 ---
 
@@ -14,17 +14,17 @@ Patterns — recurring interaction shapes that emerged from Phase 3's skill impl
 
 The development environment **is** the container. There is no host-language path. A developer with the container engine installed and nothing else should be able to clone the repository and run `make dev-up` to a working stack.
 
-The container is not a deployment artifact bolted onto a host-developed application. It is the application. The host machine's role is to run the container engine — nothing more.
+The container is not a deployment artifact bolted onto a host-developed application. It is the application. The host machine's role is to run the container engine, nothing more.
 
 **Why:** "Works on my machine" is the single largest source of friction in software delivery. When the development environment is the container, this class of bug becomes impossible by construction.
 
 **What this rules out:** `npm install && npm run dev` on the host. Local Python virtual environments for application code. `pip install -r requirements.txt` on the developer's machine.
 
-**What this still allows:** Local installs of tooling that is itself a host concern — the container engine, `make`, `git`, the IDE. These are not application dependencies.
+**What this still allows:** Local installs of tooling that is itself a host concern: the container engine, `make`, `git`, the IDE. These are not application dependencies.
 
 ## 2. Make is the only operator vocabulary
 
-Every operation that a human runs against the project — start the stack, run tests, lint code, deploy to staging, rotate a credential, check security posture — happens through a `make` target. The same target name works on a developer laptop, in CI, in production incident response.
+Every operation that a human runs against the project (start the stack, run tests, lint code, deploy to staging, rotate a credential, check security posture) happens through a `make` target. The same target name works on a developer laptop, in CI, in production incident response.
 
 There is no separate vocabulary for "developer commands" versus "CI commands" versus "ops runbook commands." There is one set of names, used everywhere.
 
@@ -36,21 +36,21 @@ There is no separate vocabulary for "developer commands" versus "CI commands" ve
 
 The output of `make help` is grouped into labeled sections in SDLC workflow order: META · DEV · TEST · QA · SEC · VALIDATE · DOCS · INFRA. Bare `make` runs `make help`.
 
-The section order is curated to match operator workflow — most-frequent operations first, cheapest-first within static checks, release-pipeline-order within infra.
+The section order is curated to match operator workflow: most-frequent operations first, cheapest-first within static checks, release-pipeline-order within infra.
 
 **Why:** A help output that requires the reader to know what they're looking for is a help output that doesn't help. Section grouping converts the target list from a reference into a workflow.
 
 ## 4. Stub-first naming for deferred work
 
-Future-phase functionality ships from Day 1 as named stubs that print `[STUB] lands in PX.Y` and exit zero. The names are the final names — never renamed when the implementation lands.
+Future-phase functionality ships from the first scaffold as named stubs that print `[STUB] lands in PX.Y` and exit zero. The names are the final names, never renamed when the implementation lands.
 
 **Why:** Renaming targets is a tax paid by everyone who memorized the old name. Stub-first naming pays the design cost once, at the start, and amortizes it across the project's life.
 
 ## 5. `.env` discipline
 
-The `.env` file is gitignored and dockerignored. The `.env.example` file is committed and contains **empty defaults only** — never fake-but-non-empty placeholders like `REPLACE_ME`. The production image's filesystem doesn't include `.env`; production secrets come from the environment (AWS Secrets Manager, Kubernetes secrets, etc.), never from a file baked into the image.
+The `.env` file is gitignored and dockerignored. The `.env.example` file is committed and contains **empty defaults only**, never fake-but-non-empty placeholders like `REPLACE_ME`. The production image's filesystem doesn't include `.env`; production secrets come from the environment (AWS Secrets Manager, Kubernetes secrets, etc.), never from a file baked into the image.
 
-**Why:** Fake placeholders are an attractive nuisance — they get accidentally deployed, they get cargo-culted, they get committed. Empty defaults are unambiguous: a value is set or it isn't.
+**Why:** Fake placeholders are an attractive nuisance: they get accidentally deployed, they get cargo-culted, they get committed. Empty defaults are unambiguous: a value is set or it isn't.
 
 ## 6. Strict backend layering
 
@@ -86,7 +86,7 @@ All Make targets use `$(ENGINE)`, which auto-detects Podman (preferred) and fall
 
 ## 11. Context-aware host/container execution
 
-The runtime container sets `<PROJECT_SLUG_UPPER>_INSIDE_CONTAINER=1`. Targets that behave differently on host versus inside-container use this marker to degrade gracefully — `make test-all` on the host spawns a container; the same target inside the container runs the binary directly.
+The runtime container sets `<PROJECT_SLUG_UPPER>_INSIDE_CONTAINER=1`. Targets that behave differently on host versus inside-container use this marker to degrade gracefully: `make test-all` on the host spawns a container; the same target inside the container runs the binary directly.
 
 **Why:** Without context awareness, CI runners and validation scripts produce recursive container-spawning behavior or fail engine detection inside containers that don't have one.
 
@@ -98,31 +98,31 @@ The application traps `SIGTERM` and drains in-flight work before exiting. The `m
 
 ## 13. `dev-status` morning-standup family
 
-Every project ships `make dev-status` (full check, ~3-5s) and `make dev-status-quick` (fast subset, ~80ms). Every output row pairs with a deep-dive command. The "Next Actions" section adapts to detected state. The status command never fails — it reports state, it doesn't gate.
+Every project ships `make dev-status` (full check, ~3-5s) and `make dev-status-quick` (fast subset, ~80ms). Every output row pairs with a deep-dive command. The "Next Actions" section adapts to detected state. The status command never fails: it reports state rather than gating.
 
 **Why:** "What state is my dev environment in?" is the most-asked question in a software project. Answering it with one command is the single largest quality-of-life improvement in daily work.
 
 ## 14. Persona-segmented documentation
 
-The README and overall doc structure organize content by audience — Architects, Developers, Operators, Contributors, Learners. A given persona has a clear entry point and a clear navigation path. Documents are written for one primary audience, not for everyone simultaneously.
+The README and overall doc structure organize content by audience: Architects, Developers, Operators, Contributors, Learners. A given persona has a clear entry point and a clear navigation path. Documents are written for one primary audience, not for everyone simultaneously.
 
 **Why:** Universal documentation is documentation no one reads. Persona-segmented documentation is documentation that finds its reader.
 
 ## 15. Session resumption
 
-Project state is durable, machine-readable, and inspected on every session start. ASCENT projects capture two layers of state: `docs/delivery/session-state.md` for transient working state and `docs/delivery/working-memory.md` for accumulating decisions. When a new session begins in a scaffolded project, Claude reads these artifacts before responding to the user's first prompt — and refuses to claim prior context that isn't grounded in them.
+Project state is durable, machine-readable, and inspected on every session start. ASCENT projects capture two layers of state: `docs/delivery/session-state.md` for transient working state and `docs/delivery/working-memory.md` for accumulating decisions. When a new session begins in a scaffolded project, Claude reads these artifacts before responding to the user's first prompt, and refuses to claim prior context that isn't grounded in them.
 
-**Why:** Long projects span dozens of sessions. Without durable state, each new session pays an orientation tax — re-explaining context, re-deriving decisions, re-discovering blockers. The protocol eliminates this class of waste by making "where we left off" an explicit, machine-readable artifact rather than something Claude is asked to remember.
+**Why:** Long projects span dozens of sessions. Without durable state, each new session pays an orientation tax: re-explaining context, re-deriving decisions, re-discovering blockers. The protocol eliminates this class of waste by making "where we left off" an explicit, machine-readable artifact rather than something Claude is asked to remember.
 
 ## 16. Behavior verification, not documentation grep
 
-Tests verify behavior through mechanical stand-ins and controlled fixtures, asserting on what the code actually produces rather than on what the documentation claims. A behavior test constructs a controlled input, runs the logic (or a mechanical stand-in that reimplements the logic), and asserts on the output. A documentation-grep test pattern-matches the SKILL.md for expected keywords — it passes when the prose is right, not when the logic is right.
+Tests verify behavior through mechanical stand-ins and controlled fixtures, asserting on what the code actually produces rather than on what the documentation claims. A behavior test constructs a controlled input, runs the logic (or a mechanical stand-in that reimplements the logic), and asserts on the output. A documentation-grep test pattern-matches the SKILL.md for expected keywords; it passes when the prose is right, not when the logic is right.
 
-**Why:** A test that passes because the SKILL.md contains the right keywords — rather than because the logic produces the right output — is not actually testing anything. Documentation-grep tests are tautological: they verify that the documentation says what the test expects it to say, which masks real defects when implementation drifts from documentation. Phase 3's Cluster 2 rework established this boundary after standup, delivery-status, and feature-intake tests were rewritten from documentation-grep to mechanical stand-ins.
+**Why:** A test that passes because the SKILL.md contains the right keywords, rather than because the logic produces the right output, is not actually testing anything. Documentation-grep tests are tautological: they verify that the documentation says what the test expects it to say, which masks real defects when implementation drifts from documentation. Phase 3's Cluster 2 rework established this boundary after standup, delivery-status, and feature-intake tests were rewritten from documentation-grep to mechanical stand-ins.
 
 **What this rules out:** Tests that pattern-match SKILL.md prose for expected keywords without exercising the underlying logic. Tests that pass when the documentation says the right thing regardless of what the implementation does.
 
-**What this still allows:** Documentation validators (like `qa-skill-frontmatter`) that verify documentation structure rather than behavior — these are documentation checks, not behavior tests. The principle governs what a behavior test must do, not whether structural validators exist.
+**What this still allows:** Documentation validators (like `qa-skill-frontmatter`) that verify documentation structure rather than behavior. These are documentation checks, not behavior tests. The principle governs what a behavior test must do, not whether structural validators exist.
 
 ---
 
@@ -130,22 +130,22 @@ Tests verify behavior through mechanical stand-ins and controlled fixtures, asse
 
 | Principle | Surfaces in |
 |---|---|
-| 1 — Containerization-first | Architect's Dockerfile templates; DevOps's production Dockerfiles; `.dockerignore`; absence of host-Node paths |
-| 2 — Make as operator vocabulary | The `make/` directory; every skill's recommended invocation; runbook commands |
-| 3 — SDLC-sectioned help | Parent Makefile's `help` target; section markers in `make/*.mk` |
-| 4 — Stub-first naming | Every `make/*.mk` file ships final names; `[STUB]` prints with version-of-landing |
-| 5 — `.env` discipline | `.env.example` template; `.gitignore` and `.dockerignore` enforcement; `qa-structure` checks |
-| 6 — Strict backend layering | Developer role's reference modules; `ascent-adr-conformance` checks; ADR-002 in every project |
-| 7 — ADR discipline | Architect's ADR template; `docs/architecture/decisions/INDEX.md`; `ascent-adr-conformance` skill |
-| 8 — Phase-gated delivery | Delivery-lead's PHASE-PLAN; `.ascent-meta.json` phase field; `ascent-delivery-status` skill |
-| 9 — Label-based scoping | Every container `--label project=<slug>`; `podman-clean-*` targets filter by label |
-| 10 — Engine compatibility | `$(ENGINE)` auto-detect in parent Makefile; `ENGINE=docker` override documented |
-| 11 — Context-aware execution | Dockerfile sets the `_INSIDE_CONTAINER` marker; `make/test.mk` branches on it |
-| 12 — Graceful shutdown | Server stub includes SIGTERM handler; `dev-down` sends SIGTERM with grace period |
-| 13 — `dev-status` family | `make/dev-status.mk`; row-by-row deep-dive commands; context-aware Next Actions |
-| 14 — Persona-segmented docs | README's role-segmented tables; `ascent-persona-coverage` skill; doc-architecture reference |
-| 15 — Session resumption | `session-state.md` + `working-memory.md` artifacts; `make session-snapshot`; `session-protocol.md` reference module |
-| 16 — Behavior verification | All 28 skill test scripts; mechanical stand-in discipline established in Phase 3 Cluster 2; `ascent-self-audit` structural checks complement (not replace) behavior tests |
+| 1. Containerization-first | Architect's Dockerfile templates; DevOps's production Dockerfiles; `.dockerignore`; absence of host-Node paths |
+| 2. Make as operator vocabulary | The `make/` directory; every skill's recommended invocation; runbook commands |
+| 3. SDLC-sectioned help | Parent Makefile's `help` target; section markers in `make/*.mk` |
+| 4. Stub-first naming | Every `make/*.mk` file ships final names; `[STUB]` prints with version-of-landing |
+| 5. `.env` discipline | `.env.example` template; `.gitignore` and `.dockerignore` enforcement; `qa-structure` checks |
+| 6. Strict backend layering | Developer role's reference modules; `ascent-adr-conformance` checks; ADR-002 in every project |
+| 7. ADR discipline | Architect's ADR template; `docs/architecture/decisions/INDEX.md`; `ascent-adr-conformance` skill |
+| 8. Phase-gated delivery | Delivery-lead's PHASE-PLAN; `.ascent-meta.json` phase field; `ascent-delivery-status` skill |
+| 9. Label-based scoping | Every container `--label project=<slug>`; `podman-clean-*` targets filter by label |
+| 10. Engine compatibility | `$(ENGINE)` auto-detect in parent Makefile; `ENGINE=docker` override documented |
+| 11. Context-aware execution | Dockerfile sets the `_INSIDE_CONTAINER` marker; `make/test.mk` branches on it |
+| 12. Graceful shutdown | Server stub includes SIGTERM handler; `dev-down` sends SIGTERM with grace period |
+| 13. `dev-status` family | `make/dev-status.mk`; row-by-row deep-dive commands; context-aware Next Actions |
+| 14. Persona-segmented docs | README's role-segmented tables; `ascent-persona-coverage` skill; doc-architecture reference |
+| 15. Session resumption | `session-state.md` + `working-memory.md` artifacts; `make session-snapshot`; `session-protocol.md` reference module |
+| 16. Behavior verification | All 28 skill test scripts; mechanical stand-in discipline established in Phase 3 Cluster 2; `ascent-self-audit` structural checks complement (not replace) behavior tests |
 
 ## When a principle is broken
 
