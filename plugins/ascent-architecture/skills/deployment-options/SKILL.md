@@ -7,7 +7,7 @@ description: >-
   deployment options by setup effort, dated monthly cost estimate, operations
   burden and maturity fit, recommends one, drafts the ADR, and hands over a
   blueprint the operator deploys. Read-only.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob
 ---
 

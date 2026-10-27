@@ -8,7 +8,7 @@ description: >-
   finding verifier, fix and re-test, definition of done, an operator runbook,
   beta verification, prod and a release record. Claude never runs git writes or
   deploys: the operator does, from the runbook.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob
 ---
 

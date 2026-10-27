@@ -52,6 +52,11 @@
 # for an honest assistant, not a sandbox.
 #
 # Portable: bash 3.2+, POSIX awk (BWK awk on macOS, mawk, gawk). No jq.
+#
+# Exempt from ascent-ops Z2 and Z3 on purpose: a hook must turn its own errors
+# into exit 1 (non-blocking) rather than let `set -e` end it with a code that
+# Claude Code could read as a block, so it runs with `set -u` only; and it reads
+# PreToolUse JSON on stdin, never arguments, so `--help` has no caller.
 
 set -u
 

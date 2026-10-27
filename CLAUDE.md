@@ -9,7 +9,7 @@
 **Project:** `lloydbriantech-ascent` — the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
 **Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux and ops released). Phase 4 awaits its go-signal.
-**Version:** 0.4.6
+**Version:** 0.4.7
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -178,7 +178,7 @@ The targets used most:
 | `make test-plugins` | The plugin gate, T1–T12, including each plugin's behavior tests |
 | `make test-mutants [GROUP=<group>]` | Negative controls; `make test-mutants-groups` lists the groups CI runs in parallel |
 
-Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase planned when the stub was added, and some are out of date (`doc-stub` still says P2.0).
+Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase or plugin that will implement them (`doc-stub` lands with the `ascent-docs` plugin).
 
 ## What this repository is NOT
 

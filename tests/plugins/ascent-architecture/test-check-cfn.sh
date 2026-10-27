@@ -46,6 +46,11 @@ SUBP() { printf '{ if ($0 ~ /%s/) sub(/%s/, "%s"); print }' "$1" "$2" "$3"; }
 DELN() { printf '/%s/ { n++; if (n == %s) next } { print }' "$1" "$2"; }
 
 matrix() {
+  # --help answers with the usage text and exits 0.
+  run --help
+  if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -qF 'Usage: check-cfn-static-site.sh TEMPLATE.yaml'; then ok
+  else bad "--help should print the usage text and exit 0: exit $RC"; fi
+
   # Baseline: the blueprint passes everything.
   run "$BP"
   if [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '12/12 applicable checks passing (0 not applicable)'; then ok

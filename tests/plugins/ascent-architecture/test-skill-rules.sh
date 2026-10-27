@@ -18,6 +18,7 @@
 #       every copy identical)
 #   R10 both files search client code for secrets, High even when unpublished
 #   R11 both files recommend ascent-security when an item is referred to it
+#   R12 no skill or the agent calls a plugin that ships in this repository "planned"
 #
 # Prints "test-skill-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -114,5 +115,12 @@ has R10 "$AGENT" 'a hit is High whether or not the page is published yet'
 has R11 "$REVIEW" 'Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.'
 has R11 "$AGENT" 'Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.'
 
+# R12 — a shipped plugin is never called planned
+for d in "$PLUGIN"/../ascent-*/; do
+  p=$(basename "$d")
+  for f in "$PLUGIN"/skills/*/SKILL.md "$AGENT"; do
+    if grep -qE "\`$p\`( plugin)? \(planned\)" "$f"; then bad "R12 ${f#"$PLUGIN"/} calls \`$p\` planned, but it ships in plugins/"; else ok; fi
+  done
+done
 printf "test-skill-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

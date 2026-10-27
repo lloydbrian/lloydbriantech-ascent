@@ -20,6 +20,8 @@
 
 set -euo pipefail
 
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
+
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_ROOT="${1:-$REPO_ROOT}"
 SRC="skills/lloydbriantech-ascent/assets/template/.claude/skills"

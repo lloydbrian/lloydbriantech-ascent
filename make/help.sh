@@ -8,6 +8,8 @@
 
 set -euo pipefail
 
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
+
 SECTIONS=(META DEV TEST QA DOCS DIST RELEASE)
 
 FILES=()

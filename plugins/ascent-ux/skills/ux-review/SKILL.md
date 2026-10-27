@@ -8,7 +8,7 @@ description: >-
   design system, usability, states and performance, runs the static checks and
   a Playwright browser pass, and reports strong, moderate or weak with WCAG
   evidence. For a quick design-level critique, design:accessibility-review fits.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob
 ---
 

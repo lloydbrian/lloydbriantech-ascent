@@ -15,11 +15,10 @@ Dates are in **America/New_York** timezone.
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes Z8 and Z3; and this repository's own `make/` scripts lack `--help` (Z3)
 - `ascent-quality` next (plugin roadmap rank 4), then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - `ascent-ux` 0.2.0 candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
-- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook template states that a stacked PR is retargeted to `main` before its base PR merges, that retargeting does not start CI (close and reopen the PR), and that after the base PR is squash-merged the stacked branch is replayed with `git rebase --onto origin/main <old base tip>` before it can merge (seen on #54); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
+- `ascent-delivery` 0.2.0 — read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security` — the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
 - `ascent-architecture` 0.2.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
 - Restore and failover proof (Resilience pillar, committed 2026-10-26): a drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`; today `ascent-ops` and `quality-attributes` only read the date of the last restore test. See `docs/framework/PILLARS.md` for the other gaps
-- `ascent-architecture` 0.1.2: the `quality-attributes` table still calls `ascent-ux` planned; it shipped in v0.4.5
 - Phase 4 — Scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5 — Test harness with three eval scenarios
 - Phase 6 — Starter repo generation tooling
@@ -28,6 +27,23 @@ Dates are in **America/New_York** timezone.
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
 
 ---
+
+## [0.4.7] — 2026-10-26
+
+**Housekeeping.** Three plugin patch releases and repository fixes, shipped as one pull request with the version bump: `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-ux` 0.1.1.
+
+### Changed
+
+- `ascent-architecture` 0.1.2: `quality-attributes` no longer calls `ascent-ux` planned, and a rule (R12) fails whenever a skill or the agent calls a plugin that ships in `plugins/` planned. `check-cfn-static-site.sh` answers `--help`
+- `ascent-delivery` 0.1.1: the runbook template has a "Stacked pull requests" rule, learned on #54. Retarget a stacked PR to `main` before its base merges; retargeting does not start CI, so close and reopen it; after a squash merge of the base, replay the stacked commits with `git rebase --onto` and flag the force push. The operator-boundary hook states why it is exempt from the `ascent-ops` Z2 and Z3 checks. A new `test-delivery-rules.sh` pins both (D1–D3)
+- `ascent-ux` 0.1.1: `tokens-to-css.sh` answers `--help`
+- Every script in `make/` answers `--help` with its header, so `check-ops-scripts.sh` finds no Z3 gap in this repository's scripts or plugin scripts, apart from the exempt operator-boundary hook
+- `make doc-stub` is marked as landing with the `ascent-docs` plugin instead of the out-of-date Phase 2
+- `make test-mutants` gains controls P200–P204, one for each new rule
+
+### Notes
+
+- The `ascent-ops` trial run T6 (the `ops-reviewer` agent) has no saved report and is recorded as skipped. T1–T5 exercised the same rules, and the agent's severity table is checked against the skill's by the plugin gate (T5)
 
 ## [0.4.6] — 2026-10-26
 

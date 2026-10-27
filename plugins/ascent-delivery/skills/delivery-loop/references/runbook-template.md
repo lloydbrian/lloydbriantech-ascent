@@ -151,4 +151,8 @@ git push origin v<version>
 - Claude writes every git, gh and deploy command here, and never runs them. The plugin hook blocks them anyway.
 - One deploy per step, always dry run → confirm stage → run, and proved by the artifact in the same step.
 - Prod gets its own runbook, with a snapshot or backup step before any migration.
+- **Stacked pull requests.** Build each change on `main` after the previous one merges, when you can. When a pull request must stack on another:
+  - CI that runs only on pull requests into `main` does not run on it. Retarget it to `main` (`gh pr edit <PR> --base main`) before its base PR merges, because that merge deletes the base branch.
+  - Retargeting does not start CI. Close and reopen the pull request (`gh pr close <PR>` then `gh pr reopen <PR>`) so the checks run.
+  - After the base PR is squash-merged, the stacked branch still carries the base's original commits and GitHub reports a conflict. Replay only its own commits: `git rebase --onto origin/main <old base tip> <branch>`, check `git diff --stat <old tip> HEAD` prints nothing, then `git push --force-with-lease`. Flag the force push as destructive in the runbook.
 - No secret, account id, private hostname or personal path appears in the runbook. Use variables and `redact`.

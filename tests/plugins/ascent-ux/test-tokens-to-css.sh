@@ -47,6 +47,10 @@ cat > "$WORK/a.dark.tokens.json" <<'J'
 J
 
 matrix() {
+  run --help
+  rc help 0
+  has help "Usage: tokens-to-css.sh LIGHT.tokens.json [DARK.tokens.json]"
+
   run "$WORK/a.light.tokens.json" "$WORK/a.dark.tokens.json"
   rc ok 0
   has root ":root {"
