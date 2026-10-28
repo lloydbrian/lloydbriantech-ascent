@@ -281,7 +281,11 @@ plugin_case P297-security-contract-extra-section T13.5 plugins/ascent-security/r
 ops:\
   maturity_target: enterprise'
 plugin_case P298-dep-header-unqualified T13.10 "$CDS" 's/^#   SEC-D1  Medium /#   D1  Medium /'
-mutant_group ascent-security-regressions
+# One control per defect the v0.4.9 review found, in three groups so each macOS job
+# stays well inside its timeout: registries, masking, licences and npm, pnpm and
+# Python readers (-1); requirements, Go, Cargo, osv, lockfile sources and the tree walk (-2);
+# the scan (-3).
+mutant_group ascent-security-regressions-1
 SDEP=plugins/ascent-security/scripts
 CDA="$SDEP/lib/check-dependencies.awk"
 CDS="$SDEP/check-dependencies.sh"
@@ -304,6 +308,7 @@ plugin_case P312-deps-setup-cfg-unread T11 "$CDA" 's/^K == "py-setup" \&\& FN ~ 
 plugin_case P313-deps-setup-py-unread T11 "$CDA" 's/if (!match(s, \/install_requires/if (1 || !match(s, \/install_requires/'
 plugin_case P314-deps-array-ends-at-extras T11 "$CDA" 's/^function arr_closes(v) { gsub(/function arr_closes(v) { return v ~ \/\\]\/; gsub(/'
 plugin_case P315-deps-include-group-dep T11 "$CDA" 's/^function arr_feed(v, l) { gsub(\/\\{\[^}\]\*\\}\/, "", v); /function arr_feed(v, l) { /'
+mutant_group ascent-security-regressions-2
 plugin_case P316-deps-editable-self-flagged T11 "$CDA" 's/ next  # a local project/ RQALL = 0  # a local project/'
 plugin_case P317-deps-editable-long-skipped T11 "$CDA" 's/if (match(s, \/^--editable\[ =\]+\/)) s =/if (0) s =/'
 plugin_case P318-deps-find-links-ok T11 "$CDA" 's/py_source(FN, u, l0, "the find-links location")/0/'
@@ -325,6 +330,7 @@ plugin_case P333-deps-req-direct-url-ok T11 "$CDA" 's/if (!allowed(u)) fail("D5"
 plugin_case P334-deps-cargo-table-git-ok T11 "$CDA" 's/if (k == "git") { nm = SEC;/if (0) { nm = SEC;/'
 plugin_case P335-deps-go-replace-block-ok T11 "$CDA" 's/^  if (s ~ \/^replace\[ \\t\]\*\\(\$\/) { GOB = "replace"; next }$/  if (0) { GOB = "replace"; next }/'
 plugin_case P336-deps-berry-npm-resolution T11 "$CDA" 's/if (u ~ \/^npm:\/ || u ~ \/^workspace:\/ || u ~ \/^(file|link|portal|patch):\/) next/if (0) next/'
+mutant_group ascent-security-regressions-3
 plugin_case P337-scan-repo-config-applies T11 "$VSS" 's/^  --config "\$WORK\/trivy.yaml" --ignorefile "\$WORK\/trivyignore")$/  )/'
 plugin_case P338-scan-runs-in-repo T11 "$VSS" 's/(cd "\$WORK" \&\& "\$@")/("$@")/'
 plugin_case P339-scan-image-option-ok T11 "$VSS" 's/case "\$2" in -\*) echo "run-vuln-scan: --image names/case "$2" in -NEVER) echo "run-vuln-scan: --image names/'

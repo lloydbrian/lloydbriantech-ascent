@@ -42,7 +42,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
   - `scripts/lib/json.awk`, a streaming JSON reader shared by both scripts
   - `references/dependency-rules.md` and `references/contract-template.yml`, the `security:` section of `.ascent/contract.yml`
 - `security-auditor` gains check 8, dependencies by reading (SEC-D1–D6, SEC-D10), with an identical copy of the `dep-severity` table; the scan and lockfile tracking are reported as not checked
-- Gate: `marked_table dep-severity dependency` (T5). Behavior tests `test-check-dependencies.sh` (162 cases per awk, with a stand-in git so results never depend on the host repository), `test-run-vuln-scan.sh` (137, against recorded trivy output and stand-in scanners on a PATH without real ones) and `test-dependency-rules.sh` (119). Negative controls P241–P357 in three new groups, `ascent-security-deps`, `ascent-security-scan` and `ascent-security-regressions`; the last holds one control for each defect the review found
+- Gate: `marked_table dep-severity dependency` (T5). Behavior tests `test-check-dependencies.sh` (162 cases per awk, with a stand-in git so results never depend on the host repository), `test-run-vuln-scan.sh` (137, against recorded trivy output and stand-in scanners on a PATH without real ones) and `test-dependency-rules.sh` (119). Negative controls P241–P357 in five new groups, `ascent-security-deps`, `ascent-security-scan` and `ascent-security-regressions-1` to `-3`; the last three hold one control for each defect the review found
 - ADR-016. Roadmap and registry: live, operator-run security testing is `ascent-security` 0.3.0
 - Review before release (security, correctness, operations and tests lenses, checked by `finding-verifier`): 39 findings confirmed and fixed, among them trivy reading the repository's own config, an npm error or cut-short scan rated clean, `GPL-3.0-only AND (MIT OR BSD-3-Clause)` passing a GPL deny list, a declared registry matched without a host boundary, tokens printed in SEC-D3 messages, `setup.cfg` and multi-line arrays with extras not read, and a PATH named `build` or `test` checking nothing. The real-repository trial added one more: SEC-D7 now reports N/A, not PASS, when no scan had a lockfile to read
 
@@ -52,6 +52,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 - `docs/framework/OWNERSHIP.md`: `ascent-security` is `hybrid` with the `security` contract section and the `dep-severity` marker; `dependency-check` and the `SEC-D` family registered (no longer reserved); dependency vulnerabilities and supply chain released; security testing (live, operator-run) planned. P207 now anchors on the `QA-I` reserved row
 - PILLARS: dependency vulnerabilities and supply chain Strong with trivy and a current database, Partial without; version pinning tested for package manifests; live security testing listed as a committed gap
 - CLAUDE.md, README, ARCHITECTURE: `ascent-security` described as hybrid; framework version 0.4.9
+- CI: the negative-control jobs get 40 minutes, up from 15. A control takes about 50 seconds on a macOS runner (about 9 on Ubuntu), and the new security groups hold up to 31
 
 ### Notes
 
