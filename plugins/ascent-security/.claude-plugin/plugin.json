@@ -1,12 +1,12 @@
 {
   "name": "ascent-security",
-  "version": "0.1.1",
-  "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs and dynamic code execution, plus a security-auditor agent. Generated from the ASCENT framework's template skills.",
+  "version": "0.2.0",
+  "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs, dynamic code execution, and dependencies (lockfiles, pinning, sources, licences, offline vulnerability scans of packages and local images), plus a security-auditor agent. Partly generated from the ASCENT framework's template skills.",
   "author": {
     "name": "lloydbriantech"
   },
   "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
   "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
   "license": "MIT OR Apache-2.0",
-  "keywords": ["security", "env", "secrets", "nginx", "containers", "ascent"]
+  "keywords": ["security", "env", "secrets", "nginx", "containers", "dependencies", "supply-chain", "vulnerabilities", "ascent"]
 }

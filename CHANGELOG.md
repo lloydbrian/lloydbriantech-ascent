@@ -10,14 +10,11 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
-### Changed
-
-- GitHub-facing docs (README, CONTRIBUTING, CLAUDE.md, the `docs/framework` living docs and `.github`): a new tagline, "Disciplined delivery for Claude Code, from first commit to long after launch", in the README banner and its alt text; "Day 0 to Day 1000" rephrased in plain words; sentence dashes replaced with ordinary punctuation. No plugin or template change, no version bump
-
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
-- v0.4.9 `ascent-security` 0.2.0, a hand-written dependency and vulnerability check (`SEC-D`); v0.4.10 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.11 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014
+- v0.4.10 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.11 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014
+- `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
 - `ascent-ux` 0.3.0: navigational integrity and cross-browser (ADR-014), plus candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
@@ -30,6 +27,35 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.9] — 2026-10-27
+
+**Dependency checks in `ascent-security` 0.2.0.** A hand-written `dependency-check` skill joins the three generated security skills, so the plugin is now hybrid ([ADR-016](docs/framework/DECISIONS/ADR-016-dependency-checks-in-ascent-security.md), extending ADR-014 decision 2). It checks that a repository installs exactly what it declares, from where it declares, and scans what it installs for known vulnerabilities, offline by default. Other plugins are unchanged.
+
+### Added
+
+- `ascent-security` 0.2.0, skill `dependency-check` with ten rules, `SEC-D1`–`SEC-D10`, rated from its own `dep-severity` table:
+  - `scripts/check-dependencies.sh` (SEC-D1–D6, SEC-D10), files only: a lockfile present, covering the manifest and tracked by git; pinning against `ops.version_pinning`; the lockfile in step with the manifest; an engine constraint; dependencies, registries and indexes from unexpected sources (plain `http://` is High, credentials in URLs masked); licences on `security.dependencies.licences_denied`; scanner ignore entries (`.trivyignore`, `.trivyignore.yaml`, `osv-scanner.toml`, `.nsprc`, `audit-ci.json`) without a waiver ADR or past their expiry. npm (package-lock v1–v3, yarn, pnpm) and Python (pyproject, Poetry, uv, PDM, Pipfile, pip-compile requirements) get every rule; Go and Cargo get SEC-D1 and SEC-D5
+  - `scripts/run-vuln-scan.sh` (SEC-D7–D9): trivy with flags proven to send nothing (`--skip-db-update --skip-java-db-update --offline-scan --skip-version-check`), on lockfiles, image archives and local daemon images, from a scratch directory with an empty `--config` and `--ignorefile` so a committed `trivy.yaml` or `.trivyignore` cannot change what it reports; osv-scanner, `npm audit` and pip-audit only with `--allow-network`, after a `--dry-run` plan the operator agrees to; `--from` rates output recorded elsewhere. Duplicate advisories across scanners merge; the threshold and the database age (SEC-D8) come from the contract. A scanner that fails, or writes an error or a cut-short report, leaves that part of the scan unmeasured (SEC-D8), never clean
+  - `scripts/lib/json.awk`, a streaming JSON reader shared by both scripts
+  - `references/dependency-rules.md` and `references/contract-template.yml`, the `security:` section of `.ascent/contract.yml`
+- `security-auditor` gains check 8, dependencies by reading (SEC-D1–D6, SEC-D10), with an identical copy of the `dep-severity` table; the scan and lockfile tracking are reported as not checked
+- Gate: `marked_table dep-severity dependency` (T5). Behavior tests `test-check-dependencies.sh` (162 cases per awk, with a stand-in git so results never depend on the host repository), `test-run-vuln-scan.sh` (137, against recorded trivy output and stand-in scanners on a PATH without real ones) and `test-dependency-rules.sh` (119). Negative controls P241–P357 in three new groups, `ascent-security-deps`, `ascent-security-scan` and `ascent-security-regressions`; the last holds one control for each defect the review found
+- ADR-016. Roadmap and registry: live, operator-run security testing is `ascent-security` 0.3.0
+- Review before release (security, correctness, operations and tests lenses, checked by `finding-verifier`): 39 findings confirmed and fixed, among them trivy reading the repository's own config, an npm error or cut-short scan rated clean, `GPL-3.0-only AND (MIT OR BSD-3-Clause)` passing a GPL deny list, a declared registry matched without a host boundary, tokens printed in SEC-D3 messages, `setup.cfg` and multi-line arrays with extras not read, and a PATH named `build` or `test` checking nothing. The real-repository trial added one more: SEC-D7 now reports N/A, not PASS, when no scan had a lockfile to read
+
+### Changed
+
+- GitHub-facing docs (README, CONTRIBUTING, CLAUDE.md, the `docs/framework` living docs and `.github`): a new tagline, "Disciplined delivery for Claude Code, from first commit to long after launch", in the README banner and its alt text; "Day 0 to Day 1000" rephrased in plain words; sentence dashes replaced with ordinary punctuation. (PR #58)
+- `docs/framework/OWNERSHIP.md`: `ascent-security` is `hybrid` with the `security` contract section and the `dep-severity` marker; `dependency-check` and the `SEC-D` family registered (no longer reserved); dependency vulnerabilities and supply chain released; security testing (live, operator-run) planned. P207 now anchors on the `QA-I` reserved row
+- PILLARS: dependency vulnerabilities and supply chain Strong with trivy and a current database, Partial without; version pinning tested for package manifests; live security testing listed as a committed gap
+- CLAUDE.md, README, ARCHITECTURE: `ascent-security` described as hybrid; framework version 0.4.9
+
+### Notes
+
+- Read-only trial on copies of `ground-turf-truth`, `aws-platform-lloydbriantech`, `homelab-docs` and `homelab-toolkit` (ADR-016 decision 9). Not exercised: real Python, Go and Cargo lockfiles, image scanning, the network scanners, and the skill's full flow beyond its scripts
 
 ---
 

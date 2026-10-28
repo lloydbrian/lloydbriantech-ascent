@@ -1,12 +1,13 @@
 # ascent-security
 
-Read-only security checks for any repository. The checks cover `.env` discipline, hardcoded credentials (including short ones such as PINs), container privilege, nginx security headers, production URLs and dynamic code execution (`eval`, `new Function`). This plugin is part of the [ASCENT framework](../../README.md), and you don't need an ASCENT project to use it.
+Read-only security checks for any repository. The checks cover `.env` discipline, hardcoded credentials (including short ones such as PINs), container privilege, nginx security headers, production URLs and dynamic code execution (`eval`, `new Function`), and dependencies: lockfiles, pinning, sources, licences and an offline vulnerability scan of packages and local images. This plugin is part of the [ASCENT framework](../../README.md), and you don't need an ASCENT project to use it.
 
 | Component | Type | Use it when you ask |
 |---|---|---|
 | `env-audit` | skill | "check my .env", "audit environment variables", "any secrets committed?" |
 | `security-audit` | skill | "what security issues exist?", "check security baseline", or before a deploy |
 | `sec-posture` | skill | "what's our security stance?", "security overview" |
+| `dependency-check` | skill | "are our dependencies safe?", "check for vulnerable packages", "are we pinned and locked?", "scan our images for CVEs" |
 | `security-auditor` | agent (read-only) | an independent security review of a repo or change, e.g. from a delivery loop or PR review |
 
 ## Install
@@ -22,17 +23,29 @@ From a local clone, use the clone's path instead of `lloydbrian/lloydbriantech-a
 
 Cowork: Customize → Plugins → Add marketplace → `lloydbrian/lloydbriantech-ascent`.
 
-Skills are called as `/ascent-security:env-audit`, `/ascent-security:security-audit` and `/ascent-security:sec-posture`. Claude also loads them automatically when your request matches their description.
+Skills are called as `/ascent-security:env-audit`, `/ascent-security:security-audit`, `/ascent-security:sec-posture` and `/ascent-security:dependency-check`. Claude also loads them automatically when your request matches their description.
 
 To turn the plugin on for everyone working in a repository, add it to that repository's `.claude/settings.json` under `enabledPlugins`.
 
 ## Privacy and safety
 
-- The checks only read. The skills pre-approve Read, Grep and Glob (plus `git ls-files` and `git log` for `env-audit`), and their instructions never change files. Claude still asks before using any other tool.
+- The checks only read. The skills pre-approve Read, Grep and Glob (plus `git ls-files` and `git log` for `env-audit` and `dependency-check`), and their instructions never change files. Claude still asks before using any other tool.
+- `dependency-check` never installs, resolves or updates anything, and never refreshes a vulnerability database. Its scan runs trivy with flags that keep it offline. Scanners that send package names to a third party (osv-scanner, `npm audit`, pip-audit) run only after you have seen the `--dry-run` plan and agreed. Registry credentials in `.npmrc` or URLs are masked.
 - The agent's tools are limited to Read, Grep and Glob. It cannot edit files or run commands.
 - Findings cite `file:line` and the rule name, never the matched value or line. Detection is pattern-based: it misses some secrets (under 4 characters, split across lines or binary) and can flag test fixtures, so confirm each finding.
 - Fixes are given as advice in text. The skills and the agent never rotate keys, deploy or run git; the operator acts on findings.
 
+## Dependency checks
+
+`dependency-check` applies ten rules, `SEC-D1`–`SEC-D10` ([dependency-rules.md](references/dependency-rules.md)), against the `security:` section of `.ascent/contract.yml` ([contract-template.yml](references/contract-template.yml)):
+
+| Script | Rules | What it needs |
+|---|---|---|
+| `scripts/check-dependencies.sh` | SEC-D1–D6, SEC-D10: lockfile present, covering and tracked; pinning; lockfile in step; engine constraint; unexpected sources; denied licences; scanner ignore entries without a waiver | bash, awk, git |
+| `scripts/run-vuln-scan.sh` | SEC-D7–D9: advisories in dependencies and local images, database age | trivy for the offline scan; `--allow-network` for osv-scanner, `npm audit` and pip-audit |
+
+npm and Python get every manifest rule; Go and Cargo get the lockfile and source rules. Refresh trivy's database yourself (`trivy image --download-db-only`): the skill reports a database older than `scan_max_age_days` and never updates it. See [ADR-016](../../docs/framework/DECISIONS/ADR-016-dependency-checks-in-ascent-security.md).
+
 ## How this plugin is built
 
-The three skills are **generated** by `make plugins` from the template skills in `skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-{env-audit,security-audit,sec-posture}`. To change a skill, edit that source and run `make plugins`. `make test-plugins` fails if a generated file has drifted from its source, or if any file in the plugin changed without a `plugin.json` version bump (recorded in `make/plugins.lock`). The agent and the manifests are maintained by hand. See [ADR-009](../../docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md).
+The plugin is **hybrid**. `env-audit`, `security-audit` and `sec-posture` are **generated** by `make plugins` from the template skills in `skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-{env-audit,security-audit,sec-posture}`: to change one, edit that source and run `make plugins`. `dependency-check`, its scripts, references, the agent and the manifests are written by hand in this directory; a generated file carries a `<!-- GENERATED by make plugins` marker, a hand-written one does not. `make test-plugins` fails if a generated file has drifted from its source, if the `dep-severity` table in the skill and the agent differ, or if any file in the plugin changed without a `plugin.json` version bump (recorded in `make/plugins.lock`). Behavior tests and fixtures are in `tests/plugins/ascent-security/`. See [ADR-009](../../docs/framework/DECISIONS/ADR-009-plugins-generated-from-template-skills.md) and [ADR-016](../../docs/framework/DECISIONS/ADR-016-dependency-checks-in-ascent-security.md).

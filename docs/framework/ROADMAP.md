@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.8 (ownership registry and plugin-qualified rule ids), October 27, 2026. Next: `ascent-security` 0.2.0 (dependency check, v0.4.9), then `ascent-quality` (v0.4.10); Phase 4 awaits its go-signal.
+**Current state:** v0.4.9 (`ascent-security` 0.2.0, dependency checks), October 27, 2026. Next: `ascent-quality` (v0.4.10), then `ascent-ops` 0.3.0 (v0.4.11); Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -10,7 +10,7 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 
 | Rank | Plugin | Scope | Status |
 |---|---|---|---|
-| — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds a dependency and vulnerability check (`SEC-D`, ADR-014) | ✅ v0.4.2, 0.1.1 in v0.4.3; 0.2.0 ⏳ Next (v0.4.9) |
+| — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9; 0.3.0 ⏳ Planned |
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
@@ -33,6 +33,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | Recommended next names missing plugins | Business value | Each plugin's "Recommended next" line also names an uninstalled plugin whose signals the repository shows, from [OWNERSHIP.md](OWNERSHIP.md#which-plugins-do-i-need) | ⏳ Committed on 2026-10-27 |
 | Navigational integrity and cross-browser | Business value | `ascent-ux` 0.3.0: broken links, dead ends and lost state across flows, and a cross-browser pass (ADR-014) | ⏳ Planned |
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
+| Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Planned |
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 

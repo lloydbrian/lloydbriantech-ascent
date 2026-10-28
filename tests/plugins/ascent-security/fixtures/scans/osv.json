@@ -1,0 +1,31 @@
+{
+  "results": [
+    {
+      "source": { "path": "package-lock.json", "type": "lockfile" },
+      "packages": [
+        {
+          "package": { "name": "minimist", "version": "1.2.0", "ecosystem": "npm" },
+          "vulnerabilities": [
+            {
+              "id": "GHSA-xvch-5gv4-984h",
+              "aliases": ["CVE-2021-44906"],
+              "summary": "Prototype Pollution in minimist",
+              "affected": [
+                { "package": { "ecosystem": "npm", "name": "minimist" }, "ranges": [ { "type": "SEMVER", "events": [ { "introduced": "0" }, { "fixed": "0.2.4" } ] }, { "type": "SEMVER", "events": [ { "introduced": "1.0.0" }, { "fixed": "1.2.6" } ] } ] }
+              ],
+              "database_specific": { "severity": "CRITICAL" }
+            }
+          ],
+          "groups": [ { "ids": ["GHSA-xvch-5gv4-984h"], "aliases": ["CVE-2021-44906", "GHSA-xvch-5gv4-984h"], "max_severity": "9.8" } ]
+        },
+        {
+          "package": { "name": "left-pad", "version": "1.0.0", "ecosystem": "npm" },
+          "vulnerabilities": [
+            { "id": "GHSA-0000-1111-2222", "summary": "made-up advisory with no fix", "affected": [ { "ranges": [ { "type": "SEMVER", "events": [ { "introduced": "0" } ] } ] } ] }
+          ],
+          "groups": [ { "ids": ["GHSA-0000-1111-2222"], "max_severity": "7.5" } ]
+        }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ description: >-
   every variable read in code is declared, and no .env is committed or baked
   into images. Read-only; reports variable names with values redacted. Not for
   hardcoded credentials in source code (use security-audit).
-version: 0.1.1
+version: 0.2.0
 allowed-tools:
   - Read
   - Grep

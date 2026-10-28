@@ -10,8 +10,9 @@
 #       Bash(git log:*)
 #   T5  every skill that classifies findings carries the shared severity table,
 #       and all copies are identical; every copy of the architecture severity
-#       table (arch-severity markers), the UX severity table (ux-severity markers)
-#       and the operations severity table (ops-severity markers) is identical too
+#       table (arch-severity markers), the UX severity table (ux-severity markers),
+#       the operations severity table (ops-severity markers) and the dependency
+#       severity table (dep-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
 #   T7  skill frontmatter passes qa-skill-frontmatter
@@ -188,6 +189,7 @@ marked_table() {
 marked_table arch-severity architecture
 marked_table ux-severity UX
 marked_table ops-severity operations
+marked_table dep-severity dependency
 
 # T6 — links
 BROKEN=""

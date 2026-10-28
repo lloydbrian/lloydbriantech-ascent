@@ -6,7 +6,7 @@ description: >-
   severity-classified findings, coverage across security surfaces and gaps,
   computed fresh each run. Not for the list of individual findings (use
   security-audit).
-version: 0.1.1
+version: 0.2.0
 allowed-tools:
   - Read
   - Grep

@@ -49,7 +49,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Secure configuration | `ascent-ops` (`iac-config-check`, OPS-S1–S10) | Rules OPS-S1–S10 against the IaC with `file:line`; `trivy config` when installed | Strong |
 | Decision traceability | embedded `ascent-adr-conformance`, `ascent-adr-write` | ADRs for every constraining decision, and the code checked against them | Partial: scaffolded projects only, no negative controls yet |
 | Change audit trail | `ascent-delivery` | Runbooks, hash manifests and the release log for every shipped change | Partial: the rule is stated, but has no behavior tests or negative controls yet |
-| Version pinning | `ascent-ops` (OPS-Z8, `sre-baseline.md`) | Images, packages, providers and actions pinned | Strong at the `minor` floor; exact pinning is read, not tested |
+| Version pinning | `ascent-ops` (OPS-Z8, `sre-baseline.md`); `ascent-security` (`dependency-check`, SEC-D1–D3) | Images, packages, providers and actions pinned; npm and Python manifests pinned and locked, lockfiles in step | Strong: package manifests tested under exact and minor ([ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md)); for images, providers and actions, exact pinning is read, not tested |
 | Regulatory regimes (HIPAA, PCI-DSS, SOC 2) | — | — | **Out of scope:** see [SCOPE.md](SCOPE.md). ASCENT produces evidence an auditor can use; it does not prepare certification |
 
 ### Trust and security
@@ -62,7 +62,8 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Security posture | `ascent-security` (`sec-posture`); `quality-attributes` (Security) | One rating across the surfaces, with the gaps named | Strong |
 | Operator boundary and privacy | `ascent-delivery` hook and privacy rules | Claude cannot commit, push or deploy; credentials and personal data never stored | Strong |
 | AI behavior | embedded `ascent-ai-evals` | Eval cases for AI features | Partial: scaffolded projects only |
-| Dependency vulnerabilities | embedded `ascent-dependency-health` | Unpinned versions, engine constraints, unused packages (offline, no audit database) | **Gap:** nothing scans for known vulnerabilities |
+| Dependency vulnerabilities and supply chain | `ascent-security` (`dependency-check`, SEC-D1–D10); embedded `ascent-dependency-health` | Lockfiles, sources and licences; an offline trivy scan of lockfiles and local images with the database date; scanner ignore entries tied to waiver ADRs | Strong with trivy and a current database; Partial without one (the scan is reported unmeasured) ([ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md)) |
+| Security testing (live) | — | — | **Gap, committed:** `ascent-security` 0.3.0, operator-run ([ROADMAP.md](ROADMAP.md#committed-follow-ups)) |
 | Threat model | — | — | **Gap** |
 
 ### Resilience
