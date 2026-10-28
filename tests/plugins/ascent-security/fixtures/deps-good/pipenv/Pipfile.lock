@@ -1,0 +1,12 @@
+{
+    "_meta": {
+        "requires": { "python_version": "3.12" },
+        "sources": [ { "name": "pypi", "url": "https://pypi.org/simple", "verify_ssl": true } ]
+    },
+    "default": {
+        "django": { "version": "==5.1.2" }
+    },
+    "develop": {
+        "black": { "version": "==24.10.0" }
+    }
+}

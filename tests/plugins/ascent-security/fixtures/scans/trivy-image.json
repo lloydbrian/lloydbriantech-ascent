@@ -1,0 +1,394 @@
+{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.76.1"
+  },
+  "ReportID": "00000000-0000-0000-0000-000000000000",
+  "CreatedAt": "2026-10-27T12:00:00-04:00",
+  "ArtifactID": "sha256:cc6a8a9ed5db03f4d8d5c078eea985a94f5373c3edb41d62fd3efc04af1b88f6",
+  "ArtifactName": "app-image.tar",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "Size": 6144,
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.18.0",
+      "EOSL": true
+    },
+    "ImageID": "sha256:e0ef645ad400d9abdeb86cb15ac1df1b1b539f193cbb12b573f245f7b06bcc14"
+  },
+  "Results": [
+    {
+      "Target": "app-image.tar (alpine 3.18.0)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Packages": [
+        {
+          "ID": "busybox@1.36.0-r0",
+          "Name": "busybox",
+          "Identifier": {
+            "PURL": "pkg:apk/alpine/busybox@1.36.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "84a6cf8940c56305"
+          },
+          "Version": "1.36.0-r0",
+          "Arch": "aarch64",
+          "SrcName": "busybox",
+          "SrcVersion": "1.36.0-r0",
+          "Licenses": [
+            "GPL-2.0-only"
+          ],
+          "Maintainer": "test",
+          "AnalyzedBy": "apk"
+        },
+        {
+          "ID": "openssl@3.1.0-r0",
+          "Name": "openssl",
+          "Identifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "Version": "3.1.0-r0",
+          "Arch": "aarch64",
+          "SrcName": "openssl",
+          "SrcVersion": "3.1.0-r0",
+          "Licenses": [
+            "Apache-2.0"
+          ],
+          "Maintainer": "test",
+          "AnalyzedBy": "apk"
+        }
+      ],
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2022-48174",
+          "PkgID": "busybox@1.36.0-r0",
+          "PkgName": "busybox",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/busybox@1.36.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "84a6cf8940c56305"
+          },
+          "InstalledVersion": "1.36.0-r0",
+          "FixedVersion": "1.36.1-r1",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "CRITICAL"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-42363",
+          "PkgID": "busybox@1.36.0-r0",
+          "PkgName": "busybox",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/busybox@1.36.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "84a6cf8940c56305"
+          },
+          "InstalledVersion": "1.36.0-r0",
+          "FixedVersion": "1.36.1-r7",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-42364",
+          "PkgID": "busybox@1.36.0-r0",
+          "PkgName": "busybox",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/busybox@1.36.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "84a6cf8940c56305"
+          },
+          "InstalledVersion": "1.36.0-r0",
+          "FixedVersion": "1.36.1-r7",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-42365",
+          "PkgID": "busybox@1.36.0-r0",
+          "PkgName": "busybox",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/busybox@1.36.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "84a6cf8940c56305"
+          },
+          "InstalledVersion": "1.36.0-r0",
+          "FixedVersion": "1.36.1-r7",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-42366",
+          "PkgID": "busybox@1.36.0-r0",
+          "PkgName": "busybox",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/busybox@1.36.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "84a6cf8940c56305"
+          },
+          "InstalledVersion": "1.36.0-r0",
+          "FixedVersion": "1.36.1-r6",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-0464",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.0-r1",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-5363",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-6119",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.7-r0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-0465",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.0-r2",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-1255",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.0-r4",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-2650",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.1-r0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-2975",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.1-r2",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-3446",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.1-r3",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-3817",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.2-r0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-5678",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r1",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-6129",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r3",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-6237",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r4",
+          "Status": "fixed",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-0727",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r5",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-13176",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.8-r0",
+          "Status": "fixed",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-4603",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.5-r0",
+          "Status": "fixed",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-4741",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.6-r0",
+          "Status": "fixed",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-5535",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.6-r0",
+          "Status": "fixed",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-2511",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r6",
+          "Status": "fixed",
+          "Severity": "LOW"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-9143",
+          "PkgID": "openssl@3.1.0-r0",
+          "PkgName": "openssl",
+          "PkgIdentifier": {
+            "PURL": "pkg:apk/alpine/openssl@3.1.0-r0?arch=aarch64&distro=3.18.0",
+            "UID": "d753ae51b87e2993"
+          },
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.7-r1",
+          "Status": "fixed",
+          "Severity": "LOW"
+        }
+      ]
+    }
+  ]
+}

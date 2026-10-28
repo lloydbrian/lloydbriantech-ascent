@@ -1,0 +1,65 @@
+# .ascent/contract.yml: the security: section (ascent-security). One project contract,
+# one section per ASCENT plugin (decision 2, 2026-10-18; ADR-013). Where ASCENT-named
+# files are not allowed, use .claude/contract.yml instead. Commit it: it is the
+# project's own statement of security targets, and reviews are judged against it.
+#
+# dependency-check proposes this section from what the repository already declares
+# and asks the operator to confirm it once (detect, don't ask). Every guessed value is
+# marked "# guess" until confirmed. Never put credentials, account ids, email
+# addresses, registry tokens or other personal data in this file: a private registry
+# is named by its URL without credentials.
+
+version: 1
+
+security:
+  # enterprise (default) | standard | prototype. The dependency defaults below follow
+  # it; anything the target requires but the project skips is a waiver.
+  maturity_target: enterprise
+
+  dependencies:
+    # The ecosystems the project ships: npm | python | go | cargo. Detected from the
+    # manifests; go and cargo get the lockfile and source checks only (SEC-D1, D5).
+    ecosystems: [npm]
+
+    # yes (enterprise, standard) | no (prototype): every manifest with dependencies
+    # has a lockfile git tracks (SEC-D1). Version pinning is ops.version_pinning
+    # (exact | minor; SEC-D2), not a key here.
+    lockfile_required: yes
+
+    # The lowest advisory severity that is rated (SEC-D7, SEC-D9): Critical | High |
+    # Medium | Low | none. Defaults: High (enterprise), Critical (standard), none
+    # (prototype: every advisory is a NOTE). Advisories below it are counted, unrated.
+    vuln_threshold: High
+
+    # The vulnerability database is older than this many days: SEC-D8. Defaults: 7
+    # (enterprise), 30 (standard, prototype).
+    scan_max_age_days: 7
+
+    # SPDX ids no dependency may be licensed under alone (SEC-D6). An expression
+    # is denied when every OR alternative contains a denied id. Empty: not checked.
+    licences_denied: []
+    #   - AGPL-3.0-only
+    #   - GPL-3.0-only
+
+    # Registries besides the public defaults (registry.npmjs.org, registry.yarnpkg.com,
+    # pypi.org, files.pythonhosted.org, crates.io), by URL prefix, or by name for a
+    # Cargo registry (SEC-D5). No credentials in these URLs.
+    registries: []
+    #   - https://npm.example.com/
+
+    # Local images run-vuln-scan scans (SEC-D9): an image name a local Docker,
+    # containerd or Podman daemon has, or an archive from docker save.
+    images: []
+    #   - app:1.4.2
+    #   - build/app-image.tar
+
+  adr_dir: docs/adr/
+  # Accepted risks: a scanner ignore entry (SEC-D10) or an advisory (SEC-D7, SEC-D9)
+  # whose id is listed under an ADR here is Info. review_by is when it is looked at
+  # again.
+  waivers: []
+  # waivers:
+  #   - id: ADR-021
+  #     skips: GHSA-35jh-r3h4-6jhm in lodash 4.17.15, a build-time tool, until the upgrade
+  #     advisories: [GHSA-35jh-r3h4-6jhm, CVE-2021-23337]
+  #     review_by: 2027-03-31

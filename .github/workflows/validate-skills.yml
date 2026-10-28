@@ -164,10 +164,12 @@ jobs:
 
   mutants:
     # Named negative controls, one job per group and platform (ADR-008).
+    # macOS runs a control in about 50 s (Ubuntu about 9 s); a group of up to
+    # 31 controls needs about 26 minutes there (ADR-016).
     name: Negative controls (${{ matrix.os }}, ${{ matrix.group }})
     needs: mutant-groups
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:

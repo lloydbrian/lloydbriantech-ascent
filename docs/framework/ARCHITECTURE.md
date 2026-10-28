@@ -152,7 +152,8 @@ The four layers deliver ASCENT to projects it scaffolds. Plugins deliver its che
 ```mermaid
 flowchart TB
     T["Template skills<br/>assets/template/.claude/skills"] -->|"make plugins (generated)"| SEC["ascent-security"]
-    H["Hand-written sources"] --> DEL["ascent-delivery"]
+    H["Hand-written sources"] --> SEC
+    H --> DEL["ascent-delivery"]
     H --> ARC["ascent-architecture"]
     H --> UX["ascent-ux"]
     H --> OPS["ascent-ops"]
@@ -163,7 +164,7 @@ flowchart TB
 
 | Plugin | Source | Decision |
 |---|---|---|
-| `ascent-security` | Generated from the template's three security skills, so there is one source of truth | [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md) |
+| `ascent-security` | Hybrid: three skills generated from the template's security skills, so there is one source of truth; the hand-written `dependency-check` and its scripts | [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md), [ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md) |
 | `ascent-delivery` | Hand-written; the delivery loop, the finding verifier and the operator-boundary hook | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) |
 | `ascent-architecture` | Hand-written; introduces the shared project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
 | `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`) | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md) |
@@ -171,8 +172,8 @@ flowchart TB
 
 ### What the plugins share
 
-- **The project contract.** `.ascent/contract.yml` (or `.claude/contract.yml` where ASCENT-named files are not allowed) holds one section per plugin (`architecture:`, `ux:`, `ops:`) with measurable targets and a maturity target: enterprise, standard or prototype. A review with no contract proposes one from what the repository declares (detect, don't ask) and rates against enterprise defaults until the operator confirms it.
-- **Severity tables.** Each review plugin rates findings only from its table. In architecture, ux and ops the table is marked in the source so the gate can check that the skill's and the agent's copies are identical; the two `ascent-security` skills share one checked table, and its agent carries a summary. A concern that matches no row is listed as unrated.
+- **The project contract.** `.ascent/contract.yml` (or `.claude/contract.yml` where ASCENT-named files are not allowed) holds one section per plugin (`architecture:`, `ux:`, `ops:`, `security:`) with measurable targets and a maturity target: enterprise, standard or prototype. A review with no contract proposes one from what the repository declares (detect, don't ask) and rates against enterprise defaults until the operator confirms it.
+- **Severity tables.** Each review plugin rates findings only from its table. In architecture, ux and ops the table is marked in the source so the gate can check that the skill's and the agent's copies are identical; the two `ascent-security` skills share one checked table, and its agent carries a summary; its `dependency-check` table is marked and copied into the agent. A concern that matches no row is listed as unrated.
 - **Read-only reviewer agents** (Read, Grep, Glob only) that the delivery loop uses as review lenses.
 - **The operator boundary.** Claude never runs git writes, `gh` writes, merges, tags, releases or deploys. While `ascent-delivery` is enabled, its `PreToolUse` hook blocks them; Claude writes a runbook instead.
 - **The four patterns** from Phase 3 ([patterns.md](../../skills/lloydbriantech-ascent/references/patterns.md)): sibling skills, a hybrid aggregator entry point, detect-don't-ask, and enumerate/summarize. The delivery loop's orchestration of reviewers is a candidate fifth pattern, the conductor.

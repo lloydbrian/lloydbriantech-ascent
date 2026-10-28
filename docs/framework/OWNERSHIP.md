@@ -21,7 +21,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | Signal in the repository | Plugin | Why |
 |---|---|---|
 | any repository with git | `ascent-delivery` | ship each change through the delivery loop, with the operator running every git write and deploy |
-| `.env` files, configuration, a `Dockerfile`, `nginx.conf`, server or client code | `ascent-security` | secrets, credentials, container privilege, security headers and dynamic code |
+| `.env` files, configuration, a `Dockerfile`, `nginx.conf`, server or client code, package manifests and lockfiles | `ascent-security` | secrets, credentials, container privilege, security headers, dynamic code, and dependency vulnerabilities and supply chain |
 | infrastructure as code (CloudFormation, CDK, Terraform), a deployed service, a budget | `ascent-architecture` | quality attributes against targets, design principles, deployment options and cost |
 | HTML, JSX, Vue or Svelte templates, CSS, design tokens | `ascent-ux` | WCAG 2.2 AA evidence, design tokens and contrast, design directions |
 | infrastructure as code, operator scripts, runbooks, Compose files, health endpoints | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals |
@@ -31,12 +31,12 @@ Install the plugins whose signals your repository shows. Each one works on its o
 
 ## Plugins
 
-`Code` prefixes every rule id the plugin reports (`OPS-S3`). `Build` says whether its skills are generated from the template skills (`make plugins`, [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md)) or hand-written.
+`Code` prefixes every rule id the plugin reports (`OPS-S3`). `Build` says whether its skills are generated from the template skills (`make plugins`, [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md)), hand-written, or hybrid: generated skills beside hand-written ones ([ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md)).
 
 <!-- ownership:plugins:start -->
 | Plugin | Code | Status | Build | Contract section | Severity marker |
 |---|---|---|---|---|---|
-| `ascent-security` | `SEC` | released | generated | — | `severity-table` |
+| `ascent-security` | `SEC` | released | hybrid | `security` | `severity-table`, `dep-severity` |
 | `ascent-delivery` | `DEL` | released | hand-written | — | — |
 | `ascent-architecture` | `ARC` | released | hand-written | `architecture` | `arch-severity` |
 | `ascent-ux` | `UX` | released | hand-written | `ux` | `ux-severity` |
@@ -57,6 +57,7 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-security` | skill | `env-audit` |
 | `ascent-security` | skill | `security-audit` |
 | `ascent-security` | skill | `sec-posture` |
+| `ascent-security` | skill | `dependency-check` |
 | `ascent-security` | agent | `security-auditor` |
 | `ascent-delivery` | skill | `delivery-loop` |
 | `ascent-delivery` | agent | `finding-verifier` |
@@ -94,6 +95,7 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `OPS-S` | `ascent-ops` | rule | `plugins/ascent-ops/references/secure-config-rules.md` |
 | `OPS-Z` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-scripts.sh` |
 | `OPS-M` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-manuals.sh` |
+| `SEC-D` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-dependencies.sh` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
 | `UX-D` | `ascent-ux` | catalogue | `plugins/ascent-ux/skills/design-directions/SKILL.md` |
@@ -109,7 +111,6 @@ Names, codes and rule-id families taken for planned work ([ADR-014](DECISIONS/AD
 <!-- ownership:reserved:start -->
 | Reserved | For | Release |
 |---|---|---|
-| `SEC-D` | `ascent-security` | v0.4.9 |
 | `QA-I` | `ascent-quality` | v0.4.10 |
 | `QA-T` | `ascent-quality` | v0.4.10 |
 | `QA-H` | `ascent-quality` | v0.4.10 |
@@ -127,8 +128,9 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | secrets and credentials | `ascent-security` | `ascent-security` | released |
 | runtime hardening | `ascent-security` | `ascent-security` | released |
 | security posture | `ascent-security` | `ascent-security` | released |
-| dependency vulnerabilities and supply chain | `ascent-security` | `ascent-security` | planned |
+| dependency vulnerabilities and supply chain | `ascent-security` | `ascent-security` | released |
 | threat model | `ascent-security` | `ascent-security` | planned |
+| security testing (live, operator-run) | `ascent-security` | `ascent-security` | planned |
 | change delivery and the operator boundary | `ascent-delivery` | `ascent-delivery` | released |
 | smoke tests after a deploy | `ascent-delivery` | `ascent-delivery` | released |
 | user acceptance sign-off | `ascent-delivery` | `ascent-delivery` | planned |

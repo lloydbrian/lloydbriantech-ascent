@@ -41,7 +41,7 @@ ASCENT writes those patterns down as checks with evidence: a project contract wi
 
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
-| [`ascent-security`](plugins/ascent-security/README.md) | 0.1.1 | Trust and security, compliance | "any secrets committed?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution, plus a `security-auditor` agent |
+| [`ascent-security`](plugins/ascent-security/README.md) | 0.2.0 | Trust and security, compliance | "any secrets committed?", "are our dependencies safe?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; plus a `security-auditor` agent |
 | [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.2 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
 | [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.0 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
 | [`ascent-ux`](plugins/ascent-ux/README.md) | 0.2.0 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
@@ -57,8 +57,8 @@ The pillars are the four outcomes the checks serve: driving business value, comp
 
 - **Read-only by default.** Reviews never edit your files. Skills that write, such as `ops-manuals` or `design-directions`, write only the files they name and never commit.
 - **Evidence or it is not a finding.** Every finding cites `path/to/file:line`, or the paths searched when something is absent, plus a failure scenario and a fix.
-- **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux and ops the gate checks that the skill's and the agent's copies match; the two `ascent-security` skills share one table.
-- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux and ops plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
+- **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
+- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops and security plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
 - **You own every write.** Claude never commits, pushes, tags, merges or deploys. It writes a numbered runbook and you run it; `ascent-delivery`'s hook enforces this.
 - **No personal data.** Secret values, account ids and contact details never appear in a report.
 
@@ -185,6 +185,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.9 | 2026-10-27 | `ascent-security` 0.2.0: dependency checks (lockfiles, pinning, sources, licences, waived ignore entries) and an offline vulnerability scan of dependencies and local images, `SEC-D1`–`D10` |
 | v0.4.8 | 2026-10-27 | The ownership registry and gate check T13; plugin-qualified rule ids (`OPS-S3`) in `ascent-architecture`, `ascent-ops` and `ascent-ux` 0.2.0; `ascent-delivery` 0.1.2 uses the ASCENT reviewers as lenses |
 | v0.4.7 | 2026-10-26 | `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1, `ascent-ux` 0.1.1: housekeeping, stacked-PR runbook rule, `--help` for every script |
 | v0.4.6 | 2026-10-26 | `ascent-ops` 0.1.0, `ascent-architecture` 0.1.1, health endpoints renamed to `/-/health` and `/-/ready`, the pillar map |
