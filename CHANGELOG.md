@@ -17,7 +17,8 @@ Dates are in **America/New_York** timezone.
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
-- v0.4.10 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.11 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014
+- v0.4.10 faster negative controls: stop each behavior test at its first failure, run only the check a control names, run controls in parallel, rerun survivors in full (ADR-017)
+- v0.4.11 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.12 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014 and ADR-017
 - `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present

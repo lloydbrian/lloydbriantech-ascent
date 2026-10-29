@@ -606,7 +606,7 @@ if in_group; then
 fi
 plugin_case_rm P205-registry-removed T13.1 "$OWN"
 plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
-plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `QA-I` | `ascent-quality` | v0.4.10 |$/| `QA-I` | `ascent-quality` |/'
+plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `QA-I` | `ascent-quality` | v0.4.11 |$/| `QA-I` | `ascent-quality` |/'
 plugin_case P208-plugin-row-dropped T13.2 "$OWN" '/^| `ascent-ops` | `OPS` | released /d'
 plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-quality` | `QA` | planned |/| `ascent-quality` | `QA` | released |/'
 plugin_case P210-marketplace-entry-renamed T13.2 .claude-plugin/marketplace.json 's/"name": "ascent-ops",/"name": "ascent-operations",/'
