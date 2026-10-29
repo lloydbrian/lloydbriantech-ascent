@@ -373,6 +373,11 @@ plugin_case P28-hook-skips-unquoted-heredocs T11 "$HOOK" 's/if (!HQ\[k\]) scan_s
 plugin_case P29-contract-denies-whole-chain T11 "$HOOK" 's/if (SN > 0 \&\& !inpipe) { dn = SN;/if (SN > 0 \&\& !inpipe \&\& dn == 0) { dn = SN;/'
 plugin_case P203-runbook-stacked-pr-rule-dropped T11 "$DEL/skills/delivery-loop/references/runbook-template.md" '/^- \*\*Stacked pull requests\.\*\*/,/Flag the force push as destructive/d'
 plugin_case P204-hook-exemption-unstated T11 "$HOOK" '/^# Exempt from ascent-ops OPS-Z2 and OPS-Z3 on purpose/d'
+# The gate must report a behavior test that fails with more output than a pipe holds.
+# T11 once quoted the first FAIL lines through grep | head under set -e and pipefail,
+# and SIGPIPE ended the gate before T11 printed (seen as P246, P255, P265 surviving).
+plugin_case P358-t11-long-failure-output T11 tests/plugins/ascent-delivery/test-delivery-rules.sh '1a\
+for i in $(seq 1 3000); do echo "FAIL  line $i: padding so a failing behavior test prints more than a pipe holds"; done; exit 1'
 mutant_group ascent-architecture
 ARC=plugins/ascent-architecture
 ARC_AGENT="$ARC/agents/architecture-reviewer.md"

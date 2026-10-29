@@ -10,6 +10,10 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Fixed
+
+- `make test-plugins` T11 no longer ends the gate early when a behavior test fails with long output. It quoted the first FAIL lines through `grep | head -3`; under `set -euo pipefail`, `grep` sometimes died of SIGPIPE and the assignment ended the script before T11 printed. Negative controls whose tests failed at length were then reported as SURVIVED, intermittently and mostly on Linux (P246, P255 and P265 in `ascent-security-deps` on the v0.4.9 CI runs). Reproduced on Ubuntu 24.04: 11 of 300 runs at 13.5 KB of FAIL lines, every run at 113 KB; `awk`, which reads to the end, none. New control P358 makes a behavior test fail with 3,000 FAIL lines; it survives the old line and is caught by T11 with the fix
+
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
