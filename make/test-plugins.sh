@@ -294,7 +294,9 @@ for p in $PLUGINS; do
         NCASES=$((NCASES + y))
       fi
     else
-      problems="$problems $tn failed: $(grep -E '^FAIL' "$WORK/t11.out" | head -3 | cut -c1-100 | tr '\n' ';')"
+      # awk reads to the end: grep | head would die of SIGPIPE on long output, and
+      # under set -e and pipefail this assignment would end the gate before T11 printed
+      problems="$problems $tn failed: $(awk '/^FAIL/ { if (++n <= 3) print }' "$WORK/t11.out" | cut -c1-100 | tr '\n' ';')"
     fi
   done
   if [ -z "$problems" ]; then ok "T11 $p: $NTESTS behavior test file(s), $NCASES cases pass"; else bad "T11 $p:$problems"; fi
