@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.9 (`ascent-security` 0.2.0, dependency checks), October 27, 2026. Next: `ascent-quality` (v0.4.10), then `ascent-ops` 0.3.0 (v0.4.11); Phase 4 awaits its go-signal.
+**Current state:** v0.4.9 (`ascent-security` 0.2.0, dependency checks), October 27, 2026. Next: faster negative controls (v0.4.10, ADR-017), then `ascent-quality` (v0.4.11) and `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -14,8 +14,8 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
-| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014) | ✅ v0.4.6; 0.3.0 ⏳ Planned (v0.4.11) |
-| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014) | ⏳ Scoped (v0.4.10) |
+| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014) | ✅ v0.4.6; 0.3.0 ⏳ Planned (v0.4.12) |
+| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014) | ⏳ Scoped (v0.4.11) |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
 | 7 | `ascent-docs` | To be scoped when it starts | ⏳ Planned |
@@ -27,13 +27,15 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 
 | Follow-up | Pillar | Why | Status |
 |---|---|---|---|
-| Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ⏳ Scoped in ADR-014: `ascent-ops` 0.3.0, v0.4.11 |
+| Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ⏳ Scoped in ADR-014: `ascent-ops` 0.3.0, v0.4.12 (ADR-017) |
 | Auditability for projects | Compliance | Project-facing governance: a waiver ledger with expiry dates, dated review records, a required-plugin floor in the contract (a floor, never a ceiling) and a bash checker a project can run in its own CI. Closes the Partial rows "Decision traceability" and "Change audit trail" (ADR-015) | ⏳ Committed on 2026-10-27, to be scoped |
 | The governance conductor | Business value | `ascent-governance` (agent `governance-conductor`, skills `governance-review` and `launch-readiness`) reads the ownership registry and the auditability evidence for a go or no-go. Ships when launch readiness is scoped (ADR-015) | ⏳ Deferred; name and code `GOV` reserved |
 | Recommended next names missing plugins | Business value | Each plugin's "Recommended next" line also names an uninstalled plugin whose signals the repository shows, from [OWNERSHIP.md](OWNERSHIP.md#which-plugins-do-i-need) | ⏳ Committed on 2026-10-27 |
 | Navigational integrity and cross-browser | Business value | `ascent-ux` 0.3.0: broken links, dead ends and lost state across flows, and a cross-browser pass (ADR-014) | ⏳ Planned |
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
 | Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Planned |
+
+Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)).
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 

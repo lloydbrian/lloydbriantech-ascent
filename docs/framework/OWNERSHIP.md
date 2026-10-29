@@ -106,16 +106,16 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 
 ## Reserved
 
-Names, codes and rule-id families taken for planned work ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)).
+Names, codes and rule-id families taken for planned work ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md); release numbers from [ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)).
 
 <!-- ownership:reserved:start -->
 | Reserved | For | Release |
 |---|---|---|
-| `QA-I` | `ascent-quality` | v0.4.10 |
-| `QA-T` | `ascent-quality` | v0.4.10 |
-| `QA-H` | `ascent-quality` | v0.4.10 |
-| `OPS-R` | `ascent-ops` | v0.4.11 |
-| `OPS-X` | `ascent-ops` | v0.4.11 |
+| `QA-I` | `ascent-quality` | v0.4.11 |
+| `QA-T` | `ascent-quality` | v0.4.11 |
+| `QA-H` | `ascent-quality` | v0.4.11 |
+| `OPS-R` | `ascent-ops` | v0.4.12 |
+| `OPS-X` | `ascent-ops` | v0.4.12 |
 <!-- ownership:reserved:end -->
 
 ## Domains and testing types
