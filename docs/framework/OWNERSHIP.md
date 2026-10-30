@@ -83,7 +83,7 @@ Every skill, agent and hook a released plugin ships.
 
 A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** passes or fails and produces findings; a **catalogue** entry names an item in a reference list (an option, a principle, a direction). Both appear in reports, so both are registered. `Defined in` is the file that holds the family's table or header; it must mention the family's first id.
 
-**Internal** namespaces belong to this repository's tooling and never appear in a plugin report: `T1`–`T13` (gate checks in `make/test-plugins.sh`), `P01` onward (negative controls) and `V00` onward (validator cases, both in `make/test-mutants.sh`). Test-case ids inside a test file (R1, D1 and so on) are local to that file and are not registered.
+**Internal** namespaces belong to this repository's tooling and never appear in a plugin report: `T1`–`T14` (gate checks in `make/test-plugins.sh`), `P01` onward (negative controls) and `V00` onward (validator cases, both in `make/test-mutants.sh`). Test-case ids inside a test file (R1, D1 and so on) are local to that file and are not registered.
 
 <!-- ownership:families:start -->
 | Prefix | Plugin | Kind | Defined in |

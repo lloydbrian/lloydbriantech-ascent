@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.9 (`ascent-security` 0.2.0, dependency checks), October 27, 2026. Next: faster negative controls (v0.4.10, ADR-017), then `ascent-quality` (v0.4.11) and `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
+**Current state:** v0.4.10 (faster negative controls), October 29, 2026. Next: `ascent-quality` (v0.4.11), then `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -180,6 +180,24 @@ Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macO
 **Status:** ✅ Complete (October 26, 2026)
 
 Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-ux` 0.1.1, shipped in one pull request with the version bump: a stale "planned" mention, the stacked pull request rule in the delivery runbook template, and `--help` for every script in the repository.
+
+### v0.4.8: Ownership registry and plugin-qualified rule ids
+
+**Status:** ✅ Complete (October 27, 2026)
+
+`docs/framework/OWNERSHIP.md` gives every plugin, component, rule-id family, contract section, domain and review lens one registered owner. Gate check T13 fails the plugin gate when the repository drifts from it ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). Rule ids now name their plugin (`OPS-S3`, `UX-D2`, `ARC-C8`), with no aliases, so anyone who parses report output must update. `ascent-architecture`, `ascent-ops` and `ascent-ux` move to 0.2.0. `ascent-delivery` moves to 0.1.2: it gains an architecture and cost review lens and lists ASCENT reviewers first. [ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md) sets testing ownership across plugins and the release order that follows. The new `ownership` group adds controls P205–P240. An independent review found 15 issues, all fixed before release. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.9: Dependency checks
+
+**Status:** ✅ Complete (October 27, 2026)
+
+`ascent-security` 0.2.0 adds the hand-written `dependency-check` skill, which makes the plugin hybrid ([ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md)). It has ten rules, `SEC-D1` to `SEC-D10`: lockfiles present, tracked and in step with the manifest; pinned versions and engine constraints; no unexpected sources and no denied licences; scanner ignore entries backed by a waiver; and an offline trivy scan of lockfiles and local images. Network scanners run only after the operator agrees to a dry-run plan. The review before release confirmed and fixed 39 findings, and a read-only trial on four real repositories added one more. Controls P241–P357 run in five new groups, and the negative-control CI jobs get 40 minutes. After the merge, controls that survived only some of the time on `main` were traced to SIGPIPE in the gate's T11 and fixed in PR #60, released with v0.4.10. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.10: Faster negative controls
+
+**Status:** ✅ Complete (October 29, 2026)
+
+`make test-mutants` runs in fast mode by default ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md), [ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)): a control runs only the gate check it names, T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel. A control that fast mode does not kill reruns on the whole gate, and if the two modes disagree the run fails. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, a self-test proves each gate section gives the same results alone, and gate check T14 tests fast mode itself. A `harness` group of controls checks the harness's own reports, and CI runs every control in full mode once a week. Before release, all 439 controls got the same verdict from the old harness and the new one. No plugin versions change. Also released: the T11 SIGPIPE fix from PR #60. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 
