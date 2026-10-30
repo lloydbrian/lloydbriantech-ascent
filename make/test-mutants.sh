@@ -21,6 +21,10 @@
 # ASCENT_MUTANT_JOBS=<n> sets how many controls run at once (default: the number
 # of cores); ASCENT_MUTANT_RAW=1 makes the harness group report its expect_case
 # controls as they are, not as confirmed (tests/meta/test-mutants-harness.sh).
+# While controls run, a progress bar on stderr shows how many are done and running,
+# how many were not killed, and the time left, when stderr is a terminal;
+# ASCENT_MUTANT_PROGRESS=0 turns it off and =1 forces it. Every run ends with a
+# summary block above the totals line.
 #
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
@@ -46,10 +50,26 @@ MODE="${ASCENT_MUTANT_MODE:-fast}"
 case "$MODE" in fast|full) ;; *) echo "test-mutants: unknown mode '$MODE' (fast or full)" >&2; exit 2 ;; esac
 JOBS="${ASCENT_MUTANT_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)}"
 case "$JOBS" in ''|*[!0-9]*|0) echo "test-mutants: ASCENT_MUTANT_JOBS must be a positive number, got '$JOBS'" >&2; exit 2 ;; esac
+PROGRESS="${ASCENT_MUTANT_PROGRESS:-auto}"
+case "$PROGRESS" in
+  auto) if [ -t 2 ]; then PROGRESS=1; else PROGRESS=0; fi ;;
+  0|1) ;;
+  *) echo "test-mutants: ASCENT_MUTANT_PROGRESS must be 0 or 1, got '$PROGRESS'" >&2; exit 2 ;;
+esac
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+  *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) FULL='█'; EMPTY='░'; DOT='·'; RULE='─' ;;
+  *) FULL='#'; EMPTY='-'; DOT='|'; RULE='-' ;;
+esac
 CUR_GROUP=core
 mutant_group() { CUR_GROUP="$1"; }
 in_group() { [ "$GROUP" = all ] || [ "$GROUP" = "$CUR_GROUP" ]; }
 killed=0; survived=0; missed=0; total=0
+# Every finished control adds a line, seconds<TAB>status<TAB>id, to $WORK/done
+# (core rows to $WORK/done-core, untimed): the progress bar and the summary read them.
+T0=$SECONDS
+: > "$WORK/done"; : > "$WORK/done-core"
+note_core() { printf -- '-\t%s\t%s\n' "$1" "$2" >> "$WORK/done-core"; }  # STATUS ID
+clock() { printf '%d:%02d' $(($1 / 60)) $(($1 % 60)); }  # SECONDS -> m:ss
 
 if in_group; then
 
@@ -74,20 +94,20 @@ while IFS="$(printf '\t')" read -r id file expr test desc; do
   target="$WORK/m/$file"
   if [ ! -f "$target" ]; then
     printf "  ANCHOR MISS  %-28s %s not found\n" "$id" "$file"
-    missed=$((missed + 1)); continue
+    missed=$((missed + 1)); note_core "ANCHOR MISS" "$id"; continue
   fi
   cp "$target" "$WORK/before"
   sed -i.mut-bak -e "$expr" "$target" && rm -f "$target.mut-bak"
   if cmp -s "$WORK/before" "$target"; then
     printf "  ANCHOR MISS  %-28s sed changed nothing in %s\n" "$id" "$file"
-    missed=$((missed + 1)); continue
+    missed=$((missed + 1)); note_core "ANCHOR MISS" "$id"; continue
   fi
   if (cd "$WORK/m" && bash "tests/skills/$test" </dev/null >/dev/null 2>&1); then
     printf "  SURVIVED     %-28s %s — %s still passes\n" "$id" "$desc" "$test"
-    survived=$((survived + 1))
+    survived=$((survived + 1)); note_core SURVIVED "$id"
   else
     printf "  killed       %-28s by %s\n" "$id" "$test"
-    killed=$((killed + 1))
+    killed=$((killed + 1)); note_core killed "$id"
   fi
 done < "$MUTANTS"
 mutant_rows=$total
@@ -111,10 +131,10 @@ validator_case() {  # ID EXPECT(pass|fail) NAME DIRNAME DESCRIPTION
   if bash "$REPO_ROOT/make/qa-skill-frontmatter.sh" "$root" >/dev/null 2>&1; then got=pass; else got=fail; fi
   if [ "$got" = "$2" ]; then
     printf "  confirmed    %-28s validator answered %s\n" "$1" "$got"
-    killed=$((killed + 1))
+    killed=$((killed + 1)); note_core confirmed "$1"
   else
     printf "  SURVIVED     %-28s validator answered %s, expected %s\n" "$1" "$got" "$2"
-    survived=$((survived + 1))
+    survived=$((survived + 1)); note_core SURVIVED "$1"
   fi
 }
 validator_case V00-wellformed pass ascent-x ascent-x "Use when asked to do x. Does x."
@@ -156,7 +176,9 @@ plugin_gate() {  # DIR [fast LABEL EDITED-FILE] — run test-plugins on a copy; 
     ASCENT_ONLY="$only" ASCENT_T11_FAST="$t11fast" ASCENT_T11_FIRST="$first" \
     bash "$1/make/test-plugins.sh" "$1" </dev/null >"$1.out" 2>&1
 }
-fails() { grep '^FAIL' "$1" | sed 's/^/                 /' || true; }  # OUT — its FAIL lines, indented
+# fails OUT — its FAIL lines, each with up to 5 of the indented reason lines the
+# gate prints under it (T7), all indented
+fails() { awk 'BEGIN { d = -1 } /^FAIL/ { print; d = 0; next } d >= 0 && d < 5 && /^      / { print; d++; next } { d = -1 }' "$1" | sed 's/^/                 /'; }
 plugin_baseline() {  # ID COPY [NOTE] — the unmodified copy must pass the full gate
   if plugin_gate "$2"; then
     printf "  control      %-28s unmodified copy passes test-plugins%s\n" "$1" "${3:-}"
@@ -178,13 +200,51 @@ t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every pl
 # $WORK/r/<n>; flush prints finished results in control order, and the totals
 # are counted from the results once every control is done.
 mkdir -p "$WORK/r"
-seq=0; next=1
-flush() { while [ -f "$WORK/r/$next" ]; do cat "$WORK/r/$next"; next=$((next + 1)); done; }
+seq=0; next=1; T1=$SECONDS; BARRED=0
+# The number of controls this run launches, counted from the declarations in this
+# file so the bar knows its end; the run fails if it launched a different number.
+PLANNED=$(awk -v g="$GROUP" -v mode="$MODE" '
+  /^mutant_group [a-z0-9-]+$/ { cur = $2; next }
+  cur == "" || (g != "all" && g != cur) { next }
+  /^([A-Z0-9_]+=[^ ]* )*(plugin_case|plugin_case_rm|expect_case) / || /^ *([A-Z0-9_]+=[^ ]* )*launch plugin_baseline P00-/ { n++ }
+  END { if (g != "core") n += 1 + (mode == "fast"); print n + 0 }' "$0")
+unbar() { if [ "$BARRED" = 1 ]; then printf '\r\033[K' >&2; BARRED=0; fi; }
+bar() {  # [final] — redraw the progress bar on stderr
+  [ "$PROGRESS" = 1 ] && [ "$seq" -gt 0 ] || return 0
+  local fin nk run tot w=20 i=0 fill s="" el left=""
+  fin=$(wc -l < "$WORK/done"); fin=$((fin))
+  nk=$(awk -F'\t' '$2 !~ /^(killed|confirmed|control)$/ { n++ } END { print n + 0 }' "$WORK/done")
+  run=$(jobs -pr | wc -l); run=$((run))
+  tot=$PLANNED; if [ "$seq" -gt "$tot" ]; then tot=$seq; fi
+  fill=$((fin * w / tot))
+  while [ "$i" -lt "$w" ]; do if [ "$i" -lt "$fill" ]; then s="$s$FULL"; else s="$s$EMPTY"; fi; i=$((i + 1)); done
+  el=$((SECONDS - T1))
+  if [ "${1:-}" = final ]; then
+    printf '\r\033[K[%s] %d/%d %3d%% %s %s\n' "$s" "$fin" "$tot" $((fin * 100 / tot)) "$DOT" "$(clock "$el")" >&2
+    BARRED=0; return 0
+  fi
+  if [ "$fin" -gt 0 ] && [ "$fin" -lt "$tot" ]; then left=" $DOT ~$(clock $((el * (tot - fin) / fin))) left"; fi
+  printf '\r\033[K[%s] %3d/%d %3d%% %s %d running %s %d not killed %s %s%s' \
+    "$s" "$fin" "$tot" $((fin * 100 / tot)) "$DOT" "$run" "$DOT" "$nk" "$DOT" "$(clock "$el")" "$left" >&2
+  BARRED=1
+}
+# record SECONDS RESULT — the line for $WORK/done: the result's status and id sit
+# at fixed columns of its first line ("  %-12s %-28s")
+record() {
+  awk -v t="$1" 'NR == 1 { st = substr($0, 3, 12); sub(/ +$/, "", st); id = substr($0, 16); sub(/ .*/, "", id); print t "\t" st "\t" id }
+    END { if (NR == 0) print t "\t?\t?" }' "$2"
+}
+flush() {
+  while [ -f "$WORK/r/$next" ]; do unbar; cat "$WORK/r/$next"; next=$((next + 1)); done
+  bar
+}
 launch() {  # COMMAND ARGS... — run one control in the background, at most $JOBS at a time
   local n
   seq=$((seq + 1)); total=$((total + 1))
   while n=$(jobs -pr | wc -l) && [ $((n)) -ge "$JOBS" ]; do flush; sleep 0.2; done
-  ( "$@" >"$WORK/r/$seq.part" 2>&1 || true; mv "$WORK/r/$seq.part" "$WORK/r/$seq" ) &
+  ( s=$SECONDS; "$@" >"$WORK/r/$seq.part" 2>&1 || true
+    record $((SECONDS - s)) "$WORK/r/$seq.part" >> "$WORK/done"
+    mv "$WORK/r/$seq.part" "$WORK/r/$seq" ) &
   flush
 }
 # The baseline runs alongside the controls, on its own copy: a control's verdict
@@ -771,11 +831,16 @@ T14_SELFTEST=1 plugin_case P369-only-runs-everything T14.G8 "$GATEP" 's/^run() {
 T14_SELFTEST=1 plugin_case P370-shared-tmpdir T14.G7 "$GATEP" 's/  TMPDIR="\$tmp" bash "\$1"/  bash "$1"/'
 T14_SELFTEST=1 plugin_case P371-fail-line-not-watched T14.G2 "$GATEP" "s/if grep -q '^FAIL' \"\$2\"; then/if grep -q '^NEVER' \"\$2\"; then/"
 T14_SELFTEST=1 plugin_case_rm P372-gate-self-test-removed T14 tests/meta/test-gate-fast.sh
+T14_SELFTEST=1 plugin_case P374-t7-reasons-dropped T14.G10 "$GATEP" "s/^  printf '%s\\\\n' \"\$t7out\" | awk /  printf '' | awk /"
 
 # Every control has finished: print the rest and count the results.
-wait; flush
+while [ -n "$(jobs -pr)" ]; do flush; sleep 0.2; done
+wait; flush; bar final
 if [ "$next" -le "$seq" ]; then
   echo "test-mutants: control $next of $seq left no result — the harness failed"; exit 1
+fi
+if [ "$seq" -ne "$PLANNED" ]; then
+  echo "test-mutants: counted $PLANNED controls before the run but launched $seq — the count no longer matches how controls are declared"; exit 1
 fi
 for f in "$WORK"/r/*; do
   [ -f "$f" ] || continue
@@ -787,6 +852,30 @@ for f in "$WORK"/r/*; do
   esac
 done
 
+# The summary: counts by kind (the totals line below counts control and confirmed
+# as killed, and MODES DIFFER and CONTROL FAIL as survived), what was not killed,
+# the time and the three slowest controls.
+if [ "$total" -gt 0 ]; then
+  cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" '
+    function rep(n,  r) { r = ""; while (n-- > 0) r = r rule; return r }
+    { if ($2 == "killed" || $2 == "confirmed") k++; else if ($2 == "control") c++; else if ($2 == "ANCHOR MISS") a++
+      else if ($2 == "MODES DIFFER") d++; else if ($2 == "CONTROL FAIL") f++; else s++
+      if ($2 !~ /^(killed|confirmed|control)$/) nk[++nn] = sprintf("          %-13s %s", $2, $3)
+      if ($1 != "-") { t[++nt] = $1 + 0; id[nt] = $3 } }
+    END {
+      print ""; print rep(16) " summary " rep(16)
+      printf " group    %-20s mode  %s\n jobs     %-20s time  %s\n", group, mode, jobs, time
+      printf " killed   %d   control %d   survived %d\n", k, c, s
+      printf " modes differ %d   anchor miss %d   control fail %d\n", d, a, f
+      for (j = 1; j <= 3 && j <= nt; j++) {
+        m = 0; for (i = 1; i <= nt; i++) if (!(i in used) && (m == 0 || t[i] > t[m])) m = i
+        used[m] = 1; printf " %-8s %-30s %ds\n", (j == 1 ? "slowest" : ""), id[m], t[m]
+      }
+      if (nn) { print " not killed"; for (i = 1; i <= nn; i++) print nk[i] }
+      print " result   " ((s + d + f + a == 0 && NR > 0) ? "PASS" : "FAIL")
+      print rep(41)
+    }'
+fi
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s, mode: %s)\n" \
   "$total" "$killed" "$survived" "$missed" "$GROUP" "$MODE"

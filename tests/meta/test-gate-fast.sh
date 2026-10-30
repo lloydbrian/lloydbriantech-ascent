@@ -7,8 +7,9 @@
 # first FAIL line and stops its children, stops T11 at the first failing test,
 # runs first the tests that name ASCENT_T11_FIRST, gives each test its own TMPDIR,
 # and reaches the same verdict as full mode; that a test printing a FAIL line and
-# exiting 0 fails in both modes; and that ASCENT_ONLY runs one section and rejects
-# an unknown label.
+# exiting 0 fails in both modes; that ASCENT_ONLY runs one section and rejects
+# an unknown label; and that T7 names each failing file and its reason, or shows
+# the checker's last lines when it gave none.
 #
 # Usage: test-gate-fast.sh [GATE]   (defaults to make/test-plugins.sh)
 # Prints "test-gate-fast: N/N PASS" last (make/test-plugins.sh T14). A failing case
@@ -155,6 +156,25 @@ gate fast
 if [ "$RC" -ne 0 ] && [ ! -e "$WORK/g9-fb-ran" ]; then ok; else bad "G9 fast mode ran plugin fb after fa failed (rc $RC)"; fi
 gate full
 if [ "$RC" -ne 0 ] && [ -e "$WORK/g9-fb-ran" ]; then ok; else bad "G9 full mode did not run every plugin (rc $RC)"; fi
+
+# --- G10 T7 names each failing file and its reason under its FAIL line, and only those
+fixture g10; mkdir -p "$F/make" "$F/plugins/fx/skills/bad" "$F/plugins/fx/skills/good"
+cp "$(dirname "$GATE")/qa-skill-frontmatter.sh" "$F/make/"
+printf -- '---\nname: bad\ndescription: Use when testing.\nallowed-tools: Read\n---\n' > "$F/plugins/fx/skills/bad/SKILL.md"
+printf -- '---\nname: good\ndescription: Use when testing.\nversion: 0.0.1\nallowed-tools: Read\n---\n' > "$F/plugins/fx/skills/good/SKILL.md"
+RC=0; ASCENT_ONLY=T7 bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
+under=$(awk '/^FAIL  test-plugins: T7 / { on = 1; next } on && /^      / { print; next } { on = 0 }' "$WORK/out")
+if [ "$RC" -ne 0 ] && grep -q '^FAIL  test-plugins: T7 qa-skill-frontmatter failed on plugins/' "$WORK/out"; then ok; else bad "G10 T7 did not fail on a skill without a version (rc $RC)"; fi
+if printf '%s\n' "$under" | grep -q 'Checking: .*/plugins/fx/skills/bad/SKILL.md' && printf '%s\n' "$under" | grep -q "missing required field 'version'"; then ok
+else bad "G10 T7 did not name the file and the reason under its FAIL line: $(printf '%s' "$under" | tr '\n' ';')"; fi
+if ! printf '%s\n' "$under" | grep -q 'skills/good/'; then ok; else bad "G10 T7 listed a file that passed: $(printf '%s' "$under" | tr '\n' ';')"; fi
+
+# --- G11 when the checker fails without a reason, T7 shows its last three lines
+printf '#!/usr/bin/env bash\nprintf "one\\ntwo\\nthree\\nfour\\n"; exit 3\n' > "$F/make/qa-skill-frontmatter.sh"
+RC=0; ASCENT_ONLY=T7 bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
+under=$(awk '/^FAIL  test-plugins: T7 / { on = 1; next } on && /^      / { print; next } { on = 0 }' "$WORK/out" | tr '\n' ';')
+if [ "$RC" -ne 0 ] && grep -q '^FAIL  test-plugins: T7 .*(rc 3)$' "$WORK/out" && [ "$under" = "      two;      three;      four;" ]; then ok
+else bad "G11 T7 did not show the checker's last lines and status (rc $RC): $under"; fi
 
 printf "test-gate-fast: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

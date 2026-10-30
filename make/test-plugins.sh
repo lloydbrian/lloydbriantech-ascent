@@ -15,7 +15,8 @@
 #       severity table (dep-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
-#   T7  skill frontmatter passes qa-skill-frontmatter
+#   T7  skill frontmatter passes qa-skill-frontmatter; a failure lists each failing
+#       file and its reason, indented under the FAIL line
 #   T8  `claude plugin validate` passes (SKIP when the CLI is absent or skipped)
 #   T9  every "<skill> Step N" an agent cites names a skill in its plugin and a
 #       "### Step N" heading that exists; an agent must cite at least one step
@@ -252,7 +253,14 @@ fi
 
 # T7 — frontmatter
 if run T7; then
-if bash "$ROOT/make/qa-skill-frontmatter.sh" "$ROOT/plugins" >/dev/null 2>&1; then ok "T7 plugin skill frontmatter valid"; else bad "T7 qa-skill-frontmatter failed on plugins/"; fi
+t7rc=0; t7out=$(bash "$ROOT/make/qa-skill-frontmatter.sh" "$ROOT/plugins" 2>&1) || t7rc=$?
+if [ "$t7rc" -eq 0 ]; then ok "T7 plugin skill frontmatter valid"; else
+  bad "T7 qa-skill-frontmatter failed on plugins/ (rc $t7rc)"
+  # The reasons, indented under the FAIL line: each failing file and what is wrong
+  # with it, or the checker's last lines when it printed no reason
+  printf '%s\n' "$t7out" | awk '{ last[NR % 3] = $0 } /^Checking: / { f = $0; next } /^  FAIL: / { if (f != "") print "      " f; f = ""; print "      " $0; n++ }
+    END { if (!n) for (i = NR - 2; i <= NR; i++) if (i > 0) print "      " last[i % 3] }'
+fi
 fi
 
 # T8 — official validator

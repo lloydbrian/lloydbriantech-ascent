@@ -179,7 +179,7 @@ The targets used most:
 | `make plugins` | Regenerate the generated plugin skills and refresh `make/plugins.lock` |
 | `make test-plugins` | The plugin gate, T1–T14, including each plugin's behavior tests, the ownership check and the fast-mode self-test |
 | `make ownership` | The ownership check (T13) alone: `docs/framework/OWNERSHIP.md` against the repository |
-| `make test-mutants [GROUP=<group>] [MODE=full] [JOBS=<n>]` | Negative controls, in parallel (`JOBS`), in fast mode unless `MODE=full` ([ADR-018](docs/framework/DECISIONS/ADR-018-fast-negative-control-harness.md)); `make test-mutants-groups` lists the groups CI runs in parallel |
+| `make test-mutants [GROUP=<group>] [MODE=full] [JOBS=<n>]` | Negative controls, in parallel (`JOBS`), in fast mode unless `MODE=full` ([ADR-018](docs/framework/DECISIONS/ADR-018-fast-negative-control-harness.md)), with a progress bar in a terminal and a summary at the end; `make test-mutants-groups` lists the groups CI runs in parallel |
 | `make test-harness` | The harness's slow self-tests: each gate section alone matches the full gate, and parallel runs report what serial runs report |
 
 Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase or plugin that will implement them (`doc-stub` lands with the `ascent-docs` plugin).
