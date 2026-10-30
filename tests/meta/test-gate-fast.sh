@@ -167,7 +167,7 @@ under=$(awk '/^FAIL  test-plugins: T7 / { on = 1; next } on && /^      / { print
 if [ "$RC" -ne 0 ] && grep -q '^FAIL  test-plugins: T7 qa-skill-frontmatter failed on plugins/' "$WORK/out"; then ok; else bad "G10 T7 did not fail on a skill without a version (rc $RC)"; fi
 if printf '%s\n' "$under" | grep -q 'Checking: .*/plugins/fx/skills/bad/SKILL.md' && printf '%s\n' "$under" | grep -q "missing required field 'version'"; then ok
 else bad "G10 T7 did not name the file and the reason under its FAIL line: $(printf '%s' "$under" | tr '\n' ';')"; fi
-if ! printf '%s\n' "$under" | grep -q 'skills/good/'; then ok; else bad "G10 T7 listed a file that passed: $(printf '%s' "$under" | tr '\n' ';')"; fi
+if ! grep -q 'skills/good/' <<< "$under"; then ok; else bad "G10 T7 listed a file that passed: $(printf '%s' "$under" | tr '\n' ';')"; fi
 
 # --- G11 when the checker fails without a reason, T7 shows its last three lines
 printf '#!/usr/bin/env bash\nprintf "one\\ntwo\\nthree\\nfour\\n"; exit 3\n' > "$F/make/qa-skill-frontmatter.sh"
@@ -175,6 +175,18 @@ RC=0; ASCENT_ONLY=T7 bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
 under=$(awk '/^FAIL  test-plugins: T7 / { on = 1; next } on && /^      / { print; next } { on = 0 }' "$WORK/out" | tr '\n' ';')
 if [ "$RC" -ne 0 ] && grep -q '^FAIL  test-plugins: T7 .*(rc 3)$' "$WORK/out" && [ "$under" = "      two;      three;      four;" ]; then ok
 else bad "G11 T7 did not show the checker's last lines and status (rc $RC): $under"; fi
+
+# --- G12 T7 passes a valid skill whose frontmatter is larger than a pipe buffer: a
+# reader that stops early (grep -q, awk exit) on a pipe from printf kills the writer
+# with SIGPIPE, and pipefail turns that into a false "missing required field"
+fixture g12; mkdir -p "$F/make" "$F/plugins/fx/skills/big"
+cp "$(dirname "$GATE")/qa-skill-frontmatter.sh" "$F/make/"
+{ printf -- '---\nname: big\ndescription: Use when testing.\nversion: 0.0.1\nallowed-tools: Read\n'
+  awk 'BEGIN { for (i = 1; i <= 4000; i++) printf "x-filler-%04d: padding that pushes the frontmatter past a pipe buffer\n", i }'
+  printf -- '---\n'; } > "$F/plugins/fx/skills/big/SKILL.md"
+RC=0; ASCENT_ONLY=T7 bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
+if [ "$RC" -eq 0 ] && grep -q '^PASS  test-plugins: T7 ' "$WORK/out"; then ok
+else bad "G12 T7 failed a valid skill with a large frontmatter (rc $RC): $(grep -E '^ +(FAIL|Checking)' "$WORK/out" | head -2 | tr '\n' ';')"; fi
 
 printf "test-gate-fast: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

@@ -832,6 +832,9 @@ T14_SELFTEST=1 plugin_case P370-shared-tmpdir T14.G7 "$GATEP" 's/  TMPDIR="\$tmp
 T14_SELFTEST=1 plugin_case P371-fail-line-not-watched T14.G2 "$GATEP" "s/if grep -q '^FAIL' \"\$2\"; then/if grep -q '^NEVER' \"\$2\"; then/"
 T14_SELFTEST=1 plugin_case_rm P372-gate-self-test-removed T14 tests/meta/test-gate-fast.sh
 T14_SELFTEST=1 plugin_case P374-t7-reasons-dropped T14.G10 "$GATEP" "s/^  printf '%s\\\\n' \"\$t7out\" | awk /  printf '' | awk /"
+FMQA=make/qa-skill-frontmatter.sh
+T14_SELFTEST=1 plugin_case P375-frontmatter-field-pipe T14.G12 "$FMQA" 's/if ! grep -qE "^\${field}:" <<< "\$fm"; then/if ! printf "%s\\n" "$fm" | grep -qE "^${field}:"; then/'
+T14_SELFTEST=1 plugin_case P376-frontmatter-description-pipe T14.G12 "$FMQA" 's/desc=\$(awk /desc=$(printf "%s\\n" "$fm" | awk /; s/}'\'' <<< "\$fm" | tr /}'\'' | tr /'
 
 # Every control has finished: print the rest and count the results.
 while [ -n "$(jobs -pr)" ]; do flush; sleep 0.2; done
