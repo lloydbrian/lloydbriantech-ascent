@@ -10,6 +10,10 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
+### Changed
+
+- CI: the negative-control jobs time out after 15 minutes in fast mode again, as ADR-017 decision 5 and ADR-018 decision 8 set; the weekly and on-request full runs keep 40. Four fast runs on PR #62 and `main` showed every macOS group under 10 minutes (8.5 the longest), and the full run after the v0.4.10 release took 10.3 at most
+
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
