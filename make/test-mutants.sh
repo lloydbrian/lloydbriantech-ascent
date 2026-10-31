@@ -17,14 +17,27 @@
 # every group. --groups-json prints the group list for the CI matrix, so a new
 # plugin section joins CI without a workflow change.
 #
+# ASCENT_MUTANT_MODE=full runs every control on the whole gate, as before v0.4.10;
+# ASCENT_MUTANT_JOBS=<n> sets how many controls run at once (default: the number
+# of cores); ASCENT_MUTANT_RAW=1 makes the harness group report its expect_case
+# controls as they are, not as confirmed (tests/meta/test-mutants-harness.sh).
+# While controls run, a progress bar on stderr shows how many are done and running,
+# how many were not killed, and the time left, when stderr is a terminal;
+# ASCENT_MUTANT_PROGRESS=0 turns it off and =1 forces it. Every run ends with a
+# summary block above the totals line.
+#
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
 set -euo pipefail
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MUTANTS="$REPO_ROOT/make/mutants.tsv"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT INT TERM
+trap 'rm -rf "$WORK"' EXIT
+# Background jobs ignore SIGINT, so an interrupt sends TERM to the whole process
+# group: every running control and its gate stop, and EXIT removes $WORK.
+trap 'trap "" INT TERM; kill -TERM 0 2>/dev/null; exit 130' INT TERM
 
 GROUPS_ALL="core $(awk '/^mutant_group [a-z0-9-]+$/ { print $2 }' "$0" | tr '\n' ' ' | sed 's/ $//')"
 if [ "${1:-}" = --groups-json ]; then
@@ -33,10 +46,30 @@ if [ "${1:-}" = --groups-json ]; then
 fi
 GROUP="${ASCENT_MUTANT_GROUP:-all}"
 case " all $GROUPS_ALL " in *" $GROUP "*) ;; *) echo "test-mutants: unknown group '$GROUP' (groups: all $GROUPS_ALL)" >&2; exit 2 ;; esac
+MODE="${ASCENT_MUTANT_MODE:-fast}"
+case "$MODE" in fast|full) ;; *) echo "test-mutants: unknown mode '$MODE' (fast or full)" >&2; exit 2 ;; esac
+JOBS="${ASCENT_MUTANT_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)}"
+case "$JOBS" in ''|*[!0-9]*|0) echo "test-mutants: ASCENT_MUTANT_JOBS must be a positive number, got '$JOBS'" >&2; exit 2 ;; esac
+PROGRESS="${ASCENT_MUTANT_PROGRESS:-auto}"
+case "$PROGRESS" in
+  auto) if [ -t 2 ]; then PROGRESS=1; else PROGRESS=0; fi ;;
+  0|1) ;;
+  *) echo "test-mutants: ASCENT_MUTANT_PROGRESS must be 0 or 1, got '$PROGRESS'" >&2; exit 2 ;;
+esac
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+  *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) FULL='█'; EMPTY='░'; DOT='·'; RULE='─' ;;
+  *) FULL='#'; EMPTY='-'; DOT='|'; RULE='-' ;;
+esac
 CUR_GROUP=core
 mutant_group() { CUR_GROUP="$1"; }
 in_group() { [ "$GROUP" = all ] || [ "$GROUP" = "$CUR_GROUP" ]; }
 killed=0; survived=0; missed=0; total=0
+# Every finished control adds a line, seconds<TAB>status<TAB>id, to $WORK/done
+# (core rows to $WORK/done-core, untimed): the progress bar and the summary read them.
+T0=$SECONDS
+: > "$WORK/done"; : > "$WORK/done-core"
+note_core() { printf -- '-\t%s\t%s\n' "$1" "$2" >> "$WORK/done-core"; }  # STATUS ID
+clock() { printf '%d:%02d' $(($1 / 60)) $(($1 % 60)); }  # SECONDS -> m:ss
 
 if in_group; then
 
@@ -61,20 +94,20 @@ while IFS="$(printf '\t')" read -r id file expr test desc; do
   target="$WORK/m/$file"
   if [ ! -f "$target" ]; then
     printf "  ANCHOR MISS  %-28s %s not found\n" "$id" "$file"
-    missed=$((missed + 1)); continue
+    missed=$((missed + 1)); note_core "ANCHOR MISS" "$id"; continue
   fi
   cp "$target" "$WORK/before"
   sed -i.mut-bak -e "$expr" "$target" && rm -f "$target.mut-bak"
   if cmp -s "$WORK/before" "$target"; then
     printf "  ANCHOR MISS  %-28s sed changed nothing in %s\n" "$id" "$file"
-    missed=$((missed + 1)); continue
+    missed=$((missed + 1)); note_core "ANCHOR MISS" "$id"; continue
   fi
   if (cd "$WORK/m" && bash "tests/skills/$test" </dev/null >/dev/null 2>&1); then
     printf "  SURVIVED     %-28s %s — %s still passes\n" "$id" "$desc" "$test"
-    survived=$((survived + 1))
+    survived=$((survived + 1)); note_core SURVIVED "$id"
   else
     printf "  killed       %-28s by %s\n" "$id" "$test"
-    killed=$((killed + 1))
+    killed=$((killed + 1)); note_core killed "$id"
   fi
 done < "$MUTANTS"
 mutant_rows=$total
@@ -98,10 +131,10 @@ validator_case() {  # ID EXPECT(pass|fail) NAME DIRNAME DESCRIPTION
   if bash "$REPO_ROOT/make/qa-skill-frontmatter.sh" "$root" >/dev/null 2>&1; then got=pass; else got=fail; fi
   if [ "$got" = "$2" ]; then
     printf "  confirmed    %-28s validator answered %s\n" "$1" "$got"
-    killed=$((killed + 1))
+    killed=$((killed + 1)); note_core confirmed "$1"
   else
     printf "  SURVIVED     %-28s validator answered %s, expected %s\n" "$1" "$got" "$2"
-    survived=$((survived + 1))
+    survived=$((survived + 1)); note_core SURVIVED "$1"
   fi
 }
 validator_case V00-wellformed pass ascent-x ascent-x "Use when asked to do x. Does x."
@@ -113,30 +146,47 @@ fi
 # Plugin controls (ADR-009): make/test-plugins.sh must fail on each broken copy
 # of the repository, and fail with the check named in EXPECT, so a control
 # cannot pass because some other check happened to break. A baseline copy with
-# no change must pass first, or every control below would be meaningless.
+# no change must pass, or every control below would be meaningless: it runs
+# alongside the controls, and a failed baseline fails the run.
+#
+# Fast mode (the default, ADR-018) runs only the named check, stops T11 at its
+# first failure and runs controls in parallel, $JOBS at a time, each on its own
+# copy; results print in control order. A control fast mode does not kill reruns
+# in full mode, the whole gate as before, and its report carries the FAIL lines
+# of both runs. If full mode kills it, the two modes disagree: that is reported
+# as MODES DIFFER and fails the run, never counted as a kill.
+# ASCENT_MUTANT_MODE=full runs every control in full mode only.
 plugin_copy() {  # DIR — fresh copy of the repository without .git
   rm -rf "$1"; mkdir -p "$1"
   (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) | (cd "$1" && tar -xf -)
 }
-# T13.0 (the ownership checker's fixture tests) is skipped unless a control sets
-# T13_SELFTEST=1: only the controls that edit the checker or its tests need it.
-plugin_gate() {  # DIR — run test-plugins on a copy; output to $WORK/plugin-out
-  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" ASCENT_T13_SELFTEST="${T13_SELFTEST:-0}" bash "$1/make/test-plugins.sh" "$1" </dev/null >"$WORK/plugin-out" 2>&1
+# T13.0 (the ownership checker's fixture tests) and T14 (the fast-mode self-test)
+# are skipped unless a control sets T13_SELFTEST=1 or T14_SELFTEST=1: only the
+# controls that edit the checker, fast mode or their tests need them.
+plugin_gate() {  # DIR [fast LABEL EDITED-FILE] — run test-plugins on a copy; output in DIR.out
+  local only="" t11fast=0 first=""
+  if [ "${2:-}" = fast ]; then
+    # MUTANT_FAULT=fast-pass makes fast mode pass everything: only the harness
+    # group sets it, to prove that a disagreement between the modes is reported
+    if [ "${MUTANT_FAULT:-}" = fast-pass ]; then : > "$1.out"; return 0; fi
+    only=$3; t11fast=1; first=$(basename "$4")
+  fi
+  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" \
+    ASCENT_T13_SELFTEST="${T13_SELFTEST:-0}" ASCENT_T14_SELFTEST="${T14_SELFTEST:-0}" \
+    ASCENT_ONLY="$only" ASCENT_T11_FAST="$t11fast" ASCENT_T11_FIRST="$first" \
+    bash "$1/make/test-plugins.sh" "$1" </dev/null >"$1.out" 2>&1
 }
-if [ "$GROUP" != core ]; then
-plugin_copy "$WORK/p-baseline"
-T11_ONLY=""
-total=$((total + 1))
-if plugin_gate "$WORK/p-baseline"; then
-  printf "  control      %-28s unmodified copy passes test-plugins\n" "P00-baseline"
-  killed=$((killed + 1))
-else
-  printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins:\n" "P00-baseline"
-  grep '^FAIL' "$WORK/plugin-out" | sed 's/^/                 /'
-  survived=$((survived + 1))
-fi
-fi
-
+# fails OUT — its FAIL lines, each with up to 5 of the indented reason lines the
+# gate prints under it (T7), all indented
+fails() { awk 'BEGIN { d = -1 } /^FAIL/ { print; d = 0; next } d >= 0 && d < 5 && /^      / { print; d++; next } { d = -1 }' "$1" | sed 's/^/                 /'; }
+plugin_baseline() {  # ID COPY [NOTE] — the unmodified copy must pass the full gate
+  if plugin_gate "$2"; then
+    printf "  control      %-28s unmodified copy passes test-plugins%s\n" "$1" "${3:-}"
+  else
+    printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins%s:\n" "$1" "${3:-}"
+    fails "$2.out"; return 1
+  fi
+}
 t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every plugin's tests)
   if [ -n "${T11_FORCE:-}" ]; then T11_ONLY=$T11_FORCE; return; fi   # set by a group whose controls never need T11
   case "$1" in
@@ -145,49 +195,135 @@ t11_scope() {  # PATH -> the plugin whose files it is in, or empty (run every pl
     *) T11_ONLY="" ;;
   esac
 }
-plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuild]
-  in_group || return 0
-  local copy="$WORK/p-$1"
-  t11_scope "$3"
-  plugin_copy "$copy"
-  total=$((total + 1))
-  cp "$copy/$3" "$WORK/before"
-  sed -i.mut-bak -e "$4" "$copy/$3" && rm -f "$copy/$3.mut-bak"
-  if cmp -s "$WORK/before" "$copy/$3"; then
-    printf "  ANCHOR MISS  %-28s sed changed nothing in %s\n" "$1" "$3"
-    missed=$((missed + 1)); return 0
+
+# Parallel runs. Each control runs in the background and writes its result to
+# $WORK/r/<n>; flush prints finished results in control order, and the totals
+# are counted from the results once every control is done.
+mkdir -p "$WORK/r"
+seq=0; next=1; T1=$SECONDS; BARRED=0
+# The number of controls this run launches, counted from the declarations in this
+# file so the bar knows its end; the run fails if it launched a different number.
+PLANNED=$(awk -v g="$GROUP" -v mode="$MODE" '
+  /^mutant_group [a-z0-9-]+$/ { cur = $2; next }
+  cur == "" || (g != "all" && g != cur) { next }
+  /^([A-Z0-9_]+=[^ ]* )*(plugin_case|plugin_case_rm|expect_case) / || /^ *([A-Z0-9_]+=[^ ]* )*launch plugin_baseline P00-/ { n++ }
+  END { if (g != "core") n += 1 + (mode == "fast"); print n + 0 }' "$0")
+unbar() { if [ "$BARRED" = 1 ]; then printf '\r\033[K' >&2; BARRED=0; fi; }
+bar() {  # [final] — redraw the progress bar on stderr
+  [ "$PROGRESS" = 1 ] && [ "$seq" -gt 0 ] || return 0
+  local fin nk run tot w=20 i=0 fill s="" el left=""
+  fin=$(wc -l < "$WORK/done"); fin=$((fin))
+  nk=$(awk -F'\t' '$2 !~ /^(killed|confirmed|control)$/ { n++ } END { print n + 0 }' "$WORK/done")
+  run=$(jobs -pr | wc -l); run=$((run))
+  tot=$PLANNED; if [ "$seq" -gt "$tot" ]; then tot=$seq; fi
+  fill=$((fin * w / tot))
+  while [ "$i" -lt "$w" ]; do if [ "$i" -lt "$fill" ]; then s="$s$FULL"; else s="$s$EMPTY"; fi; i=$((i + 1)); done
+  el=$((SECONDS - T1))
+  if [ "${1:-}" = final ]; then
+    printf '\r\033[K[%s] %d/%d %3d%% %s %s\n' "$s" "$fin" "$tot" $((fin * 100 / tot)) "$DOT" "$(clock "$el")" >&2
+    BARRED=0; return 0
   fi
-  if [ "${5:-}" = rebuild ] && ! bash "$copy/make/build-plugins.sh" >/dev/null 2>&1; then
-    printf "  SURVIVED     %-28s rebuild failed before the gate ran\n" "$1"
-    survived=$((survived + 1)); return 0
-  fi
-  plugin_judge "$1" "$2" "$copy"
+  if [ "$fin" -gt 0 ] && [ "$fin" -lt "$tot" ]; then left=" $DOT ~$(clock $((el * (tot - fin) / fin))) left"; fi
+  printf '\r\033[K[%s] %3d/%d %3d%% %s %d running %s %d not killed %s %s%s' \
+    "$s" "$fin" "$tot" $((fin * 100 / tot)) "$DOT" "$run" "$DOT" "$nk" "$DOT" "$(clock "$el")" "$left" >&2
+  BARRED=1
 }
-plugin_judge() {  # ID EXPECT-LABEL COPY — run the gate and classify the result
+# record SECONDS RESULT — the line for $WORK/done: the result's status and id sit
+# at fixed columns of its first line ("  %-12s %-28s")
+record() {
+  awk -v t="$1" 'NR == 1 { st = substr($0, 3, 12); sub(/ +$/, "", st); id = substr($0, 16); sub(/ .*/, "", id); print t "\t" st "\t" id }
+    END { if (NR == 0) print t "\t?\t?" }' "$2"
+}
+flush() {
+  while [ -f "$WORK/r/$next" ]; do unbar; cat "$WORK/r/$next"; next=$((next + 1)); done
+  bar
+}
+launch() {  # COMMAND ARGS... — run one control in the background, at most $JOBS at a time
+  local n
+  seq=$((seq + 1)); total=$((total + 1))
+  while n=$(jobs -pr | wc -l) && [ $((n)) -ge "$JOBS" ]; do flush; sleep 0.2; done
+  ( s=$SECONDS; "$@" >"$WORK/r/$seq.part" 2>&1 || true
+    record $((SECONDS - s)) "$WORK/r/$seq.part" >> "$WORK/done"
+    mv "$WORK/r/$seq.part" "$WORK/r/$seq" ) &
+  flush
+}
+# The baseline runs alongside the controls, on its own copy: a control's verdict
+# counts only if the baseline passes, and a failed baseline fails the run. In fast
+# mode a second baseline runs every behavior test unmutated the way fast mode runs
+# them (own process group and TMPDIR, stopped at a FAIL line): a test that failed
+# only there would otherwise turn every T11 control into a kill.
+plugin_fast_baseline() {  # ID COPY
+  if plugin_gate "$2" fast T11 ""; then
+    printf "  control      %-28s unmodified copy passes T11 in fast mode\n" "$1"
+  else
+    printf "  CONTROL FAIL %-28s unmodified copy fails T11 in fast mode:\n" "$1"
+    fails "$2.out"; return 1
+  fi
+}
+if [ "$GROUP" != core ]; then
+plugin_copy "$WORK/p-baseline"
+T11_ONLY=""
+launch plugin_baseline P00-baseline "$WORK/p-baseline"
+if [ "$MODE" = fast ]; then
+  plugin_copy "$WORK/p-fast-baseline"
+  launch plugin_fast_baseline P00-fast-baseline "$WORK/p-fast-baseline"
+fi
+fi
+
+# control_run KIND ID LABEL PATH [SED [rebuild]] — one control on its own copy;
+# KIND is edit (apply SED to PATH) or rm (delete PATH). Prints its result.
+control_run() {
+  local kind=$1 id=$2 label=$3 path=$4 copy="$WORK/p-$2"
+  plugin_copy "$copy"
+  if [ "$kind" = rm ]; then
+    if [ ! -e "$copy/$path" ]; then printf "  ANCHOR MISS  %-28s %s not found\n" "$id" "$path"; rm -rf "$copy"; return; fi
+    rm -rf "${copy:?}/$path"
+  else
+    cp "$copy/$path" "$copy.before"
+    sed -i.mut-bak -e "$5" "$copy/$path" && rm -f "$copy/$path.mut-bak"
+    if cmp -s "$copy.before" "$copy/$path"; then
+      printf "  ANCHOR MISS  %-28s sed changed nothing in %s\n" "$id" "$path"; rm -rf "$copy" "$copy.before"; return
+    fi
+    if [ "${6:-}" = rebuild ] && ! bash "$copy/make/build-plugins.sh" >/dev/null 2>&1; then
+      printf "  SURVIVED     %-28s rebuild failed before the gate ran\n" "$id"; rm -rf "$copy" "$copy.before"; return
+    fi
+  fi
+  plugin_verdict "$id" "$label" "$copy" "$path"
+  rm -rf "$copy" "$copy.before" "$copy.out" "$copy.fast"
+}
+plugin_verdict() {  # ID EXPECT-LABEL COPY EDITED-PATH — run the gate and classify the result
+  if [ "$MODE" = fast ]; then
+    if ! plugin_gate "$3" fast "$2" "$4" && grep -q "^FAIL  test-plugins: $2 " "$3.out"; then
+      printf "  killed       %-28s by test-plugins %s\n" "$1" "$2"; return
+    fi
+    mv "$3.out" "$3.fast"
+  fi
   if plugin_gate "$3"; then
     printf "  SURVIVED     %-28s test-plugins still passes\n" "$1"
-    survived=$((survived + 1))
-  elif grep -q "^FAIL  test-plugins: $2 " "$WORK/plugin-out"; then
-    printf "  killed       %-28s by test-plugins %s\n" "$1" "$2"
-    killed=$((killed + 1))
+  elif grep -q "^FAIL  test-plugins: $2 " "$3.out"; then
+    if [ "$MODE" = full ]; then printf "  killed       %-28s by test-plugins %s\n" "$1" "$2"; return; fi
+    printf "  MODES DIFFER %-28s full mode killed it by %s, fast mode did not\n" "$1" "$2"
   else
-    printf "  SURVIVED     %-28s failed, but not on %s: %s\n" "$1" "$2" \
-      "$(grep '^FAIL' "$WORK/plugin-out" | sed 's/^FAIL  test-plugins: //' | cut -c1-60 | tr '\n' ';')"
-    survived=$((survived + 1))
+    printf "  SURVIVED     %-28s failed, but not on %s: %s%s\n" "$1" "$2" \
+      "$(grep '^FAIL' "$3.out" | sed 's/^FAIL  test-plugins: //' | cut -c1-60 | tr '\n' ';')" \
+      "$(grep -q '^test-plugins: [0-9]*/[0-9]* PASS' "$3.out" || echo ' (the gate ended early, before its summary)')"
   fi
+  if [ -f "$3.fast" ]; then
+    echo "               fast mode (only $2):"; fails "$3.fast"
+    [ -n "$(grep '^FAIL' "$3.fast" || true)" ] || echo "                 (no FAIL lines)"
+  fi
+  echo "               full mode:"; fails "$3.out"
+  [ -n "$(grep '^FAIL' "$3.out" || true)" ] || echo "                 (no FAIL lines)"
+}
+plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuild]
+  in_group || return 0
+  t11_scope "$3"
+  launch control_run edit "$@"
 }
 plugin_case_rm() {  # ID EXPECT-LABEL PATH(relative to repo) — the control deletes PATH
   in_group || return 0
-  local copy="$WORK/p-$1"
   t11_scope "$3"
-  plugin_copy "$copy"
-  total=$((total + 1))
-  if [ ! -e "$copy/$3" ]; then
-    printf "  ANCHOR MISS  %-28s %s not found\n" "$1" "$3"
-    missed=$((missed + 1)); return 0
-  fi
-  rm -rf "${copy:?}/$3"
-  plugin_judge "$1" "$2" "$copy"
+  launch control_run rm "$@"
 }
 mutant_group ascent-security
 SEC=plugins/ascent-security
@@ -596,13 +732,8 @@ CHKO=make/check-ownership.sh
 DLS=plugins/ascent-delivery/skills/delivery-loop
 # The T13.0 controls below are judged on T13.0, so T13.0 must pass unmutated first.
 if in_group; then
-  total=$((total + 1)); T11_ONLY=none
-  if T13_SELFTEST=1 plugin_gate "$WORK/p-baseline"; then
-    printf "  control      %-28s unmodified copy passes test-plugins with T13.0\n" "P00-ownership-baseline"; killed=$((killed + 1))
-  else
-    printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins with T13.0:\n" "P00-ownership-baseline"
-    grep '^FAIL' "$WORK/plugin-out" | sed 's/^/                 /'; survived=$((survived + 1))
-  fi
+  plugin_copy "$WORK/p-ownership-baseline"; T11_ONLY=none
+  T13_SELFTEST=1 launch plugin_baseline P00-ownership-baseline "$WORK/p-ownership-baseline" " with T13.0"
 fi
 plugin_case_rm P205-registry-removed T13.1 "$OWN"
 plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
@@ -645,7 +776,110 @@ T13_SELFTEST=1 plugin_case P239-checker-skips-readme-lenses T13.0 "$CHKO" 's# "$
 T13_SELFTEST=1 plugin_case_rm P240-checker-tests-removed T13.0 tests/meta/test-check-ownership.sh
 T11_FORCE=""
 
+# The harness checks itself (ADR-018). expect_case runs a control and confirms the
+# harness reported STATUS for it, so a fast mode that turned a survivor, a kill on
+# the wrong check, an anchor miss, a broken baseline or a disagreement between the
+# modes into a kill fails here. The other controls break fast mode in
+# make/test-plugins.sh and must be caught by T14, its self-test.
+mutant_group harness
+ARCHT=plugins/ascent-architecture/scripts/estimate-cost.sh
+GATEP=make/test-plugins.sh
+# T14 must pass unmutated for its controls to mean anything.
+if in_group; then
+  plugin_copy "$WORK/p-harness-baseline"; T11_ONLY=none
+  T14_SELFTEST=1 launch plugin_baseline P00-harness-baseline "$WORK/p-harness-baseline" " with T14"
+fi
+expect_case() {  # STATUS ID LABEL FILE SED — the harness must report STATUS for this control
+  in_group || return 0
+  t11_scope "$4"
+  launch expect_run "$@"
+}
+expect_run() {
+  local want=$1 out line got; shift
+  [ "$MODE" = full ] && [ "$want" = "MODES DIFFER" ] && want=killed   # full mode has nothing to compare
+  if [ "$want" = "CONTROL FAIL" ]; then
+    plugin_copy "$WORK/p-$1"
+    sed -i.mut-bak -e "$4" "$WORK/p-$1/$3" && rm -f "$WORK/p-$1/$3.mut-bak"
+    out=$(plugin_baseline "$1" "$WORK/p-$1" || true); rm -rf "$WORK/p-$1" "$WORK/p-$1.out"
+  else
+    out=$(control_run edit "$@")
+  fi
+  if [ "${ASCENT_MUTANT_RAW:-0}" = 1 ]; then printf '%s\n' "$out"; return; fi
+  line=${out%%$'\n'*}; got=$(echo "${line:2:12}" | sed 's/ *$//')
+  if [ "$got" = "$want" ]; then
+    printf "  confirmed    %-28s harness reported %s\n" "$1" "$want"
+  else
+    printf "  SURVIVED     %-28s harness reported '%s', expected %s:\n" "$1" "$got" "$want"
+    printf '%s\n' "$out" | sed 's/^/  /'
+  fi
+}
+expect_case SURVIVED P359-harness-survivor T5 docs/framework/PHILOSOPHY.md '$a\
+A line that no gate check reads.'
+expect_case SURVIVED P360-harness-wrong-check T11 plugins/ascent-architecture/README.md '$a\
+A plugin edit without a version bump fails T10, not the T11 this control names.'
+expect_case "ANCHOR MISS" P361-harness-anchor-miss T11 "$ARCHT" 's/text that is not in the file/x/'
+MUTANT_FAULT=fast-pass expect_case "MODES DIFFER" P362-harness-modes-differ T11 "$ARCHT" 's/^      f = fr\[k\] + 0$/      f = 0/'
+expect_case "CONTROL FAIL" P363-harness-baseline-broken T2 plugins/ascent-architecture/README.md '$a\
+<<UNRENDERED>>'
+expect_case SURVIVED P373-harness-other-subcheck T13.4 docs/framework/OWNERSHIP.md '/^| HTML, JSX, Vue or Svelte templates/d'
+T14_SELFTEST=1 plugin_case P364-fast-never-stops-test T14.G2 "$GATEP" 's/kill -TERM -- "-\$pid"/true/'
+T14_SELFTEST=1 plugin_case P365-fail-line-exit-0-passes T14.G5 "$GATEP" "s/if grep -q '^FAIL' \"\$WORK\/t11.out\"; then/if false; then/"
+T14_SELFTEST=1 plugin_case P366-unknown-label-accepted T14.G8 "$GATEP" 's/ >&2; exit 2 ;; esac$/ >\&2 ;; esac/'
+T14_SELFTEST=1 plugin_case P367-t11-runs-on-after-failure T14.G3 "$GATEP" 's/\[ "\$FAST" = 1 \] && break  # T11 has failed; the remaining tests/: # T11 has failed; the remaining tests/'
+T14_SELFTEST=1 plugin_case P368-first-tests-last T14.G4 "$GATEP" 's/TESTS="\$FIRST \$REST"/TESTS="\$REST \$FIRST"/'
+T14_SELFTEST=1 plugin_case P369-only-runs-everything T14.G8 "$GATEP" 's/^run() { \[ -z "\$ONLY" \] ||/run() { true ||/'
+T14_SELFTEST=1 plugin_case P370-shared-tmpdir T14.G7 "$GATEP" 's/  TMPDIR="\$tmp" bash "\$1"/  bash "$1"/'
+T14_SELFTEST=1 plugin_case P371-fail-line-not-watched T14.G2 "$GATEP" "s/if grep -q '^FAIL' \"\$2\"; then/if grep -q '^NEVER' \"\$2\"; then/"
+T14_SELFTEST=1 plugin_case_rm P372-gate-self-test-removed T14 tests/meta/test-gate-fast.sh
+T14_SELFTEST=1 plugin_case P374-t7-reasons-dropped T14.G10 "$GATEP" "s/^  printf '%s\\\\n' \"\$t7out\" | awk /  printf '' | awk /"
+FMQA=make/qa-skill-frontmatter.sh
+T14_SELFTEST=1 plugin_case P375-frontmatter-field-pipe T14.G12 "$FMQA" 's/if ! grep -qE "^\${field}:" <<< "\$fm"; then/if ! printf "%s\\n" "$fm" | grep -qE "^${field}:"; then/'
+T14_SELFTEST=1 plugin_case P376-frontmatter-description-pipe T14.G12 "$FMQA" 's/desc=\$(awk /desc=$(printf "%s\\n" "$fm" | awk /; s/}'\'' <<< "\$fm" | tr /}'\'' | tr /'
+
+# Every control has finished: print the rest and count the results.
+while [ -n "$(jobs -pr)" ]; do flush; sleep 0.2; done
+wait; flush; bar final
+if [ "$next" -le "$seq" ]; then
+  echo "test-mutants: control $next of $seq left no result — the harness failed"; exit 1
+fi
+if [ "$seq" -ne "$PLANNED" ]; then
+  echo "test-mutants: counted $PLANNED controls before the run but launched $seq — the count no longer matches how controls are declared"; exit 1
+fi
+for f in "$WORK"/r/*; do
+  [ -f "$f" ] || continue
+  read -r status _ < "$f" || true
+  case "$status" in
+    killed|confirmed|control) killed=$((killed + 1)) ;;
+    ANCHOR) missed=$((missed + 1)) ;;
+    *) survived=$((survived + 1)) ;;
+  esac
+done
+
+# The summary: counts by kind (the totals line below counts control and confirmed
+# as killed, and MODES DIFFER and CONTROL FAIL as survived), what was not killed,
+# the time and the three slowest controls.
+if [ "$total" -gt 0 ]; then
+  cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" '
+    function rep(n,  r) { r = ""; while (n-- > 0) r = r rule; return r }
+    { if ($2 == "killed" || $2 == "confirmed") k++; else if ($2 == "control") c++; else if ($2 == "ANCHOR MISS") a++
+      else if ($2 == "MODES DIFFER") d++; else if ($2 == "CONTROL FAIL") f++; else s++
+      if ($2 !~ /^(killed|confirmed|control)$/) nk[++nn] = sprintf("          %-13s %s", $2, $3)
+      if ($1 != "-") { t[++nt] = $1 + 0; id[nt] = $3 } }
+    END {
+      print ""; print rep(16) " summary " rep(16)
+      printf " group    %-20s mode  %s\n jobs     %-20s time  %s\n", group, mode, jobs, time
+      printf " killed   %d   control %d   survived %d\n", k, c, s
+      printf " modes differ %d   anchor miss %d   control fail %d\n", d, a, f
+      for (j = 1; j <= 3 && j <= nt; j++) {
+        m = 0; for (i = 1; i <= nt; i++) if (!(i in used) && (m == 0 || t[i] > t[m])) m = i
+        used[m] = 1; printf " %-8s %-30s %ds\n", (j == 1 ? "slowest" : ""), id[m], t[m]
+      }
+      if (nn) { print " not killed"; for (i = 1; i <= nn; i++) print nk[i] }
+      print " result   " ((s + d + f + a == 0 && NR > 0) ? "PASS" : "FAIL")
+      print rep(41)
+    }'
+fi
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
-printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s)\n" \
-  "$total" "$killed" "$survived" "$missed" "$GROUP"
+printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s, mode: %s)\n" \
+  "$total" "$killed" "$survived" "$missed" "$GROUP" "$MODE"
 [ "$survived" -eq 0 ] && [ "$missed" -eq 0 ] && [ "$total" -gt 0 ]

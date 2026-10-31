@@ -10,14 +10,9 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
-### Fixed
-
-- `make test-plugins` T11 no longer ends the gate early when a behavior test fails with long output. It quoted the first FAIL lines through `grep | head -3`; under `set -euo pipefail`, `grep` sometimes died of SIGPIPE and the assignment ended the script before T11 printed. Negative controls whose tests failed at length were then reported as SURVIVED, intermittently and mostly on Linux (P246, P255 and P265 in `ascent-security-deps` on the v0.4.9 CI runs). Reproduced on Ubuntu 24.04: 11 of 300 runs at 13.5 KB of FAIL lines, every run at 113 KB; `awk`, which reads to the end, none. New control P358 makes a behavior test fail with 3,000 FAIL lines; it survives the old line and is caught by T11 with the fix
-
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
-- v0.4.10 faster negative controls: stop each behavior test at its first failure, run only the check a control names, run controls in parallel, rerun survivors in full (ADR-017)
 - v0.4.11 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.12 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014 and ADR-017
 - `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
@@ -32,6 +27,51 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.10] — 2026-10-29
+
+**Faster negative controls.** `make test-mutants` runs in fast mode by default ([ADR-017](docs/framework/DECISIONS/ADR-017-faster-negative-controls.md), [ADR-018](docs/framework/DECISIONS/ADR-018-fast-negative-control-harness.md)): a control runs only the gate check it names, behavior tests stop at their first failure, and controls run in parallel. Verdicts do not change: before release, every one of the 439 controls got the same verdict from the old harness and the new one. Framework tooling only; no plugin versions change.
+
+### Added
+
+- Fast mode in `make/test-mutants.sh` (`MODE=full`, `ASCENT_MUTANT_MODE=full`, runs the whole gate for every control, as before):
+  - **One check.** `make/test-plugins.sh` takes `ASCENT_ONLY=<label>` and runs the shared setup and that section only (`T13.4` runs T13). An unknown label exits 2
+  - **First failure.** With `ASCENT_T11_FAST=1`, T11 runs each behavior test in its own process group and `TMPDIR`, watches its output file and stops the group at the first FAIL line, then stops T11 at that test and plugin. Tests that name the edited file run first (`ASCENT_T11_FIRST`). The output is watched, never piped, so SIGPIPE cannot end the gate
+  - **Parallel.** Controls and group baselines run in the background, `JOBS` at a time (`ASCENT_MUTANT_JOBS`, default the number of cores), each on its own copy, deleted after its verdict; results print in control order, and the totals line now also names the mode. Works in bash 3.2. The `core` group stays serial. `MODE` and `JOBS` count only when given on the make command line, and an interrupt stops every running control
+  - **Survivors rerun in full.** The report shows the FAIL lines of both runs. A control full mode kills and fast mode does not is reported as `MODES DIFFER` and fails the run, never counted as a kill
+  - **Progress and summary.** While controls run, a progress bar on stderr shows how many are done and running, how many were not killed, the elapsed time and an estimate of the time left, when stderr is a terminal (`ASCENT_MUTANT_PROGRESS=0` turns it off, `=1` forces it). Every run ends with a summary block above the totals line: counts by kind, the controls not killed, the time and the three slowest controls. The bar's total is counted from the control declarations before the run, and the run fails if it launched a different number
+- Guards that keep the two modes in agreement:
+  - T11 fails a behavior test that prints a FAIL line and exits 0, in both modes
+  - Gate check T14 runs `tests/meta/test-gate-fast.sh` (26 cases, fixture plugins): the first-failure stop and the stopped test's children, the stop at the first failing test and plugin, the ordering, a `TMPDIR` per test, the FAIL-line rule, the label handling, T7's reasons under its FAIL line (or the checker's last lines when it gave none), and T7 on a valid skill whose frontmatter is larger than a pipe buffer. Each failing case is its own result, `T14.G<n>`. `make test-mutants` skips it except for the harness group
+  - Every group gets a second baseline in fast mode, `P00-fast-baseline`: all behavior tests, unmutated, run the way fast mode runs them. The harness group's baseline runs T14
+  - `tests/meta/test-gate-sections.sh`: each gate section run alone prints exactly its lines from the full gate
+  - `tests/meta/test-mutants-harness.sh`: the `harness` group gives the same results in the same order with 1 job and with 4, and a raw run (`ASCENT_MUTANT_RAW=1`) holding every kind of result is counted right and fails; the summary block counts what the totals line counts and lists every control not killed, the progress bar ends at N/N on stderr, and a control declared where the count before the run cannot see it fails the run
+  - `make test-harness` runs the last two; CI runs it on both platforms in a new job
+- Group `harness`, controls P359–P376: six `expect_case` controls that must be reported as SURVIVED (a harmless edit, a kill on the wrong check, and a T13.4 control that only breaks T13.2), ANCHOR MISS, MODES DIFFER (`MUTANT_FAULT=fast-pass` makes fast mode pass everything) and CONTROL FAIL; nine that break fast mode and must be killed by the T14 case they break; P374, which drops T7's reasons and must be killed by T14.G10; and P375 and P376, which put back the frontmatter checker's pipes and must be killed by T14.G12
+- `--help` for `make/test-plugins.sh` and `make/test-mutants.sh`
+- CI: a weekly full-mode run of every group (Mondays, 06:17 UTC) and a `mode` input on `workflow_dispatch`
+- ADR-018, the harness design
+
+### Changed
+
+- `make test-plugins` reports T1–T14. CLAUDE.md, CONTRIBUTING and ARCHITECTURE describe fast mode, `MODE`, `JOBS` and `make test-harness`; CONTRIBUTING states the FAIL-line rule for behavior tests
+- ROADMAP: the missing v0.4.8 and v0.4.9 sections, and v0.4.10
+- The negative-control CI jobs keep their 40-minute limit for the weekly full run; fast runs return to 15 minutes once two CI runs show every group under 10 (ADR-017 decision 5)
+
+### Fixed
+
+- `make test-plugins` T11 no longer ends the gate early when a behavior test fails with long output. It quoted the first FAIL lines through `grep | head -3`; under `set -euo pipefail`, `grep` sometimes died of SIGPIPE and the assignment ended the script before T11 printed. Negative controls whose tests failed at length were then reported as SURVIVED, intermittently and mostly on Linux (P246, P255 and P265 in `ascent-security-deps` on the v0.4.9 CI runs). Reproduced on Ubuntu 24.04: 11 of 300 runs at 13.5 KB of FAIL lines, every run at 113 KB; `awk`, which reads to the end, none. New control P358 makes a behavior test fail with 3,000 FAIL lines; it survives the old line and is caught by T11 with the fix
+- `make test-plugins` T7 says why it failed: it lists each failing `SKILL.md` and the checker's reason, indented under its FAIL line, and the negative-control reports carry those lines. Before, it discarded the checker's output: on this release's first CI run, the `ascent-ops-scripts` baseline failed T7 once on Ubuntu with no reason given, then passed on rerun and in six local runs
+- `make/qa-skill-frontmatter.sh` (T7, and `make qa`) no longer reports a field as missing when the machine is busy. It fed the frontmatter to `grep -q` and to an `awk` that stops early through `printf |` pipes; under `pipefail`, a reader that stopped before `printf` finished killed it with SIGPIPE, and the checker reported `missing required field 'name'` for a file that has one. T7's new reasons named it on this release's second CI run: the Ubuntu baselines of `ascent-ops-scripts` and `ownership`, each on a different `SKILL.md`. On a 10-core Mac, 16 checkers at once: 107 of 400 runs failed with the old checker, none with here-strings. T14.G12 makes it deterministic with a frontmatter larger than a pipe buffer: the old checker fails it every time
+
+### Notes
+
+- Equivalence, measured locally before release: the old harness (full mode, serial) and the new one (fast mode, parallel) gave the same verdict for all 439 controls in 16 groups, before and after the review fixes. On a 10-core Mac, every group in fast mode, one after another, took 21 minutes (25 to 96 seconds a group); the old harness took 31 minutes with eight groups running at once. CI timings for macOS and Ubuntu come from the pull request's runs
+- Gate totals, under bash 5.3 and the macOS awk (the gate also under `/bin/bash` 3.2): `make qa` OK (483 internal links), `make test-skills` 28/28, `make test-plugins` 69/69 (T14 26/26), `make test-harness` 15/15 and 16/16, `make test-mutants` 475 results in 17 groups (the 439 controls, P359–P376 and the group baselines), all killed, 0 survived, 0 anchor misses; in full mode, the harness group 20/20 and the ownership group 38/38
+- Review before release (correctness, tests, operations and security lenses, checked by `finding-verifier`): 16 findings confirmed and fixed, among them no baseline for T14 or for the behavior tests in fast mode, T14 controls that any failing self-test case would have counted as killed, no control for the fast-mode label check, totals counting that nothing tested, `kill -0` on a pid that may be reused, and an interrupt that left controls running. One more, the 60-day pause of scheduled workflows on a public repository, is recorded in ADR-018. A second review, of the progress bar, the summary and the T7 change: no Critical, High or Medium findings; two Low ones (stale totals here, and no test for the count check) are fixed. A third review, of the frontmatter fix: no Critical, High or Medium findings; two Low ones (a `sed | head` left in the checker, and a `printf | grep -q` in T14.G10) are fixed
+- CI on the pull request's first run: every macOS negative-control group under 5 minutes (the harness group the longest, 4.2), every Ubuntu group under 2, the whole run 16 minutes (34 on `main` before). Second run: every macOS group under 10 minutes again (`ascent-ops-review` the longest, 8.5), every Ubuntu group under 3, the whole run 33 minutes; its two failures were the frontmatter race above
 
 ---
 

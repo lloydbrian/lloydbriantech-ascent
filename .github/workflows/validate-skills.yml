@@ -10,8 +10,11 @@
 #       make test-plugins  plugin drift, names, read-only agents (ADR-009);
 #                          'claude plugin validate' runs locally, SKIPs in CI
 #   - mutant-groups:   lists the negative-control groups (make test-mutants-groups)
+#   - harness:         the two make test-harness self-tests, per platform: each gate
+#                      section alone matches the full gate, parallel runs match serial (ADR-018)
 #   - mutants:         one job per group and platform, in parallel:
-#       make test-mutants GROUP=<group>  named negative controls; any survivor fails
+#       make test-mutants GROUP=<group>  named negative controls; any survivor fails.
+#       Fast mode on pull requests and pushes; full mode weekly and on request
 #
 # Not yet checked here: INTENT-MAP phrase sync (review responsibility),
 # eval scenarios (Phase 5).
@@ -23,7 +26,17 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Weekly full-mode run of every negative control (ADR-018): fast mode is kept
+  # honest by its guards, and this catches anything they miss.
+  schedule:
+    - cron: '17 6 * * 1'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Negative-control mode (fast or full)
+        type: choice
+        options: [fast, full]
+        default: fast
 
 # Least privilege: these jobs only read the repository (F34).
 permissions:
@@ -146,6 +159,29 @@ jobs:
       - name: Plugin gate
         run: make test-plugins
 
+  harness:
+    # The harness's slow self-tests (ADR-018): fast mode runs one gate section at
+    # a time, which is sound only while the sections are independent, and runs
+    # controls in parallel, which must report exactly what a serial run reports.
+    # Together they take about 15 minutes locally, so they run as separate jobs;
+    # macOS runners are slower and have 3 cores, hence 45 minutes.
+    name: Harness self-test (${{ matrix.os }}, ${{ matrix.test }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        test: [test-gate-sections, test-mutants-harness]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Harness self-test
+        env:
+          TEST: ${{ matrix.test }}
+        run: bash "tests/meta/$TEST.sh"
+
   mutant-groups:
     # The group list comes from make/test-mutants.sh itself, so a new plugin's
     # controls get their own job without a change to this file.
@@ -164,8 +200,9 @@ jobs:
 
   mutants:
     # Named negative controls, one job per group and platform (ADR-008).
-    # macOS runs a control in about 50 s (Ubuntu about 9 s); a group of up to
-    # 31 controls needs about 26 minutes there (ADR-016).
+    # Fast mode (ADR-018) on pull requests and pushes. Full mode, weekly and on
+    # request, takes up to about 50 s a control on macOS, hence 40 minutes; the
+    # fast runs keep that limit until two CI runs show every group under 10.
     name: Negative controls (${{ matrix.os }}, ${{ matrix.group }})
     needs: mutant-groups
     runs-on: ${{ matrix.os }}
@@ -182,4 +219,5 @@ jobs:
       - name: Negative controls
         env:
           GROUP: ${{ matrix.group }}
-        run: make test-mutants GROUP="$GROUP"
+          MODE: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && 'full' || 'fast' }}
+        run: make test-mutants GROUP="$GROUP" MODE="$MODE"

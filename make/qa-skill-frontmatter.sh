@@ -47,26 +47,28 @@ for f in "${files[@]}"; do
     fail=1
     continue
   fi
+  # Here-strings, never printf | reader: a reader that stops early (grep -q, awk
+  # exit) kills printf with SIGPIPE, and pipefail reports a field as missing
   for field in "${required_fields[@]}"; do
-    if ! printf "%s\n" "$fm" | grep -qE "^${field}:"; then
+    if ! grep -qE "^${field}:" <<< "$fm"; then
       echo "  FAIL: missing required field '${field}'"
       fail=1
     fi
   done
   # name must match the directory
-  name=$(printf "%s\n" "$fm" | sed -n 's/^name:[[:space:]]*//p' | head -1)
+  name=$(awk '/^name:/ { sub(/^name:[[:space:]]*/, ""); print; exit }' <<< "$fm")
   dir=$(basename "$(dirname "$f")")
   if [ -n "$name" ] && [ "$name" != "$dir" ]; then
     echo "  FAIL: name '$name' does not match directory '$dir'"
     fail=1
   fi
   # description: from 'description:' up to the next top-level key, joined
-  desc=$(printf "%s\n" "$fm" | awk '/^description:/{on=1; sub(/^description:[[:space:]]*(>-|>|\|-|\|)?[[:space:]]*/,""); if(length) print; next} on && /^[A-Za-z_-]+:/{exit} on{sub(/^[[:space:]]+/,""); print}' | tr '\n' ' ')
+  desc=$(awk '/^description:/{on=1; sub(/^description:[[:space:]]*(>-|>|\|-|\|)?[[:space:]]*/,""); if(length) print; next} on && /^[A-Za-z_-]+:/{exit} on{sub(/^[[:space:]]+/,""); print}' <<< "$fm" | tr '\n' ' ')
   case "$desc" in
     "Use when "*|"Use for "*) : ;;
     *) echo "  FAIL: description must start with 'Use when' or 'Use for' (got: ${desc:0:60}…)"; fail=1 ;;
   esac
-  if printf "%s" "$desc" | grep -qE '<<[A-Z_]+>>'; then
+  if grep -qE '<<[A-Z_]+>>' <<< "$desc"; then
     echo "  FAIL: description contains a <<PLACEHOLDER>> token"
     fail=1
   fi

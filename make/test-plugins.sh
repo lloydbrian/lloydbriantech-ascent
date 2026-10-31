@@ -15,7 +15,8 @@
 #       severity table (dep-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
-#   T7  skill frontmatter passes qa-skill-frontmatter
+#   T7  skill frontmatter passes qa-skill-frontmatter; a failure lists each failing
+#       file and its reason, indented under the FAIL line
 #   T8  `claude plugin validate` passes (SKIP when the CLI is absent or skipped)
 #   T9  every "<skill> Step N" an agent cites names a skill in its plugin and a
 #       "### Step N" heading that exists; an agent must cite at least one step
@@ -37,6 +38,13 @@
 #       repository (ADR-015): T13.1-T13.10 from make/check-ownership.sh, one
 #       result each, and T13.0 runs that checker's own fixture tests
 #       (tests/meta/test-check-ownership.sh)
+#   T14 the fast-mode self-test (ADR-018): tests/meta/test-gate-fast.sh runs this
+#       gate on fixture plugins and checks that fast mode stops where it should;
+#       each failing case reports as its own result, T14.G<n>
+#
+# A behavior test fails when it prints a FAIL line, whatever its exit status: T11
+# fails a test that prints one and exits 0, which keeps fast mode and full mode in
+# agreement (ADR-018).
 #
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
@@ -46,16 +54,37 @@
 #        fewer tests can only make a control harder to kill, never easier.
 #        ASCENT_T13_SELFTEST=0 skips T13.0. make test-mutants sets it, except for the
 #        controls that edit the ownership checker itself.
+#        ASCENT_ONLY=<label> runs one check after the shared setup: the label's
+#        section (T13.4 runs T13). An unknown label is an error, so a typo cannot
+#        pass by checking nothing. make test-mutants sets it in fast mode.
+#        ASCENT_T11_FAST=1 stops a behavior test at its first FAIL line and T11 at
+#        its first failing test; ASCENT_T11_FIRST=<name> runs first the tests that
+#        name that file. make test-mutants sets both in fast mode.
+#        ASCENT_T14_SELFTEST=0 skips T14. make test-mutants sets it, except for the
+#        controls that edit fast mode itself.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
 set -euo pipefail
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
 
 ROOT="$(cd "${1:-$(dirname "$0")/..}" && pwd)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT INT TERM
+# On an interrupt, stop the behavior test fast mode runs in its own process group
+# (a terminal's Ctrl-C does not reach it), then exit; EXIT removes $WORK.
+T11_PID=""
+trap 'rm -rf "$WORK"' EXIT
+trap '[ -z "$T11_PID" ] || kill -TERM -- "-$T11_PID" 2>/dev/null; exit 130' INT TERM
 PASS=0; FAIL=0
 ok()  { PASS=$((PASS + 1)); printf "PASS  test-plugins: %s\n" "$1"; }
 bad() { FAIL=$((FAIL + 1)); printf "FAIL  test-plugins: %s\n" "$1"; }
+
+SECTIONS=" T1 T2 T3 T4 T4b T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 "
+ONLY=${ASCENT_ONLY:-}; ONLY=${ONLY%%.*}
+if [ -n "${ASCENT_ONLY:-}" ]; then
+  case "$SECTIONS" in *" $ONLY "*) ;; *) echo "test-plugins: unknown ASCENT_ONLY label '$ASCENT_ONLY' (sections:$SECTIONS)" >&2; exit 2 ;; esac
+fi
+run() { [ -z "$ONLY" ] || [ "$ONLY" = "$1" ]; }  # SECTION — does this run include it?
+FAST=${ASCENT_T11_FAST:-0}
 
 # Skills that must carry the shared severity table (T5), as plugin:skill.
 SEVERITY_SKILLS="ascent-security:security-audit ascent-security:sec-posture"
@@ -89,6 +118,7 @@ fi
 MKT="$ROOT/.claude-plugin/marketplace.json"
 
 # T1 — drift and orphans
+if run T1; then
 if bash "$ROOT/make/build-plugins.sh" "$WORK/fresh" >/dev/null; then
   DRIFT=""
   for f in $(cd "$WORK/fresh" && find plugins -name SKILL.md | LC_ALL=C sort); do
@@ -101,12 +131,16 @@ if bash "$ROOT/make/build-plugins.sh" "$WORK/fresh" >/dev/null; then
 else
   bad "T1 build-plugins failed"
 fi
+fi
 
 # T2 — placeholders
+if run T2; then
 LEFT=$(grep -rlE '<<[A-Z_]+>>' "$ROOT/plugins" 2>/dev/null || true)
 if [ -z "$LEFT" ]; then ok "T2 no template placeholders in plugins"; else bad "T2 placeholders in: $LEFT"; fi
+fi
 
 # T3 — names, versions and sources
+if run T3; then
 for p in $PLUGINS; do
   PJ="$ROOT/plugins/$p/.claude-plugin/plugin.json"
   name=$(json_field "$PJ" name); ver=$(json_field "$PJ" version)
@@ -135,8 +169,10 @@ done
 for src in $(sed -n 's/.*"source":[[:space:]]*"\(\.\/[^"]*\)".*/\1/p' "$MKT"); do
   [ -d "$ROOT/$src/.claude-plugin" ] || bad "T3 marketplace source $src is not a plugin directory"
 done
+fi
 
 # T4 — read-only agents
+if run T4; then
 for a in "$ROOT"/plugins/*/agents/*.md; do
   [ -f "$a" ] || continue
   fm=$(awk '/^---$/{c++; next} c==1' "$a")
@@ -149,8 +185,10 @@ for a in "$ROOT"/plugins/*/agents/*.md; do
     bad "T4 $(basename "$a" .md): tools must be a subset of Read, Grep, Glob (got '${tools:-none declared}'); unexpected keys: '$(printf '%s' "${keys:-none}" | tr '\n' ' ')'"
   fi
 done
+fi
 
 # T4b — skills pre-approve read tools only
+if run T4b; then
 for s in "$ROOT"/plugins/*/skills/*/SKILL.md; do
   [ -f "$s" ] || continue
   allowed=$(awk '/^---$/{c++; next} c!=1{next} /^allowed-tools:/{f=1; v=$0; sub(/^allowed-tools:[[:space:]]*/, "", v); if (v != "") print v; next} f && /^[[:space:]]+- /{sub(/^[[:space:]]+- /, ""); print; next} {f=0}' "$s" \
@@ -159,8 +197,10 @@ for s in "$ROOT"/plugins/*/skills/*/SKILL.md; do
   sk="$(basename "$(dirname "$(dirname "$(dirname "$s")")")")/$(basename "$(dirname "$s")")"
   if [ -z "$wide" ]; then ok "T4b $sk pre-approves read tools only"; else bad "T4b $sk pre-approves non-read tools: $(printf '%s' "$wide" | tr '\n' ' ')"; fi
 done
+fi
 
 # T5 — shared severity table in every skill that needs it, identical everywhere
+if run T5; then
 table() { awk '/<!-- severity-table:start/{on=1; next} /<!-- severity-table:end/{on=0} on' "$1"; }
 FIRST=""; T5_OK=1; N5=0
 for ps in $SEVERITY_SKILLS; do
@@ -190,8 +230,10 @@ marked_table arch-severity architecture
 marked_table ux-severity UX
 marked_table ops-severity operations
 marked_table dep-severity dependency
+fi
 
 # T6 — links
+if run T6; then
 BROKEN=""
 for f in $(find "$ROOT/plugins" -name '*.md' | LC_ALL=C sort); do
   d=$(dirname "$f")
@@ -207,11 +249,22 @@ $(grep -oE '\]\([^)]+\)' "$f" | sed 's/^](//;s/)$//' || true)
 EOF_LINKS
 done
 if [ -z "$BROKEN" ]; then ok "T6 plugin links resolve and stay inside the plugin"; else bad "T6 broken links:$BROKEN"; fi
+fi
 
 # T7 — frontmatter
-if bash "$ROOT/make/qa-skill-frontmatter.sh" "$ROOT/plugins" >/dev/null 2>&1; then ok "T7 plugin skill frontmatter valid"; else bad "T7 qa-skill-frontmatter failed on plugins/"; fi
+if run T7; then
+t7rc=0; t7out=$(bash "$ROOT/make/qa-skill-frontmatter.sh" "$ROOT/plugins" 2>&1) || t7rc=$?
+if [ "$t7rc" -eq 0 ]; then ok "T7 plugin skill frontmatter valid"; else
+  bad "T7 qa-skill-frontmatter failed on plugins/ (rc $t7rc)"
+  # The reasons, indented under the FAIL line: each failing file and what is wrong
+  # with it, or the checker's last lines when it printed no reason
+  printf '%s\n' "$t7out" | awk '{ last[NR % 3] = $0 } /^Checking: / { f = $0; next } /^  FAIL: / { if (f != "") print "      " f; f = ""; print "      " $0; n++ }
+    END { if (!n) for (i = NR - 2; i <= NR; i++) if (i > 0) print "      " last[i % 3] }'
+fi
+fi
 
 # T8 — official validator
+if run T8; then
 if [ "${ASCENT_SKIP_CLAUDE_CLI:-0}" != "1" ] && command -v claude >/dev/null 2>&1; then
   V=0
   for p in $PLUGINS; do claude plugin validate "$ROOT/plugins/$p" >/dev/null 2>&1 || { V=1; bad "T8 claude plugin validate plugins/$p"; }; done
@@ -220,8 +273,10 @@ if [ "${ASCENT_SKIP_CLAUDE_CLI:-0}" != "1" ] && command -v claude >/dev/null 2>&
 else
   printf "SKIP  test-plugins: T8 claude CLI not installed or skipped — run 'claude plugin validate' before release\n"
 fi
+fi
 
 # T9 — agent step references ("security-audit Step 4", "env-audit Steps 2–3")
+if run T9; then
 for a in "$ROOT"/plugins/*/agents/*.md; do
   [ -f "$a" ] || continue
   pdir=$(dirname "$(dirname "$a")")
@@ -242,8 +297,10 @@ EOF_REFS
   elif [ "$NREFS" -eq 0 ]; then bad "T9 $(basename "$a" .md) cites no skill steps — an agent must trace its checks to skill steps"
   else ok "T9 $(basename "$a" .md): $NREFS step references resolve"; fi
 done
+fi
 
 # T10 — content changes need a version bump (make/plugins.lock)
+if run T10; then
 LOCK="$ROOT/make/plugins.lock"
 for p in $PLUGINS; do
   ver=$(json_field "$ROOT/plugins/$p/.claude-plugin/plugin.json" version)
@@ -258,10 +315,40 @@ for p in $PLUGINS; do
     ok "T10 $p: content matches the version recorded in make/plugins.lock (v$ver)"
   fi
 done
+fi
 
 # T11 — behavior tests for plugins that ship executable code (hooks or scripts)
+# t11_run TEST OUT — runs one behavior test. In fast mode it stops the test at its
+# first FAIL line: the test runs in its own process group, which gets TERM so its
+# children stop too, and its own TMPDIR inside $WORK, so nothing it leaves behind
+# outlives the gate. The runner watches the output file rather than piping it, so
+# SIGPIPE cannot end the gate (the v0.4.9 T11 failure).
+t11_run() {
+  if [ "$FAST" != 1 ]; then bash "$1" </dev/null >"$2" 2>&1; return; fi
+  local tmp="$WORK/tmp-$NTESTS-$p" pid rc=0
+  mkdir -p "$tmp"
+  set -m
+  TMPDIR="$tmp" bash "$1" </dev/null >"$2" 2>&1 &
+  pid=$!; T11_PID=$pid
+  set +m
+  # Poll the job list, not kill -0: a pid that is no longer our job may belong to
+  # another process by now, and its group must never get our TERM.
+  while case " $(jobs -pr | tr '\n' ' ') " in *" $pid "*) true ;; *) false ;; esac; do
+    if grep -q '^FAIL' "$2"; then
+      kill -TERM -- "-$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      T11_PID=""; return 1
+    fi
+    sleep 0.1
+  done
+  wait "$pid" || rc=$?
+  T11_PID=""; return "$rc"
+}
+if run T11; then
+T11_FAILED=0
 for p in $PLUGINS; do
   [ -n "${ASCENT_T11_ONLY:-}" ] && [ "$p" != "$ASCENT_T11_ONLY" ] && continue
+  [ "$FAST" = 1 ] && [ "$T11_FAILED" = 1 ] && break  # T11 has failed; more plugins cannot change that
   [ -d "$ROOT/plugins/$p/hooks" ] || [ -d "$ROOT/plugins/$p/scripts" ] || continue
   problems=""
   if [ -d "$ROOT/plugins/$p/hooks" ]; then
@@ -282,10 +369,23 @@ for p in $PLUGINS; do
     [ -f "$sc" ] || continue
     grep -qF "$(basename "$sc")" $TESTS 2>/dev/null || problems="$problems scripts/$(basename "$sc") is not exercised by any test;"
   done
+  if [ "$FAST" = 1 ] && [ -n "${ASCENT_T11_FIRST:-}" ]; then
+    # Tests that name the edited file run first. Any failing test fails T11, so the
+    # order cannot change the verdict, only how soon it is known.
+    FIRST=$(for t in $TESTS; do grep -qF "$ASCENT_T11_FIRST" "$t" && echo "$t"; done || true)
+    REST=$(for t in $TESTS; do grep -qF "$ASCENT_T11_FIRST" "$t" || echo "$t"; done || true)
+    TESTS="$FIRST $REST"
+  fi
   NTESTS=0; NCASES=0
   for t in $TESTS; do
     NTESTS=$((NTESTS + 1)); tn=$(basename "$t" .sh)
-    if bash "$t" </dev/null >"$WORK/t11.out" 2>&1; then
+    if t11_run "$t" "$WORK/t11.out"; then
+      if grep -q '^FAIL' "$WORK/t11.out"; then
+        # A FAIL line fails the test whatever its exit status: fast mode stops at the
+        # first one, so a test that printed one and passed would split the two modes
+        problems="$problems $tn printed FAIL lines but exited 0;"
+        continue
+      fi
       summary=$(sed -n "s/^$tn: \([0-9][0-9]*\)\/\([0-9][0-9]*\) PASS.*/\1 \2/p" "$WORK/t11.out" | tail -1)
       x=${summary%% *}; y=${summary##* }
       if [ -z "$summary" ] || [ "$x" != "$y" ] || [ "$y" -eq 0 ]; then
@@ -297,12 +397,15 @@ for p in $PLUGINS; do
       # awk reads to the end: grep | head would die of SIGPIPE on long output, and
       # under set -e and pipefail this assignment would end the gate before T11 printed
       problems="$problems $tn failed: $(awk '/^FAIL/ { if (++n <= 3) print }' "$WORK/t11.out" | cut -c1-100 | tr '\n' ';')"
+      [ "$FAST" = 1 ] && break  # T11 has failed; the remaining tests cannot change that
     fi
   done
-  if [ -z "$problems" ]; then ok "T11 $p: $NTESTS behavior test file(s), $NCASES cases pass"; else bad "T11 $p:$problems"; fi
+  if [ -z "$problems" ]; then ok "T11 $p: $NTESTS behavior test file(s), $NCASES cases pass"; else T11_FAILED=1; bad "T11 $p:$problems"; fi
 done
+fi
 
 # T12 — manifest keys and cross-marketplace dependencies
+if run T12; then
 KNOWN_KEYS=" name version description author homepage repository license keywords dependencies commands agents skills hooks mcpServers lspServers outputStyles icon userConfig defaultEnabled "
 OWN_MKT=$(json_field "$MKT" name)
 ALLOW=$(sed -n 's/^  "allowCrossMarketplaceDependenciesOn":[[:space:]]*\[\(.*\)\].*/\1/p' "$MKT" | tr -d ' "' | tr ',' ' ')
@@ -319,8 +422,10 @@ for p in $PLUGINS; do
   done
   if [ -z "$problems" ]; then ok "T12 $p: manifest keys known, cross-marketplace dependencies allowlisted"; else bad "T12 $p:$problems"; fi
 done
+fi
 
 # T13 — ownership registry (ADR-015)
+if run T13; then
 if [ "${ASCENT_T13_SELFTEST:-1}" != 0 ]; then
   ST="$ROOT/tests/meta/test-check-ownership.sh"
   if [ ! -f "$ST" ]; then bad "T13.0 checker self-test: tests/meta/test-check-ownership.sh not found"
@@ -343,6 +448,28 @@ $(bash "$ROOT/make/check-ownership.sh" "$ROOT" 2>&1 || true)
 EOF_T13
 # A checker that stops early must not pass by printing less (T13.1 alone when the registry is missing).
 [ "$N13" -ge 10 ] || bad "T13 ownership checker printed $N13 of 10 results"
+fi
+
+# T14 — the fast-mode self-test (ADR-018)
+if run T14 && [ "${ASCENT_T14_SELFTEST:-1}" != 0 ]; then
+ST="$ROOT/tests/meta/test-gate-fast.sh"
+if [ ! -f "$ST" ]; then
+  bad "T14 gate self-test: tests/meta/test-gate-fast.sh not found"
+else
+  rc=0; bash "$ST" "$ROOT/make/test-plugins.sh" </dev/null >"$WORK/t14.out" 2>&1 || rc=$?
+  n=$(sed -n 's|^test-gate-fast: \([1-9][0-9]*\)/\([0-9]*\) PASS.*|\1 \2|p' "$WORK/t14.out" | tail -1)
+  # One result per failing case, T14.G<n>, so a control names the case it breaks
+  # and a failure elsewhere in the self-test cannot count as its kill
+  cases=$(sed -n 's/^FAIL  \(G[0-9][0-9]*\) .*/\1/p' "$WORK/t14.out" | LC_ALL=C sort -u)
+  if [ "$rc" -eq 0 ] && [ -n "$n" ] && [ "${n% *}" = "${n#* }" ] && [ -z "$cases" ]; then
+    ok "T14 gate self-test: $(tail -1 "$WORK/t14.out" | sed 's/^test-gate-fast: //')"
+  elif [ -n "$cases" ]; then
+    for c in $cases; do bad "T14.$c gate self-test: $(awk -v c="$c" '$2 == c { if (++n <= 2) print }' "$WORK/t14.out" | cut -c1-100 | tr '\n' ';')"; done
+  else
+    bad "T14 gate self-test: rc $rc, $(tail -1 "$WORK/t14.out" | cut -c1-100)"
+  fi
+fi
+fi
 
 printf "\ntest-plugins: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]
