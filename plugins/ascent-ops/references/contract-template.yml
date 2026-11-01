@@ -41,11 +41,24 @@ ops:
   alerts: []
   #   - name: ready-failing
   #     runbook: docs/operations/runbooks/ready-failing.md
+  #     page: true                     # pages a person: needs an alarm drill (OPS-X1)
 
-  runbooks: docs/operations/runbooks/  # deploy, rollback and incident runbooks
+  runbooks: docs/operations/runbooks/  # deploy, rollback, incident and drill runbooks
   manuals:
     maintenance: docs/operations/MAINTENANCE-AND-OPERATIONS.md
     troubleshooting: docs/operations/TROUBLESHOOTING.md
+
+  # Recovery drills and readiness exercises (recovery-drill, OPS-R and OPS-X;
+  # ADR-020). The operator runs each drill and commits a record; rto and rpo are
+  # read from architecture.quality_targets, never repeated here. Leave paths empty
+  # and the recovery checks are reported as "unmeasured".
+  drills:
+    dir: docs/operations/drills/       # one record per drill: YYYY-MM-DD-<name>.md
+    max_age_days: 90                   # a drill older than this is due again
+    paths: []
+    #   - name: orders-db              # a database, bucket or volume that is backed up
+    #     kind: restore                # restore | failover
+    #     runbook: docs/operations/runbooks/restore-orders-db.md
 
   # exact (default): images, packages, providers and actions pinned to a version or
   # digest | minor: a bounded range (~> 5.70) is accepted. check-ops-scripts.sh

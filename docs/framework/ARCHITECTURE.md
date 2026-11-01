@@ -169,7 +169,7 @@ flowchart TB
 | `ascent-delivery` | Hand-written; the delivery loop, the finding verifier and the operator-boundary hook | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) |
 | `ascent-architecture` | Hand-written; introduces the shared project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
 | `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`) | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md) |
-| `ascent-ops` | Hand-written; operations manuals and the `/-/health` endpoint names | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md) |
+| `ascent-ops` | Hand-written; operations manuals, the `/-/health` endpoint names, and recovery drills checked against the operator's records | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md) |
 | `ascent-quality` | Hand-written; test strategy read statically, never run | [ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-019](DECISIONS/ADR-019-quality-plugin-rules.md) |
 
 ### What the plugins share

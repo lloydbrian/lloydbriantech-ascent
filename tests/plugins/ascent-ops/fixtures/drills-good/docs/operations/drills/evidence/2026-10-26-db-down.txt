@@ -1,0 +1,5 @@
+stopped db
+GET /-/health 200
+GET /-/ready 503 {"db":"down"}
+started db
+GET /-/ready 200

@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.11 (`ascent-quality` 0.1.0, test strategy), October 31, 2026. Next: `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
+**Current state:** v0.4.12 (`ascent-ops` 0.3.0, recovery drills and readiness exercises), November 1, 2026. Next: `ascent-quality` 0.2.0; Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -14,7 +14,7 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3, 0.1.3 in v0.4.11 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
-| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014) | ✅ v0.4.6; 0.3.0 ⏳ Planned (v0.4.12) |
+| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014, ADR-020) | ✅ v0.4.6; 0.3.0 in v0.4.12 |
 | 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence | ✅ v0.4.11; 0.2.0 ⏳ Planned |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
@@ -27,7 +27,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 
 | Follow-up | Pillar | Why | Status |
 |---|---|---|---|
-| Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ⏳ Scoped in ADR-014: `ascent-ops` 0.3.0, v0.4.12 (ADR-017) |
+| Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ✅ `ascent-ops` 0.3.0, v0.4.12 ([ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)) |
 | Auditability for projects | Compliance | Project-facing governance: a waiver ledger with expiry dates, dated review records, a required-plugin floor in the contract (a floor, never a ceiling) and a bash checker a project can run in its own CI. Closes the Partial rows "Decision traceability" and "Change audit trail" (ADR-015) | ⏳ Committed on 2026-10-27, to be scoped |
 | The governance conductor | Business value | `ascent-governance` (agent `governance-conductor`, skills `governance-review` and `launch-readiness`) reads the ownership registry and the auditability evidence for a go or no-go. Ships when launch readiness is scoped (ADR-015) | ⏳ Deferred; name and code `GOV` reserved |
 | Recommended next names missing plugins | Business value | Each plugin's "Recommended next" line also names an uninstalled plugin whose signals the repository shows, from [OWNERSHIP.md](OWNERSHIP.md#which-plugins-do-i-need) | ⏳ Committed on 2026-10-27 |
@@ -204,6 +204,12 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 **Status:** ✅ Complete (October 31, 2026)
 
 `ascent-quality` 0.1.0 checks that a repository's tests can catch a broken change ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-019](DECISIONS/ADR-019-quality-plugin-rules.md)). It has thirteen rules: `QA-I1`–`I5` for the test types the contract requires, whether CI runs them and which integration boundaries no test reaches; `QA-T1`–`T4` for acceptance criteria and core rules traced to tests; and `QA-H1`–`H4` for focused, unexplained skipped, assertion-less and retried tests. Two static scripts read JS, TS, Python, Go, bats and shell tests and never run one. `ascent-delivery` 0.1.3 uses its reviewer for the Tests lens. Controls P377–P460 run in four new groups. An independent review before release confirmed and fixed 17 findings. A read-only trial on five repositories gave one calibration (a make `test` target stands in for an npm test script) and two confirmed assertion-less tests. Also released: the 15-minute timeout for fast negative-control jobs from PR #63. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.12: Recovery drills and readiness exercises
+
+**Status:** ✅ Complete (November 1, 2026)
+
+`ascent-ops` 0.3.0 turns recovery from documentation into evidence ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)). The operator runs each restore, failover, alarm, readiness and dry-run drill and commits a Markdown record; the new `recovery-drill` skill and `check-drills.sh` check the records against the contract: `OPS-R1`–`R8` for a runbook per recovery path, a current passing drill within the `rto` and `rpo` targets, clean committed evidence, follow-ups, the manual's restore date and declared failover; `OPS-X1`–`X3` for paging alerts exercised, readiness shown failing and alert runbooks dry-run. Claude never runs a drill and never writes a record. The blueprint carries a real restore drill. Also fixed: `OPS-S8` classified files on their absolute path, so a checkout under a folder named like `dev` hid production env files. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 

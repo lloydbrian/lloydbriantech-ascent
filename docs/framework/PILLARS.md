@@ -15,7 +15,7 @@ Every review is read-only. The architecture, ux and ops plugins judge against th
 | **Driving business value** | Does the system deliver what users need at a cost and speed the business can sustain? | `ascent-architecture`, `ascent-delivery`, `ascent-ux`, `ascent-quality` | Partial: cost and delivery speed are measured; the outcome a change achieves is not |
 | **Compliance** | Can the team show evidence against the standards it must meet? | `ascent-ux`, `ascent-ops`, `ascent-security` | Partial by design: evidence for WCAG 2.2 AA and secure configuration; no certification preparation |
 | **Trust and security** | Can users and operators trust the system with their data and their infrastructure? | `ascent-security`, `ascent-delivery`, `ascent-ops` | Partial: secrets, hardening and posture are strong; no threat model and no scan for known vulnerabilities |
-| **Resilience** | Does the system keep running, and recover quickly when it does not? | `ascent-ops`, `ascent-architecture`, `ascent-delivery`, `ascent-quality` | Partial: recovery is checked as documented, not yet proven by a drill |
+| **Resilience** | Does the system keep running, and recover quickly when it does not? | `ascent-ops`, `ascent-architecture`, `ascent-delivery`, `ascent-quality` | Partial: restore, failover and readiness are proven by the operator's drill records; availability and portability are read from design and configuration |
 
 Coverage levels:
 - **Strong:** checked with evidence, behavior tests and negative controls.
@@ -74,8 +74,9 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Operability and observability | `ascent-ops` (`ops-review`, `ops-manuals`); embedded `ascent-observability-check` | SLOs, alerts linked to runbooks, current Maintenance and Troubleshooting manuals | Strong |
 | Change safety | `ascent-ops` (`runbook-check`); `ascent-delivery` | Zero-touch scripts (OPS-Z1–Z9); runbooks with pre-flight, post-flight, Expect and Stop if; beta before prod | Strong |
 | Rollback | `ascent-ops` (Change and recovery) | A documented rollback for every production deploy | Strong as documentation |
-| Recoverability (RPO, RTO) | `quality-attributes`; `ascent-ops` (Change and recovery) | `rpo` and `rto` targets; backups and retention; the date of the last restore test | Partial: the date is read, the restore is not proven |
-| Restore and failover proof | — | — | **Gap, committed:** see [ROADMAP.md](ROADMAP.md#committed-follow-ups) |
+| Recoverability (RPO, RTO) | `quality-attributes`; `ascent-ops` (`recovery-drill`) | `rpo` and `rto` targets; backups and retention; the measured rto and rpo of the newest passing drill against the targets (OPS-R4); the manual's restore date (OPS-R7) | Strong ([ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)) |
+| Restore and failover proof | `ascent-ops` (`recovery-drill`) | A runbook and a current passing drill record with committed evidence for every recovery path, failed drills followed up, declared failover drilled (OPS-R1–R8) | Strong: the operator runs each drill; a record shows a drill was recorded consistently, not that it was honest |
+| Operational readiness | `ascent-ops` (`recovery-drill`) | Paging alerts exercised and reaching a role, readiness shown failing with a dependency down, alert runbooks dry-run (OPS-X1–X3) | Strong, from the operator's records |
 | Drift | `ascent-ops` (OPS-S9) | A scheduled drift check | Strong |
 | Flexibility (portability) | `quality-attributes`; `deployment-options` | Services with a named exit path; equivalents in other clouds | Partial |
 

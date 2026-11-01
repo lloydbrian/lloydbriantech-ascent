@@ -7,7 +7,7 @@
 # rule fails and every other rule still passes. Also covers table edge cases:
 # CRLF line endings, rows without a trailing pipe, bold and padded cells, tabs
 # and non-ASCII text in cells, a missing or repeated marker, a header-only table
-# and a row with the wrong number of cells.
+# (allowed only for Reserved) and a row with the wrong number of cells.
 #
 # Runs with the default awk and every other awk found (mawk, gawk, BWK awk).
 # Usage: test-check-ownership.sh [CHECKER]   (defaults to make/check-ownership.sh)
@@ -277,7 +277,8 @@ matrix() {
   if [ "$RC" -eq 1 ] && grep -q '^FAIL  T13.1 registry: docs/framework/OWNERSHIP.md not found' "$WORK/out"; then ok; else bad "$CASE: $(head -1 "$WORK/out")"; fi
   c no-end-marker; edit docs/framework/OWNERSHIP.md '/<!-- ownership:reserved:end -->/d' && expect T13.1 "reserved: needs one start and one end marker"
   c two-tables; printf '\n<!-- ownership:reserved:start -->\n| A | B | C |\n|---|---|---|\n<!-- ownership:reserved:end -->\n' >> "$F/docs/framework/OWNERSHIP.md"; expect T13.1 "found 2 and 2"
-  c header-only; edit docs/framework/OWNERSHIP.md '/^| `GA-X` /d' && expect T13.1 "reserved: table has no rows"
+  c header-only; edit docs/framework/OWNERSHIP.md '/^| [a-z]* things |/d' && expect T13.1 "domains: table has no rows"
+  c reserved-empty; edit docs/framework/OWNERSHIP.md '/^| `GA-X` /d' && expect none
   c cell-count; edit docs/framework/OWNERSHIP.md 's/^| `GA-X` | `ascent-gamma` | v9.9.9 |/| `GA-X` | `ascent-gamma` |/' && expect T13.1 "row has 2 cells, header has 3"
 
   c row-without-pipe; edit docs/framework/OWNERSHIP.md 's/^| `GA-X` | `ascent-gamma` | v9.9.9 |$/`GA-X` | `ascent-gamma` | v9.9.9 |/' && expect T13.1 "reserved: line is not a table row"

@@ -1,0 +1,2 @@
+reboot-db-instance --force-failover: rebooting
+ready 200 after 171 seconds

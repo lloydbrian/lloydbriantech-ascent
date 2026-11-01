@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Ownership gate T13 (ADR-015): compares docs/framework/OWNERSHIP.md with the
 # repository and prints one line per rule, PASS or FAIL, labelled T13.<n>:
-#   T13.1  registry: every marked table exists once, has rows, every line in it
-#          is a table row, and every row has as many cells as its header
+#   T13.1  registry: every marked table exists once, has rows (Reserved may be
+#          empty), every line in it is a table row, and every row has as many
+#          cells as its header
 #   T13.2  plugins: plugin directories, marketplace entries and "released" rows
 #          agree; planned plugins have no directory; status and build are known;
 #          every released plugin has a "Which plugins do I need?" signal
@@ -76,7 +77,7 @@ table() {
     }
     END {
       if (starts != 1 || ends != 1) printf "%s: needs one start and one end marker (found %d and %d)\n", m, starts, ends > err
-      else if (rows == 0) printf "%s: table has no rows\n", m > err
+      else if (rows == 0 && m != "reserved") printf "%s: table has no rows\n", m > err   # nothing planned is a valid state
       close(out); close(err)
     }' "$2"
   touch "$3" "$3.err"

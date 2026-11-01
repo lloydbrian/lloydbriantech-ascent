@@ -261,7 +261,7 @@ K == "compose" {
   if (inEnv && (i < envKI || (i == envKI && line !~ /^ *- /))) inEnv = 0
   if (!inEnv && yamlkey(line) && i > svcI) {
     if (YK == "environment" && YV == "") { inEnv = 1; envKI = i; next }
-    if (YK == "env_file") { CHK["S8"]++; if (lc(FN) ~ /prod/ && lc(FN) !~ /local|dev|test|example/) fail("S8", "Medium", at(), "production Compose service " svc " reads an env file; use a config store or Compose secrets") }
+    if (YK == "env_file") { CHK["S8"]++; if (lc(RP) ~ /prod/ && lc(RP) !~ /local|dev|test|example/) fail("S8", "Medium", at(), "production Compose service " svc " reads an env file; use a config store or Compose secrets") }
     next
   }
   if (inEnv) {

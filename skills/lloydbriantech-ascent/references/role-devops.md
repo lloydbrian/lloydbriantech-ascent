@@ -111,6 +111,7 @@ The `ascent-ops` plugin (ADR-013) makes this role checkable in an existing repos
 - `iac-config-check` covers infrastructure as code and secure configuration storage
 - `runbook-check` covers zero-touch scripts and runbooks with pre-flight and post-flight checks
 - `ops-manuals` keeps the Maintenance and Operations Manual and the Troubleshooting Manual current, with architecture diagrams and a dependency map
+- `recovery-drill` checks restore, failover, alarm, readiness and dry-run drills against the records the operator commits, and writes the drill runbooks (ADR-020)
 
 ## What this role doesn't own
 

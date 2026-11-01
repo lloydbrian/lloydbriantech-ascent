@@ -8,7 +8,7 @@ description: >-
   guarded destructive commands, pinned versions), make targets, and runbooks
   against the runbook standard: pre-flight, numbered steps with Expect and
   Stop if, flagged destructive steps, post-flight and rollback. Read-only.
-version: 0.2.0
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 ---
 

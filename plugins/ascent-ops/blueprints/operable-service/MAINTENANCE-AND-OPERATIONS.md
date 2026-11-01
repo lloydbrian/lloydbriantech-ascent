@@ -1,5 +1,5 @@
 ---
-as_of: 2026-10-25
+as_of: 2026-11-01
 describes: v1.0.0
 sources:
   - compose.yml
@@ -127,6 +127,8 @@ Run from a clean checkout of the release tag, using the deploy runbook.
 
 Restore: stop the api container, restore the dump with `pg_restore --clean`, start the api, check `/-/ready`. The monthly restore test records its date in the change history.
 
+Last restore drill: 2026-11-01, following [runbooks/restore-db.md](runbooks/restore-db.md): restored in 2 seconds with every row ([record](drills/2026-11-01-db.md)). Recovery targets: `rto` 4h, `rpo` 24h (`architecture.quality_targets`).
+
 ## Scheduled maintenance
 
 | Task | Cadence | Command | Expected result |
@@ -162,3 +164,4 @@ Contacts are roles and channels; names, phone numbers and email addresses live i
 | Date | Release | Change | Manual sections updated |
 |---|---|---|---|
 | 2026-10-25 | v1.0.0 | First release of the manual | all |
+| 2026-11-01 | v1.0.0 | First restore drill recorded | backup and restore |

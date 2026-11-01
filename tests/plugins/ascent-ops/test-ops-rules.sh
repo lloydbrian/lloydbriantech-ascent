@@ -19,15 +19,18 @@
 #   R10 security items are referred, and Recommended next names ascent-security
 #   R11 every "<skill> Step N" a skill cites names a skill and a heading that exist
 #   R12 the agent's inline ops: key list equals the keys of the contract template
-#   R13 every check id a script prints (S, Z, M) is in the severity table at the
+#   R13 every check id a script prints (S, Z, M, R, X) is in the severity table at the
 #       severity the script gives it, in its header and in every fail() call
-#   R14 the blueprint passes check-iac-config.sh and check-ops-scripts.sh
+#   R14 the blueprint passes check-iac-config.sh, check-ops-scripts.sh and check-drills.sh
 #   R15 N/A is never a pass, and NOTE lines are unrated
 #   R16 every script parses and runs under the system /bin/bash (3.2 on macOS) with
 #       the same result as the bash on PATH
 #   R17 a missing rollback is High only for a production deploy that exists; while
 #       the deploy files are empty or stubs it is the Low maturity gap
 #   R18 trivy runs unasked only with the flags that keep it offline
+#   R19 recovery-drill never runs a drill or writes a record, writes new runbooks
+#       only, quotes contract values, and every drill surface says a record shows
+#       consistency, not honesty
 #
 # Prints "test-ops-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -41,12 +44,14 @@ REVIEW="$PLUGIN/skills/ops-review/SKILL.md"
 IAC="$PLUGIN/skills/iac-config-check/SKILL.md"
 RUNB="$PLUGIN/skills/runbook-check/SKILL.md"
 MAN="$PLUGIN/skills/ops-manuals/SKILL.md"
+DRILL="$PLUGIN/skills/recovery-drill/SKILL.md"
 AGENT="$PLUGIN/agents/ops-reviewer.md"
 TEMPLATE="$PLUGIN/references/contract-template.yml"
 SRE="$PLUGIN/references/sre-baseline.md"
+RECS="$PLUGIN/references/drill-records.md"
 OBS="$ROOT/skills/lloydbriantech-ascent/references/observability-contract.md"
 BP="$PLUGIN/blueprints/operable-service"
-for f in "$REVIEW" "$IAC" "$RUNB" "$MAN" "$AGENT" "$TEMPLATE" "$SRE" "$OBS"; do
+for f in "$REVIEW" "$IAC" "$RUNB" "$MAN" "$DRILL" "$AGENT" "$TEMPLATE" "$SRE" "$RECS" "$OBS"; do
   [ -f "$f" ] || { echo "test-ops-rules: missing $f"; echo "test-ops-rules: 0/1 PASS"; exit 1; }
 done
 
@@ -117,7 +122,7 @@ has R7 "$TEMPLATE" 'troubleshooting: docs/operations/TROUBLESHOOTING.md'
 has R8 "$REVIEW" '**Read-only.** Never edit files, run a deploy, apply a plan'
 for f in "$IAC" "$RUNB"; do has R8 "$f" 'All `ops-review` rules apply: read-only'; done
 has R8 "$RUNB" '**Never run the scripts or the runbook steps**'
-for f in "$REVIEW" "$IAC" "$RUNB"; do
+for f in "$REVIEW" "$IAC" "$RUNB" "$DRILL"; do
   if grep -qE '^(Write|Edit)|[^a-z](Write|Edit)[,)]' <(sed -n '/^---$/,/^---$/p' "$f"); then bad "R8 ${f#"$PLUGIN"/} pre-approves a write tool"; else ok; fi
 done
 
@@ -129,7 +134,7 @@ has R9 "$MAN" 'Contacts are roles and channels'
 has R9 "$BP/MAINTENANCE-AND-OPERATIONS.md" 'Contacts are roles and channels'
 
 # R10 — security referral
-for f in "$REVIEW" "$AGENT" "$IAC" "$RUNB"; do has R10 "$f" 'Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.'; done
+for f in "$REVIEW" "$AGENT" "$IAC" "$RUNB" "$DRILL"; do has R10 "$f" 'Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.'; done
 
 # R11 — cross-skill step references resolve
 NREFS=0
@@ -178,16 +183,18 @@ $TABLE
 EOF_ROWS
     if [ "$hit" = 1 ]; then ok; else bad "R13 $(basename "$s") prints $id as $sev, but no severity-table row names $id at $sev"; fi
   done <<EOF_IDS
-$( { sed -nE 's/^#   (OPS-[SZM][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s"
+$( { sed -nE 's/^#   (OPS-[SZMRX][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s"
       lib="$PLUGIN/scripts/lib/$(basename "$s" .sh).awk"
-      [ -f "$lib" ] && grep -ohE 'fail\("[SZM][0-9]+", "[A-Za-z]+"' "$lib" | sed -E 's/fail\("([^"]+)", "([^"]+)"/OPS-\1 \2/'; } | LC_ALL=C sort -u)
+      [ -f "$lib" ] && grep -ohE 'fail\("[SZMRX][0-9]+", "[A-Za-z]+"' "$lib" | sed -E 's/fail\("([^"]+)", "([^"]+)"/OPS-\1 \2/'; } | LC_ALL=C sort -u)
 EOF_IDS
 done
-[ "$NIDS" -ge 27 ] || bad "R13 expected at least 27 check ids in the script headers, found $NIDS"
+[ "$NIDS" -ge 42 ] || bad "R13 expected at least 42 check ids in the script headers, found $NIDS"
 
 # R14 — the blueprint passes the IaC and script checks (the manuals are covered by test-check-ops-manuals)
 if bash "$PLUGIN/scripts/check-iac-config.sh" --manual "$BP/MAINTENANCE-AND-OPERATIONS.md" "$BP" >/dev/null 2>&1; then ok; else bad "R14 the blueprint fails check-iac-config.sh"; fi
 if bash "$PLUGIN/scripts/check-ops-scripts.sh" "$BP" >/dev/null 2>&1; then ok; else bad "R14 the blueprint fails check-ops-scripts.sh"; fi
+BPDRILL="--today 2026-11-01 --rto 4h --rpo 24h --manual MAINTENANCE-AND-OPERATIONS.md --path db:restore:runbooks/restore-db.md --iac . drills"
+if (cd "$BP" && bash "$PLUGIN/scripts/check-drills.sh" $BPDRILL >/dev/null 2>&1); then ok; else bad "R14 the blueprint fails check-drills.sh"; fi
 
 # R15 — N/A and NOTE are never passes
 has R15 "$REVIEW" '`N/A` is never a pass.'
@@ -206,6 +213,8 @@ if [ -x /bin/bash ]; then
   a=$(bash "$PLUGIN/scripts/check-ops-manuals.sh" --today 2026-10-25 "$BP/MAINTENANCE-AND-OPERATIONS.md" "$BP/TROUBLESHOOTING.md" "$BP" 2>&1; echo "rc=$?")
   b=$(/bin/bash "$PLUGIN/scripts/check-ops-manuals.sh" --today 2026-10-25 "$BP/MAINTENANCE-AND-OPERATIONS.md" "$BP/TROUBLESHOOTING.md" "$BP" 2>&1; echo "rc=$?")
   if [ "$a" = "$b" ]; then ok; else bad "R16 check-ops-manuals.sh gives a different result under /bin/bash"; fi
+  a=$(cd "$BP" && bash "$PLUGIN/scripts/check-drills.sh" $BPDRILL 2>&1; echo "rc=$?"); b=$(cd "$BP" && /bin/bash "$PLUGIN/scripts/check-drills.sh" $BPDRILL 2>&1; echo "rc=$?")
+  if [ "$a" = "$b" ]; then ok; else bad "R16 check-drills.sh gives a different result under /bin/bash"; fi
 fi
 
 # R6 — a non-default endpoint is renamed, not kept through the contract
@@ -224,6 +233,20 @@ has R17 "$RUNB" 'Low while the deploy files are empty or stubs'
 # R18 — trivy stays offline unless the operator agrees
 has R18 "$IAC" '`trivy config --skip-check-update --skip-version-check --quiet .`: run it without asking.'
 has R18 "$IAC" 'Plain `trivy config .` downloads its check bundle: ask first.'
+
+# R19 — recovery-drill reads records; the operator runs drills and writes them
+has R19 "$DRILL" '**Never run a drill.**'
+has R19 "$DRILL" '**Never write a drill record.**'
+has R19 "$DRILL" '**Runbooks only, new files only.**'
+has R19 "$DRILL" 'Show the diff, never commit: never run `git add`, `git commit` or any other git write.'
+has R19 "$DRILL" '**Quote every contract value.**'
+has R19 "$DRILL" '**Targets are read, never copied.**'
+if grep -qE '^allowed-tools:.*(Write|Edit)' "$DRILL"; then bad "R19 recovery-drill pre-approves a write tool"; else ok; fi
+has R19 "$RECS" 'and never writes a record'
+has R19 "$REVIEW" 'Never run a drill or write a drill record'
+has R19 "$AGENT" 'Never run a drill or write a record.'
+for f in "$DRILL" "$AGENT" "$PLUGIN/scripts/check-drills.sh" "$PLUGIN/scripts/lib/check-drills.awk"; do has R19 "$f" 'recorded consistently, not that it was honest'; done
+has R19 "$TEMPLATE" 'rto and rpo are'
 
 printf "test-ops-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

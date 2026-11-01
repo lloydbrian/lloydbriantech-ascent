@@ -39,8 +39,8 @@
     {
       "name": "ascent-ops",
       "source": "./plugins/ascent-ops",
-      "description": "Operations review for any repository: infrastructure as code with secure-by-design configuration, zero-touch scripts and runbooks with pre-flight and post-flight checks, Maintenance and Operations and Troubleshooting manuals kept current with diagrams and a dependency map, and a read-only ops-reviewer agent.",
-      "version": "0.2.0",
+      "description": "Operations review for any repository: infrastructure as code with secure-by-design configuration, zero-touch scripts and runbooks with pre-flight and post-flight checks, Maintenance and Operations and Troubleshooting manuals kept current with diagrams and a dependency map, recovery drills and readiness exercises proven by the operator's records, and a read-only ops-reviewer agent.",
+      "version": "0.3.0",
       "license": "MIT OR Apache-2.0"
     },
     {

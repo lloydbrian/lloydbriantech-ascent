@@ -1,0 +1,31 @@
+# Restore drill for db, 2026-11-01: output of runbooks/restore-db.md (image pull lines removed).
+# Run in podman on the operator's host against a stand-in for the nightly backup; no password is printed.
+
+## stand-in backup: source database and nightly dump
+source counts:
+customers|200
+orders|1000
+dump: db-2026-11-01.dump, 8100 bytes, taken 2026-11-01T19:28:22Z
+
+## runbook restore-db.md
+### pre-flight 1: the dump is a readable archive (run in the source container: same image)
+;
+; Archive created at 2026-11-01 19:28:22 UTC
+;     dbname: app
+;     TOC Entries: 11
+;     Compression: gzip
+### pre-flight 2: no scratch container left
+(none listed)
+### pre-flight 3: start
+2026-11-01T19:28:23Z
+### step 1: scratch database
+41c671ec66fb
+pg_isready: accepting connections
+### step 2: restore
+pg_restore exit 0
+### step 3: recovery time
+rto_seconds=2
+### step 4: row counts
+customers 200
+orders 1000
+finished 2026-11-01T19:28:25Z

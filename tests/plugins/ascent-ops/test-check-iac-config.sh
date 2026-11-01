@@ -27,6 +27,11 @@ run() {  # ARGS... -> RC, OUT
   PATH="$SHIM:$PATH" bash "$CHECK" "$@" >"$WORK/out" 2>"$WORK/err"; RC=$?
   OUT=$(cat "$WORK/out" "$WORK/err")
 }
+run_in() {  # DIR ARGS... -> RC, OUT, with DIR as the working directory
+  local d="$1"; shift
+  (cd "$d" && PATH="$SHIM:$PATH" bash "$CHECK" "$@") >"$WORK/out" 2>"$WORK/err"; RC=$?
+  OUT=$(cat "$WORK/out" "$WORK/err")
+}
 mk() { rm -rf "${WORK:?}/$1"; cp -R "$GOOD" "$WORK/$1"; }
 # edit NAME FILE AWK-PROGRAM — rewrites FILE in copy NAME; a program that changes
 # nothing is reported as a stale anchor.
@@ -124,6 +129,26 @@ matrix() {
   mk s8-compose-dev;  printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env\n' > "$WORK/s8-compose-dev/compose.dev.yml"
   run --manual "$WORK/s8-compose-dev/manual.md" "$WORK/s8-compose-dev"
   if [ "$RC" -eq 0 ]; then ok; else bad "s8-compose-dev: env_file outside production should pass"; fi
+  # The path inside the repository decides, never the folders above it (ADR-020):
+  # a clone under ~/Developer or /srv/live is classified like any other.
+  mkdir -p "$WORK/Developer" "$WORK/live"
+  mk Developer/s8-parent; printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env.prod\n' > "$WORK/Developer/s8-parent/compose.prod.yml"; expect_only Developer/s8-parent OPS-S8 Medium
+  run "$WORK/Developer/s8-parent/compose.prod.yml"
+  if printf '%s\n' "$OUT" | grep -q '^FAIL  OPS-S8 .*compose.prod.yml:4 '; then ok; else bad "s8-parent: a production Compose file named on the command line should fail OPS-S8: $(printf '%s\n' "$OUT" | grep 'OPS-S8')"; fi
+  # The scan argument's own folders classify a file: deploy/prod is production as a
+  # relative path, an absolute path or a file named directly; infra/environments is
+  # per-environment configuration when it is the folder scanned.
+  mk s8-subdir; mkdir -p "$WORK/s8-subdir/deploy/prod"; printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env\n' > "$WORK/s8-subdir/deploy/prod/compose.yml"
+  for a in deploy/prod deploy/prod/compose.yml "$WORK/s8-subdir/deploy/prod"; do
+    run_in "$WORK/s8-subdir" "$a"
+    if printf '%s\n' "$OUT" | grep -q '^FAIL  OPS-S8 .*compose.yml:4 '; then ok; else bad "s8-subdir: scanning $a should fail OPS-S8 for the production Compose file: $(printf '%s\n' "$OUT" | grep 'OPS-S8')"; fi
+  done
+  mk s7-envdir; mkdir -p "$WORK/s7-envdir/infra/environments/prod"; printf 'resource "aws_s3_bucket" "logs" {\n  bucket = "logs"\n}\n' > "$WORK/s7-envdir/infra/environments/prod/main.tf"
+  run_in "$WORK/s7-envdir" infra/environments
+  if printf '%s\n' "$OUT" | grep -q '^FAIL  OPS-S7 '; then bad "s7-envdir: scanning infra/environments should count its prod/main.tf as per-environment: $(printf '%s\n' "$OUT" | grep 'OPS-S7')"; else ok; fi
+  mk s8-inner-dev; mkdir -p "$WORK/s8-inner-dev/deploy/dev"; printf 'services:\n  app:\n    image: registry.example/app:1.4.2\n    env_file: .env\n' > "$WORK/s8-inner-dev/deploy/dev/compose.prod.yml"; expect_clean s8-inner-dev
+  mk live/s7-parent; edit live/s7-parent template.yaml "$(subst '  Environment:' '  Flavor:')" && edit live/s7-parent infra/main.tf "$(subst 'variable "environment"' 'variable "flavor"')" \
+    && mv "$WORK/live/s7-parent/infra/prod.tfvars" "$WORK/live/s7-parent/infra/values.tfvars" && printf '| Flavor | template.yaml | |\n| flavor | infra/main.tf | |\n' >> "$WORK/live/s7-parent/manual.md" && expect_only live/s7-parent OPS-S7 Medium
 
   # OPS-S9 — drift
   mk s9-none;         rm -rf "$WORK/s9-none/.github"; expect_only s9-none OPS-S9 Medium

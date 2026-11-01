@@ -81,13 +81,34 @@ for p in "${PATHS[@]}"; do
 done
 if [ -n "$MANUAL" ] && [ -e "$MANUAL" ] && [ ! -f "$MANUAL" ]; then echo "check-iac-config: --manual is not a file: $MANUAL" >&2; exit 2; fi
 
-# Classify. Each file goes to awk as "K=<kind> ./<path>" (the ./ stops awk from
-# reading a path containing "=" as an assignment).
+# Classify. Each file goes to awk as "K=<kind> RP=<path in the repository> ./<path>"
+# (the ./ stops awk from reading a path containing "=" as an assignment).
 ARGS=()
 STATES=""; ENVFILES=""; NOTES=""; NIAC=0
-add() { case "$2" in /*|./*) ARGS+=("K=$1" "$2") ;; *) ARGS+=("K=$1" "./$2") ;; esac; }
-# The path below the PATH argument it was found under, so a scanned tests/ is known.
-rel() { local r; for r in "${PATHS[@]}"; do case "$1" in "${r%/}"/*) printf '/%s' "${1#"${r%/}"/}"; return ;; esac; done; printf '/%s' "$1"; }
+add() { local r; r=$(rel "$2"); case "$2" in /*|./*) ARGS+=("K=$1" "RP=$r" "$2") ;; *) ARGS+=("K=$1" "RP=$r" "./$2") ;; esac; }
+# below: the path under the PATH argument it was found in (a file named on the
+# command line is its own name), so a scanned tests/ folder is not test code.
+below() { local r; for r in "${PATHS[@]}"; do [ "$1" != "$r" ] || { printf '/%s' "${1##*/}"; return; }; case "$1" in "${r%/}"/*) printf '/%s' "${1#"${r%/}"/}"; return ;; esac; done; printf '/%s' "$1"; }
+# rel: the path that classifies a file as prod, dev or per-environment. A relative
+# PATH argument counts as typed (deploy/prod); an absolute one counts from its own
+# name down, so words in the folders above it (~/Developer, /srv/live) never do.
+rel() {
+  local r t d
+  for r in "${PATHS[@]}"; do
+    t=${r%/}; [ -n "$t" ] || continue
+    if [ "$1" = "$r" ] || [ "$1" = "$t" ]; then
+      case "$t" in /*) d=${t%/*}; printf '/%s/%s' "${d##*/}" "${t##*/}" ;; *) printf '/%s' "${t#./}" ;; esac; return
+    fi
+    case "$1" in "$t"/*) ;; *) continue ;; esac
+    case "$t" in
+      /*) printf '/%s/%s' "${t##*/}" "${1#"$t"/}" ;;
+      .) printf '/%s' "${1#./}" ;;
+      *) printf '/%s/%s' "${t#./}" "${1#"$t"/}" ;;
+    esac
+    return
+  done
+  printf '/%s' "${1#./}"
+}
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   b=$(basename "$f")
@@ -110,7 +131,7 @@ while IFS= read -r f; do
 "; add ci "$f" ;;
     makefile|*.mk|*.sh|jenkinsfile|.gitlab-ci.yml|buildspec.yml|buildspec.yaml)
       # Drift evidence comes from what runs, not from test code.
-      case "$(rel "$f")" in */tests/*|*/test/*|*/fixtures/*|*/spec/*) ;; *) add ci "$f" ;; esac ;;
+      case "$(below "$f")" in */tests/*|*/test/*|*/fixtures/*|*/spec/*) ;; *) add ci "$f" ;; esac ;;
     *.yml|*.yaml|*.template)
       case "$f" in */.github/workflows/*) add ci "$f"; continue ;; esac
       if grep -q '^Resources:' "$f" 2>/dev/null && grep -Eq '^AWSTemplateFormatVersion|Type:[ ]*["'"'"']?AWS::' "$f" 2>/dev/null; then
@@ -129,7 +150,7 @@ while IFS= read -r f; do
         add taskjson "$f"
       fi ;;
   esac
-  case "$f" in */environments/*|*/envs/*|*/env/*|*/stages/*|*/live/*)
+  case "$(rel "$f")" in */environments/*|*/envs/*|*/env/*|*/stages/*|*/live/*)
     case "$lb" in *.tf) ENVFILES="$ENVFILES$f
 " ;; esac ;;
   esac

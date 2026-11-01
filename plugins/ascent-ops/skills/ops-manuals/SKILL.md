@@ -8,13 +8,13 @@ description: >-
   repository, with Mermaid C4 diagrams (context, containers, deployment), a
   dependency map with versions and a symptom table; checks whether they are
   current. Writes only those two files, with surgical edits; never commits.
-version: 0.2.0
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
 # ops-manuals
 
-Keeps the two operations manuals at their latest and greatest. It is a sibling of [ops-review](../ops-review/SKILL.md) and shares its severity table and evidence rules. It is the only `ascent-ops` skill that writes, and it writes exactly two files.
+Keeps the two operations manuals at their latest and greatest. It is a sibling of [ops-review](../ops-review/SKILL.md) and shares its severity table and evidence rules. It writes exactly two files; the only other `ascent-ops` skill that writes is [recovery-drill](../recovery-drill/SKILL.md), and it writes new drill runbooks only.
 
 Sources: [manual-sections.md](../../references/manual-sections.md) (front matter, sections, diagrams, staleness) and the blueprint's [Maintenance and Operations Manual](../../blueprints/operable-service/MAINTENANCE-AND-OPERATIONS.md) and [Troubleshooting Manual](../../blueprints/operable-service/TROUBLESHOOTING.md), a worked example that passes OPS-M1–M8.
 

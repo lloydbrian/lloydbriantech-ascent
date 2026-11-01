@@ -21,6 +21,7 @@ A runbook is a list of commands an operator can follow under pressure without gu
 - **Same commands everywhere.** A runbook step names a `make` target or a script in the repository, the same one CI runs. No one-off shell pipelines that exist only in the runbook.
 - **Read-only diagnostics.** Commands in the Troubleshooting Manual only read; anything that changes the system is a runbook step with pre-flight and post-flight checks.
 - **Dated.** The runbook records the date and release it was last run against.
+- **Drilled.** A recovery runbook (restore, failover) also has a rollback section and is proven by a drill record; [drill-records.md](drill-records.md) gives the outlines and the record format.
 
 ## Severity of gaps
 
