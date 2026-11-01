@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.10 (faster negative controls), October 29, 2026. Since then, `main` gives fast negative-control jobs a 15-minute timeout again (PR #63, unreleased, ships with v0.4.11). Next: `ascent-quality` (v0.4.11), then `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
+**Current state:** v0.4.11 (`ascent-quality` 0.1.0, test strategy), October 31, 2026. Next: `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -11,11 +11,11 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | Rank | Plugin | Scope | Status |
 |---|---|---|---|
 | — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9; 0.3.0 ⏳ Planned |
-| — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3 |
+| — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3, 0.1.3 in v0.4.11 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
 | 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014) | ✅ v0.4.6; 0.3.0 ⏳ Planned (v0.4.12) |
-| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014) | ⏳ Scoped (v0.4.11) |
+| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence | ✅ v0.4.11; 0.2.0 ⏳ Planned |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
 | 7 | `ascent-docs` | To be scoped when it starts | ⏳ Planned |
@@ -198,6 +198,12 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 **Status:** ✅ Complete (October 29, 2026)
 
 `make test-mutants` runs in fast mode by default ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md), [ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)): a control runs only the gate check it names, T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel. A control that fast mode does not kill reruns on the whole gate, and if the two modes disagree the run fails. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, a self-test proves each gate section gives the same results alone, and gate check T14 tests fast mode itself. A `harness` group of controls checks the harness's own reports, and CI runs every control in full mode once a week. Before release, all 439 controls got the same verdict from the old harness and the new one. No plugin versions change. Also released: the T11 SIGPIPE fix from PR #60. After the release, four fast CI runs kept every macOS group under 10 minutes and the first full run took 10.3 at most, so PR #63 returned fast runs to the 15-minute timeout, as ADR-017 decision 5 and ADR-018 decision 8 set; full runs keep 40. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.11: Test strategy
+
+**Status:** ✅ Complete (October 31, 2026)
+
+`ascent-quality` 0.1.0 checks that a repository's tests can catch a broken change ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-019](DECISIONS/ADR-019-quality-plugin-rules.md)). It has thirteen rules: `QA-I1`–`I5` for the test types the contract requires, whether CI runs them and which integration boundaries no test reaches; `QA-T1`–`T4` for acceptance criteria and core rules traced to tests; and `QA-H1`–`H4` for focused, unexplained skipped, assertion-less and retried tests. Two static scripts read JS, TS, Python, Go, bats and shell tests and never run one. `ascent-delivery` 0.1.3 uses its reviewer for the Tests lens. Controls P377–P460 run in four new groups. An independent review before release confirmed and fixed 17 findings. A read-only trial on five repositories gave one calibration (a make `test` target stands in for an npm test script) and two confirmed assertion-less tests. Also released: the 15-minute timeout for fast negative-control jobs from PR #63. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 

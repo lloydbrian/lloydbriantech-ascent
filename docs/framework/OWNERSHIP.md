@@ -25,6 +25,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | infrastructure as code (CloudFormation, CDK, Terraform), a deployed service, a budget | `ascent-architecture` | quality attributes against targets, design principles, deployment options and cost |
 | HTML, JSX, Vue or Svelte templates, CSS, design tokens | `ascent-ux` | WCAG 2.2 AA evidence, design tokens and contrast, design directions |
 | infrastructure as code, operator scripts, runbooks, Compose files, health endpoints | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals |
+| test files, a test runner configuration, CI workflows, acceptance criteria | `ascent-quality` | test types and whether CI runs them, boundaries no test reaches, criteria and core rules traced to tests, test hygiene |
 <!-- ownership:signals:end -->
 
 ---
@@ -41,7 +42,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | `ascent-architecture` | `ARC` | released | hand-written | `architecture` | `arch-severity` |
 | `ascent-ux` | `UX` | released | hand-written | `ux` | `ux-severity` |
 | `ascent-ops` | `OPS` | released | hand-written | `ops` | `ops-severity` |
-| `ascent-quality` | `QA` | planned | hand-written | `quality` | — |
+| `ascent-quality` | `QA` | released | hand-written | `quality` | `qa-severity` |
 | `ascent-governance` | `GOV` | planned | hand-written | — | — |
 <!-- ownership:plugins:end -->
 
@@ -77,6 +78,10 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-ops` | skill | `runbook-check` |
 | `ascent-ops` | skill | `ops-manuals` |
 | `ascent-ops` | agent | `ops-reviewer` |
+| `ascent-quality` | skill | `quality-review` |
+| `ascent-quality` | skill | `test-inventory` |
+| `ascent-quality` | skill | `test-check` |
+| `ascent-quality` | agent | `quality-reviewer` |
 <!-- ownership:components:end -->
 
 ## Rule-id families
@@ -95,6 +100,9 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `OPS-S` | `ascent-ops` | rule | `plugins/ascent-ops/references/secure-config-rules.md` |
 | `OPS-Z` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-scripts.sh` |
 | `OPS-M` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-manuals.sh` |
+| `QA-I` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-inventory.sh` |
+| `QA-T` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-tests.sh` |
+| `QA-H` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-tests.sh` |
 | `SEC-D` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-dependencies.sh` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
@@ -111,9 +119,6 @@ Names, codes and rule-id families taken for planned work ([ADR-014](DECISIONS/AD
 <!-- ownership:reserved:start -->
 | Reserved | For | Release |
 |---|---|---|
-| `QA-I` | `ascent-quality` | v0.4.11 |
-| `QA-T` | `ascent-quality` | v0.4.11 |
-| `QA-H` | `ascent-quality` | v0.4.11 |
 | `OPS-R` | `ascent-ops` | v0.4.12 |
 | `OPS-X` | `ascent-ops` | v0.4.12 |
 <!-- ownership:reserved:end -->
@@ -148,9 +153,9 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | operator scripts and runbooks | `ascent-ops` | `ascent-ops` | released |
 | operations manuals | `ascent-ops` | `ascent-ops` | released |
 | operational readiness exercises | `ascent-ops` | `ascent-ops` | planned |
-| unit, integration and contract tests | — | `ascent-quality` | planned |
-| regression and end-to-end tests | `ascent-delivery` | `ascent-quality` | planned |
-| criterion-to-test traceability | `ascent-delivery` | `ascent-quality` | planned |
+| unit, integration and contract tests | — | `ascent-quality` | released |
+| regression and end-to-end tests | `ascent-delivery` | `ascent-quality` | released |
+| criterion-to-test traceability | `ascent-delivery` | `ascent-quality` | released |
 | mutation evidence | — | `ascent-quality` | planned |
 | launch readiness | `ascent-governance` | `ascent-governance` | planned |
 | AI behavior evals | — | `ascent-ai-evals` | released |
@@ -169,5 +174,5 @@ The delivery loop (`ascent-delivery`, Step 4) runs one reviewer per lens. It use
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | fallback prompt |
 | UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
-| Tests | `engineering:testing-strategy` | fallback prompt |
+| Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | fallback prompt |
 <!-- ownership:lenses:end -->

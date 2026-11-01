@@ -12,7 +12,7 @@ Delivery-loop Step 4 runs one reviewer per lens, in parallel, against the diff a
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | [Accessibility](#accessibility) |
 | UX and navigation | `ascent-ux:ux-reviewer` | [UX and navigation](#ux-and-navigation) |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | [Operational and deploy impact](#operational-and-deploy-impact) |
-| Tests | `engineering:testing-strategy` | [Tests](#tests) |
+| Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | [Tests](#tests) |
 
 The `ascent-*` providers are read-only agents from the ASCENT plugins; the others are skills. ASCENT's ownership registry (`docs/framework/OWNERSHIP.md` in the framework repository) owns this list, and its gate fails when this table drifts from it.
 

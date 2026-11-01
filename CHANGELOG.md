@@ -10,14 +10,11 @@ Dates are in **America/New_York** timezone.
 
 ## [Unreleased]
 
-### Changed
-
-- CI: the negative-control jobs time out after 15 minutes in fast mode again, as ADR-017 decision 5 and ADR-018 decision 8 set; the weekly and on-request full runs keep 40. Four fast runs on PR #62 and `main` showed every macOS group under 10 minutes (8.5 the longest), and the full run after the v0.4.10 release took 10.3 at most
-
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
-- v0.4.11 `ascent-quality` 0.1.0, test strategy (`QA-I`, `QA-T`, `QA-H`); v0.4.12 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014 and ADR-017
+- v0.4.12 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014 and ADR-017
+- `ascent-quality` 0.2.0: load-test alignment with `p95_latency_ms` and `peak_rps`, and mutation evidence (ADR-014); more languages (Java, Ruby, Rust, .NET) when a trial needs them (ADR-019)
 - `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
@@ -31,6 +28,43 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.11] — 2026-10-31
+
+**Test strategy.** `ascent-quality` 0.1.0 checks that a repository's tests can be trusted to catch a broken change: the test types the contract requires exist and CI runs them, every database, queue and HTTP client is reached by a test, every acceptance criterion and core rule is named by a test, and no test is focused, skipped without a reason, assertion-less or retried ([ADR-014](docs/framework/DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-019](docs/framework/DECISIONS/ADR-019-quality-plugin-rules.md)). It reads the repository and never runs a test.
+
+### Added
+
+- `ascent-quality` 0.1.0, hand-written, no plugin dependencies:
+  - `quality-review`, the entry point: the `quality:` contract section (proposed when missing), a test map, the inventory, traceability and hygiene lenses, maturity gaps and waivers, and a strong, moderate or weak rating from its `qa-severity` table
+  - `test-inventory` and `check-test-inventory.sh`: `QA-I1`–`I5`, test types by path, name and import; CI steps followed through make recipes, `$(MAKE)` and npm, yarn, pnpm and bun scripts, three levels deep; integration boundaries and test doubles matched per language
+  - `test-check` and `check-tests.sh`: `QA-T1`–`T4`, criterion ids (`AC-<n>[.<n>]` by default, ids in code fences ignored, a parent id counted through its children) and core rules traced to tests; `QA-H1`–`H4`, focused, skipped, assertion-less and retried tests, with test blocks read per language (JS and TS by parentheses, Go by braces, Python by indentation, bats by a closing brace in column 1) and project assertion helpers through `--helper`
+  - `quality-reviewer`, a read-only agent with an identical copy of the severity table
+  - Behavior tests: `test-check-tests.sh` (72 cases), `test-check-test-inventory.sh` (49), `test-quality-rules.sh` (132), each run under `/bin/bash` 3.2 and once per awk installed
+- Groups `ascent-quality-inventory`, `ascent-quality-trace`, `ascent-quality-hygiene` and `ascent-quality-rules`, controls P377–P460: every script rule, the block-end and masking logic, the input guards, every skill rule but R12 (which only macOS's bash 3.2 can fail), the severity copy (T5), the agent's tools (T4) and steps (T9), the version (T3) and the tests themselves (T11)
+- T5 checks the `qa-severity` table (`marked_table qa-severity quality`)
+- ADR-019, the plugin's rules
+
+### Changed
+
+- `ascent-delivery` 0.1.3: the Tests lens uses `ascent-quality:quality-reviewer` first, then `engineering:testing-strategy`
+- `docs/framework/OWNERSHIP.md`: `ascent-quality` released, with its components, the `QA-I`, `QA-T` and `QA-H` families (no longer reserved), a signals row and the unit, integration and contract, regression and end-to-end, and traceability domains; P207, P209, P221 and P222 anchor on rows that stay planned
+- PILLARS: functional suitability Partial → Strong for traceability, test types and hygiene
+- The tester role module names the plugin; README, ARCHITECTURE, ROADMAP and CLAUDE.md list it
+- CI: the negative-control jobs time out after 15 minutes in fast mode again, as ADR-017 decision 5 and ADR-018 decision 8 set; the weekly and on-request full runs keep 40. Four fast runs on PR #62 and `main` showed every macOS group under 10 minutes (8.5 the longest), and the full run after the v0.4.10 release took 10.3 at most (PR #63)
+
+### Notes
+
+- Read-only trial, on copies with `.env` files excluded, of four application and infrastructure repositories and this one: two have no tests (QA-I1), one has no CI (QA-I2), two have no integration tests (QA-I1), and none uses criterion ids (QA-T3). Two tests in one repository only check that a call does not raise (QA-H3), confirmed by reading. One calibration came from the trial: a repository with a make `test` target and no npm test script passes QA-I5. No false positives remained
+- An independent review before release (correctness, security and privacy, tests and documentation), checked by `finding-verifier`, confirmed 17 findings, all fixed with a test and a control each:
+  - Python: a signature over several lines (Black's style) no longer ends the test before its body, and a triple-quoted string carries across lines, so its lines neither end a test nor count as assertions
+  - CI: installing a runner (`pip install pytest`, `npm i -D jest`) no longer counts as running the tests; a make prerequisite cycle no longer crashes the inventory check; a `package.json` on one line is read
+  - Files: a repository under a directory named `test/` is typed by the path below the search root; `impact.test.js` is not a contract test; a dotted core file (`user.service.ts`) is named through its import path; retries passed to the code under test are not runner retries; a path that starts with `-` never reaches `find` as an expression; the empty-pattern guard reads the pattern as the check does
+  - Skills: every contract value goes to a script in single quotes, a value holding a quote, a newline, `$(` or a backtick is refused, and `git log` is never run with `--output`, `--ext-diff` or `--textconv`
+  - `Makefile` `FRAMEWORK_VERSION` is 0.4.11 (it still said 0.4.9, so `make release-tag` would have refused); the delivery README and PILLARS list `ascent-quality`
+- A negative control that removed the empty-pattern guard made `check-tests.sh` loop forever on `--id-pattern 'x*'`. `ids()` now stops on an empty match as well, so the control fails a test instead of hanging the run
 
 ---
 
@@ -790,7 +824,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
-[Unreleased]: https://github.com/lloydbrian/lloydbriantech-ascent/compare/v0.4.10...HEAD
+[Unreleased]: https://github.com/lloydbrian/lloydbriantech-ascent/compare/v0.4.11...HEAD
 [0.3.1]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.3.1
 [0.3.0]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.3.0
 [0.2.0]: https://github.com/lloydbrian/lloydbriantech-ascent/releases/tag/v0.2.0

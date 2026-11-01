@@ -1,0 +1,50 @@
+# .ascent/contract.yml: the quality: section (ascent-quality). One project contract,
+# one section per ASCENT plugin (decision 2, 2026-10-18; ADR-014, ADR-019). Where
+# ASCENT-named files are not allowed, use .claude/contract.yml instead. Commit it:
+# it is the project's own statement of test targets, and reviews are judged
+# against it.
+#
+# quality-review proposes this section from what the repository already declares
+# and asks the operator to confirm it once (detect, don't ask). Every guessed value
+# is marked "# guess" until confirmed. Never put credentials, account ids, email
+# addresses, phone numbers or other personal data in this file.
+
+version: 1
+
+quality:
+  # enterprise (default) | standard | prototype. Anything the target requires but the
+  # project skips is a waiver: an ADR id under waivers below.
+  maturity_target: enterprise
+
+  tests:
+    # Where the tests live. The checks find test files anywhere by name; these
+    # paths are what the review maps and reports.
+    paths: [tests/]
+
+    # unit | integration | contract | e2e. Defaults: prototype [unit]; standard
+    # [unit, integration]; enterprise [unit, integration], plus e2e when the
+    # project has a user interface. check-test-inventory.sh --types takes this list.
+    types_required: [unit, integration]
+
+    # Documents that define acceptance criteria (check-tests.sh --criteria). Leave
+    # it empty and every Markdown file is read.
+    criteria_paths: [docs/]
+
+    # The criterion id format (check-tests.sh --id-pattern), a POSIX extended
+    # regular expression. The default is AC-<n>, with an optional .<n>.
+    criteria_id_pattern: 'AC-[0-9]+([.][0-9]+)?'
+
+    # Source that holds the core business rules (check-tests.sh --core). Each file
+    # must be named by a test. Leave it empty and QA-T4 is "unmeasured".
+    core_paths: []
+
+    # The project's own assertion helpers (check-tests.sh --helper), for test
+    # runners the checks do not know: e.g. assertEqual, check, expectOk.
+    assertion_helpers: []
+
+  adr_dir: docs/adr/
+  waivers: []
+  # waivers:
+  #   - id: ADR-021
+  #     skips: end-to-end tests until the UI leaves the prototype stage
+  #     review_by: 2027-06-30
