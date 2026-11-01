@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.10 (faster negative controls), October 29, 2026. Next: `ascent-quality` (v0.4.11), then `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
+**Current state:** v0.4.10 (faster negative controls), October 29, 2026. Since then, `main` gives fast negative-control jobs a 15-minute timeout again (PR #63, unreleased, ships with v0.4.11). Next: `ascent-quality` (v0.4.11), then `ascent-ops` 0.3.0 (v0.4.12); Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -197,7 +197,7 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 
 **Status:** ✅ Complete (October 29, 2026)
 
-`make test-mutants` runs in fast mode by default ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md), [ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)): a control runs only the gate check it names, T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel. A control that fast mode does not kill reruns on the whole gate, and if the two modes disagree the run fails. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, a self-test proves each gate section gives the same results alone, and gate check T14 tests fast mode itself. A `harness` group of controls checks the harness's own reports, and CI runs every control in full mode once a week. Before release, all 439 controls got the same verdict from the old harness and the new one. No plugin versions change. Also released: the T11 SIGPIPE fix from PR #60. See [`CHANGELOG.md`](../../CHANGELOG.md).
+`make test-mutants` runs in fast mode by default ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md), [ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)): a control runs only the gate check it names, T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel. A control that fast mode does not kill reruns on the whole gate, and if the two modes disagree the run fails. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, a self-test proves each gate section gives the same results alone, and gate check T14 tests fast mode itself. A `harness` group of controls checks the harness's own reports, and CI runs every control in full mode once a week. Before release, all 439 controls got the same verdict from the old harness and the new one. No plugin versions change. Also released: the T11 SIGPIPE fix from PR #60. After the release, four fast CI runs kept every macOS group under 10 minutes and the first full run took 10.3 at most, so PR #63 returned fast runs to the 15-minute timeout, as ADR-017 decision 5 and ADR-018 decision 8 set; full runs keep 40. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 
