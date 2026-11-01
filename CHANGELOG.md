@@ -65,6 +65,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
   - Skills: every contract value goes to a script in single quotes, a value holding a quote, a newline, `$(` or a backtick is refused, and `git log` is never run with `--output`, `--ext-diff` or `--textconv`
   - `Makefile` `FRAMEWORK_VERSION` is 0.4.11 (it still said 0.4.9, so `make release-tag` would have refused); the delivery README and PILLARS list `ascent-quality`
 - A negative control that removed the empty-pattern guard made `check-tests.sh` loop forever on `--id-pattern 'x*'`. `ids()` now stops on an empty match as well, so the control fails a test instead of hanging the run
+- Control P457 (the prerequisite-cycle depth limit removed) recursed without end under gawk, which grew to the runner's memory and took the Ubuntu CI job down; BWK awk and mawk stop at their own stack limits. The cycle test now runs the check with CPU and memory capped (`ulimit -t 10`, and `-v` 1 GiB where the system allows it), so gawk stops in under a second and the control fails the test
 
 ---
 

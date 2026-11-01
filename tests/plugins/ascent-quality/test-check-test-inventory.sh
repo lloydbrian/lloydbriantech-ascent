@@ -27,10 +27,13 @@ PASS=0; FAIL=0
 ok()  { PASS=$((PASS + 1)); }
 bad() { FAIL=$((FAIL + 1)); printf "FAIL  [%s] %s\n" "$AWKNAME" "$1"; }
 # run DIR [OPTIONS] — the check with every type required, from DIR (TYPES replaces
-# the list).
+# the list). BOUND=1 caps CPU at 10 s and memory at 1 GiB (macOS takes only the
+# CPU cap): gawk and mawk recurse on the heap, so code that never ends would
+# otherwise exhaust the machine instead of failing.
 run() {
   local d="$1"; shift
-  (cd "$d" && PATH="$SHIM:$PATH" bash "$CHECK" --types "${TYPES:-unit,integration,contract,e2e}" "$@" .) >"$WORK/out" 2>"$WORK/err"; RC=$?
+  (cd "$d" || exit 2; [ -z "${BOUND:-}" ] || { ulimit -t 10; ulimit -v 1048576 2>/dev/null || true; }
+   PATH="$SHIM:$PATH" bash "$CHECK" --types "${TYPES:-unit,integration,contract,e2e}" "$@" .) >"$WORK/out" 2>"$WORK/err"; RC=$?
   OUT=$(cat "$WORK/out" "$WORK/err")
 }
 mk() { rm -rf "${WORK:?}/$1"; cp -R "$GOOD" "$WORK/$1"; }
@@ -105,8 +108,8 @@ matrix() {
   # Trial calibration (ground-turf-truth): make is the operator vocabulary.
   mk i5-make;     edit i5-make package.json "$(drop '"test": ')" && expect_pass i5-make 'a make test target stands in for the npm script'
   # Review fixes (v0.4.11)
-  # A prerequisite cycle ends at the depth limit, not in a crash.
-  mk i2-cycle;    printf 'name: ci\non: [push]\njobs:\n  t:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: make loop-a\n      - run: npx playwright test\n      - run: npm run test:contract\n      - run: make test\n' > "$WORK/i2-cycle/.github/workflows/ci.yml"; printf 'loop-a: loop-b\nloop-b: loop-a\n' >> "$WORK/i2-cycle/Makefile"; expect_pass i2-cycle 'a make prerequisite cycle'
+  # A prerequisite cycle ends at the depth limit, not in a crash (bounded: P457).
+  mk i2-cycle;    printf 'name: ci\non: [push]\njobs:\n  t:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: make loop-a\n      - run: npx playwright test\n      - run: npm run test:contract\n      - run: make test\n' > "$WORK/i2-cycle/.github/workflows/ci.yml"; printf 'loop-a: loop-b\nloop-b: loop-a\n' >> "$WORK/i2-cycle/Makefile"; BOUND=1 expect_pass i2-cycle 'a make prerequisite cycle'
   # Installing a runner is not running it.
   mk i2-install;  rm -rf "$WORK/i2-install/tests/e2e" "$WORK/i2-install/tests/contract"; printf 'name: ci\non: [push]\njobs:\n  lint:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: pip install pytest ruff\n      - run: npm i -D jest\n      - run: ruff check .\n' > "$WORK/i2-install/.github/workflows/ci.yml"
   TYPES=unit,integration expect_only i2-install QA-I2
