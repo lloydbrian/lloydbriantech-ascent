@@ -28,24 +28,25 @@ You can use it in two ways:
 | Aspect | **Plugins** | **Parent skill** |
 |---|---|---|
 | For | Any repository, ASCENT or not | Starting, enhancing or migrating a project |
-| You get | Four read-only review plugins and the delivery loop | A scaffolded project with 28 embedded `ascent-*` skills |
+| You get | Five read-only review plugins and the delivery loop | A scaffolded project with 28 embedded `ascent-*` skills |
 | Install | Two commands in Claude Code | `make install` from this repository |
 
 ## Why ASCENT
 
 Most frameworks optimize for the first commit and the scaffold. ASCENT optimizes for **what comes after**: the years in production where decisions turn into lore, documentation drifts from the code, and quality slips. Most of that slippage is not a skill problem. It is a consistency problem under fatigue, handoff and time pressure.
 
-ASCENT writes those patterns down as checks with evidence: a project contract with measurable targets, severity tables that leave no room for invented ratings, operator runbooks with pre-flight and post-flight checks, and ADRs for every decision someone might later question. The framework is built with its own rules: 15 ADRs, phase-gated delivery, and a plugin gate with hundreds of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
+ASCENT writes those patterns down as checks with evidence: a project contract with measurable targets, severity tables that leave no room for invented ratings, operator runbooks with pre-flight and post-flight checks, and ADRs for every decision someone might later question. The framework is built with its own rules: 19 ADRs, phase-gated delivery, and a plugin gate with hundreds of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
 
 ## Plugins for any repository
 
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | 0.2.0 | Trust and security, compliance | "any secrets committed?", "are our dependencies safe?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; plus a `security-auditor` agent |
-| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.2 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.3 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
 | [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.0 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
 | [`ascent-ux`](plugins/ascent-ux/README.md) | 0.2.0 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
 | [`ascent-ops`](plugins/ascent-ops/README.md) | 0.2.0 | Resilience, compliance, trust and security | "is this operable?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, and Maintenance and Troubleshooting manuals proven current, plus an operable-service blueprint |
+| [`ascent-quality`](plugins/ascent-quality/README.md) | 0.1.0 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, and test hygiene: focused, skipped, assertion-less and retried tests |
 
 Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions. Not sure which to install? [Which plugins do I need?](docs/framework/OWNERSHIP.md#which-plugins-do-i-need) maps what your repository contains to the plugin that checks it. Each plugin works on its own, and one you have not installed leaves its review unmeasured, never blocked.
 
@@ -57,8 +58,8 @@ The pillars are the four outcomes the checks serve: driving business value, comp
 
 - **Read-only by default.** Reviews never edit your files. Skills that write, such as `ops-manuals` or `design-directions`, write only the files they name and never commit.
 - **Evidence or it is not a finding.** Every finding cites `path/to/file:line`, or the paths searched when something is absent, plus a failure scenario and a fix.
-- **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
-- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops and security plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
+- **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops, quality and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
+- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
 - **You own every write.** Claude never commits, pushes, tags, merges or deploys. It writes a numbered runbook and you run it; `ascent-delivery`'s hook enforces this.
 - **No personal data.** Secret values, account ids and contact details never appear in a report.
 
@@ -80,7 +81,7 @@ In Claude Code (CLI, VS Code extension or desktop app):
 /plugin install ascent-architecture@lloydbriantech-ascent
 ```
 
-Install any of the five the same way. Then ask in plain language, for example "review the architecture" or "is this operable?". Start with the reviews; add `ascent-delivery` when you want Claude to take changes from decision to a runbook you run.
+Install any of the six the same way. Then ask in plain language, for example "review the architecture" or "is this operable?". Start with the reviews; add `ascent-delivery` when you want Claude to take changes from decision to a runbook you run.
 
 > [!NOTE]
 > While `ascent-delivery` is enabled, its hook blocks Claude from committing, pushing, tagging, merging and deploying in every session. That is the point: you run those steps from the runbook Claude writes.
@@ -93,7 +94,7 @@ flowchart LR
     accDescr: The review plugins read your repository and the targets in your contract, and pass findings with file and line to the delivery loop. The finding verifier checks them, and the loop hands you fixes and a runbook. You commit, merge and deploy.
     SRC["Your repository<br/>code · IaC · UI · scripts"] --> R
     C[".ascent/contract.yml<br/>your targets"] --> R
-    R["Review plugins<br/>architecture · ux · ops · security"] -->|"findings with file:line"| D["Delivery loop<br/>build · test · gate · review"]
+    R["Review plugins<br/>architecture · ux · ops · quality · security"] -->|"findings with file:line"| D["Delivery loop<br/>build · test · gate · review"]
     D --> V["Finding verifier"]
     V -->|"fixes and a runbook"| O(["You, the operator"])
     O -->|"commit · merge · deploy"| SRC
@@ -185,6 +186,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.11 | 2026-10-31 | `ascent-quality` 0.1.0: test types and CI, untested boundaries, criteria and core rules traced to tests, and test hygiene, `QA-I1`–`I5`, `QA-T1`–`T4`, `QA-H1`–`H4` (ADR-019); `ascent-delivery` 0.1.3 uses it for the Tests lens |
 | v0.4.10 | 2026-10-29 | Faster negative controls: only the named check, behavior tests stopped at their first failure, controls in parallel, survivors rerun in full, with guards and a weekly full run (ADR-018) |
 | v0.4.9 | 2026-10-27 | `ascent-security` 0.2.0: dependency checks (lockfiles, pinning, sources, licences, waived ignore entries) and an offline vulnerability scan of dependencies and local images, `SEC-D1`–`D10` |
 | v0.4.8 | 2026-10-27 | The ownership registry and gate check T13; plugin-qualified rule ids (`OPS-S3`) in `ascent-architecture`, `ascent-ops` and `ascent-ux` 0.2.0; `ascent-delivery` 0.1.2 uses the ASCENT reviewers as lenses |
@@ -201,7 +203,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 | v0.2.0 | 2026-05-15 | Phase 1: the parent skill and reference modules |
 | v0.1.0-alpha | 2026-05-14 | Phase 0: foundation and the first ADRs |
 
-**Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality · session · adr · docs · node-stack.
+**Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality ✅ · session · adr · docs · node-stack.
 **Phases:** Phase 4, scripted scaffolding, waits for its go-signal; then the eval harness (5), the template repository (6) and a first production project (7, v1.0). Details and exit criteria: [ROADMAP.md](docs/framework/ROADMAP.md).
 
 ## Documentation

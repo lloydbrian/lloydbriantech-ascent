@@ -107,6 +107,15 @@ Tests cover what we *expect* to happen. observability-contract.md covers what *a
 - **Validation as Stage 4 surprise.** Acceptance criteria first surfaced as untestable at Stage 4 should have been caught at intake or design review.
 - **Test coverage as a metric.** Coverage percentage incentivizes touching every line, not testing every behavior. Prefer scenario coverage.
 
+## Checking this role in any repository
+
+The `ascent-quality` plugin (ADR-014, ADR-019) makes this role checkable in an existing repository:
+- `quality-review` rates the test strategy against the `quality:` section of the project contract
+- `test-inventory` covers the test types present, whether CI runs them, and the integration boundaries no test reaches
+- `test-check` covers traceability (every acceptance criterion and core rule named by a test) and test hygiene: focused, skipped, assertion-less and retried tests
+
+Load tests, mutation evidence and security tests are not covered yet; security testing belongs to `ascent-security`.
+
 ## What this role doesn't own
 
 - **Writing tests for new code at implementation time.** That's [role-developer.md](role-developer.md). The developer writes unit + integration; the tester extends to broader discipline.

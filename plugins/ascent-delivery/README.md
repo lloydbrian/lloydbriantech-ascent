@@ -62,7 +62,7 @@ To lift the boundary you have to disable the plugin. There is no bypass variable
 
 ## Review providers it wraps
 
-At the review step, the skill uses the first provider of each lens that is installed, and a built-in single-lens prompt when none is. The ASCENT agents come from [ascent-security](../ascent-security/README.md), [ascent-architecture](../ascent-architecture/README.md), [ascent-ux](../ascent-ux/README.md) and [ascent-ops](../ascent-ops/README.md). Provider output is passed through under a thin header, not rewritten:
+At the review step, the skill uses the first provider of each lens that is installed, and a built-in single-lens prompt when none is. The ASCENT agents come from [ascent-security](../ascent-security/README.md), [ascent-architecture](../ascent-architecture/README.md), [ascent-ux](../ascent-ux/README.md), [ascent-ops](../ascent-ops/README.md) and [ascent-quality](../ascent-quality/README.md). Provider output is passed through under a thin header, not rewritten:
 
 | Lens | Providers, first installed wins |
 |---|---|
@@ -72,7 +72,7 @@ At the review step, the skill uses the first provider of each lens that is insta
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` |
 | UX and navigation | `ascent-ux:ux-reviewer` |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` |
-| Tests | `engineering:testing-strategy` |
+| Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` |
 
 The list is owned by the framework's [ownership registry](../../docs/framework/OWNERSHIP.md).
 

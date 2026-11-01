@@ -1,0 +1,8 @@
+{
+  "name": "checkout",
+  "private": true,
+  "scripts": {
+    "test": "vitest run tests/unit tests/integration",
+    "test:contract": "vitest run tests/contract"
+  }
+}

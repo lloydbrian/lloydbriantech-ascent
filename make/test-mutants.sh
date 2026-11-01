@@ -721,6 +721,104 @@ plugin_case P197-review-rollback-always-high T11 "$OPR" 's/\*\*Rollback is rated
 plugin_case P198-review-proposes-z-paths T11 "$OPR" 's/Never propose a `z`-suffixed value\./Propose the detected value./'
 plugin_case P199-iac-trivy-runs-online T11 "$OPS/skills/iac-config-check/SKILL.md" 's/--skip-check-update --skip-version-check --quiet/--quiet/'
 
+mutant_group ascent-quality-inventory
+QAS=plugins/ascent-quality
+QAI="$QAS/scripts/lib/check-test-inventory.awk"
+QAT="$QAS/scripts/lib/check-tests.awk"
+QAC="$QAS/scripts/lib/qa-common.awk"
+QAF="$QAS/scripts/lib/qa-files.sh"
+QAR="$QAS/skills/quality-review/SKILL.md"
+QAN="$QAS/skills/test-inventory/SKILL.md"
+QAK="$QAS/skills/test-check/SKILL.md"
+QAA="$QAS/agents/quality-reviewer.md"
+plugin_case P377-inv-type-missing-ok T11 "$QAI" 's/if (CNT\[y\] == 0) fail("I1"/if (0) fail("I1"/'
+plugin_case P378-inv-no-ci-ok T11 "$QAI" 's/if (KN\["ci"\] == 0) fail("I2"/if (0) fail("I2"/'
+plugin_case P379-inv-ci-not-running-ok T11 "$QAI" 's/else if (!CIRUN) fail("I2"/else if (0) fail("I2"/'
+plugin_case P380-inv-make-not-followed T11 "$QAI" 's#if (W\[j\] != "" && W\[j\] !~ /^-|=/ && (W\[j\] in MR || W\[j\] in MP)) out#if (0) out#'
+plugin_case P381-inv-npm-script-not-followed T11 "$QAI" 's/if (w in SCR) out = out " ; " expand/if (0) out = out " ; " expand/'
+plugin_case P382-inv-e2e-unrun-ok T11 "$QAI" 's/fail("I3", "Low", TFIRST\["e2e"\]/0 \&\& fail("I3", "Low", TFIRST["e2e"]/'
+plugin_case P383-inv-contract-unrun-ok T11 "$QAI" 's/fail("I3", "Low", TFIRST\["contract"\]/0 \&\& fail("I3", "Low", TFIRST["contract"]/'
+plugin_case P384-inv-boundary-ok T11 "$QAI" 's/if (!hit) fail("I4"/if (0) fail("I4"/'
+plugin_case P385-inv-doubles-any-language T11 "$QAI" 's/TOKL\[lg, W\[i\]\] = 1/TOKL["js", W[i]] = TOKL["py", W[i]] = TOKL["go", W[i]] = 1/'
+plugin_case P386-inv-go-http-client-missed T11 "$QAI" 's/&& !(0 in GOHTTP)) GOHTTP\[0\]/\&\& 0) GOHTTP[0]/'
+plugin_case P387-inv-placeholder-script-ok T11 "$QAI" 's/else if (PKGTEST\[f\] ~ \/no test specified\/) fail/else if (0) fail/'
+plugin_case P388-inv-make-test-not-accepted T11 "$QAI" 's/if (!MAKETEST) fail("I5"/fail("I5"/'
+plugin_case P389-inv-no-script-ok T11 "$QAI" 's/if (!(f in PKGTEST)) { if (!MAKETEST) fail/if (0) { if (!MAKETEST) fail/'
+plugin_case P390-inv-e2e-by-import-missed T11 "$QAC" 's/E2EC\[FN\] = 1/E2ECX[FN] = 1/'
+plugin_case P391-inv-integration-path-missed T11 "$QAC" 's#(integration|integration-tests|it)\\/#(nevermatch)\\/#'
+plugin_case P392-inv-fixtures-not-skipped T11 "$QAF" 's/ -o -name fixtures -o -name testdata//'
+plugin_case P393-inv-ci-comment-counts T11 "$QAI" 's/if (t ~ \/^#\/ || t ~/if (t ~/'
+plugin_case P394-inv-unknown-type-accepted T11 "$QAS/scripts/check-test-inventory.sh" 's/case "\$ty" in unit|integration|contract|e2e) ;;/case "$ty" in *) ;;/'
+plugin_case P457-inv-prerequisite-cycle T11 "$QAI" 's/^  if (depth > 3) return ""   # also ends/  if (0) return ""   # also ends/'
+plugin_case P458-inv-install-runs-tests T11 "$QAI" 's/^  gsub(\/(pip3?|pipx/  0 \&\& gsub(\/(pip3?|pipx/'
+plugin_case P459-inv-contract-substring T11 "$QAC" 's/b ~ \/(^|\[-_.\])(contract|contracts|pact)(\[-_.\]|\$)\//b ~ \/contract|pact\//'
+plugin_case P460-inv-one-line-package-json T11 "$QAI" 's/{ INSCR = 1; line = substr(line, RSTART + RLENGTH) }/{ INSCR = 1; next }/'
+mutant_group ascent-quality-trace
+plugin_case P395-trace-criterion-untested-ok T11 "$QAT" 's/if (!hit) fail("T1"/if (0) fail("T1"/'
+plugin_case P396-trace-parent-not-covered T11 "$QAT" 's/if (!hit) for (r in REF) if (index(r, id ".") == 1)/if (0) for (r in REF) if (index(r, id ".") == 1)/'
+plugin_case P397-trace-undefined-id-ok T11 "$QAT" 's/if (!hit) fail("T2"/if (0) fail("T2"/'
+plugin_case P398-trace-no-ids-ok T11 "$QAT" 's/CHK\["T3"\]++; fail("T3"/CHK["T3"]++; 0 \&\& fail("T3"/'
+plugin_case P399-trace-fence-ids-count T11 "$QAT" 's/if (FENCE) next/if (0) next/'
+plugin_case P400-trace-id-inside-word T11 "$QAT" 's/if (pre !~ \/\[A-Za-z0-9_-\]\/ && post/if (1 \&\& post/'
+plugin_case P401-trace-core-untested-ok T11 "$QAT" 's/if (!hit) fail("T4"/if (0) fail("T4"/'
+plugin_case P402-trace-core-index-not-dir T11 "$QAT" 's/if (key ~ \/^(index|main|__init__|mod|lib)\$\/) { key = d/if (0) { key = d/'
+plugin_case P403-trace-go-dir-ignored T11 "$QAT" 's/ || (lang(f) == "go" && (d in GODIR))//'
+plugin_case P404-trace-empty-id-pattern-ok T11 "$QAS/scripts/check-tests.sh" 's/an empty string: \$IDP" >&2; exit 2/an empty string: $IDP" >\&2/'
+plugin_case P405-trace-helper-not-validated T11 "$QAS/scripts/check-tests.sh" 's/case "\$2" in \*\[!A-Za-z0-9_.\]\*) echo/case "$2" in NEVER) echo/'
+plugin_case P406-trace-severity-off-table T11 "$QAT" 's/fail("T2", "Low"/fail("T2", "Info"/'
+plugin_case P452-trace-dotted-names-missed T11 "$QAC" 's/if (W\[i\] ~ \/\[A-Za-z0-9\]\\\.\[A-Za-z0-9\]\/)/if (0)/'
+plugin_case P453-trace-ancestor-test-dir T11 "$QAF" 's/qa_kind "\${f#"\$p"}"/qa_kind "$f"/'
+plugin_case P454-trace-dash-path-to-find T11 "$QAF" 's#^    case "\$p" in \.|\.\.|/\*|\./\*|\.\./\*) ;; \*) p="\./\$p" ;; esac$##'
+plugin_case P455-trace-guard-ignores-pattern T11 "$QAS/scripts/check-tests.sh" 's/ENVIRON\["QA_RE"\]/re/'
+plugin_case P456-trace-core-na-text T11 "$QAT" 's/ENVIRON\["QA_CORE"\] == ""/1/'
+mutant_group ascent-quality-hygiene
+plugin_case P407-hyg-focused-ok T11 "$QAT" 's/fail("H1", "High"/0 \&\& fail("H1", "High"/'
+plugin_case P408-hyg-fit-ok T11 "$QAT" 's/f(it|describe|context)\[/f(NEVER)[/'
+plugin_case P409-hyg-pytest-only-ok T11 "$QAT" 's/pytest\\\.mark\\\.only/pytest\\.mark\\.NEVER/'
+plugin_case P410-hyg-skip-reason-ignored T11 "$QAT" 's/if (skipreason(raw, LG)) note/if (0) note/'
+plugin_case P411-hyg-unexplained-skip-ok T11 "$QAT" 's/else fail("H2", "Medium"/else 0 \&\& fail("H2", "Medium"/'
+plugin_case P412-hyg-comment-not-a-reason T11 "$QAT" 's/if (HADCOM || PREVCOM) return 1/if (0) return 1/'
+plugin_case P413-hyg-comment-reason-sticks T11 "$QAT" 's/^  else if (t != "") PREVCOM = 0$//'
+plugin_case P414-hyg-no-assertion-ok T11 "$QAT" 's/if (!BASSERT) fail("H3"/if (0) fail("H3"/'
+plugin_case P415-hyg-skipped-not-exempt T11 "$QAT" 's/if (BSKIP || !BFN) return/if (!BFN) return/'
+plugin_case P416-hyg-start-line-assert-missed T11 "$QAT" '/PYSIG = 0; if (LG == "py")/{n;s/^    if (hasassert(m, LG)) BASSERT = 1$//;}'
+plugin_case P417-hyg-go-one-line-open T11 "$QAT" 's/if (BDEPTH <= 0 && index(m, "{")) { endblock(); PREVCOM = 0; next }//'
+plugin_case P418-hyg-js-block-never-ends T11 "$QAT" 's#BDEPTH += gsub(/\\(/, "(", m) - gsub(/\\)/, ")", m)#BDEPTH += 1#'
+plugin_case P419-hyg-py-indent-ignored T11 "$QAT" 's/if (INB && LG == "py" && t != "")/if (0)/'
+plugin_case P420-hyg-bats-end-ignored T11 "$QAT" 's/ else if (LG == "bats" && raw ~ \/^}\/) endblock()//'
+plugin_case P421-hyg-runner-retries-ok T11 "$QAT" 's/) fail("H4", "Low", at(), "the test runner retries/) 0 \&\& fail("H4", "Low", at(), "the test runner retries/'
+plugin_case P422-hyg-test-retries-ok T11 "$QAT" 's/) fail("H4", "Low", at(), "the test retries/) 0 \&\& fail("H4", "Low", at(), "the test retries/'
+plugin_case P423-hyg-ci-reruns-ok T11 "$QAT" 's/{ fail("H4", "Low", at(), "CI reruns/{ 0 \&\& fail("H4", "Low", at(), "CI reruns/'
+plugin_case P424-hyg-strings-not-masked T11 "$QAC" 's/^    if (q != "") {$/    if (0) {/'
+plugin_case P425-hyg-comments-not-masked T11 "$QAC" 's/if (nx == "\/\/") { HADCOM = 1; break }/if (0) { HADCOM = 1; break }/'
+plugin_case P448-hyg-py-signature-ends-test T11 "$QAT" 's/if (PYSIG > 0) { p = m;/if (0) { p = m;/'
+plugin_case P449-hyg-triple-quote-not-carried T11 "$QAC" 's/if (q == "`" || length(q) == 3) MQ = q/if (q == "`") MQ = q/'
+plugin_case P450-hyg-string-line-ends-test T11 "$QAT" 's/else if (!MSTART) {/else {/'
+plugin_case P451-hyg-option-retries-flagged T11 "$QAT" 's#(describe|test)\\\.configure\[ \\t\]\*\\(\[^)\]\*retries#retries#'
+mutant_group ascent-quality-rules
+plugin_case P426-quality-severity-copy-drift T5 "$QAA" 's/^| A test with no assertion (QA-H3) | Medium |$/| A test with no assertion (QA-H3) | Low |/'
+plugin_case P427-quality-agent-can-write T4 "$QAA" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Write/'
+plugin_case P428-quality-agent-cites-missing-step T9 "$QAA" 's/(quality-review Step 4)/(quality-review Step 9)/'
+plugin_case P429-quality-skill-pre-approves-writes T4b "$QAK" 's/^allowed-tools: Read, Grep, Glob, /allowed-tools: Read, Grep, Glob, Write, /'
+plugin_case P430-quality-version-not-bumped T3 "$QAS/.claude-plugin/plugin.json" 's/"version": "\([0-9][0-9.]*\)"/"version": "\1-x"/'
+plugin_case_rm P431-quality-tests-removed T11 tests/plugins/ascent-quality
+plugin_case P432-review-runs-the-suite T11 "$QAR" 's/write or fix a test, run the test suite, or install a test tool\./write or fix a test, or install a test tool./'
+plugin_case P433-inventory-runs-ci T11 "$QAN" 's/\*\*Never run the tests or CI\*\*/**Run the tests when needed**/'
+plugin_case P434-check-unskips-tests T11 "$QAK" 's/\*\*Never edit, unskip or run a test\.\*\*/**Unskip a test when needed.**/'
+plugin_case P435-review-heuristics-unread T11 "$QAR" 's/\*\*QA-H3 and QA-I4 are heuristics\.\*\* Open each hit before you rate it\./**QA-H3 and QA-I4 are heuristics.**/'
+plugin_case P436-review-na-is-a-pass T11 "$QAR" 's/`N\/A` is never a pass\./`N\/A` counts as a pass./'
+plugin_case P437-agent-drops-security-referral T11 "$QAA" 's/ Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`\.//'
+plugin_case P438-review-unmeasured-is-met T11 "$QAR" 's/ A lens whose target is missing from the contract is unmeasured, never met; it is at risk instead when the evidence shows a gap\.//'
+plugin_case P439-agent-key-drift T11 "$QAA" 's/`assertion_helpers`//'
+plugin_case P440-check-names-missing-script T11 "$QAK" 's#"\$PLUGIN_ROOT/scripts/check-tests.sh"#"$PLUGIN_ROOT/scripts/check-test.sh"#'
+plugin_case P441-review-maturity-values-drift T11 "$QAR" 's/`maturity_target` is one of enterprise, standard or prototype/`maturity_target` is one of enterprise or standard/'
+plugin_case P442-agent-invents-severities T11 "$QAA" 's/Never invent a severity\.//'
+plugin_case P443-review-drops-fresh-evidence T11 "$QAR" 's/\*\*Fresh evidence\.\*\*/**Evidence.**/'
+plugin_case P444-inventory-cites-missing-step T11 "$QAN" 's/Use the `quality-review` Step 5 format/Use the `quality-review` Step 9 format/'
+plugin_case P445-strategy-names-unchecked-rule T11 "$QAS/references/test-strategy.md" 's/^| QA-H4 retries |/| QA-H9 retries |/'
+plugin_case P446-inventory-values-unquoted T11 "$QAN" 's/\*\*Quote every contract value\.\*\*/Quote values./'
+plugin_case P447-review-git-log-writes T11 "$QAR" 's/, never with `--output`, `--ext-diff` or `--textconv`//'
+
 # Ownership gate T13 (ADR-015). Every control expects one T13 rule; T11 is
 # skipped (T11_FORCE names no plugin) because no control here is about behavior
 # tests. The checker-code controls at the end set T13_SELFTEST=1 and expect the
@@ -737,9 +835,9 @@ if in_group; then
 fi
 plugin_case_rm P205-registry-removed T13.1 "$OWN"
 plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
-plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `QA-I` | `ascent-quality` | v0.4.11 |$/| `QA-I` | `ascent-quality` |/'
+plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `OPS-R` | `ascent-ops` | v0.4.12 |$/| `OPS-R` | `ascent-ops` |/'
 plugin_case P208-plugin-row-dropped T13.2 "$OWN" '/^| `ascent-ops` | `OPS` | released /d'
-plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-quality` | `QA` | planned |/| `ascent-quality` | `QA` | released |/'
+plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-governance` | `GOV` | planned |/| `ascent-governance` | `GOV` | released |/'
 plugin_case P210-marketplace-entry-renamed T13.2 .claude-plugin/marketplace.json 's/"name": "ascent-ops",/"name": "ascent-operations",/'
 plugin_case P211-signal-row-dropped T13.2 "$OWN" '/^| HTML, JSX, Vue or Svelte templates/d'
 plugin_case P212-skill-unregistered T13.3 "$OWN" '/^| `ascent-ops` | skill | `ops-manuals` |$/d'
@@ -754,8 +852,8 @@ plugin_case P219-family-duplicated T13.4 "$OWN" 's/^| `ARC-B` | .*$/&\
 plugin_case P220-contract-extra-section T13.5 plugins/ascent-ux/references/contract-template.yml '$a\
 quality:\
   maturity_target: enterprise'
-plugin_case P221-contract-section-claimed-twice T13.5 "$OWN" 's/^| `ascent-quality` | `QA` | planned | hand-written | `quality` |/| `ascent-quality` | `QA` | planned | hand-written | `ux` |/'
-plugin_case P222-marker-names-planned T13.6 plugins/ascent-ops/references/runbook-standard.md 's/(→ ascent-security)/(→ ascent-quality)/'
+plugin_case P221-contract-section-claimed-twice T13.5 "$OWN" 's/^| `ascent-quality` | `QA` | released | hand-written | `quality` |/| `ascent-quality` | `QA` | released | hand-written | `ux` |/'
+plugin_case P222-marker-names-planned T13.6 plugins/ascent-ops/references/runbook-standard.md 's/(→ ascent-security)/(→ ascent-governance)/'
 plugin_case P223-domain-duplicated T13.7 "$OWN" 's/^| design principles |/| design tokens and contrast |/'
 plugin_case P224-domain-owner-unknown T13.7 "$OWN" 's/^| mutation evidence | — | `ascent-quality` |/| mutation evidence | — | `ascent-qualty` |/'
 plugin_case P225-lens-dropped-in-skill T13.8 "$DLS/SKILL.md" '/^| Architecture and cost | /d'

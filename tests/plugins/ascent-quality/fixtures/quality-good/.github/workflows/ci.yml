@@ -1,0 +1,13 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit and integration tests
+        run: make test
+      - name: End-to-end tests
+        run: npx playwright test
+      - name: Contract tests
+        run: npm run test:contract

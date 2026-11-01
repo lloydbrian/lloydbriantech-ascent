@@ -12,10 +12,10 @@ Every review is read-only. The architecture, ux and ops plugins judge against th
 
 | Pillar | Question it answers | Main plugins | Coverage |
 |---|---|---|---|
-| **Driving business value** | Does the system deliver what users need at a cost and speed the business can sustain? | `ascent-architecture`, `ascent-delivery`, `ascent-ux` | Partial: cost and delivery speed are measured; the outcome a change achieves is not |
+| **Driving business value** | Does the system deliver what users need at a cost and speed the business can sustain? | `ascent-architecture`, `ascent-delivery`, `ascent-ux`, `ascent-quality` | Partial: cost and delivery speed are measured; the outcome a change achieves is not |
 | **Compliance** | Can the team show evidence against the standards it must meet? | `ascent-ux`, `ascent-ops`, `ascent-security` | Partial by design: evidence for WCAG 2.2 AA and secure configuration; no certification preparation |
 | **Trust and security** | Can users and operators trust the system with their data and their infrastructure? | `ascent-security`, `ascent-delivery`, `ascent-ops` | Partial: secrets, hardening and posture are strong; no threat model and no scan for known vulnerabilities |
-| **Resilience** | Does the system keep running, and recover quickly when it does not? | `ascent-ops`, `ascent-architecture`, `ascent-delivery` | Partial: recovery is checked as documented, not yet proven by a drill |
+| **Resilience** | Does the system keep running, and recover quickly when it does not? | `ascent-ops`, `ascent-architecture`, `ascent-delivery`, `ascent-quality` | Partial: recovery is checked as documented, not yet proven by a drill |
 
 Coverage levels:
 - **Strong:** checked with evidence, behavior tests and negative controls.
@@ -32,7 +32,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 
 | Attribute | Checked by | Evidence | Status |
 |---|---|---|---|
-| Functional suitability | `ascent-delivery` (definition of done); `quality-attributes` | Each acceptance criterion mapped to a test or a recorded manual check | Partial: the rule is stated, but has no behavior tests or negative controls yet |
+| Functional suitability | `ascent-quality` (`test-check`, QA-T1–T4; `test-inventory`, QA-I1–I5); `ascent-delivery` (definition of done); `quality-attributes` | Each acceptance criterion and core rule named by a test; the required test types present and run in CI; no focused, assertion-less or unexplained skipped tests | Strong: traceability, test types and hygiene have behavior tests and negative controls; whether a test checks what its criterion says is read, not measured |
 | Cost efficiency | `deployment-options`; `architecture-review` (ARC-C11, budget alert); `quality-attributes`; embedded `ascent-cost-posture` | A dated monthly estimate against `monthly_budget_usd`; budget alert in the IaC | Strong |
 | Performance efficiency | `quality-attributes`; `ascent-ux` (Core Web Vitals) | `p95_latency_ms` target; CDN and cache policy; Core Web Vitals against a stated budget | Partial: read from design and config, not measured under load |
 | Scalability (capacity) | `quality-attributes` | `peak_rps` target; autoscaling or on-demand services; throttling limits | Partial: no load test |

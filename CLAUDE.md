@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent`, the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux and ops released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10). Phase 4 awaits its go-signal.
-**Version:** 0.4.10
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops and quality released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11). Phase 4 awaits its go-signal.
+**Version:** 0.4.11
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -71,7 +71,7 @@ lloydbriantech-ascent/
 ├── skills/
 │   └── lloydbriantech-ascent/         # Parent skill: SKILL.md, references/, assets/template/
 ├── plugins/                           # ascent-security (hybrid), ascent-delivery,
-│                                      # ascent-architecture, ascent-ux, ascent-ops (hand-written)
+│                                      # ascent-architecture, ascent-ux, ascent-ops, ascent-quality (hand-written)
 ├── tests/plugins/                     # Plugin behavior tests and fixtures
 ├── tests/meta/                        # Tests for this repository's own gate scripts
 ├── tools/scratch/                     # Phase 2 smoke-test scaffold

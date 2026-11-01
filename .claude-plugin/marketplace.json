@@ -19,7 +19,7 @@
       "name": "ascent-delivery",
       "source": "./plugins/ascent-delivery",
       "description": "The ASCENT delivery loop for any repository: build, test with negative controls, gate, independent review with a finding verifier, and an operator runbook. A hook blocks git writes and deploys for Claude.",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "license": "MIT OR Apache-2.0"
     },
     {
@@ -41,6 +41,13 @@
       "source": "./plugins/ascent-ops",
       "description": "Operations review for any repository: infrastructure as code with secure-by-design configuration, zero-touch scripts and runbooks with pre-flight and post-flight checks, Maintenance and Operations and Troubleshooting manuals kept current with diagrams and a dependency map, and a read-only ops-reviewer agent.",
       "version": "0.2.0",
+      "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "ascent-quality",
+      "source": "./plugins/ascent-quality",
+      "description": "Test strategy review for any repository: which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, and test hygiene (focused, skipped, assertion-less and retried tests), plus a read-only quality-reviewer agent.",
+      "version": "0.1.0",
       "license": "MIT OR Apache-2.0"
     }
   ]

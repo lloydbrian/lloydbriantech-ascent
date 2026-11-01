@@ -8,7 +8,7 @@ description: >-
   finding verifier, fix and re-test, definition of done, an operator runbook,
   beta verification, prod and a release record. Claude never runs git writes or
   deploys: the operator does, from the runbook.
-version: 0.1.2
+version: 0.1.3
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -88,7 +88,7 @@ Then launch reviewers **in parallel**, one lens each, against the diff and the a
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | fallback prompt |
 | UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
-| Tests | `engineering:testing-strategy` | fallback prompt |
+| Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | fallback prompt |
 
 Skip a lens only when it cannot apply (no UI means no accessibility lens), and say so. A provider's output is passed through unedited, under a thin header naming the lens and the provider.
 
