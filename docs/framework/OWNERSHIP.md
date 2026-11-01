@@ -24,7 +24,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | `.env` files, configuration, a `Dockerfile`, `nginx.conf`, server or client code, package manifests and lockfiles | `ascent-security` | secrets, credentials, container privilege, security headers, dynamic code, and dependency vulnerabilities and supply chain |
 | infrastructure as code (CloudFormation, CDK, Terraform), a deployed service, a budget | `ascent-architecture` | quality attributes against targets, design principles, deployment options and cost |
 | HTML, JSX, Vue or Svelte templates, CSS, design tokens | `ascent-ux` | WCAG 2.2 AA evidence, design tokens and contrast, design directions |
-| infrastructure as code, operator scripts, runbooks, Compose files, health endpoints | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals |
+| infrastructure as code, operator scripts, runbooks, Compose files, health endpoints, backups and drill records | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals, recovery drills and readiness exercises |
 | test files, a test runner configuration, CI workflows, acceptance criteria | `ascent-quality` | test types and whether CI runs them, boundaries no test reaches, criteria and core rules traced to tests, test hygiene |
 <!-- ownership:signals:end -->
 
@@ -77,6 +77,7 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-ops` | skill | `iac-config-check` |
 | `ascent-ops` | skill | `runbook-check` |
 | `ascent-ops` | skill | `ops-manuals` |
+| `ascent-ops` | skill | `recovery-drill` |
 | `ascent-ops` | agent | `ops-reviewer` |
 | `ascent-quality` | skill | `quality-review` |
 | `ascent-quality` | skill | `test-inventory` |
@@ -100,6 +101,8 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `OPS-S` | `ascent-ops` | rule | `plugins/ascent-ops/references/secure-config-rules.md` |
 | `OPS-Z` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-scripts.sh` |
 | `OPS-M` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-manuals.sh` |
+| `OPS-R` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-drills.sh` |
+| `OPS-X` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-drills.sh` |
 | `QA-I` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-inventory.sh` |
 | `QA-T` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-tests.sh` |
 | `QA-H` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-tests.sh` |
@@ -114,13 +117,11 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 
 ## Reserved
 
-Names, codes and rule-id families taken for planned work ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md); release numbers from [ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)).
+Names, codes and rule-id families taken for planned work ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md); release numbers from [ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)). A reservation moves to its table when the work ships; the table is empty when nothing is reserved. `OPS-R` and `OPS-X` moved to Rule-id families in v0.4.12 ([ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)).
 
 <!-- ownership:reserved:start -->
 | Reserved | For | Release |
 |---|---|---|
-| `OPS-R` | `ascent-ops` | v0.4.12 |
-| `OPS-X` | `ascent-ops` | v0.4.12 |
 <!-- ownership:reserved:end -->
 
 ## Domains and testing types
@@ -143,7 +144,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | design principles | `ascent-architecture` | `ascent-architecture` | released |
 | deployment options and cost | `ascent-architecture` | `ascent-architecture` | released |
 | load and performance (server) | `ascent-architecture` | `ascent-quality` | planned |
-| restore and failover | `ascent-architecture` | `ascent-ops` | planned |
+| restore and failover | `ascent-architecture` | `ascent-ops` | released |
 | accessibility (WCAG 2.2 AA) | `ascent-ux` | `ascent-ux` | released |
 | design tokens and contrast | `ascent-ux` | `ascent-ux` | released |
 | front-end performance | `ascent-ux` | `ascent-ux` | released |
@@ -152,7 +153,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | secure IaC configuration | `ascent-ops` | `ascent-ops` | released |
 | operator scripts and runbooks | `ascent-ops` | `ascent-ops` | released |
 | operations manuals | `ascent-ops` | `ascent-ops` | released |
-| operational readiness exercises | `ascent-ops` | `ascent-ops` | planned |
+| operational readiness exercises | `ascent-ops` | `ascent-ops` | released |
 | unit, integration and contract tests | — | `ascent-quality` | released |
 | regression and end-to-end tests | `ascent-delivery` | `ascent-quality` | released |
 | criterion-to-test traceability | `ascent-delivery` | `ascent-quality` | released |

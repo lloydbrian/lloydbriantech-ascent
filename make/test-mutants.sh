@@ -623,7 +623,7 @@ plugin_case P115-web-notes-dropped T11 "$UXW" '/^    printf "%s", NOTES\[k\]$/d'
 plugin_case P116-ux-review-notes-rated T11 "$UXR" 's/Each `NOTE` line is unrated/Each `NOTE` line is Low/'
 plugin_case P117-agent-delegated-dropped T11 "$UXA" 's/That includes delegated listeners/It covers inline handlers/'
 plugin_case P202-tokens-to-css-no-help T11 "$UX/scripts/tokens-to-css.sh" '/^case "\${1:-}" in -h|--help)/d'
-# ascent-ops runs as five groups so each CI job stays well inside its timeout:
+# ascent-ops runs as six groups so each CI job stays well inside its timeout:
 # one control runs the ops tests (about 20 s), against 7 s for the other plugins.
 OPS=plugins/ascent-ops
 OPI="$OPS/scripts/lib/check-iac-config.awk"
@@ -697,7 +697,7 @@ plugin_case P174-iac-store-type-ignored T11 "$OPI" 's/{ entStore = 1; penName = 
 plugin_case P175-iac-time-units-are-secrets T11 "$OPI" 's/(seconds|minutes|hours|days)/(never)/'
 plugin_case P176-iac-drift-comments-count T11 "$OPI" 's/^  if (raw ~ \/^ \*(#|\\\/\\\/)\/) next$//'
 plugin_case P177-iac-drift-tests-count T11 "$OPS/scripts/check-iac-config.sh" 's#\*/tests/\*|#*/never/*|#'
-plugin_case P178-iac-local-override-is-prod T11 "$OPI" 's/ && lc(FN) !~ \/local|dev|test|example\/) fail/) fail/'
+plugin_case P178-iac-local-override-is-prod T11 "$OPI" 's/ && lc(RP) !~ \/local|dev|test|example\/) fail/) fail/'
 plugin_case P179-scripts-token-is-a-guard T11 "$OPZ" 's/\^(confirm|confirmation|answer|reply|ok|yn|yesno|proceed|sure)\$/(confirm|answer|ok|yn)/'
 plugin_case P180-scripts-prompt-not-parsed T11 "$OPZ" 's/( +-\[A-Za-z\]+( +P)?)\*/( +-[A-Za-z]+)*/'
 plugin_case P181-scripts-prints-the-line T11 "$OPZ" 's/DESTC\[NDEST\] = destword(line)/DESTC[NDEST] = line/'
@@ -720,6 +720,71 @@ plugin_case P196-scripts-binary-read-as-script T11 "$OPS/scripts/check-ops-scrip
 plugin_case P197-review-rollback-always-high T11 "$OPR" 's/\*\*Rollback is rated by what exists\.\*\*/**Rollback is always High.**/'
 plugin_case P198-review-proposes-z-paths T11 "$OPR" 's/Never propose a `z`-suffixed value\./Propose the detected value./'
 plugin_case P199-iac-trivy-runs-online T11 "$OPS/skills/iac-config-check/SKILL.md" 's/--skip-check-update --skip-version-check --quiet/--quiet/'
+# OPS-S8 classified on the absolute path: a checkout under a folder named "dev" or
+# "Developer" hid every production env file (fixed in v0.4.12, ADR-020).
+plugin_case P501-iac-s8-absolute-path T11 "$OPI" 's/if (lc(RP) ~ \/prod\/ \&\& lc(RP) !~/if (lc(FN) ~ \/prod\/ \&\& lc(FN) !~/'
+plugin_case P502-iac-env-folder-absolute-path T11 "$OPS/scripts/check-iac-config.sh" 's#^  case "\$(rel "\$f")" in \*/environments/\*#  case "$f" in */environments/*#'
+plugin_case P505-iac-s8-relative-folder-dropped T11 "$OPS/scripts/check-iac-config.sh" 's|printf '\''/%s/%s'\'' "[$]{t#./}" "[$]{1#"[$]t"/}"|printf '\''/%s'\'' "${1#"$t"/}"|'
+plugin_case P506-iac-s8-absolute-folder-dropped T11 "$OPS/scripts/check-iac-config.sh" 's|printf '\''/%s/%s'\'' "[$]{t##\*/}" "[$]{1#|printf '\''/%s'\'' "${1#|'
+# ascent-ops 0.3.0: recovery drills and readiness exercises (OPS-R, OPS-X; ADR-020).
+OPD="$OPS/scripts/lib/check-drills.awk"
+OPDS="$OPS/scripts/check-drills.sh"
+OPDK="$OPS/skills/recovery-drill/SKILL.md"
+mutant_group ascent-ops-drills
+plugin_case P461-drills-private-key-missed T11 "$OPD" 's/if (line ~ \/-----BEGIN \[A-Z \]\*PRIVATE KEY-----\/) fail/if (0) fail/'
+plugin_case P462-drills-access-key-missed T11 "$OPD" 's/if (line ~ \/AKIA/if (0 \&\& line ~ \/AKIA/'
+plugin_case P463-drills-secret-value-missed T11 "$OPD" 's/if (!secretish(k) || !match/if (1 || !match/'
+plugin_case P464-drills-email-missed T11 "$OPD" 's/fail("R5", "Medium", where, "an email/0 \&\& fail("R5", "Medium", where, "an email/'
+plugin_case P465-drills-phone-missed T11 "$OPD" 's/fail("R5", "Medium", where, "a phone/0 \&\& fail("R5", "Medium", where, "a phone/'
+plugin_case P466-drills-prose-is-a-secret T11 "$OPD" '/^    if (!eq \&\& substr(rest, 1, 1) == " " /d'
+plugin_case P467-drills-evidence-outside-ok T11 "$OPD" 's/{ fail("R5", "Medium", at(i, "evidence"), "evidence " safe(e) " is outside/{ 0 \&\& fail("R5", "Medium", at(i, "evidence"), "evidence " safe(e) " is outside/'
+plugin_case P468-drills-evidence-missing-ok T11 "$OPD" 's/if (rc < 0 && !got) fail/if (0) fail/'
+plugin_case P469-drills-no-evidence-ok T11 "$OPD" 's/if (ev == "") fail/if (0) fail/'
+plugin_case P470-drills-follow-up-ignored T11 "$OPD" 's/if (!later) fail("R6"/if (0) fail("R6"/'
+plugin_case P471-drills-later-pass-ignored T11 "$OPD" 's/V\[j, "result"\] == "pass" && V\[j, "date"\] > d) later = 1/V[j, "result"] == "pass") later = 1/'
+plugin_case P472-drills-runbook-missing-ok T11 "$OPD" 's/else if (!(PR\[p\] in RBSEEN)) fail/else if (0) fail/'
+plugin_case P473-drills-rollback-optional T11 "$OPD" 's/if (!RBBACK\[PR\[p\]\]) miss/if (0) miss/'
+plugin_case P474-drills-stop-if-assumed T11 "$OPD" 's/if (l ~ \/stop if\/) RBSTOP/if (1) RBSTOP/'
+plugin_case P475-drills-age-ignored T11 "$OPD" 's/if (fresh \&\& (days(TODAY) - days(V\[i, "date"\]) > MAXAGE || /if (fresh \&\& (/'
+plugin_case P476-drills-name-date-mismatch-ok T11 "$OPD" 's/if (substr(b, 1, 10) != d) fail/if (0) fail/'
+plugin_case P477-drills-future-date-ok T11 "$OPD" 's/if (d > TODAY) fail("R3"/if (0) fail("R3"/'
+plugin_case P478-drills-missing-fields-ok T11 "$OPD" 's/if (miss != "") fail("R3"/if (0) fail("R3"/'
+plugin_case P479-drills-rto-exceeded-ok T11 "$OPD" 's/else if (mm > mt) fail/else if (0) fail/'
+plugin_case P480-drills-hours-as-minutes T11 "$OPD" 's/u == "h" ? 3600/u == "h" ? 60/'
+plugin_case P481-drills-failed-drill-current T11 "$OPD" 's/b = newest(PN\[p\], PK\[p\], "pass", 1)/b = newest(PN[p], PK[p], "", 1)/'
+plugin_case P482-drills-manual-link-date T11 "$OPD" 's/^    t = line; gsub(.*$/    t = line/'
+plugin_case P483-drills-manual-behind-ok T11 "$OPD" 's/else if (MDATE < V\[rs, "date"\]) fail/else if (0) fail/'
+plugin_case P484-drills-failover-path-ignored T11 "$OPD" 's/if (!has) { w = ""/if (0) { w = ""/'
+plugin_case P485-drills-backups-unmeasured-ok T11 "$OPD" 's/if (NP == 0 && NBK > 0) {/if (0) {/'
+plugin_case P486-drills-alarm-role-ignored T11 "$OPD" 's/else if (V\[b, "reached"\] == "") fail/else if (0) fail/'
+plugin_case P487-drills-stale-alarm-counts T11 "$OPD" 's/b = newest(AN\[a\], "alarm", "pass", 1)/b = newest(AN[a], "alarm", "pass", 0)/'
+plugin_case P488-drills-readiness-2xx-ok T11 "$OPD" 's/ && st !~ \/^2\/) best = i/) best = i/'
+plugin_case P489-drills-readiness-any-probe T11 "$OPD" 's/if ((pr == READY || /if ((1 || /'
+plugin_case P490-drills-dry-run-ignored T11 "$OPD" 's/if (!got) fail("X3"/if (0) fail("X3"/'
+plugin_case P491-drills-standard-requires-all T11 "$OPD" 's/(MAT == "standard" && i <= 5)/(MAT == "standard")/'
+plugin_case P492-drills-prototype-hides-credentials T11 "$OPD" 's/if (k == "R5" && HIGH\[k\] != "")/if (0)/'
+plugin_case P493-drills-days-ignore-day T11 "$OPD" 's/+ int((153 \* mm + 2) \/ 5) + dd - 719469/+ int((153 * mm + 2) \/ 5) - 719469/'
+plugin_case P494-drills-bad-kind-accepted T11 "$OPDS" 's/  case "\$kind" in restore|failover) ;; \*) bad/  case "$kind" in *) ;; restore) bad/'
+plugin_case P495-drills-bad-maturity-accepted T11 "$OPDS" 's/^case "\$MATURITY" in enterprise|standard|prototype) ;; \*) bad/case "$MATURITY" in *) ;; enterprise) bad/'
+plugin_case P496-drills-compose-not-read T11 "$OPDS" 's/^      docker-compose\*\.yml|docker-compose\*\.yaml|compose\*\.yml|compose\*\.yaml|podman-compose\*\.yml|podman-compose\*\.yaml)/      nevermatch)/'
+plugin_case P497-drills-skill-runs-drills T11 "$OPDK" 's/\*\*Never run a drill\.\*\*/**Run the drill with care.**/'
+plugin_case P498-drills-skill-writes-records T11 "$OPDK" 's/\*\*Never write a drill record\.\*\*/**Fill in the drill record.**/'
+plugin_case P499-drills-skill-pre-approves-writes T4b "$OPDK" 's/^allowed-tools: Read, Grep, Glob, /allowed-tools: Read, Grep, Glob, Write, /'
+plugin_case P500-drills-severity-copy-drift T5 "$OPA" 's/| A drill that missed the rto or rpo target (OPS-R4), or a failed drill with no follow-up (OPS-R6) | Medium |/| A drill that missed the rto or rpo target (OPS-R4), or a failed drill with no follow-up (OPS-R6) | Low |/'
+plugin_case P503-drills-header-severity-off-table T11 "$OPDS" 's/^#   OPS-R7  Low     the manual/#   OPS-R7  Medium  the manual/'
+plugin_case P504-drills-agent-key-drift T11 "$OPA" 's/`drills` (`dir`, `max_age_days` and `paths`), //'
+plugin_case P507-drills-url-credential-missed T11 "$OPD" 's/{ fail("R5", "High", where, "a credential in a URL/{ 0 \&\& fail("R5", "High", where, "a credential in a URL/'
+plugin_case P508-drills-bearer-token-missed T11 "$OPD" 's/ \&\& RLENGTH >= 22) fail("R5"/ \&\& 0) fail("R5"/'
+plugin_case P509-drills-table-row-secret-missed T11 "$OPD" 's/if (n >= 4 \&\& secretish(k) \&\& cell/if (0 \&\& cell/'
+plugin_case P510-drills-command-after-equals-is-prose T11 "$OPD" 's/if (!eq \&\& substr(rest, 1, 1)/if (substr(rest, 1, 1)/'
+plugin_case P511-drills-values-printed T11 "$OPD" 's/^function safe(v) { return .*$/function safe(v) { return v }/'
+plugin_case P512-drills-planned-restore-date-counts T11 "$OPD" 's/if (d <= TODAY \&\& d > MDATE)/if (d > MDATE)/'
+plugin_case P513-drills-february-31-accepted T11 "$OPD" '/^  if (m == 2) return dd <= 28/d'
+plugin_case P514-drills-result-carries-over T11 "$OPD" 's/ res = ""; rty = "";//'
+plugin_case P515-drills-stale-readiness-counts T11 "$OPD" 's/ || days(TODAY) - days(V\[i, "date"\]) > MAXAGE || V\[i, "date"\] > TODAY) continue/ || V[i, "date"] > TODAY) continue/'
+plugin_case P516-drills-bad-duration-accepted T11 "$OPDS" 's/^  \[ -z "[$]t" \]/  true || [ -z "$t" ]/'
+plugin_case P517-drills-dash-path-is-an-expression T11 "$OPDS" 's|^nodash() { case "[$]1" in -\*) printf '\''./%s'\''|nodash() { case "$1" in -*) printf '\''%s'\''|'
+plugin_case P518-drills-today-february-30-accepted T11 "$OPDS" 's/2) ml=28; /2) ml=31; /'
 
 mutant_group ascent-quality-inventory
 QAS=plugins/ascent-quality
@@ -835,7 +900,7 @@ if in_group; then
 fi
 plugin_case_rm P205-registry-removed T13.1 "$OWN"
 plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
-plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `OPS-R` | `ascent-ops` | v0.4.12 |$/| `OPS-R` | `ascent-ops` |/'
+plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `OPS-R` | `ascent-ops` | rule | `plugins\/ascent-ops\/scripts\/check-drills.sh` |$/| `OPS-R` | `ascent-ops` | rule |/'
 plugin_case P208-plugin-row-dropped T13.2 "$OWN" '/^| `ascent-ops` | `OPS` | released /d'
 plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-governance` | `GOV` | planned |/| `ascent-governance` | `GOV` | released |/'
 plugin_case P210-marketplace-entry-renamed T13.2 .claude-plugin/marketplace.json 's/"name": "ascent-ops",/"name": "ascent-operations",/'
@@ -846,7 +911,9 @@ plugin_case P214-agent-misnamed T13.3 "$OWN" 's/^| `ascent-delivery` | agent | `
 plugin_case P215-code-duplicated T13.4 "$OWN" 's/^| `ascent-governance` | `GOV` |/| `ascent-governance` | `OPS` |/'
 plugin_case P216-family-wrong-plugin T13.4 "$OWN" 's/^| `UX-H` | `ascent-ux` |/| `UX-H` | `ascent-ops` |/'
 plugin_case P217-family-definition-lost T13.4 "$OWN" 's#^\(| `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/\)usability-heuristics.md#\1design-tokens.md#'
-plugin_case P218-reserved-wrong-plugin T13.4 "$OWN" 's/^| `OPS-R` | `ascent-ops` |/| `OPS-R` | `ascent-quality` |/'
+plugin_case P218-reserved-wrong-plugin T13.4 "$OWN" '/^| Reserved | For | Release |$/{n;a\
+| `OPS-R` | `ascent-quality` | v0.4.13 |
+}'
 plugin_case P219-family-duplicated T13.4 "$OWN" 's/^| `ARC-B` | .*$/&\
 &/'
 plugin_case P220-contract-extra-section T13.5 plugins/ascent-ux/references/contract-template.yml '$a\
@@ -860,7 +927,7 @@ plugin_case P225-lens-dropped-in-skill T13.8 "$DLS/SKILL.md" '/^| Architecture a
 plugin_case P226-lens-order-in-reference T13.8 "$DLS/references/review-lenses.md" 's/`ascent-ux:ux-reviewer`, `design:accessibility-review`/`design:accessibility-review`, `ascent-ux:ux-reviewer`/'
 plugin_case P227-lens-dropped-in-readme T13.8 plugins/ascent-delivery/README.md '/^| UX and navigation | /d'
 plugin_case P228-lens-provider-unregistered T13.8 "$OWN" 's/^| `ascent-architecture` | agent | `architecture-reviewer` |$/| `ascent-architecture` | agent | `architecture-critic` |/'
-plugin_case P229-readme-version-stale T13.9 README.md 's#^| \[`ascent-ops`\](plugins/ascent-ops/README.md) | 0.2.0 |#| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.1.0 |#'
+plugin_case P229-readme-version-stale T13.9 README.md 's#^| \[`ascent-ops`\](plugins/ascent-ops/README.md) | 0.3.0 |#| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.2.0 |#'
 plugin_case P230-pillars-unknown-plugin T13.9 docs/framework/PILLARS.md 's/^\(| Change safety | `ascent-ops` (`runbook-check`)\); `ascent-delivery` |/\1; `ascent-delivry` |/'
 plugin_case P231-pillars-unknown-component T13.9 docs/framework/PILLARS.md 's/| Change safety | `ascent-ops` (`runbook-check`)/| Change safety | `ascent-ops` (`runbook-checks`)/'
 plugin_case P232-rule-cell-unqualified T13.10 plugins/ascent-ops/references/secure-config-rules.md 's/^| OPS-S1 | High |/| S1 | High |/'

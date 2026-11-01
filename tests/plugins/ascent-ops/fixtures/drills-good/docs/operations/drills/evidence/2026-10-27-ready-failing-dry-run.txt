@@ -1,0 +1,4 @@
+pre-flight: health 200, ready 503 (staged)
+step 1: body names db
+step 2: db exited
+all commands exist

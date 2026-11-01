@@ -1,0 +1,5 @@
+pg_restore exit 0
+rto_seconds=1480
+customers 200
+orders 1000
+password: stored in Secrets Manager, never here

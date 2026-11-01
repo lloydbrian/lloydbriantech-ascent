@@ -8,7 +8,7 @@ description: >-
   configuration (OPS-S1–S10): no literal secrets, secret stores and rotation,
   encrypted and locked state, least privilege, per-environment configuration,
   drift detection. Never prints a value. Read-only.
-version: 0.2.0
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 ---
 

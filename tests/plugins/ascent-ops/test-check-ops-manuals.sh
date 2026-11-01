@@ -103,8 +103,8 @@ matrix() {
   mk m5;           edit m5 "$MO" "$(subst '| Dependency | Kind | Version |' '| Dependency | Kind | Release |')" && chk m5 && expect_only m5 OPS-M5 Low
 
   # OPS-M6 — current
-  TODAY=2027-01-23; mk m6-edge; chk m6-edge; expect_pass m6-edge 'exactly 90 days old'
-  TODAY=2027-01-24; mk m6-old; chk m6-old; expect_only m6-old OPS-M6 Medium; TODAY=""
+  TODAY=2027-01-30; mk m6-edge; chk m6-edge; expect_pass m6-edge 'exactly 90 days old'
+  TODAY=2027-01-31; mk m6-old; chk m6-old; expect_only m6-old OPS-M6 Medium; TODAY=""
   mk m6-missing;   rm "$WORK/m6-missing/ops-script-template.sh"; chk m6-missing; expect_only m6-missing OPS-M6
   if printf '%s\n' "$OUT" | grep -q 'sources no longer exist: ops-script-template.sh'; then ok; else bad "m6-missing: should name the missing source"; fi
   GITSHIM="$WORK/gitshim"

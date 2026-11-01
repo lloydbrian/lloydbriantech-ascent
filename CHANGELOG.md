@@ -13,7 +13,6 @@ Dates are in **America/New_York** timezone.
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
-- v0.4.12 `ascent-ops` 0.3.0, recovery drills and readiness exercises (`OPS-R`, `OPS-X`). See ADR-014 and ADR-017
 - `ascent-quality` 0.2.0: load-test alignment with `p95_latency_ms` and `peak_rps`, and mutation evidence (ADR-014); more languages (Java, Ruby, Rust, .NET) when a trial needs them (ADR-019)
 - `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
@@ -28,6 +27,51 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.12] — 2026-11-01
+
+**Recovery drills and readiness exercises.** `ascent-ops` 0.3.0 checks that a backup has been restored, a failover has been run, a paging alert has reached someone and readiness has been seen failing, from records the operator commits after each drill ([ADR-014](docs/framework/DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-020](docs/framework/DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)). Claude never runs a drill and never writes a record; a record shows a drill was recorded consistently, not that it was honest.
+
+### Added
+
+- `ascent-ops` 0.3.0:
+  - `recovery-drill`: finds the recovery paths and paging alerts, checks the drill records, proposes a `drills:` contract block from the IaC when it is missing, and writes a missing drill runbook as a new file; it never edits a runbook, a manual, the contract or a record
+  - `check-drills.sh`: `OPS-R1`–`R8`, a runbook per recovery path with pre-flight, post-flight, rollback, Expect and Stop if; a passing record of each path within `ops.drills.max_age_days`; the newest passing drill's `measured_rto` and `measured_rpo` against `architecture.quality_targets`; evidence present, inside the repository and free of credentials, email addresses and phone numbers (values never printed); a failed drill followed up; the manual's restore date not behind the newest restore drill; failover declared in the IaC (Multi-AZ, Route 53 failover, global tables and clusters, read replicas) with a failover path. `OPS-X1`–`X3`, every paging alert exercised and reaching a role, readiness answering non-2xx with a dependency down, every alert runbook dry-run. Standard maturity requires `OPS-R1`–`R5`, enterprise all; a credential in a record is High at every level
+  - `references/drill-records.md`: the record format and fields, durations, what a record must never hold, and a runbook outline per kind of drill
+  - The contract's `ops.drills` block (`dir`, `max_age_days`, `paths`) and `page: true` on alerts
+  - The blueprint's `runbooks/restore-db.md`, `runbooks/ready-failing.md` and a real restore drill, run in podman against PostgreSQL 16.4 (200 customers and 1,000 orders restored and counted, 2 seconds), with its record and evidence; the blueprint's `db` has a healthcheck
+  - Behavior tests: `test-check-drills.sh` (164 cases), `test-check-iac-config.sh` 78 cases (was 70), and `test-ops-rules.sh` (150 cases) with R13, R14 and R16 extended to `check-drills.sh` plus R19 for the new skill's rules
+- Group `ascent-ops-drills`, controls P461–P500, P503, P504 and P507 onward: every rule of `check-drills.sh`, the duration and date arithmetic, the maturity levels, the input guards, the skill's rules, the severity copy (T5) and the agent's keys
+- Controls P501, P502, P505 and P506 for the `OPS-S8` fix, in `ascent-ops-calibration`
+- ADR-020
+
+### Changed
+
+- `ops-review` runs four scripts and its Change and recovery lens reads the drill records; the `ops-reviewer` agent applies `OPS-R` and `OPS-X` by reading; the shared severity table has rows for both families; `sre-baseline.md` and `runbook-standard.md` describe drills
+- `docs/framework/OWNERSHIP.md`: `recovery-drill` registered, `OPS-R` and `OPS-X` moved from Reserved to Rule-id families, the restore and failover and operational readiness domains released; the Reserved table may now be empty (T13.1); P207, P218 and P229 re-anchored, and P466, P467, P475 and P481 follow the review fixes
+- PILLARS: recoverability and restore and failover proof Strong, operational readiness added
+- The devops role module names `recovery-drill`; README, ARCHITECTURE, ROADMAP and CLAUDE.md list the release
+
+### Fixed
+
+- `OPS-S8` classified a Compose file as production or development by its absolute path, so a checkout under a folder named `dev`, `test` or `Developer` hid every production env file, and the environment-folder check of `check-iac-config.sh` matched the same way. Both now read the path relative to the scanned root (P501, P502). Control P178 anchors on the new code
+- The blueprint's Troubleshooting Manual probed `/-/ready` with `curl` on the host, where the api publishes no port; it now runs the probe inside the api container
+
+### Notes
+
+- An independent review before release (correctness, security and privacy, operations, tests and documentation), checked by `finding-verifier`, confirmed 31 of 33 findings, all fixed, each with a behavior test and a control where it is code:
+  - `OPS-R5` read a value after `=` as prose (`PGPASSWORD=… pg_restore`) and missed compact JSON, a password in a URL, bearer and basic tokens and a credential in a table row; messages printed raw record values. Every shape is now a High finding, and a value that is not plain and short is printed as `<value withheld>`
+  - `OPS-R3` accepted a fresh failed drill as current and `OPS-R4` measured a stale pass; only a passing record within `max_age_days` makes a path current now, and R4 measures that record. Dates are checked against the calendar (no 31 February), a planned date in the manual no longer counts as a restore (`OPS-R7`), and a stale readiness record no longer passes `OPS-X2`
+  - The `OPS-S8` fix itself classified files relative to the scanned path, so `check-iac-config.sh deploy/prod` hid that folder's name; the scanned folder's own name now counts
+  - `check-drills.sh` validates `--today`, `--rto` and `--rpo`, follows a symlinked drills or IaC folder, and never hands `find` a path that starts with `-`; an empty record file is still read as a record
+  - The blueprint restore runbook measured the RTO to the database, not to the api's readiness, kept the scratch volume and the dump (production data) after the drill, and put the scratch password in podman's arguments; the readiness runbook probed a port the api does not publish and could recreate the database. Both are rewritten, with every removal flagged and confirmed
+  - The redaction in `drill-records.md` used GNU-only `sed`; it is now a `perl` line, tested on all five credential shapes
+- A negative control showed that no test read an `--iac` folder named `-iac`; the test now puts a Multi-AZ resource there and expects `OPS-R8` to cite it
+- Read-only trial, on copies with `.env` files excluded, of four application and infrastructure repositories and this one: none has an `ops:` contract, so every drill check is N/A on the four; on this repository, scanning `.` reaches the architecture blueprint's versioned S3 bucket and reports the Low `OPS-R1` "unmeasured", as designed. `homelab-docs` has a quarterly drill page whose only entry is a blank template row. The old and new `check-iac-config.sh` give identical output on all five
+- The blueprint's restore drill ran in podman (`v0412-drill-src`, `v0412-drill-db`); the record notes two deviations from the runbook, which was revised after the drill
+- Checked on Linux in podman (Ubuntu 24.04, bash 5) with gawk and mawk, and on macOS with BWK awk and bash 3.2
 
 ---
 

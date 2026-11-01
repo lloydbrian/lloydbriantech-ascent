@@ -22,6 +22,9 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     secrets:
       - db_password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-q"]
+      interval: 10s
     volumes:
       - db-data:/var/lib/postgresql/data
 volumes:

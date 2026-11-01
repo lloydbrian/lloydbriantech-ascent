@@ -1,0 +1,2 @@
+alert ready-failing fired 14:02 UTC
+acknowledged by on-call primary 14:05 UTC

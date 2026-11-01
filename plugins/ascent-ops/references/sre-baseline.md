@@ -37,4 +37,5 @@ Everything that runs is pinned (`ops.version_pinning`):
 - **Deploy** from a runbook (see [runbook-standard.md](runbook-standard.md)) with pre-flight and post-flight checks.
 - **Rollback** is a documented, rehearsed operation: a make target or script that restores the previous release. No rollback path for a production deploy that exists is a High finding; while the deploy files are empty or stubs it is a Low maturity gap.
 - **Backup and restore**: what is backed up, how often, how long it is kept, and the date of the last restore test.
+- **Drills**: every recovery path (restore, failover) has a runbook and a current passing drill record within the rto and rpo targets; every paging alert has been exercised, readiness has been shown failing with a dependency down, and every alert's runbook has been dry-run (OPS-R1–R8, OPS-X1–X3; [drill-records.md](drill-records.md)). The operator runs the drill and commits the record; `check-drills.sh` checks the records.
 - **Drift**: a scheduled drift check (OPS-S9), so a change made by hand is found within a week.

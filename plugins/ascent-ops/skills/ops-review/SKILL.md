@@ -6,15 +6,15 @@ description: >-
   configuration secure?", or before a first production deploy. Rates
   operability against the project contract: maps environments, IaC,
   configuration stores, scripts, runbooks, manuals and health endpoints,
-  checks six lenses, runs the IaC, script and manual checks, and reports
-  strong, moderate or weak with file:line evidence. Read-only.
-version: 0.2.0
+  checks six lenses, runs the IaC, script, manual and drill checks, and
+  reports strong, moderate or weak with file:line evidence. Read-only.
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
 # ops-review
 
-One review of how a system is run, changed and recovered, judged against the project's own targets. It is the entry point of the `ascent-ops` plugin. It runs surface checks itself and recommends [iac-config-check](../iac-config-check/SKILL.md), [runbook-check](../runbook-check/SKILL.md) or [ops-manuals](../ops-manuals/SKILL.md) only for the areas a surface check flags (the hybrid pattern). It never invokes them; they read the same sources.
+One review of how a system is run, changed and recovered, judged against the project's own targets. It is the entry point of the `ascent-ops` plugin. It runs surface checks itself and recommends [iac-config-check](../iac-config-check/SKILL.md), [runbook-check](../runbook-check/SKILL.md), [ops-manuals](../ops-manuals/SKILL.md) or [recovery-drill](../recovery-drill/SKILL.md) only for the areas a surface check flags (the hybrid pattern). It never invokes them; they read the same sources.
 
 It makes the ASCENT devops role checkable: infrastructure as code is the only way configuration changes, secrets are secure by design, every operation is a zero-touch command with pre-flight and post-flight checks, and two manuals let someone who did not build the system run it.
 
@@ -23,12 +23,13 @@ Shared sources:
 - [sre-baseline.md](../../references/sre-baseline.md): health endpoints, SLOs, alerts, pinning, change and recovery
 - [runbook-standard.md](../../references/runbook-standard.md)
 - [manual-sections.md](../../references/manual-sections.md)
+- [drill-records.md](../../references/drill-records.md): OPS-R1–R8 and OPS-X1–X3, the drill record
 - [contract-template.yml](../../references/contract-template.yml): the `ops:` section of `.ascent/contract.yml`
 
 ## Rules
 
-- **Read-only.** Never edit files, run a deploy, apply a plan, start or stop a service, or call a cloud API that changes anything. `git log` and `git ls-files` are the only commands pre-approved; the three scripts only read.
-- **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory) or "absent: searched <paths>", the rule it breaks (OPS-S1–S10, OPS-Z1–Z9, OPS-M1–M8, or the baseline item), a concrete failure scenario (what goes wrong, for whom, when), and a fix.
+- **Read-only.** Never edit files, run a deploy, apply a plan, start or stop a service, or call a cloud API that changes anything. `git log` and `git ls-files` are the only commands pre-approved; the four scripts only read. Never run a drill or write a drill record: the operator runs drills and commits their records.
+- **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory) or "absent: searched <paths>", the rule it breaks (OPS-S1–S10, OPS-Z1–Z9, OPS-M1–M8, OPS-R1–R8, OPS-X1–X3, or the baseline item), a concrete failure scenario (what goes wrong, for whom, when), and a fix.
 - **Fresh evidence.** Re-read the evidence for every finding in this run. Never carry findings over from an earlier pass, an agent's report or another session.
 - **Rate only with the severity table.** A concern that matches no row goes under **Other observations (unrated)** and does not count toward the rating. Never invent a severity.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
@@ -42,7 +43,7 @@ Shared sources:
 
 ## Severity
 
-Every finding carries one of these severities. The other skills, the `ops-reviewer` agent and the three scripts use the same table.
+Every finding carries one of these severities. The other skills, the `ops-reviewer` agent and the four scripts use the same table.
 
 <!-- ops-severity:start -->
 | Finding | Severity |
@@ -51,6 +52,7 @@ Every finding carries one of these severities. The other skills, the `ops-review
 | A secret passed as a plain environment value to a task or function, or stored as an SSM String (OPS-S3) | High |
 | Terraform state local, unencrypted, unlocked or committed (OPS-S4) | High |
 | A .env file copied into an image (OPS-S8) | High |
+| A credential-like value in a drill record or its evidence (OPS-R5); the leak itself → ascent-security | High |
 | A script that takes a secret as an argument, reads it without -s or prints it (OPS-Z5) | High |
 | A destructive command with no confirmation or explicit flag (OPS-Z6) | High |
 | No rollback path for a production deploy that exists | High |
@@ -64,12 +66,18 @@ Every finding carries one of these severities. The other skills, the `ops-review
 | A liveness or readiness endpoint missing at the contract path, a probe on another path, or a liveness check that depends on the database | Medium |
 | A runbook without pre-flight or post-flight checks, or steps without Expect and Stop if | Medium |
 | A manual missing, without front matter or a required section, out of date, without the three diagram levels, with a service missing from the diagrams, or without a symptom table (OPS-M1–M4, OPS-M6, OPS-M7) | Medium |
+| A recovery path without a runbook (OPS-R1), or a recovery runbook without pre-flight, post-flight, rollback, Expect or Stop if (OPS-R2) | Medium |
+| No current passing drill for a recovery path (OPS-R3) | Medium |
+| A drill that missed the rto or rpo target (OPS-R4), or a failed drill with no follow-up (OPS-R6) | Medium |
+| Drill evidence missing, outside the repository, or holding an email address or phone number (OPS-R5) | Medium |
 | Production infrastructure not in IaC (built by hand) at the standard or enterprise target | Medium |
 | A secret without rotation (OPS-S6), or configuration not documented in the manual (OPS-S10) | Low |
 | A script without --help (OPS-Z3), a make target without ## help (OPS-Z7), or a changing script without pre-flight and post-flight checks (OPS-Z9) | Low |
 | A dependency map without versions (OPS-M5) | Low |
+| A drill record missing a field, with an unknown kind or result, or not dated as its name (OPS-R3), the manual's restore date behind the newest drill (OPS-R7), or failover in the IaC with no failover drill path (OPS-R8) | Low |
+| A paging alert not exercised, readiness not shown failing with a dependency down, or an alert's runbook not dry-run (OPS-X1–X3) | Low |
 | Health endpoints at non-default paths with no contract override | Low |
-| An ops target missing from the contract ("unmeasured") | Low |
+| An ops target missing from the contract ("unmeasured"), including recovery paths when the IaC declares backups (OPS-R1) | Low |
 | No rollback path while no production deploy exists yet (deploy files empty or stubs) | Low |
 | Any other item the maturity target requires, missing with no waiver (Step 5) | Low |
 | A gap covered by a waiver ADR | Info |
@@ -90,6 +98,7 @@ If it is missing, **detect, don't ask.** Propose the section from what the repos
 - **Configuration store:** `AWS::SecretsManager::Secret`, `aws_secretsmanager_secret`, `AWS::SSM::Parameter`, `aws_ssm_parameter`, Compose `secrets:`, `vault` references, `.sops.yaml`.
 - **Endpoints:** the routes that answer health and readiness, and the probes (`HEALTHCHECK`, Compose `healthcheck`, `healthCheck`, target groups). Propose the default paths even when the code serves others, and mark each detected path for rename (`# detected: <path:line>, rename to the default`). Never propose a `z`-suffixed value.
 - **Runbooks and manuals:** `docs/operations/`, `docs/runbooks/`, `RUNBOOK*.md`, `*runbook*` folders.
+- **Drills:** `docs/operations/drills/` or another folder of `YYYY-MM-DD-<name>.md` records for `drills.dir`; for `drills.paths`, each backed-up store in the IaC (`backup_retention_period`, `BackupRetentionPeriod`, a database volume) as a `restore` path and each declared failover (`multi_az`, `MultiAZ`, replicas) as a `failover` path, with the runbook that already restores it or `# guess`.
 
 Use only the keys and values of [contract-template.yml](../../references/contract-template.yml):
 - `maturity_target` is one of enterprise, standard or prototype (never a new value)
@@ -117,19 +126,22 @@ One line per lens: what the contract asks, the evidence found, and the status **
 - **Scripts and runbooks:** zero-touch scripts (OPS-Z1–Z9) and runbooks with pre-flight, post-flight, Expect and Stop if ([runbook-standard.md](../../references/runbook-standard.md)).
 - **Health and SLOs:** endpoints at the contract paths, liveness free of dependencies, probes on the same paths, SLOs and alerts each linked to a runbook, pinned versions ([sre-baseline.md](../../references/sre-baseline.md)).
 - **Manuals:** both manuals present, current and complete, with diagrams and a dependency map ([manual-sections.md](../../references/manual-sections.md)).
-- **Change and recovery:** deploy, rollback, backup and restore (with a restore-test date), drift check.
+- **Change and recovery:** deploy, rollback, backup and restore, drift check; every recovery path drilled and recorded within `drills.max_age_days`, alerts exercised and readiness shown failing (OPS-R1–R8, OPS-X1–X3, [drill-records.md](../../references/drill-records.md)).
 
-Two or more lenses at risk or unmeasured: recommend [iac-config-check](../iac-config-check/SKILL.md), [runbook-check](../runbook-check/SKILL.md) or [ops-manuals](../ops-manuals/SKILL.md) for the lenses concerned.
+Two or more lenses at risk or unmeasured: recommend [iac-config-check](../iac-config-check/SKILL.md), [runbook-check](../runbook-check/SKILL.md), [ops-manuals](../ops-manuals/SKILL.md) or [recovery-drill](../recovery-drill/SKILL.md) for the lenses concerned.
 
 ### Step 3 — Mechanical checks
 
-Run the three scripts from the repository root and include their output verbatim:
+Run the four scripts from the repository root and include their output verbatim:
 
 ```bash
 bash "$PLUGIN_ROOT/scripts/check-iac-config.sh" --manual <ops.manuals.maintenance> .
 bash "$PLUGIN_ROOT/scripts/check-ops-scripts.sh" .
 bash "$PLUGIN_ROOT/scripts/check-ops-manuals.sh" --repo . <ops.manuals.maintenance> <ops.manuals.troubleshooting> .
+bash "$PLUGIN_ROOT/scripts/check-drills.sh" --repo . --maturity '<ops.maturity_target>' --max-age '<ops.drills.max_age_days>' --rto '<architecture.quality_targets.rto>' --rpo '<architecture.quality_targets.rpo>' --ready-path '<ops.ready_path>' --manual '<ops.manuals.maintenance>' --path '<name>:<kind>:<runbook>' --alert '<name>:<runbook>:page' --iac '<each ops.iac.paths entry>' --iac '<each Compose file>' '<ops.drills.dir>'
 ```
+
+For check-drills, pass one `--path` per `ops.drills.paths` entry and one `--alert` per `ops.alerts` entry (`:page` only when `page: true`), quote every value, and leave out an option the contract does not set ([recovery-drill](../recovery-drill/SKILL.md) Step 2).
 
 - Each `FAIL` line is a finding with the severity it prints, under the rule id it names.
 - An `absent` location means the control is missing everywhere searched: cite it as "absent: searched <paths>".
@@ -150,7 +162,7 @@ A service with no HTTP interface (a batch job, scripts for network devices) has 
 
 ### Step 5 — Maturity gaps
 
-Compare what you found with the `maturity_target` row by row, using the maturity table in the plugin [README](../../README.md#maturity-targets). Each missing item is a finding at the severity the table above gives it, unless a waiver ADR in `ops.waivers` covers it. Then it is listed as **Info: waived by ADR-NNN**, and the ADR is checked to exist in `adr_dir`. A waiver that points at a missing ADR is a Low finding.
+Compare what you found with the `maturity_target` row by row, using the maturity table in the plugin [README](../../README.md#maturity-targets). For drills: standard requires OPS-R1–R5 for every recovery path, restore and failover alike; prototype requires none, except that a credential in a record or its evidence (OPS-R5) is High at every level; OPS-R6–R8 and OPS-X1–X3 are enterprise only. `check-drills.sh --maturity` applies the same scope. Each missing item is a finding at the severity the table above gives it, unless a waiver ADR in `ops.waivers` covers it. Then it is listed as **Info: waived by ADR-NNN**, and the ADR is checked to exist in `adr_dir`. A waiver that points at a missing ADR is a Low finding.
 
 ### Step 6 — Report
 
@@ -172,7 +184,7 @@ X<n>  <severity>  <file>:<line or "absent: searched …">  <rule id or baseline 
 Other observations (unrated):
 O<n>  <file>:<line>  <concern>  [→ ascent-security | → ascent-architecture]
 
-Mechanical checks (Step 3): <the three scripts' output, verbatim>
+Mechanical checks (Step 3): <the four scripts' output, verbatim>
 Health endpoints (Step 4): <per endpoint: path, route, probes, or "not applicable: <reason>">
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
 ```
