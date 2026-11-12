@@ -82,6 +82,11 @@ Desktop.ini
 *.iml
 .vscode/*.log
 .vscode/.history/
+# Obsidian: the vault is the repo root; settings and workspace state stay local
+.obsidian/
+.trash/
+# Playwright MCP browser logs, screenshots and snapshots
+.playwright-mcp/
 
 # ─── ASCENT-specific ──────────────────────────────────────────────────────
 # Scaffolded sample projects under tools/scratch/ (used during development).
