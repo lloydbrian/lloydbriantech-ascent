@@ -46,7 +46,7 @@ ASCENT writes those patterns down as checks with evidence: a project contract wi
 | [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.0 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
 | [`ascent-ux`](plugins/ascent-ux/README.md) | 0.2.0 | Compliance, business value | "is this UI accessible?" | WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
 | [`ascent-ops`](plugins/ascent-ops/README.md) | 0.3.0 | Resilience, compliance, trust and security | "is this operable?", "can we restore?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, Maintenance and Troubleshooting manuals proven current, and recovery drills and readiness exercises proven by the operator's records, plus an operable-service blueprint |
-| [`ascent-quality`](plugins/ascent-quality/README.md) | 0.1.0 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, and test hygiene: focused, skipped, assertion-less and retried tests |
+| [`ascent-quality`](plugins/ascent-quality/README.md) | 0.2.0 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence |
 
 Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions. Not sure which to install? [Which plugins do I need?](docs/framework/OWNERSHIP.md#which-plugins-do-i-need) maps what your repository contains to the plugin that checks it. Each plugin works on its own, and one you have not installed leaves its review unmeasured, never blocked.
 
@@ -186,6 +186,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.13 | 2026-11-01 | `ascent-quality` 0.2.0: k6, Artillery and Locust load tests checked against the `p95_latency_ms` and `peak_rps` targets, `QA-L1`–`L5`; mutation tool, break threshold, CI run and a current score in the repository, `QA-M1`–`M4` (ADR-021) |
 | v0.4.12 | 2026-11-01 | `ascent-ops` 0.3.0: recovery drills and readiness exercises, `OPS-R1`–`R8` and `OPS-X1`–`X3`, checked against records the operator commits (ADR-020); `OPS-S8` classifies on the repository-relative path |
 | v0.4.11 | 2026-10-31 | `ascent-quality` 0.1.0: test types and CI, untested boundaries, criteria and core rules traced to tests, and test hygiene, `QA-I1`–`I5`, `QA-T1`–`T4`, `QA-H1`–`H4` (ADR-019); `ascent-delivery` 0.1.3 uses it for the Tests lens |
 | v0.4.10 | 2026-10-29 | Faster negative controls: only the named check, behavior tests stopped at their first failure, controls in parallel, survivors rerun in full, with guards and a weekly full run (ADR-018) |

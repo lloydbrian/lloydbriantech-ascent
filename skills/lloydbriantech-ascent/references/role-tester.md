@@ -109,12 +109,13 @@ Tests cover what we *expect* to happen. observability-contract.md covers what *a
 
 ## Checking this role in any repository
 
-The `ascent-quality` plugin (ADR-014, ADR-019) makes this role checkable in an existing repository:
+The `ascent-quality` plugin (ADR-014, ADR-019, ADR-021) makes this role checkable in an existing repository:
 - `quality-review` rates the test strategy against the `quality:` section of the project contract
 - `test-inventory` covers the test types present, whether CI runs them, and the integration boundaries no test reaches
 - `test-check` covers traceability (every acceptance criterion and core rule named by a test) and test hygiene: focused, skipped, assertion-less and retried tests
+- `test-evidence` covers load tests (a k6, Artillery or Locust script that asserts the p95 latency target and reaches the peak request rate) and mutation evidence (a tool, a break threshold, a CI run and a current score in the repository)
 
-Load tests, mutation evidence and security tests are not covered yet; security testing belongs to `ascent-security`.
+Security testing belongs to `ascent-security`.
 
 ## What this role doesn't own
 

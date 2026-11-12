@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rule test for the ascent-quality skills and agent (ADR-014, ADR-019). The
+# Rule test for the ascent-quality skills and agent (ADR-014, ADR-019, ADR-021). The
 # lessons of the earlier plugins' trials are pinned from day one, plus the
 # quality-specific rules:
 #   R1  every $PLUGIN_ROOT/<path> a skill or the agent names exists
@@ -14,15 +14,15 @@
 #       the script gives it, in its header and in every fail() call; the table
 #       names no id the scripts do not print
 #   R7  the agent's inline quality: key list equals the keys of the contract
-#       template, and the test types it quotes are those check-test-inventory.sh
-#       accepts
+#       template (with the tests and mutation sub-keys), and the test types it
+#       quotes are those check-test-inventory.sh accepts
 #   R8  every "<skill> Step N" a skill cites names a skill and a heading that exist
 #   R9  every skill is read-only, never runs the tests, and quotes every contract
 #       value it passes to a script
 #   R10 other plugins' tests are referred with markers, and Recommended next
 #       names ascent-security
-#   R11 N/A is never a pass, NOTE lines are unrated, and the two heuristics
-#       (QA-H3, QA-I4) are opened before they are rated
+#   R11 N/A is never a pass, NOTE lines are unrated and never a pass, and the two
+#       heuristics (QA-H3, QA-I4) are opened before they are rated
 #   R12 every script parses and runs under the system /bin/bash (3.2 on macOS)
 #       with the same result as the bash on PATH
 #   R13 the README maturity table and test-strategy.md name every rule family
@@ -39,12 +39,14 @@ PLUGIN="$ROOT/plugins/ascent-quality"
 REVIEW="$PLUGIN/skills/quality-review/SKILL.md"
 INV="$PLUGIN/skills/test-inventory/SKILL.md"
 TCHK="$PLUGIN/skills/test-check/SKILL.md"
+TEV="$PLUGIN/skills/test-evidence/SKILL.md"
 AGENT="$PLUGIN/agents/quality-reviewer.md"
 TEMPLATE="$PLUGIN/references/contract-template.yml"
 STRAT="$PLUGIN/references/test-strategy.md"
 README="$PLUGIN/README.md"
 GOOD="$HERE/fixtures/quality-good"
-for f in "$REVIEW" "$INV" "$TCHK" "$AGENT" "$TEMPLATE" "$STRAT" "$README"; do
+EVID="$HERE/fixtures/evidence-good"
+for f in "$REVIEW" "$INV" "$TCHK" "$TEV" "$AGENT" "$TEMPLATE" "$STRAT" "$README"; do
   [ -f "$f" ] || { echo "test-quality-rules: missing $f"; echo "test-quality-rules: 0/1 PASS"; exit 1; }
 done
 
@@ -88,7 +90,7 @@ has R4 "$AGENT" 'A target missing from the contract makes the lens unmeasured, n
 has R5 "$REVIEW" '**Fresh evidence.**'
 has R5 "$REVIEW" 'repository-relative `path/to/file:line` (never a bare file name or a directory)'
 has R5 "$AGENT" 'repository-relative `path/to/file:line` (never a bare file name or a directory)'
-for f in "$INV" "$TCHK"; do has R5 "$f" 'repository-relative `file:line` evidence; fresh evidence'; done
+for f in "$INV" "$TCHK" "$TEV"; do has R5 "$f" 'repository-relative `file:line` evidence; fresh evidence'; done
 
 # R6 — script check ids and severities match the table
 TABLE=$(awk '/<!-- qa-severity:start/ { on = 1; next } /<!-- qa-severity:end/ { on = 0 } on' "$REVIEW")
@@ -110,10 +112,10 @@ $(grep -oE "fail\(\"$k\", \"[A-Za-z]+\"" "$lib" | sed 's/.*, "//; s/"$//' | sort
 EOF_F
     grep -q "fail(\"$k\"" "$lib" || bad "R6 $(basename "$lib") never fails $id"
   done <<EOF_IDS
-$(sed -nE 's/^#   (QA-[ITH][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s")
+$(sed -nE 's/^#   (QA-[A-Z][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s")
 EOF_IDS
 done
-for id in $(printf '%s\n' "$TABLE" | grep -oE '\(QA-[ITH][0-9]+\)' | tr -d '()' | sort -u); do
+for id in $(printf '%s\n' "$TABLE" | grep -oE '\(QA-[A-Z][0-9]+\)' | tr -d '()' | sort -u); do
   case " $PRINTED " in *" $id "*) ok ;; *) bad "R6 the table names $id, which no script header prints" ;; esac
 done
 # Every copy of the table is identical to quality-review's (T5 checks it too).
@@ -124,6 +126,9 @@ KEYS=$(awk '/^quality:/ { on = 1; next } on && /^[a-z]/ { on = 0 } on && /^  [a-
 for k in $KEYS; do has R7 "$AGENT" "\`$k\`"; done
 SUB=$(awk '/^  tests:/ { on = 1; next } on && /^  [a-z]/ { on = 0 } on && /^    [a-z_]+:/ { k = $1; sub(/:$/, "", k); print k }' "$TEMPLATE" | tr '\n' ',' | sed 's/,$//; s/,/`, `/g')
 has R7 "$AGENT" "\`tests\` (\`$SUB\`)"
+SUB=$(awk '/^  mutation:/ { on = 1; next } on && /^  [a-z]/ { on = 0 } on && /^    [a-z_]+:/ { k = $1; sub(/:$/, "", k); print k }' "$TEMPLATE" | tr '\n' ',' | sed 's/,$//; s/,/`, `/g')
+[ -n "$SUB" ] && ok || bad "R7 the contract template has no quality.mutation keys"
+has R7 "$AGENT" "\`mutation\` (\`$SUB\`)"
 TYPES=$(sed -n 's/.*unit|integration|contract|e2e) ;;.*/unit, integration, contract, e2e/p' "$PLUGIN/scripts/check-test-inventory.sh" | head -1)
 [ "$TYPES" = "unit, integration, contract, e2e" ] && ok || bad "R7 cannot read the types check-test-inventory.sh accepts"
 has R7 "$AGENT" '`types_required` takes only unit, integration, contract and e2e'
@@ -133,7 +138,7 @@ has R7 "$TEMPLATE" '# unit | integration | contract | e2e.'
 # R8 — every "<skill> Step N" citation resolves
 NREF=0
 for f in "$PLUGIN"/skills/*/SKILL.md "$AGENT"; do
-  for ref in $(grep -oE '`?(quality-review|test-inventory|test-check)`? Step [0-9]+' "$f" | tr -d '`' | tr ' ' '_' | LC_ALL=C sort -u); do
+  for ref in $(grep -oE '`?(quality-review|test-inventory|test-check|test-evidence)`? Step [0-9]+' "$f" | tr -d '`' | tr ' ' '_' | LC_ALL=C sort -u); do
     NREF=$((NREF + 1)); sk=${ref%%_Step_*}; n=${ref##*_}
     if grep -q "^### Step $n " "$PLUGIN/skills/$sk/SKILL.md" 2>/dev/null; then ok; else bad "R8 ${f#"$PLUGIN"/} cites $sk Step $n, which has no heading"; fi
   done
@@ -141,15 +146,17 @@ done
 [ "$NREF" -gt 0 ] || bad "R8 no step citations found"
 
 # R9 — read-only, and the tests are never run
-for f in "$REVIEW" "$INV" "$TCHK"; do
+for f in "$REVIEW" "$INV" "$TCHK" "$TEV"; do
   tools=$(sed -n 's/^allowed-tools: //p' "$f")
   case "$tools" in *Write*|*Edit*|*"Bash("[!g]*|*"Bash(git push"*|*"Bash(git commit"*) bad "R9 ${f#"$PLUGIN"/} pre-approves a write: $tools" ;; *) ok ;; esac
 done
 has R9 "$REVIEW" '**Read-only.** Never edit files, write or fix a test, run the test suite, or install a test tool.'
 has R9 "$INV" '**Never run the tests or CI**'
 has R9 "$TCHK" '**Never edit, unskip or run a test.**'
+has R9 "$TEV" '**Never run a load test or a mutation tool.**'
+has R9 "$REVIEW" 'Never run a load test or a mutation tool.'
 has R9 "$AGENT" 'Do not propose commands that modify the repository or run the tests.'
-for f in "$REVIEW" "$INV" "$TCHK"; do has R9 "$f" '**Quote every contract value.** Put each value in single quotes'; done
+for f in "$REVIEW" "$INV" "$TCHK" "$TEV"; do has R9 "$f" '**Quote every contract value.** Put each value in single quotes'; done
 has R9 "$REVIEW" 'never with `--output`, `--ext-diff` or `--textconv`'
 
 # R10 — other plugins' tests are referred
@@ -164,6 +171,7 @@ has R11 "$AGENT" 'A check with nothing to check is N/A, never a pass.'
 has R11 "$REVIEW" '**QA-H3 and QA-I4 are heuristics.** Open each hit before you rate it.'
 has R11 "$TCHK" '- **QA-H3 hits.** Open each one.'
 has R11 "$INV" 'Open each QA-I4 hit.'
+has R11 "$TEV" '**A NOTE is never a pass.**'
 
 # R12 — /bin/bash gives the same result
 if [ -x /bin/bash ]; then
@@ -176,22 +184,29 @@ if [ -x /bin/bash ]; then
   a=$(cd "$GOOD" && bash "$PLUGIN/scripts/check-test-inventory.sh" --types unit,integration,contract,e2e . 2>&1; echo "rc=$?")
   b=$(cd "$GOOD" && /bin/bash "$PLUGIN/scripts/check-test-inventory.sh" --types unit,integration,contract,e2e . 2>&1; echo "rc=$?")
   if [ "$a" = "$b" ]; then ok; else bad "R12 check-test-inventory.sh gives a different result under /bin/bash"; fi
+  a=$(cd "$EVID" && bash "$PLUGIN/scripts/check-test-evidence.sh" --p95 400 --rps 50 --today 2026-11-01 . 2>&1; echo "rc=$?")
+  b=$(cd "$EVID" && /bin/bash "$PLUGIN/scripts/check-test-evidence.sh" --p95 400 --rps 50 --today 2026-11-01 . 2>&1; echo "rc=$?")
+  if [ "$a" = "$b" ]; then ok; else bad "R12 check-test-evidence.sh gives a different result under /bin/bash"; fi
 fi
 
 # R13 — the README and test-strategy.md name exactly the families the scripts check
+FAMS=$(sed -nE 's/^#   QA-([A-Z])[0-9]+ +(High|Medium|Low) .*/\1/p' "$PLUGIN"/scripts/*.sh | sort -u | tr '\n' ' ')
+[ -n "$FAMS" ] && ok || bad "R13 no rule families in the script headers"
 for f in "$README" "$STRAT"; do
-  for fam in I T H; do
+  for fam in $FAMS; do
     ids=$(sed -nE "s/^#   (QA-$fam[0-9]+) +(High|Medium|Low) .*/\1/p" "$PLUGIN"/scripts/*.sh | sort -u)
     [ -n "$ids" ] || { bad "R13 no QA-$fam ids in the script headers"; continue; }
     if grep -qE "QA-$fam[0-9]" "$f"; then ok; else bad "R13 ${f#"$PLUGIN"/} never names the QA-$fam rules"; fi
   done
   for id in $(grep -oE 'QA-[A-Z][0-9]+' "$f" | sort -u); do
-    sed -nE 's/^#   (QA-[ITH][0-9]+) .*/\1/p' "$PLUGIN"/scripts/*.sh | grep -qx "$id" && ok || bad "R13 ${f#"$PLUGIN"/} names $id, which no script checks"
+    sed -nE 's/^#   (QA-[A-Z][0-9]+) .*/\1/p' "$PLUGIN"/scripts/*.sh | grep -qx "$id" && ok || bad "R13 ${f#"$PLUGIN"/} names $id, which no script checks"
   done
 done
 has R13 "$README" "QA-I1${EN}I5"
 has R13 "$README" "QA-T1${EN}T4"
 has R13 "$README" "QA-H1${EN}H4"
+has R13 "$README" "QA-L1${EN}L5"
+has R13 "$README" "QA-M1${EN}M4"
 
 printf "test-quality-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

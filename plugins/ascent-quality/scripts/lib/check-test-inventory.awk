@@ -77,65 +77,10 @@ K == "ci" {
   NCI++; CIL[NCI] = t
   next
 }
-K == "pkg" {
-  if (!(FN in PKGLINE)) PKGLINE[FN] = 1
-  # Each "name": "command" pair after "scripts": {, up to its closing brace, on one
-  # line or many.
-  line = raw
-  if (match(line, /"scripts"[ \t]*:[ \t]*\{/)) { INSCR = 1; line = substr(line, RSTART + RLENGTH) }
-  if (!INSCR) next
-  while (match(line, /"[^"]+"[ \t]*:[ \t]*"([^"\\]|\\.)*"/)) {
-    kv = substr(line, RSTART, RLENGTH); line = substr(line, RSTART + RLENGTH)
-    nm = kv; sub(/^"/, "", nm); sub(/".*$/, "", nm)
-    v = kv; sub(/^"[^"]+"[ \t]*:[ \t]*"/, "", v); sub(/"$/, "", v)
-    SCR[nm] = SCR[nm] " ; " v
-    if (nm == "test") { PKGTEST[FN] = v; PKGTL[FN] = FNR }
-  }
-  if (line ~ /\}/) INSCR = 0
-  next
-}
-K == "make" {
-  if (raw ~ /^\t/) { if (MT != "") { n = split(MT, TG, " "); for (j = 1; j <= n; j++) MR[TG[j]] = MR[TG[j]] " ; " trim(raw) }; next }
-  if (raw ~ /^[A-Za-z0-9_.%\/-][A-Za-z0-9_.%\/ -]*:([^=]|$)/ && raw !~ /^[A-Za-z0-9_]+[ \t]*[:?+]?=/) {
-    tl = raw; sub(/:.*$/, "", tl); pr = raw; sub(/^[^:]*:/, "", pr); sub(/##.*$/, "", pr); sub(/\|.*$/, "", pr)
-    MT = trim(tl)
-    if (MT ~ /(^| )test[A-Za-z0-9_-]*( |$)/) MAKETEST = 1
-    n = split(MT, TG, " "); for (j = 1; j <= n; j++) MP[TG[j]] = MP[TG[j]] " " pr
-    next
-  }
-  if (trim(raw) != "" && raw !~ /^[ \t]*#/) MT = ""
-  next
-}
-# expand CMD DEPTH — the command with the make recipes and package scripts it runs
-# appended, followed three levels deep.
-function expand(c, depth,   out, s, w, n, j, W) {
-  out = c
-  if (depth > 3) return out
-  s = c
-  while (match(s, /(^|[^A-Za-z0-9_-])(make|\$\(MAKE\)|\$\{MAKE\})([ \t]+[^;&|]*)?/)) {
-    w = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
-    sub(/^[^m$]*(make|\$\(MAKE\)|\$\{MAKE\})/, "", w)
-    n = split(w, W, /[ \t]+/)
-    for (j = 1; j <= n; j++) if (W[j] != "" && W[j] !~ /^-|=/ && (W[j] in MR || W[j] in MP)) out = out " ; " expand(MR[W[j]] " ; " expandp(MP[W[j]], depth + 1), depth + 1)
-  }
-  s = c
-  while (match(s, /(^|[^A-Za-z0-9_-])(npm|yarn|pnpm|bun)[ \t]+((run|run-script)[ \t]+)?[A-Za-z0-9:_-]+/)) {
-    w = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
-    sub(/^.*(npm|yarn|pnpm|bun)[ \t]+((run|run-script)[ \t]+)?/, "", w)
-    if (w == "t") w = "test"
-    if (w in SCR) out = out " ; " expand(SCR["pre" w] " ; " SCR[w] " ; " SCR["post" w], depth + 1)
-  }
-  return out
-}
-function expandp(p, depth,   out, n, j, W) {
-  if (depth > 3) return ""   # also ends a prerequisite cycle (a: b, b: a)
-  out = ""; n = split(p, W, /[ \t]+/)
-  for (j = 1; j <= n; j++) if (W[j] != "" && (W[j] in MR || W[j] in MP)) out = out " ; " MR[W[j]] " ; " expandp(MP[W[j]], depth + 1)
-  return out
-}
+K == "pkg" { pkgline(raw); next }
+K == "make" { makeline(raw); next }
 function runstests(s) {
-  # Installing a runner is not running it: drop install commands up to their end.
-  gsub(/(pip3?|pipx|poetry|uv|npm|yarn|pnpm|bun|apt-get|apt|brew)[ \t]+(pip[ \t]+)?(install|add|i)([ \t][^;&|]*)?/, " ", s)
+  s = noinstall(s)
   return (s ~ /(^|[^A-Za-z0-9_-])(npm|yarn|pnpm|bun)[ \t]+((run|run-script)[ \t]+)?[A-Za-z0-9:_-]*(test|spec|e2e)/ || \
     s ~ /(^|[^A-Za-z0-9_-])(npm|yarn|pnpm)[ \t]+t([ \t;&|]|$)/ || \
     s ~ /(^|[^A-Za-z0-9_\/-])(jest|vitest|mocha|ava|tap|pytest|py\.test|tox|nox|bats|phpunit|rspec|ctest)([ \t;&|]|$)/ || \

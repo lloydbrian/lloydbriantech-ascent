@@ -1,8 +1,8 @@
 # .ascent/contract.yml: the quality: section (ascent-quality). One project contract,
-# one section per ASCENT plugin (decision 2, 2026-10-18; ADR-014, ADR-019). Where
-# ASCENT-named files are not allowed, use .claude/contract.yml instead. Commit it:
-# it is the project's own statement of test targets, and reviews are judged
-# against it.
+# one section per ASCENT plugin (decision 2, 2026-10-18; ADR-014, ADR-019,
+# ADR-021). Where ASCENT-named files are not allowed, use .claude/contract.yml
+# instead. Commit it: it is the project's own statement of test targets, and
+# reviews are judged against it.
 #
 # quality-review proposes this section from what the repository already declares
 # and asks the operator to confirm it once (detect, don't ask). Every guessed value
@@ -41,6 +41,21 @@ quality:
     # The project's own assertion helpers (check-tests.sh --helper), for test
     # runners the checks do not know: e.g. assertEqual, check, expectOk.
     assertion_helpers: []
+
+  # Mutation evidence (check-test-evidence.sh, QA-M1–M4). The load-test targets are
+  # not here: p95_latency_ms and peak_rps are read from architecture.quality_targets,
+  # which ascent-architecture sets, and never copied.
+  mutation:
+    # The lowest mutation score the tests must reach, in percent (--min-score). It is
+    # also the lowest break threshold a tool may set (QA-M2).
+    min_score: 60
+    # The newest usable report must be no older than this many days (--max-age).
+    max_age_days: 90
+    # Report files the checks would not find by name (--report), relative to the
+    # repository root; never a directory, a glob or a path outside it. Found by name:
+    # *mutation.json, *mutations.xml, *mutation-report.* and *mutation-score*, except
+    # under target/, build/, dist/ and coverage/: list PIT's target/pit-reports here.
+    reports: []
 
   adr_dir: docs/adr/
   waivers: []

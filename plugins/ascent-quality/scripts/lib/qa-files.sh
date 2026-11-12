@@ -1,4 +1,5 @@
-# qa-files.sh — file discovery shared by check-test-inventory.sh and check-tests.sh.
+# qa-files.sh — file discovery shared by check-test-inventory.sh, check-tests.sh and
+# check-test-evidence.sh.
 # Sourced, never run. Sets ARGS to "K=<kind> <file>" pairs for awk. Read-only.
 #
 # Kinds:
@@ -13,7 +14,12 @@
 #   pkg  package.json
 #   make Makefile, GNUmakefile, *.mk
 #   cfg  test runner configuration: playwright, cypress, jest, vitest and mocha
-#        configs, pytest.ini, pyproject.toml, setup.cfg, tox.ini
+#        configs, pytest.ini, pyproject.toml, setup.cfg, tox.ini, locust.conf
+#   mut  mutation tool configuration: stryker.conf.*, stryker.config.*, pom.xml,
+#        build.gradle, build.gradle.kts, .gremlins.yaml, gremlins.yaml
+#   mrep a mutation report: *mutation.json, *mutations.xml, *mutation-report.*,
+#        *mutation-score*
+#   yml  any other YAML (*.yml, *.yaml), read for Artillery load tests
 #   doc  Markdown (*.md)
 # Skipped directories: dependencies, build output, virtualenvs, caches, and test
 # fixtures (fixtures/, testdata/, __fixtures__/, __snapshots__/), whose files are
@@ -41,11 +47,18 @@ qa_kind_of() {
   case "$f" in
     */.github/workflows/*.yml|*/.github/workflows/*.yaml|*/.buildkite/*.yml|*/.buildkite/*.yaml|*/.circleci/config.yml) QA_K=ci; return ;;
   esac
+  # A mutation report, unless the name is a code file (src/mutation-score.js).
+  case "$lb" in
+    *.js|*.jsx|*.ts|*.tsx|*.mjs|*.cjs|*.mts|*.cts|*.py|*.go|*.sh|*.bats) ;;
+    *mutation.json|*mutations.xml|*mutation-report.*|*mutation-score*) QA_K=mrep; return ;;
+  esac
   case "$lb" in
     .gitlab-ci.yml|jenkinsfile|azure-pipelines.yml|bitbucket-pipelines.yml|.travis.yml) QA_K=ci; return ;;
     package.json) QA_K=pkg; return ;;
+    stryker.conf.*|stryker.config.*|.stryker.conf.*|pom.xml|build.gradle|build.gradle.kts|.gremlins.yaml|.gremlins.yml|gremlins.yaml|gremlins.yml) QA_K=mut; return ;;
     makefile|gnumakefile|*.mk) QA_K=make; return ;;
-    playwright.config.*|cypress.config.*|cypress.json|jest.config.*|vitest.config.*|.mocharc*|pytest.ini|pyproject.toml|setup.cfg|tox.ini) QA_K=cfg; return ;;
+    playwright.config.*|cypress.config.*|cypress.json|jest.config.*|vitest.config.*|.mocharc*|pytest.ini|pyproject.toml|setup.cfg|tox.ini|locust.conf) QA_K=cfg; return ;;
+    *.yml|*.yaml) QA_K=yml; return ;;
     *.md) QA_K=doc; return ;;
     *.test.js|*.test.jsx|*.test.ts|*.test.tsx|*.test.mjs|*.test.cjs|*.test.mts|*.test.cts) QA_K=t; return ;;
     *.spec.js|*.spec.jsx|*.spec.ts|*.spec.tsx|*.spec.mjs|*.spec.cjs|*.spec.mts|*.spec.cts) QA_K=t; return ;;

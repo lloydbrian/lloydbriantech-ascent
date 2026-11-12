@@ -13,7 +13,7 @@ Dates are in **America/New_York** timezone.
 ### Planned
 
 - Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
-- `ascent-quality` 0.2.0: load-test alignment with `p95_latency_ms` and `peak_rps`, and mutation evidence (ADR-014); more languages (Java, Ruby, Rust, .NET) when a trial needs them (ADR-019)
+- `ascent-quality`: more languages (Java, Ruby, Rust, .NET) when a trial needs them (ADR-019); Gatling and JMeter when a trial needs them (ADR-021)
 - `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
@@ -27,6 +27,44 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.13] — 2026-11-01
+
+**Load tests and mutation evidence.** `ascent-quality` 0.2.0 checks that a load test would fail when the service misses its latency or throughput target, and that there is evidence the tests fail when the code is broken ([ADR-014](docs/framework/DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-021](docs/framework/DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md)). The targets stay `ascent-architecture`'s: `p95_latency_ms` and `peak_rps` are read from `architecture.quality_targets`, never copied. Claude never runs a load test or a mutation tool.
+
+### Added
+
+- `ascent-quality` 0.2.0:
+  - `test-evidence`: lists every load-test script with the p95 threshold it asserts, the rate it reaches and what runs it, and every mutation tool with its break threshold, its CI step and its reports; reads what the script cannot (rates set at runtime, virtual-user loads, Gatling and JMeter)
+  - `check-test-evidence.sh`: `QA-L1`–`L5`, a k6, Artillery or Locust load test exists when a target is set, its p95 threshold is no looser than `p95_latency_ms`, its rate reaches `peak_rps` (k6 arrival-rate scenarios read one by one with their own `timeUnit`, Artillery `arrivalRate` and `rampTo`, Locust `constant_throughput` or `constant_pacing` times its users), it has an error-rate threshold and a CI step, make target, package script or runbook runs it; a load in virtual users is a NOTE, never a pass. `QA-M1`–`M4`, a mutation tool is configured (Stryker, PIT through Maven or Gradle, gremlins, mutmut, go-mutesting), its break threshold is at least `quality.mutation.min_score`, a CI step runs it, and the newest usable report in the repository (Stryker `mutation.json`, PIT `mutations.xml` or a score summary) is no older than `max_age_days` and scores at least `min_score`. Standard maturity requires `QA-L1`, `QA-L2` and `QA-M1`, enterprise all nine
+  - The contract's `quality.mutation` block (`min_score` 60, `max_age_days` 90, `reports`)
+  - `references/test-strategy.md`: a "Load tests and mutation evidence" section
+  - Behavior tests: `test-check-test-evidence.sh` (184 cases on each awk), `test-quality-rules.sh` 192 cases (was 132), with the new skill in R5, R8, R9 and R11, the `mutation` keys in R7, the new script in R12, and R6 and R13 reading the rule families from the script headers
+- Groups `ascent-quality-load` and `ascent-quality-mutation`, controls P519–P610: every rule, the k6 scenario, threshold and comment parsing, the report scoring and dating, the git safety options, the `--report` guards, the maturity levels, the skill's rules and the severity copy (T5)
+- ADR-021
+
+### Changed
+
+- `quality-review` 0.2.0 has five lenses and runs three scripts; the `quality-reviewer` agent applies `QA-L` and `QA-M` by reading; both severity tables have rows for both families
+- The package.json and make parsers and the make and npm-script expansion moved from `check-test-inventory.awk` to the shared `qa-common.awk`, unchanged except a cap of 500 expansions per command, so a crafted fan-out cannot exhaust memory; install commands (`pip install`, `go install`, …) are dropped by one shared function, which now also knows `go` and `cargo`. P380, P381, P457, P458 and P460 follow the code (P460 now uses `return`, which is legal in a function on every awk)
+- `docs/framework/OWNERSHIP.md`: `test-evidence` registered, `QA-L` and `QA-M` families added, the load and mutation-evidence domains released
+- PILLARS: performance efficiency and scalability read load-test thresholds and rates, functional suitability the mutation score
+- The tester role module names `test-evidence`; README, ARCHITECTURE, ROADMAP and CLAUDE.md list the release
+
+### Notes
+
+- An independent review before release (correctness, security and privacy, tests, documentation), checked by `finding-verifier`, confirmed 35 of 41 findings, all fixed, each with a behavior test and a control where it is code; 5 were rejected and 1 left to the operator:
+  - Report dating ran `git log` from the report's own folder, where a committed folder laid out like a bare repository could have supplied a config that runs a program. git now runs once from the current directory with bare-repository discovery, signature checks and fsmonitor switched off, dates by the author date (a rebase keeps it), and dates nothing in a shallow clone. `--report` must be a file inside the repository, never a symbolic link
+  - k6 rates were the largest number anywhere in the file over its first `timeUnit`, so a `ramping-vus` stage target counted as a rate; each scenario is now read on its own. Block and line comments, several thresholds on one line and several p95 entries in one array are read correctly
+  - A `docker run -u UID` counted as Locust users; installing locust or go-mutesting counted as running it; prose naming locust counted as a runbook; commented-out break thresholds counted; a "minimum mutation score" line was read as the score; any `errors.` in an Artillery file counted as an error threshold
+  - A stray local report beside a usable one failed `QA-M4`; it is now a NOTE. A Java or Kotlin project had `QA-M1` N/A instead of FAIL
+  - The new report name patterns took `src/mutation-score.js` for a report, which also hid it from `check-test-inventory.sh` and `check-tests.sh`; code files are never reports now
+  - The docs claimed a "committed" report where the check reads any report in the repository, gave wrong ADR-021 consequences, and did not say PIT's `target/` folder must be listed under `reports`
+- Left to the operator: whether `quality.mutation.min_score` makes `ascent-quality` the target owner of the mutation-evidence domain in OWNERSHIP.md (it stays `—`, like the test-types row)
+- Read-only trial, on copies with `.env` files excluded, of four application and infrastructure repositories and this one: none has a load test, a mutation tool or a contract, so with no targets the only finding is `QA-M1` on the four with source files, and with example targets also `QA-L1`. The trial does not exercise the k6, Artillery, Locust or mutation-tool parsing on real files; the behavior tests do. `check-test-inventory.sh` and `check-tests.sh` give identical output before and after the code move on all five
+- Checked on Linux in podman (Ubuntu 24.04, bash 5.2) with gawk and mawk, and on macOS with BWK awk and bash 3.2
 
 ---
 

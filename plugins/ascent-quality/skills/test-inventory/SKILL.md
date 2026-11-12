@@ -7,7 +7,7 @@ description: >-
   Lists the tests by type and runner, checks each required type exists and
   CI runs it, and finds integration boundaries (database, queue and HTTP
   clients) that no test reaches (QA-I1–I5). Read-only.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 ---
 
