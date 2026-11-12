@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.12 (`ascent-ops` 0.3.0, recovery drills and readiness exercises), November 1, 2026. Next: `ascent-quality` 0.2.0; Phase 4 awaits its go-signal.
+**Current state:** v0.4.13 (`ascent-quality` 0.2.0, load tests and mutation evidence), November 1, 2026. Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -15,7 +15,7 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions | ✅ v0.4.5 |
 | 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014, ADR-020) | ✅ v0.4.6; 0.3.0 in v0.4.12 |
-| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence | ✅ v0.4.11; 0.2.0 ⏳ Planned |
+| 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence (`QA-L`, `QA-M`, ADR-021) | ✅ v0.4.11; 0.2.0 in v0.4.13 |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
 | 7 | `ascent-docs` | To be scoped when it starts | ⏳ Planned |
@@ -210,6 +210,12 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 **Status:** ✅ Complete (November 1, 2026)
 
 `ascent-ops` 0.3.0 turns recovery from documentation into evidence ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)). The operator runs each restore, failover, alarm, readiness and dry-run drill and commits a Markdown record; the new `recovery-drill` skill and `check-drills.sh` check the records against the contract: `OPS-R1`–`R8` for a runbook per recovery path, a current passing drill within the `rto` and `rpo` targets, clean committed evidence, follow-ups, the manual's restore date and declared failover; `OPS-X1`–`X3` for paging alerts exercised, readiness shown failing and alert runbooks dry-run. Claude never runs a drill and never writes a record. The blueprint carries a real restore drill. Also fixed: `OPS-S8` classified files on their absolute path, so a checkout under a folder named like `dev` hid production env files. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### v0.4.13: Load tests and mutation evidence
+
+**Status:** ✅ Complete (November 1, 2026)
+
+`ascent-quality` 0.2.0 checks that the tests would catch a slow release and a broken change ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-021](DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md)). The new `test-evidence` skill and `check-test-evidence.sh` read k6, Artillery and Locust scripts against the `p95_latency_ms` and `peak_rps` targets that `ascent-architecture` sets (`QA-L1`–`L5`: a load test exists, its p95 threshold is no looser than the target, its rate reaches the peak, it has an error-rate threshold and something runs it), and read Stryker, PIT, gremlins, mutmut and go-mutesting configurations and reports (`QA-M1`–`M4`: a tool, a break threshold at `quality.mutation.min_score`, a CI run, and a current report in the repository at that score). Claude never runs a load test or a mutation tool. Controls P519–P610 run in two new groups. An independent review before release confirmed and fixed 35 findings, among them per-scenario k6 rates and a `git log` that a crafted repository folder could have steered. The read-only trial on five repositories found no load tests or mutation tools, so its only findings are `QA-M1` and, with example targets, `QA-L1`. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 

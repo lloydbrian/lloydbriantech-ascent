@@ -1,12 +1,12 @@
 {
   "name": "ascent-quality",
-  "version": "0.1.0",
-  "description": "Test strategy review for any repository: which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, and test hygiene (focused, skipped, assertion-less and retried tests), plus a read-only quality-reviewer agent.",
+  "version": "0.2.0",
+  "description": "Test strategy review for any repository: which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence, plus a read-only quality-reviewer agent.",
   "author": {
     "name": "lloydbriantech"
   },
   "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
   "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
   "license": "MIT OR Apache-2.0",
-  "keywords": ["testing", "test-strategy", "traceability", "acceptance-criteria", "test-hygiene", "ci", "ascent"]
+  "keywords": ["testing", "test-strategy", "traceability", "acceptance-criteria", "test-hygiene", "load-testing", "mutation-testing", "ci", "ascent"]
 }

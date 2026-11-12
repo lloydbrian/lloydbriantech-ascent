@@ -1,0 +1,11 @@
+{
+  "name": "evidence-good",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/",
+    "mutate": "stryker run"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "8.6.0"
+  }
+}

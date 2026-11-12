@@ -8,7 +8,7 @@ description: >-
   hygiene lens. Traces criterion ids and core rules to tests (QA-T1–T4) and
   checks test hygiene: focused, skipped, assertion-less and retried tests
   (QA-H1–H4). Read-only.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*)
 ---
 

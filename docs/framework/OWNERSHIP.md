@@ -25,7 +25,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | infrastructure as code (CloudFormation, CDK, Terraform), a deployed service, a budget | `ascent-architecture` | quality attributes against targets, design principles, deployment options and cost |
 | HTML, JSX, Vue or Svelte templates, CSS, design tokens | `ascent-ux` | WCAG 2.2 AA evidence, design tokens and contrast, design directions |
 | infrastructure as code, operator scripts, runbooks, Compose files, health endpoints, backups and drill records | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals, recovery drills and readiness exercises |
-| test files, a test runner configuration, CI workflows, acceptance criteria | `ascent-quality` | test types and whether CI runs them, boundaries no test reaches, criteria and core rules traced to tests, test hygiene |
+| test files, a test runner configuration, CI workflows, acceptance criteria, load-test scripts, a mutation tool | `ascent-quality` | test types and whether CI runs them, boundaries no test reaches, criteria and core rules traced to tests, test hygiene, load tests against the targets, mutation evidence |
 <!-- ownership:signals:end -->
 
 ---
@@ -82,6 +82,7 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-quality` | skill | `quality-review` |
 | `ascent-quality` | skill | `test-inventory` |
 | `ascent-quality` | skill | `test-check` |
+| `ascent-quality` | skill | `test-evidence` |
 | `ascent-quality` | agent | `quality-reviewer` |
 <!-- ownership:components:end -->
 
@@ -106,6 +107,8 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `QA-I` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-inventory.sh` |
 | `QA-T` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-tests.sh` |
 | `QA-H` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-tests.sh` |
+| `QA-L` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-evidence.sh` |
+| `QA-M` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-evidence.sh` |
 | `SEC-D` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-dependencies.sh` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
@@ -143,7 +146,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | quality attributes and targets | `ascent-architecture` | `ascent-architecture` | released |
 | design principles | `ascent-architecture` | `ascent-architecture` | released |
 | deployment options and cost | `ascent-architecture` | `ascent-architecture` | released |
-| load and performance (server) | `ascent-architecture` | `ascent-quality` | planned |
+| load and performance (server) | `ascent-architecture` | `ascent-quality` | released |
 | restore and failover | `ascent-architecture` | `ascent-ops` | released |
 | accessibility (WCAG 2.2 AA) | `ascent-ux` | `ascent-ux` | released |
 | design tokens and contrast | `ascent-ux` | `ascent-ux` | released |
@@ -157,7 +160,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | unit, integration and contract tests | — | `ascent-quality` | released |
 | regression and end-to-end tests | `ascent-delivery` | `ascent-quality` | released |
 | criterion-to-test traceability | `ascent-delivery` | `ascent-quality` | released |
-| mutation evidence | — | `ascent-quality` | planned |
+| mutation evidence | — | `ascent-quality` | released |
 | launch readiness | `ascent-governance` | `ascent-governance` | planned |
 | AI behavior evals | — | `ascent-ai-evals` | released |
 <!-- ownership:domains:end -->

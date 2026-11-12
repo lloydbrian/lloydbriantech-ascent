@@ -1,6 +1,6 @@
 # Test strategy reference
 
-The shared source for `quality-review`, `test-inventory`, `test-check` and the `quality-reviewer` agent. The two scripts implement what this page describes; where they cannot (the limits below), the skills read.
+The shared source for `quality-review`, `test-inventory`, `test-check`, `test-evidence` and the `quality-reviewer` agent. The three scripts implement what this page describes; where they cannot (the limits below), the skills read.
 
 ## Who owns which tests
 
@@ -14,7 +14,7 @@ A test type has up to three owners: the plugin that sets the **target**, the plu
 | Recovery drills, readiness exercises | `ascent-ops` |
 | Smoke tests after a deploy, user-acceptance sign-off | `ascent-delivery` |
 | Security tests and scans | `ascent-security` |
-| Load tests against the latency and throughput targets, mutation evidence | `ascent-quality` 0.2.0 (planned) |
+| Load tests against the latency and throughput targets, mutation evidence | `ascent-quality` |
 
 ## How a test file is recognized
 
@@ -77,3 +77,29 @@ QA-I4 is a heuristic and stays Low until trialled (ADR-014 decision 3): a test t
 | QA-H4 retries | `jest.retryTimes`, `this.retries(n)`, `retries` in a runner config, `@pytest.mark.flaky`, `--reruns`, `--retries` in CI | none; a waiver ADR when a third-party flake cannot be fixed yet |
 
 Shell `test-*.sh` files are counted and searched for ids, but not read as test blocks: a shell test has no common block syntax.
+
+## Load tests and mutation evidence
+
+The targets belong to `ascent-architecture`: `p95_latency_ms` and `peak_rps` in `architecture.quality_targets`. They are read, never copied ([ADR-021](../../../docs/framework/DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md)). Nothing is run: a load test reaches a live environment and a mutation run rewrites the code under test.
+
+| Tool | Recognized by | p95 threshold (QA-L2) | Request rate (QA-L3) | Error threshold (QA-L4) |
+|---|---|---|---|---|
+| k6 | a JS or TS file that imports `k6` | `http_req_duration: ['p(95)<N']`; the untagged threshold, else the loosest tagged one | `rate` (or `startRate`, stage `target`) of an arrival-rate executor per `timeUnit` | `http_req_failed: ['rate<x']` or `checks: ['rate>x']` |
+| Artillery | YAML with top-level `config:` and `scenarios:` | `p95: N` under `ensure`, or `http.response_time.p95` in a threshold or condition | the highest `arrivalRate` or `rampTo` | `maxErrorRate`, or a condition on `vusers.failed` or `errors.` |
+| Locust | a Python file that imports `locust` | `get_response_time_percentile(0.95) > N` in a quitting listener | `constant_throughput(r)` or `constant_pacing(s)` times the users in `locust.conf` or `-u`/`--users` | `fail_ratio >` or `num_failures >` |
+
+- A threshold is in milliseconds and counts when it is no looser than the target; a rate counts when it reaches the target. Each rule is met by at least one load script.
+- A load set in virtual users (k6 `vus`, a Locust user count with no throughput wait) has no rate a static check can read: a NOTE, which the review reads, never a pass.
+- **Run** (QA-L5): `k6 run`, `k6 cloud`, the Grafana k6 GitHub actions, `artillery run` or `locust` in a CI step, a make recipe, a package script or a runbook in Markdown.
+
+| Mutation tool | Configured by (QA-M1) | Break threshold (QA-M2) |
+|---|---|---|
+| Stryker (JS, TS) | `stryker.conf.*`, `stryker.config.*`, or `@stryker-mutator/core` in `package.json` | `thresholds.break` |
+| PIT (Java) | `pitest-maven` in `pom.xml`, or `pitest` in `build.gradle` | `mutationThreshold` |
+| gremlins (Go) | `.gremlins.yaml`, or `gremlins unleash` in CI or make | `efficacy`, or `--threshold-efficacy` |
+| mutmut (Python) | `[mutmut]` or `[tool.mutmut]` in `setup.cfg` or `pyproject.toml`, or `mutmut run` | none: a NOTE, and the report is the evidence |
+| go-mutesting (Go) | `go-mutesting` in CI or make | none: a NOTE |
+
+- **CI** (QA-M3): a CI step runs the tool, through make recipes and package scripts as in QA-I2. A make target alone does not count: the score must be checked on every change.
+- **Reports** (QA-M4): `*mutation.json` (Stryker: Killed and Timeout are detected, Survived and NoCoverage are not), `*mutations.xml` (PIT: KILLED, TIMED_OUT, MEMORY_ERROR and RUN_ERROR detected, SURVIVED and NO_COVERAGE not), and `*mutation-report.*` or `*mutation-score*` with a line such as `Mutation score: 72.5%`, go-mutesting's `The mutation score is 0.725` or gremlins' `Test efficacy: 85%`; plus any `quality.mutation.reports` entry (a file inside the repository). Reports under `target/`, `build/`, `dist/` and `coverage/` are not searched, so PIT's `target/pit-reports` must be listed. A line that states a target (`Minimum mutation score: 80%`) is not read as the score. The newest usable report counts. It is dated by a `YYYY-MM-DD` in its path, else by the author date of its last commit (`git log`, read-only, run from the repository root with bare-repository discovery and signature checks off); an uncommitted report with no date in its path is undated, and so is every report in a shallow clone. A report that cannot be used (unreadable, undated, dated after today) is a NOTE beside a usable one and fails QA-M4 when it is the only kind there is.
+- **k6 scenarios** are read one by one: a rate counts only inside an arrival-rate executor and is divided by that scenario's own `timeUnit`; a `target` in a `ramping-vus` stage is a number of virtual users, not a rate. Block and line comments are skipped, and several thresholds on one line are each read. Installing a tool (`pip install locust`, `go install …go-mutesting`) is not running it.

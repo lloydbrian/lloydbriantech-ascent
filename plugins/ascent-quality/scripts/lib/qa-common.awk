@@ -2,6 +2,12 @@
 # (awk -f qa-common.awk -f <check>.awk). Run with LC_ALL=C. POSIX awk only.
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function at() { return FN ":" FNR }
+# noinstall CMD — the command with install commands dropped up to their end:
+# installing a runner or a tool is not running it.
+function noinstall(s) {
+  gsub(/(pip3?|pipx|poetry|uv|npm|yarn|pnpm|bun|apt-get|apt|brew|go|cargo)[ \t]+(pip[ \t]+)?(install|add|i|get)([ \t][^;&|]*)?/, " ", s)
+  return s
+}
 function fail(k, sev, where, msg) { OUT[k] = OUT[k] sprintf("FAIL  %-7s %-6s %s  %s\n", "QA-" k, sev, where, msg); NF_[k]++; NFAIL++ }
 function note(k, where, msg) { NOTES = NOTES sprintf("NOTE  %-7s %-6s %s  %s\n", "QA-" k, "-", where, msg) }
 # lang FILE — js, py, go, bats, sh or other, by extension.
@@ -81,4 +87,63 @@ function isblock(m, lg) {
   if (lg == "go") return (m ~ /^func[ \t]+Test[A-Za-z0-9_]*[ \t]*\(.*\*testing\.T[ \t]*\)/)
   if (lg == "bats") return (m ~ /^[ \t]*@test[ \t]/)
   return 0
+}
+# pkgline LINE — a package.json line: each "name": "command" pair after "scripts": {,
+# up to its closing brace, on one line or many, into SCR; the test script into
+# PKGTEST and PKGTL. Reset INSCR for each new file.
+function pkgline(raw,   line, kv, nm, v) {
+  if (!(FN in PKGLINE)) PKGLINE[FN] = 1
+  line = raw
+  if (match(line, /"scripts"[ \t]*:[ \t]*\{/)) { INSCR = 1; line = substr(line, RSTART + RLENGTH) }
+  if (!INSCR) return
+  while (match(line, /"[^"]+"[ \t]*:[ \t]*"([^"\\]|\\.)*"/)) {
+    kv = substr(line, RSTART, RLENGTH); line = substr(line, RSTART + RLENGTH)
+    nm = kv; sub(/^"/, "", nm); sub(/".*$/, "", nm)
+    v = kv; sub(/^"[^"]+"[ \t]*:[ \t]*"/, "", v); sub(/"$/, "", v)
+    SCR[nm] = SCR[nm] " ; " v
+    if (nm == "test") { PKGTEST[FN] = v; PKGTL[FN] = FNR }
+  }
+  if (line ~ /\}/) INSCR = 0
+}
+# makeline LINE — a make file line: recipes into MR, prerequisites into MP, and
+# MAKETEST when a target is named test*. Reset MT for each new file.
+function makeline(raw,   tl, pr, n, j, TG) {
+  if (raw ~ /^\t/) { if (MT != "") { n = split(MT, TG, " "); for (j = 1; j <= n; j++) MR[TG[j]] = MR[TG[j]] " ; " trim(raw) }; return }
+  if (raw ~ /^[A-Za-z0-9_.%\/-][A-Za-z0-9_.%\/ -]*:([^=]|$)/ && raw !~ /^[A-Za-z0-9_]+[ \t]*[:?+]?=/) {
+    tl = raw; sub(/:.*$/, "", tl); pr = raw; sub(/^[^:]*:/, "", pr); sub(/##.*$/, "", pr); sub(/\|.*$/, "", pr)
+    MT = trim(tl)
+    if (MT ~ /(^| )test[A-Za-z0-9_-]*( |$)/) MAKETEST = 1
+    n = split(MT, TG, " "); for (j = 1; j <= n; j++) MP[TG[j]] = MP[TG[j]] " " pr
+    return
+  }
+  if (trim(raw) != "" && raw !~ /^[ \t]*#/) MT = ""
+}
+# expand CMD DEPTH — the command with the make recipes and package scripts it runs
+# appended, followed three levels deep. At most 500 expansions per command, so a
+# crafted fan-out (make a a a …, three levels down) cannot exhaust memory.
+function expand(c, depth,   out, s, w, n, j, W) {
+  out = c
+  if (depth == 0) EXPN = 0
+  if (depth > 3 || ++EXPN > 500) return out
+  s = c
+  while (match(s, /(^|[^A-Za-z0-9_-])(make|\$\(MAKE\)|\$\{MAKE\})([ \t]+[^;&|]*)?/)) {
+    w = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
+    sub(/^[^m$]*(make|\$\(MAKE\)|\$\{MAKE\})/, "", w)
+    n = split(w, W, /[ \t]+/)
+    for (j = 1; j <= n; j++) if (W[j] != "" && W[j] !~ /^-|=/ && (W[j] in MR || W[j] in MP)) out = out " ; " expand(MR[W[j]] " ; " expandp(MP[W[j]], depth + 1), depth + 1)
+  }
+  s = c
+  while (match(s, /(^|[^A-Za-z0-9_-])(npm|yarn|pnpm|bun)[ \t]+((run|run-script)[ \t]+)?[A-Za-z0-9:_-]+/)) {
+    w = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
+    sub(/^.*(npm|yarn|pnpm|bun)[ \t]+((run|run-script)[ \t]+)?/, "", w)
+    if (w == "t") w = "test"
+    if (w in SCR) out = out " ; " expand(SCR["pre" w] " ; " SCR[w] " ; " SCR["post" w], depth + 1)
+  }
+  return out
+}
+function expandp(p, depth,   out, n, j, W) {
+  if (depth > 3 || ++EXPN > 500) return ""   # also ends a prerequisite cycle (a: b, b: a)
+  out = ""; n = split(p, W, /[ \t]+/)
+  for (j = 1; j <= n; j++) if (W[j] != "" && (W[j] in MR || W[j] in MP)) out = out " ; " MR[W[j]] " ; " expandp(MP[W[j]], depth + 1)
+  return out
 }

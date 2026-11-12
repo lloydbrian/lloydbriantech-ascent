@@ -1,0 +1,15 @@
+# Browsing: ramps from 20 to 55 arrivals a second.
+config:
+  target: "{{ $env.BASE_URL }}"
+  phases:
+    - duration: 120
+      arrivalRate: 20
+      rampTo: 55
+  ensure:
+    thresholds:
+      - http.response_time.p95: 450
+    maxErrorRate: 1
+scenarios:
+  - flow:
+      - get:
+          url: "/products"
