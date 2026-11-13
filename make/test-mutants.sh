@@ -63,7 +63,7 @@ esac
 CUR_GROUP=core
 mutant_group() { CUR_GROUP="$1"; }
 in_group() { [ "$GROUP" = all ] || [ "$GROUP" = "$CUR_GROUP" ]; }
-killed=0; survived=0; missed=0; total=0
+killed=0; survived=0; missed=0; copyfail=0; total=0
 # Every finished control adds a line, seconds<TAB>status<TAB>id, to $WORK/done
 # (core rows to $WORK/done-core, untimed): the progress bar and the summary read them.
 T0=$SECONDS
@@ -156,9 +156,24 @@ fi
 # of both runs. If full mode kills it, the two modes disagree: that is reported
 # as MODES DIFFER and fails the run, never counted as a kill.
 # ASCENT_MUTANT_MODE=full runs every control in full mode only.
-plugin_copy() {  # DIR — fresh copy of the repository without .git
-  rm -rf "$1"; mkdir -p "$1"
-  (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) | (cd "$1" && tar -xf -)
+#
+# A copy that fails (a full disk: tar's "Write error") is an infrastructure error,
+# not a verdict: tar's messages go to DIR.copy-err, never into the control's result,
+# and the control is reported as COPY FAIL, counted apart, and fails the run.
+# MUTANT_FAULT=copy-fail makes every copy fail: only the harness group sets it.
+plugin_copy() {  # DIR — fresh copy of the repository without .git; fails if the copy fails
+  rm -rf "$1" "$1.copy-err"; mkdir -p "$1"
+  if [ "${MUTANT_FAULT:-}" = copy-fail ]; then echo "tar: Write error (MUTANT_FAULT=copy-fail)" > "$1.copy-err"; return 1; fi
+  if (cd "$REPO_ROOT" && tar --exclude ./.git -cf - .) 2>"$1.copy-err" | (cd "$1" && tar -xf -) 2>>"$1.copy-err"; then
+    rm -f "$1.copy-err"; return 0
+  fi
+  [ -s "$1.copy-err" ] || echo "tar failed without a message" > "$1.copy-err"
+  return 1
+}
+copy_failed() {  # ID DIR — if DIR's copy failed, print COPY FAIL with tar's first message
+  [ -f "$2.copy-err" ] || return 1
+  printf "  COPY FAIL    %-28s copying the repository failed: %s\n" "$1" "$(head -1 "$2.copy-err" | cut -c1-80)"
+  rm -rf "$2" "$2.copy-err"
 }
 # T13.0 (the ownership checker's fixture tests) and T14 (the fast-mode self-test)
 # are skipped unless a control sets T13_SELFTEST=1 or T14_SELFTEST=1: only the
@@ -180,6 +195,7 @@ plugin_gate() {  # DIR [fast LABEL EDITED-FILE] — run test-plugins on a copy; 
 # gate prints under it (T7), all indented
 fails() { awk 'BEGIN { d = -1 } /^FAIL/ { print; d = 0; next } d >= 0 && d < 5 && /^      / { print; d++; next } { d = -1 }' "$1" | sed 's/^/                 /'; }
 plugin_baseline() {  # ID COPY [NOTE] — the unmodified copy must pass the full gate
+  if copy_failed "$1" "$2"; then return 1; fi
   if plugin_gate "$2"; then
     printf "  control      %-28s unmodified copy passes test-plugins%s\n" "$1" "${3:-}"
   else
@@ -242,7 +258,10 @@ launch() {  # COMMAND ARGS... — run one control in the background, at most $JO
   local n
   seq=$((seq + 1)); total=$((total + 1))
   while n=$(jobs -pr | wc -l) && [ $((n)) -ge "$JOBS" ]; do flush; sleep 0.2; done
-  ( s=$SECONDS; "$@" >"$WORK/r/$seq.part" 2>&1 || true
+  # stderr goes below the result, indented, so the first line is always its status
+  ( s=$SECONDS; "$@" >"$WORK/r/$seq.part" 2>"$WORK/r/$seq.err" || true
+    if [ -s "$WORK/r/$seq.err" ]; then sed 's/^/               stderr: /' "$WORK/r/$seq.err" >> "$WORK/r/$seq.part"; fi
+    rm -f "$WORK/r/$seq.err"
     record $((SECONDS - s)) "$WORK/r/$seq.part" >> "$WORK/done"
     mv "$WORK/r/$seq.part" "$WORK/r/$seq" ) &
   flush
@@ -253,6 +272,7 @@ launch() {  # COMMAND ARGS... — run one control in the background, at most $JO
 # them (own process group and TMPDIR, stopped at a FAIL line): a test that failed
 # only there would otherwise turn every T11 control into a kill.
 plugin_fast_baseline() {  # ID COPY
+  if copy_failed "$1" "$2"; then return 1; fi
   if plugin_gate "$2" fast T11 ""; then
     printf "  control      %-28s unmodified copy passes T11 in fast mode\n" "$1"
   else
@@ -261,11 +281,11 @@ plugin_fast_baseline() {  # ID COPY
   fi
 }
 if [ "$GROUP" != core ]; then
-plugin_copy "$WORK/p-baseline"
+plugin_copy "$WORK/p-baseline" || true   # a failed copy is reported by the baseline
 T11_ONLY=""
 launch plugin_baseline P00-baseline "$WORK/p-baseline"
 if [ "$MODE" = fast ]; then
-  plugin_copy "$WORK/p-fast-baseline"
+  plugin_copy "$WORK/p-fast-baseline" || true
   launch plugin_fast_baseline P00-fast-baseline "$WORK/p-fast-baseline"
 fi
 fi
@@ -274,7 +294,7 @@ fi
 # KIND is edit (apply SED to PATH) or rm (delete PATH). Prints its result.
 control_run() {
   local kind=$1 id=$2 label=$3 path=$4 copy="$WORK/p-$2"
-  plugin_copy "$copy"
+  plugin_copy "$copy" || { copy_failed "$id" "$copy"; return; }
   if [ "$kind" = rm ]; then
     if [ ! -e "$copy/$path" ]; then printf "  ANCHOR MISS  %-28s %s not found\n" "$id" "$path"; rm -rf "$copy"; return; fi
     rm -rf "${copy:?}/$path"
@@ -1048,7 +1068,7 @@ ARCHT=plugins/ascent-architecture/scripts/estimate-cost.sh
 GATEP=make/test-plugins.sh
 # T14 must pass unmutated for its controls to mean anything.
 if in_group; then
-  plugin_copy "$WORK/p-harness-baseline"; T11_ONLY=none
+  plugin_copy "$WORK/p-harness-baseline" || true; T11_ONLY=none
   T14_SELFTEST=1 launch plugin_baseline P00-harness-baseline "$WORK/p-harness-baseline" " with T14"
 fi
 expect_case() {  # STATUS ID LABEL FILE SED — the harness must report STATUS for this control
@@ -1060,7 +1080,7 @@ expect_run() {
   local want=$1 out line got; shift
   [ "$MODE" = full ] && [ "$want" = "MODES DIFFER" ] && want=killed   # full mode has nothing to compare
   if [ "$want" = "CONTROL FAIL" ]; then
-    plugin_copy "$WORK/p-$1"
+    plugin_copy "$WORK/p-$1" || { copy_failed "$1" "$WORK/p-$1"; return; }
     sed -i.mut-bak -e "$4" "$WORK/p-$1/$3" && rm -f "$WORK/p-$1/$3.mut-bak"
     out=$(plugin_baseline "$1" "$WORK/p-$1" || true); rm -rf "$WORK/p-$1" "$WORK/p-$1.out"
   else
@@ -1070,6 +1090,8 @@ expect_run() {
   line=${out%%$'\n'*}; got=$(echo "${line:2:12}" | sed 's/ *$//')
   if [ "$got" = "$want" ]; then
     printf "  confirmed    %-28s harness reported %s\n" "$1" "$want"
+  elif [ "$got" = "COPY FAIL" ]; then
+    printf '%s\n' "$out"   # an infrastructure error, not the harness's verdict
   else
     printf "  SURVIVED     %-28s harness reported '%s', expected %s:\n" "$1" "$got" "$want"
     printf '%s\n' "$out" | sed 's/^/  /'
@@ -1083,6 +1105,8 @@ expect_case "ANCHOR MISS" P361-harness-anchor-miss T11 "$ARCHT" 's/text that is 
 MUTANT_FAULT=fast-pass expect_case "MODES DIFFER" P362-harness-modes-differ T11 "$ARCHT" 's/^      f = fr\[k\] + 0$/      f = 0/'
 expect_case "CONTROL FAIL" P363-harness-baseline-broken T2 plugins/ascent-architecture/README.md '$a\
 <<UNRENDERED>>'
+MUTANT_FAULT=copy-fail expect_case "COPY FAIL" P611-harness-copy-fail T5 docs/framework/PHILOSOPHY.md '$a\
+A copy that fails is an infrastructure error, never a verdict.'
 expect_case SURVIVED P373-harness-other-subcheck T13.4 docs/framework/OWNERSHIP.md '/^| HTML, JSX, Vue or Svelte templates/d'
 T14_SELFTEST=1 plugin_case P364-fast-never-stops-test T14.G2 "$GATEP" 's/kill -TERM -- "-\$pid"/true/'
 T14_SELFTEST=1 plugin_case P365-fail-line-exit-0-passes T14.G5 "$GATEP" "s/if grep -q '^FAIL' \"\$WORK\/t11.out\"; then/if false; then/"
@@ -1113,35 +1137,39 @@ for f in "$WORK"/r/*; do
   case "$status" in
     killed|confirmed|control) killed=$((killed + 1)) ;;
     ANCHOR) missed=$((missed + 1)) ;;
+    COPY) copyfail=$((copyfail + 1)) ;;
     *) survived=$((survived + 1)) ;;
   esac
 done
 
 # The summary: counts by kind (the totals line below counts control and confirmed
-# as killed, and MODES DIFFER and CONTROL FAIL as survived), what was not killed,
-# the time and the three slowest controls.
+# as killed, and MODES DIFFER and CONTROL FAIL as survived; COPY FAIL is neither),
+# what was not killed, the time and the three slowest controls.
 if [ "$total" -gt 0 ]; then
   cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" '
     function rep(n,  r) { r = ""; while (n-- > 0) r = r rule; return r }
     { if ($2 == "killed" || $2 == "confirmed") k++; else if ($2 == "control") c++; else if ($2 == "ANCHOR MISS") a++
-      else if ($2 == "MODES DIFFER") d++; else if ($2 == "CONTROL FAIL") f++; else s++
+      else if ($2 == "MODES DIFFER") d++; else if ($2 == "CONTROL FAIL") f++; else if ($2 == "COPY FAIL") x++; else s++
       if ($2 !~ /^(killed|confirmed|control)$/) nk[++nn] = sprintf("          %-13s %s", $2, $3)
       if ($1 != "-") { t[++nt] = $1 + 0; id[nt] = $3 } }
     END {
       print ""; print rep(16) " summary " rep(16)
       printf " group    %-20s mode  %s\n jobs     %-20s time  %s\n", group, mode, jobs, time
       printf " killed   %d   control %d   survived %d\n", k, c, s
-      printf " modes differ %d   anchor miss %d   control fail %d\n", d, a, f
+      printf " modes differ %d   anchor miss %d   control fail %d   copy fail %d\n", d, a, f, x
       for (j = 1; j <= 3 && j <= nt; j++) {
         m = 0; for (i = 1; i <= nt; i++) if (!(i in used) && (m == 0 || t[i] > t[m])) m = i
         used[m] = 1; printf " %-8s %-30s %ds\n", (j == 1 ? "slowest" : ""), id[m], t[m]
       }
       if (nn) { print " not killed"; for (i = 1; i <= nn; i++) print nk[i] }
-      print " result   " ((s + d + f + a == 0 && NR > 0) ? "PASS" : "FAIL")
+      print " result   " ((s + d + f + a + x == 0 && NR > 0) ? "PASS" : "FAIL")
       print rep(41)
     }'
 fi
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s, mode: %s)\n" \
   "$total" "$killed" "$survived" "$missed" "$GROUP" "$MODE"
-[ "$survived" -eq 0 ] && [ "$missed" -eq 0 ] && [ "$total" -gt 0 ]
+if [ "$copyfail" -gt 0 ]; then
+  echo "test-mutants: $copyfail control(s) could not copy the repository (COPY FAIL) — an infrastructure error such as a full disk, not a verdict; rerun the group"
+fi
+[ "$survived" -eq 0 ] && [ "$missed" -eq 0 ] && [ "$copyfail" -eq 0 ] && [ "$total" -gt 0 ]
