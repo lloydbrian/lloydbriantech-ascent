@@ -10,7 +10,10 @@
 # runs the summary block must count what the totals line counts, and the raw run's
 # summary must list every control that was not killed; the four-job run shows the
 # progress bar, which must end at N/N on stderr. A control declared where the
-# count before the run cannot see it must fail the run.
+# count before the run cannot see it must fail the run. A copy that fails (tar's
+# "Write error" on a full disk) must be reported as COPY FAIL, counted as neither
+# a kill nor a survivor, and fail the run, with tar's message kept out of the
+# result's status line.
 #
 # Uses set -u only: every case runs and reports, and the summary decides.
 #
@@ -32,18 +35,20 @@ bad() { FAIL=$((FAIL + 1)); printf "FAIL  %s\n" "$1"; }
 results() { grep -E '^  [A-Za-z]|^test-mutants: ' "$1" || true; }
 
 # summary FILE — "killed control survived modes-differ anchor-miss control-fail
-# total-killed total-survived total-anchor result" from the summary block and the totals line
+# total-killed total-survived total-anchor result copy-fail" from the summary block and the totals line
 summary() {
   awk '/^ killed +[0-9]+ +control [0-9]+ +survived [0-9]+$/ { k = $2; c = $4; s = $6 }
-    /^ modes differ [0-9]+ +anchor miss [0-9]+ +control fail [0-9]+$/ { d = $3; a = $6; f = $9 }
+    /^ modes differ [0-9]+ +anchor miss [0-9]+ +control fail [0-9]+ +copy fail [0-9]+$/ { d = $3; a = $6; f = $9; x = $12 }
     /^ result +(PASS|FAIL)$/ { r = $2 }
     /^test-mutants: [0-9]+ mutants/ { for (i = 1; i <= NF; i++) { if ($(i + 1) ~ /^killed,?$/) tk = $i; if ($(i + 1) ~ /^survived,?$/) ts = $i; if ($(i + 1) == "anchor") ta = $i } }
-    END { print k + 0, c + 0, s + 0, d + 0, a + 0, f + 0, tk + 0, ts + 0, ta + 0, (r == "" ? "none" : r) }' "$1"
+    END { print k + 0, c + 0, s + 0, d + 0, a + 0, f + 0, tk + 0, ts + 0, ta + 0, (r == "" ? "none" : r), x + 0 }' "$1"
 }
-# check_summary FILE PASS|FAIL — the summary block counts what the totals line counts
+# check_summary FILE PASS|FAIL — the summary block counts what the totals line counts,
+# and its copy failures are the COPY FAIL lines
 check_summary() {
   set -- "$1" "$2" $(summary "$1")
-  if [ "$(($3 + $4))" -eq "$9" ] && [ "$(($5 + $6 + $8))" -eq "${10}" ] && [ "$7" -eq "${11}" ] && [ "${12}" = "$2" ]; then ok
+  if [ "$(($3 + $4))" -eq "$9" ] && [ "$(($5 + $6 + $8))" -eq "${10}" ] && [ "$7" -eq "${11}" ] && [ "${12}" = "$2" ] \
+    && [ "${13}" -eq "$(grep -c '^  COPY FAIL ' "$1")" ]; then ok
   else bad "the summary of $(basename "$1") does not match its totals (or is not $2): $(grep -E '^ (killed|modes|result) |^test-mutants: ' "$1" | tr '\n' ';')"; fi
 }
 
@@ -66,14 +71,14 @@ check_summary "$WORK/run-4" PASS
 
 rc=0
 ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_JOBS=4 ASCENT_MUTANT_RAW=1 bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/raw" 2>&1 || rc=$?
-counts=$(awk '/^  [A-Za-z]/ { if ($1 == "killed" || $1 == "control") k++; else if ($1 == "ANCHOR") m++; else s++ }
-  END { printf "%d mutants — %d killed, %d survived, %d anchor misses", k + s + m, k, s, m }' "$WORK/raw")
-for st in SURVIVED "ANCHOR MISS" "MODES DIFFER" "CONTROL FAIL" killed; do
+counts=$(awk '/^  [A-Za-z]/ { if ($1 == "killed" || $1 == "control") k++; else if ($1 == "ANCHOR") m++; else if ($1 == "COPY") x++; else s++ }
+  END { printf "%d mutants — %d killed, %d survived, %d anchor misses", k + s + m + x, k, s, m }' "$WORK/raw")
+for st in SURVIVED "ANCHOR MISS" "MODES DIFFER" "CONTROL FAIL" "COPY FAIL" killed; do
   if grep -q "^  $st " "$WORK/raw"; then ok; else bad "the raw run has no $st result"; fi
 done
 if grep -q "^test-mutants: $counts (group: harness, mode: fast)$" "$WORK/raw"; then ok
 else bad "the totals do not count the results ($counts): $(grep '^test-mutants: ' "$WORK/raw")"; fi
-if [ "$rc" -ne 0 ]; then ok; else bad "a run with survivors, a disagreement, a broken baseline and an anchor miss passed"; fi
+if [ "$rc" -ne 0 ]; then ok; else bad "a run with survivors, a disagreement, a broken baseline, an anchor miss and a copy failure passed"; fi
 check_summary "$WORK/raw" FAIL
 missing=""
 for id in $(awk '/^  [A-Za-z]/ && $1 != "killed" && $1 != "control" { print ($1 == "SURVIVED" ? $2 : $3) }' "$WORK/raw"); do
@@ -91,6 +96,28 @@ rc=0
 ASCENT_MUTANT_GROUP=core bash "$WORK/repo/make/test-mutants.sh" </dev/null >"$WORK/uncounted" 2>&1 || rc=$?
 if [ "$rc" -ne 0 ] && grep -q '^test-mutants: counted 0 controls before the run but launched 1 ' "$WORK/uncounted"; then ok
 else bad "a control the count missed did not fail the run (rc $rc): $(tail -1 "$WORK/uncounted")"; fi
+
+# A copy that fails for real: a tar on PATH that fails to extract the way a full
+# disk does. Every control of the harness group must be COPY FAIL, none killed or
+# survived, except P611, which expects COPY FAIL and is confirmed; tar's message
+# must stay out of the status lines, and the run must fail.
+REAL_TAR=$(command -v tar)
+mkdir "$WORK/bin"
+printf '#!/bin/sh\ncase " $* " in *" -xf "*) cat >/dev/null; echo "tar: Write error" >&2; echo "tar: Error exit delayed from previous errors." >&2; exit 1 ;; esac\nexec "%s" "$@"\n' "$REAL_TAR" > "$WORK/bin/tar"
+chmod +x "$WORK/bin/tar"
+rc=0
+PATH="$WORK/bin:$PATH" ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_JOBS=4 ASCENT_MUTANT_PROGRESS=0 \
+  bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/copyfail" 2>&1 || rc=$?
+n=$(sed -n 's/^test-mutants: \([0-9]*\) mutants .*/\1/p' "$WORK/copyfail")
+cf=$(grep -c '^  COPY FAIL ' "$WORK/copyfail")
+if [ "$rc" -ne 0 ] && [ -n "$n" ] && [ "$n" -gt 1 ] && [ "$cf" -eq $((n - 1)) ] && grep -q '^  confirmed    P611-harness-copy-fail ' "$WORK/copyfail"; then ok
+else bad "a failed copy was not COPY FAIL for every control (rc $rc, $cf of '$n'): $(grep -E '^  [A-Za-z]' "$WORK/copyfail" | grep -v '^  COPY FAIL ' | head -3 | tr '\n' ';')"; fi
+if grep -q "^test-mutants: $n mutants — 1 killed, 0 survived, 0 anchor misses " "$WORK/copyfail" \
+  && grep -q "^test-mutants: $cf control(s) could not copy the repository (COPY FAIL)" "$WORK/copyfail"; then ok
+else bad "a failed copy was counted as a kill or a survivor: $(grep '^test-mutants: ' "$WORK/copyfail" | tr '\n' ';')"; fi
+if ! grep -qE '^ {0,2}tar: |^          (r: |tar)' "$WORK/copyfail" && grep -q 'copying the repository failed: tar: Write error$' "$WORK/copyfail"; then ok
+else bad "tar's message reached a status line or the not-killed list: $(grep -nE 'tar: ' "$WORK/copyfail" | head -3 | tr '\n' ';')"; fi
+check_summary "$WORK/copyfail" FAIL
 
 printf "test-mutants-harness: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

@@ -30,6 +30,29 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.14] — 2026-11-12
+
+**Copy failures in the negative controls.** A repository copy that fails is reported as `COPY FAIL`, never as a verdict. On a macOS CI runner with a full disk, `tar: Write error` became the first line of a control's result and was counted as a surviving control named `r: Write err`, although the control had been killed.
+
+### Fixed
+
+- `make/test-mutants.sh`: `plugin_copy` checks both sides of the tar pipe and keeps tar's messages apart; a control, a baseline or a harness case whose copy fails prints `COPY FAIL <id> copying the repository failed: <tar's first message>` instead of running on a partial copy
+- A control's stderr is written below its result line, indented, so the first line is always its status
+- `COPY FAIL` is counted apart from killed and survived: the summary shows `copy fail N`, the totals line keeps its format and is followed by a line naming the controls that could not be copied, and any copy failure fails the run
+- The baseline copies no longer end the whole run without a result when they fail
+
+### Added
+
+- Control P611 in the `harness` group: with `MUTANT_FAULT=copy-fail` every copy fails, and the harness must report `COPY FAIL`
+- `tests/meta/test-mutants-harness.sh` counts `COPY FAIL`, and a new case puts a fake `tar` that fails every extraction on `PATH` and requires every other control to be reported as `COPY FAIL`, P611 confirmed, none survived, tar's message kept out of the status lines, and a failing exit
+
+### Notes
+
+- ADR-018 describes six `expect_case` controls in the `harness` group; with P611 there are seven. ADR-018 is unchanged
+- No plugin changed, so no plugin version, marketplace entry or `make/plugins.lock` row changed
+
+---
+
 ## [0.4.13] — 2026-11-01
 
 **Load tests and mutation evidence.** `ascent-quality` 0.2.0 checks that a load test would fail when the service misses its latency or throughput target, and that there is evidence the tests fail when the code is broken ([ADR-014](docs/framework/DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-021](docs/framework/DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md)). The targets stay `ascent-architecture`'s: `p95_latency_ms` and `peak_rps` are read from `architecture.quality_targets`, never copied. Claude never runs a load test or a mutation tool.

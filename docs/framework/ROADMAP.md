@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.13 (`ascent-quality` 0.2.0, load tests and mutation evidence), November 1, 2026. Phase 4 awaits its go-signal.
+**Current state:** v0.4.14 (negative controls report copy failures), November 12, 2026. Next: `ascent-ux` 0.3.0; Phase 4 awaits its go-signal.
 
 ## Plugin roadmap
 
@@ -216,6 +216,13 @@ Patch releases `ascent-architecture` 0.1.2, `ascent-delivery` 0.1.1 and `ascent-
 **Status:** ✅ Complete (November 1, 2026)
 
 `ascent-quality` 0.2.0 checks that the tests would catch a slow release and a broken change ([ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-021](DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md)). The new `test-evidence` skill and `check-test-evidence.sh` read k6, Artillery and Locust scripts against the `p95_latency_ms` and `peak_rps` targets that `ascent-architecture` sets (`QA-L1`–`L5`: a load test exists, its p95 threshold is no looser than the target, its rate reaches the peak, it has an error-rate threshold and something runs it), and read Stryker, PIT, gremlins, mutmut and go-mutesting configurations and reports (`QA-M1`–`M4`: a tool, a break threshold at `quality.mutation.min_score`, a CI run, and a current report in the repository at that score). Claude never runs a load test or a mutation tool. Controls P519–P610 run in two new groups. An independent review before release confirmed and fixed 35 findings, among them per-scenario k6 rates and a `git log` that a crafted repository folder could have steered. The read-only trial on five repositories found no load tests or mutation tools, so its only findings are `QA-M1` and, with example targets, `QA-L1`. See [`CHANGELOG.md`](../../CHANGELOG.md).
+
+
+### v0.4.14: Copy failures in the negative controls
+
+**Status:** ✅ Complete (November 12, 2026)
+
+A full disk on a macOS CI runner broke the repository copy a control runs on: `tar: Write error` landed on the first line of the control's result, where the harness reads its status, and was counted as a surviving control. `make test-mutants` now reports a failed copy as `COPY FAIL`, counted apart from killed and survived, and fails the run with a line to rerun the group; tar's messages and any other stderr go below the result line. Control P611 in the `harness` group proves it, with `MUTANT_FAULT=copy-fail`. See [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ---
 
