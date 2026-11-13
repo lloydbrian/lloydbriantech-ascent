@@ -50,10 +50,20 @@ jobs:
             exit 1
           fi
           echo "notes_file=/tmp/release-notes.md" >> "$GITHUB_OUTPUT"
+          # Title: the tag, then the section's bold lead sentence without its
+          # period and backticks ("v0.4.14 — Copy failures in the negative
+          # controls"). A section without a lead keeps the tag alone.
+          lead="$(awk '/^\*\*[^*]+\*\*/ { s=$0; sub(/^\*\*/, "", s); sub(/\*\*.*/, "", s); sub(/\.$/, "", s); gsub(/`/, "", s); print s; exit }' /tmp/release-notes.md)"
+          if [ -n "$lead" ]; then
+            echo "title=$tag — $lead" >> "$GITHUB_OUTPUT"
+          else
+            echo "title=$tag" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64  # v3.0.3
         with:
+          name: ${{ steps.notes.outputs.title }}
           body_path: ${{ steps.notes.outputs.notes_file }}
           draft: false
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
