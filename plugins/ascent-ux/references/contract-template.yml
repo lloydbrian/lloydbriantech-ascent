@@ -24,9 +24,18 @@ ux:
   jurisdictions: []
 
   personas: docs/audience-mapping.md   # who the UI serves
-  core_flows:                          # flows where a blocking accessibility failure is High
+  core_flows:                          # flows where a failure that blocks the task is High
     - name: enter-score
       pages: [app/public/score.html]
+      # The ordered pages or routes of the flow, for UX-F3 and the browser walk (UX-F5).
+      # Leave it out and both are unmeasured.
+      steps: [app/public/index.html, app/public/score.html, app/public/confirm.html]
+      # none (default): the walk only navigates. Or a fixture file the operator wrote,
+      # inside this repository (never .env* or a key file), typed and submitted on
+      # localhost only. Never real data or credentials. The file is JSON: for each step,
+      # the CSS selector of each field and the value to type, for example
+      #   { "app/public/score.html": { "#player": "Test Player", "#score": "6-4" } }
+      test_data: none
   pages: ["app/public/**/*.html"]      # what the static checks scan
 
   tokens: design/tokens/                # Design Tokens JSON files, a CSS variables sheet, or tailwind.config.*
@@ -34,11 +43,27 @@ ux:
   contrast_pairs: design/tokens/pairs.tsv   # foreground<TAB>background<TAB>text|large-text|ui
   direction: UX-D1                      # chosen with design-directions; UX-D1–D5, or UX-D6 onward for a custom one
 
-  browsers: [last-2-evergreen, ios-safari-17]
+  browsers: [last-2-evergreen, ios-safari-17]   # what the build targets (UX-F7)
+  engines: [chromium, firefox, webkit]          # what the cross-browser pass runs (UX-F6); each one after
+                                                # chromium needs its own server (README, Other engines), and
+                                                # an engine not run is unmeasured
   viewports: [320, 768, 1280]          # 320 px is WCAG 1.4.10 Reflow
 
   # Leave a budget out and the performance lens is reported as "unmeasured".
   performance_budget: { lcp_ms: 2500, inp_ms: 200, cls: 0.1, page_kb: 150 }
+
+  # UX-R rules (references/flow-and-reliability.md). Leave draft_fields out and it is 6;
+  # leave offline out and it is optional (UX-R6 not applied); leave url_state out and
+  # UX-R5 is unmeasured; an empty url_state list means no page keeps view state (UX-R5
+  # not applied).
+  reliability:
+    draft_fields: 6                    # UX-R4: core-flow forms with this many fields or more keep a draft
+    url_state: []                      # UX-R5: pages whose filters, sort, page or tab live in the URL
+    offline: optional                  # UX-R6: required | optional (default) | none
+
+  # UX-P rules are observations: the pleasant principle is never "met".
+  pleasant:
+    motion_tokens: true                # UX-P2 applies when the token source has motion tokens
 
   manual_tests: []                     # dated keyboard and screen-reader passes (references/manual-test-checklist.md)
 

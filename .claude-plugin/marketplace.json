@@ -33,7 +33,7 @@
       "name": "ascent-ux",
       "source": "./plugins/ascent-ux",
       "description": "UX review for any web UI: WCAG 2.2 AA evidence with static checks and a Playwright browser pass, design-token contrast checks, five accessible design directions shown as mocks, and a read-only ux-reviewer agent.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "license": "MIT OR Apache-2.0"
     },
     {

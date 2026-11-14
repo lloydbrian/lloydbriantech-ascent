@@ -36,7 +36,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Cost efficiency | `deployment-options`; `architecture-review` (ARC-C11, budget alert); `quality-attributes`; embedded `ascent-cost-posture` | A dated monthly estimate against `monthly_budget_usd`; budget alert in the IaC | Strong |
 | Performance efficiency | `quality-attributes`; `ascent-ux` (Core Web Vitals); `ascent-quality` (`test-evidence`, QA-L1–L5) | `p95_latency_ms` target; CDN and cache policy; Core Web Vitals against a stated budget; a load test whose p95 threshold is no looser than the target, with an error-rate threshold, that something runs | Partial: thresholds read from the load-test scripts; the run is the operator's |
 | Scalability (capacity) | `quality-attributes`; `ascent-quality` (`test-evidence`, QA-L3) | `peak_rps` target; autoscaling or on-demand services; throttling limits; a load test whose request rate reaches `peak_rps` | Partial: the rate is read from the load-test script, not measured |
-| Interaction capability (usability) | `ascent-ux` (`ux-review`) | Heuristic findings on core flows; error, empty and loading states | Partial: no task-success measurement |
+| Interaction capability (usability) | `ascent-ux` (`ux-review`, `flow-check`, UX-F1–F7) | Heuristic findings on core flows; error, empty and loading states; on each core flow, links and router targets that resolve, a way forward and a way out, a not-found route, and a browser walk with no same-origin error | Partial: no task-success measurement |
 | Maintainability | `design-principles-check`; embedded `ascent-layering-check` | Layering, coupling and twelve-factor findings with `file:line` | Partial: layering has negative controls; coupling and twelve-factor findings do not |
 | Delivery speed | `ascent-delivery` release log | Lead time and change-failure rate per release (DORA) | Partial: deploy frequency and time to restore come from the log's history |
 | Outcome of a change | — | — | **Gap:** nothing measures whether a change achieved what it was for |
@@ -72,6 +72,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 |---|---|---|---|
 | Availability | `quality-attributes`; `ascent-ops` (Health and SLOs) | `availability` target; no single instance; health and readiness probes at `/-/health` and `/-/ready` | Partial: read from design and config |
 | Operability and observability | `ascent-ops` (`ops-review`, `ops-manuals`); embedded `ascent-observability-check` | SLOs, alerts linked to runbooks, current Maintenance and Troubleshooting manuals | Strong |
+| UI reliability (as experienced) | `ascent-ux` (`flow-check`, `ux-review`, UX-R1–R7) | Double-submit guards, a visible failure for every request, retry, drafts on long forms, view state in the URL, an offline notice, optimistic rollback; static, confirmed in the browser walk | Partial: the static check reads one file at a time, so a guard in a shared hook or service is confirmed by reading it |
 | Change safety | `ascent-ops` (`runbook-check`); `ascent-delivery` | Zero-touch scripts (OPS-Z1–Z9); runbooks with pre-flight, post-flight, Expect and Stop if; beta before prod | Strong |
 | Rollback | `ascent-ops` (Change and recovery) | A documented rollback for every production deploy | Strong as documentation |
 | Recoverability (RPO, RTO) | `quality-attributes`; `ascent-ops` (`recovery-drill`) | `rpo` and `rto` targets; backups and retention; the measured rto and rpo of the newest passing drill against the targets (OPS-R4); the manual's restore date (OPS-R7) | Strong ([ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)) |
@@ -84,7 +85,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 
 ## Attributes not mapped to a pillar
 
-- **Compatibility** (browsers, clients, API versioning): `quality-attributes` scores it when the contract names a target.
+- **Compatibility** (browsers, clients, API versioning): `quality-attributes` scores it when the contract names a target; `ascent-ux` checks build targets against the contract's `browsers` (UX-F7) and walks the core flows in every engine the operator runs (UX-F6).
 - **Sustainability** (idle capacity): `quality-attributes` scores it; `deployment-options` favors scale-to-zero.
 - **Safety** (harm to people or equipment): usually out of scope for web systems; `quality-attributes` says so when it is skipped.
 

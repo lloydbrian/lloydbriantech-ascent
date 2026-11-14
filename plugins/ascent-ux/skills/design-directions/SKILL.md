@@ -8,7 +8,7 @@ description: >-
   project's own pages, every one checked for WCAG contrast and accessibility
   before it is shown, generates more on request, and turns the choice into an
   ADR draft and a token file. Writes mock files only, never tracked files.
-version: 0.2.0
+version: 0.3.0
 allowed-tools: Read, Grep, Glob
 ---
 

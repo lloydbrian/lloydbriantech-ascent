@@ -17,7 +17,7 @@ Dates are in **America/New_York** timezone.
 - `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
 - Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
 - Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
-- `ascent-ux` 0.3.0: navigational integrity and cross-browser (ADR-014), plus candidates from the trial: a framework repository (JSX, Vue or Svelte) as a second real-repository trial; delegated listeners across files and for compound selectors; the box-shadow ring's contrast computed rather than left to the browser
+- `ascent-ux` 0.3.1 candidates: from the 0.2.0 trial, delegated listeners across files and for compound selectors, and the box-shadow ring's contrast computed rather than left to the browser (ADR-022 decision 9); from the 0.3.0 trial, a static UX-F3 check for a page with no link at all, reading the shared hook or service a file imports before rating UX-R1 and UX-R2, and a Firefox and WebKit run of the walk on real repositories
 - `ascent-delivery` 0.2.0: a user acceptance sign-off record (ADR-014); read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security`: the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
 - `ascent-architecture` 0.3.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
@@ -27,6 +27,42 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.15] — 2026-11-13
+
+**`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant.** A review now asks whether users can finish the core flows and whether those flows survive a failed request, a double click, a reload or a lost connection, not only whether the pages are accessible. Four principles order the report as a ladder (functional, reliable, accessible, pleasant) and its headline names the lowest one at risk, with the unmeasured ones listed apart; severities still come only from the severity table ([ADR-022](docs/framework/DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md)).
+
+### Added
+
+- `references/flow-and-reliability.md`: three plugin-qualified rule families, `UX-F1`–`F7` (flow integrity), `UX-R1`–`R7` (reliability as experienced) and `UX-P1`–`P4` (pleasantness, observed and never met), defined once for both scripts, the skills and the agent
+- `scripts/check-flow-integrity.sh` (UX-F1–F4, F7): links, form actions and router targets resolve across plain HTML, React Router, Vue Router, SvelteKit and file routes; in-page and ARIA id targets exist; each core-flow step has a way forward and a way out; a not-found route exists; build targets match the contract's browsers
+- `scripts/check-ux-resilience.sh` (UX-R1–R7, UX-P1–P4): double-submit guards, a visible failure path for every request (fetch, axios, ky, XMLHttpRequest, API clients, data hooks), retry, drafts on long forms, view state in the URL, an offline notice, optimistic rollback, progress feedback, motion through tokens, no pre-checked consent, a way out after sign-up
+- The `flow-check` skill: contract-driven runs of both scripts, a browser walk of each core flow (navigation only, unless `test_data` names a fixture and the target is localhost) and an engine loop the operator drives with one Playwright engine per launch
+- Contract keys in the `ux:` section: `core_flows[].steps`, `core_flows[].test_data`, `engines`, `reliability` (`draft_fields`, `url_state`, `offline`) and `pleasant` (`motion_tokens`); every 0.2.0 contract stays valid, and a missing key makes its rule unmeasured
+- Behavior tests `test-check-flow-integrity.sh` (336 checks) and `test-check-ux-resilience.sh` (276 checks), each run on BWK awk, mawk and gawk, with fixtures `flows-good` and `resilience-good`; `test-ux-rules.sh` gains R25–R38 (168 checks)
+- Negative controls in two new groups, `ascent-ux-flows` (P612–P655, P719–P726, P743–P754, P767–P771) and `ascent-ux-resilience` (P656–P703, P727–P742, P755–P766, P772–P773), and P704–P718 and P774–P788 in `ascent-ux` for the skills and docs: 71 of 71, 80 of 80 and 89 of 89 killed
+
+### Changed
+
+- `ux-review` is rebuilt on the four principles over seven lenses: Flow integrity (new) under functional, Reliability (new) under reliable, and the five existing lenses under the principle they serve; it runs four scripts and recommends `flow-check` when the functional or reliable group is at risk
+- `ux-reviewer` applies the UX-F, UX-R and UX-P static checks by reading; its severity table and the skill's stay identical, with rows for a core flow that cannot be completed (High), reliability gaps on core flows, pre-checked consent and a broken page off the core flows (Medium)
+- `docs/framework/OWNERSHIP.md`: the `flow-check` skill, the three rule families, the two new lenses and the domain "UI reliability (as experienced)"; navigational integrity and cross-browser compatibility move from planned to released
+- `ascent-ux` 0.2.0 → 0.3.0 in `plugin.json`, the marketplace entry and `make/plugins.lock`
+
+### Fixed
+
+- CI: fast-mode negative-control jobs get 25 minutes instead of 15 in `validate-skills.yml` (full mode stays at 40). Slow macOS runners took one group from 4 to over 15 minutes on the same code; a group that needs more than 25 is split, not given more time (ADR-022 decision 10)
+
+### Notes
+
+- Read-only trial on five real repositories: two tennis apps (TypeScript PWA, plain HTML), a lawn-care app (plain JS), a React registration form and a 130-page documentation site, all verified unchanged afterwards. About 15 false positives were fixed at the source, each with a behavior test and a control (P719–P742): `/*` in page text read as a comment, links built by concatenation, server templates resolved from their own folder, ids another file defines (now a NOTE), escaped quotes in script strings, UX-F4 on single-page apps, `pages/` outside Next, Nuxt, Astro and Gatsby, catch blocks around storage or parsing, failures handed to the caller, `finally` and re-render, `!ok` inside an expression, result objects, `${` in a template string, debounce guards, and sign-up words in headings and prose
+- The Chromium walk confirmed the static findings that remained (missing ARIA targets, placeholder links, no not-found page) found three defects only a browser sees (inline scripts that never run because of a syntax error, pages with no link back to the site, tab state lost on refresh) and confirmed a static one (a failed request shown as an empty list). Its lessons are in `flow-check` Step 4. Firefox and WebKit were not run in the trial and are recorded as unmeasured
+- Review before release (correctness of the two scripts, and consistency across the skills, agent, reference, contract template and ADR, checked by `finding-verifier`): 22 findings confirmed and fixed, among them an absolute or `../` PATH and route-file order breaking UX-F1, nested, JSX and server routes, a `{` in a route path that stopped BWK awk and gawk, bundles over 512 KB (now skipped with a NOTE: 25 s to 0.6 s on BWK awk), the walk allowed to submit outside `localhost` in `ux-review`, and ADR-022 decision 5 aligned with the severity table (UX-R3 and UX-R7 Low); controls P743–P766
+- The contract-driven options (`--core`, `--flow`, `--url-state`, `--offline`, `--draft-fields`) were run on two of the trial repositories with a contract proposed as Step 0 would: every result held up against the code, and a wrongly guessed flow showed why guessed flows are labelled. The walk that types `test_data` and submits has been tested on fixtures only, and Firefox and WebKit have not run
+- Product, test, operations and security review before release, checked by `finding-verifier`: 31 of 43 findings confirmed and fixed. Among them: the flow check took 163 s on a dense 465 KB page under BWK awk (now 3.8 s); the headline counted unmeasured principles as not met; a run with no contract listed every unmeasured target as its own Low finding (now one); the severity table had no rows for broken pages, unreachable pages and lost view state off the core flows; a link's query string, which can carry a token, was printed; and the reviewed repository is now treated as untrusted (contract values quoted, the `test_data` fixture kept inside the repository, no `git status` there, a warning before its dev server runs). The README shows how to add a Playwright server per engine; controls P767–P788
+- The 0.2.0 trial calibrations (delegated listeners across files, box-shadow ring contrast) are left to 0.3.1 (ADR-022 decision 9)
 
 ---
 
