@@ -725,7 +725,7 @@ plugin_case P651-flows-locale-dependent T11 "$UXF" 's/^  LC_ALL=C awk "\$PROG" "
 plugin_case P652-flows-notes-dropped T11 "$UXF" '/^    printf "%s", NOTES\[k\]$/d'
 plugin_case P653-flows-no-help T11 "$UXF" '/^    -h|--help) usage ;;$/d'
 plugin_case P654-flows-bad-flow-accepted T11 "$UXF" 's/\*) echo "check-flow-integrity: --flow needs NAME=STEP,STEP,...: \$2" >\&2; exit 2 ;;/*) ;;/'
-plugin_case P655-flows-missing-step-accepted T11 "$UXF" 's/grep -qxF -e "\$s" || { echo "check-flow-integrity: flow step/true || { echo "check-flow-integrity: flow step/'
+plugin_case P655-flows-missing-step-accepted T11 "$UXF" 's/grep -qxF -e "\$s" <<< "\$ALL" || { echo "check-flow-integrity: flow step/true || { echo "check-flow-integrity: flow step/'
 # Trial calibration (2026-11-13, five repositories): shapes real code uses.
 plugin_case P719-flows-prose-comment T11 "$UXF" 's/^  if (f !~ \/\\.(html|htm|eta|ejs|hbs|njk|vue|svelte|astro)\$\/) { t = /  if (1) { t = /'
 plugin_case P720-flows-concat-literal T11 "$UXF" '/^  if (v ~ \/^\[ \\t\]\*\[\\047"`\]\[ \\t\]\*\\+|/d'
@@ -754,6 +754,7 @@ plugin_case P768-flows-query-printed T11 "$UXF" 's/  d = v; sub(/  d = v; if (0)
 plugin_case P769-flows-newline-path-read T11 "$UXF" 's/ ! -path "$NLNAME" / /'
 plugin_case P770-flows-value-read-as-option T11 "$UXF" 's/grep -qxF -e "$c"/grep -qxF "$c"/'
 plugin_case P771-flows-id-copy-drifts T11 "$UXF" 's/lrest = substr(lrest, at)$/lrest = substr(lrest, at + 1)/'
+plugin_case P789-flows-step-list-piped T11 "$UXF" 's/grep -qxF -e "\$s" <<< "\$ALL"/printf "%s\\n" "$ALL" | grep -qxF -e "$s"/'
 # ascent-ux 0.3.0 reliability and pleasantness (UX-R1–R7, UX-P1–P4; ADR-022).
 mutant_group ascent-ux-resilience
 UXS="$UX/scripts/check-ux-resilience.sh"
@@ -803,7 +804,7 @@ plugin_case P698-res-locale-dependent T11 "$UXS" 's/^  LC_ALL=C awk "\$PROG" "\$
 plugin_case P699-res-no-help T11 "$UXS" '/^    -h|--help) usage ;;$/d'
 plugin_case P700-res-bad-offline-accepted T11 "$UXS" 's/\*) echo "check-ux-resilience: --offline is required, optional or none: \$2" >\&2; exit 2 ;;/*) OFFLINE="$2" ;;/'
 plugin_case P701-res-zero-fields-accepted T11 "$UXS" "s/''|\\*\\[!0-9\\]\\*|0)/''|*[!0-9]*)/"
-plugin_case P702-res-core-outside-accepted T11 "$UXS" 's/grep -qxF -e "\$c" || { echo/true || { echo/'
+plugin_case P702-res-core-outside-accepted T11 "$UXS" 's/grep -qxF -e "\$c" <<< "\$FILES" || { echo/true || { echo/'
 plugin_case P703-res-text-file-accepted T11 "$UXS" 's/|| { echo "check-ux-resilience: not a markup/|| true || { echo "check-ux-resilience: not a markup/'
 # Trial calibration (2026-11-13, five repositories): catch blocks that are not request
 # failures, failures handed on, and sign-up controls.
@@ -839,6 +840,7 @@ plugin_case P766-res-symlink-not-followed T11 "$UXS" 's/FILES="$FILES$(find -H "
 # Review before release, second pass (2026-11-13): a shown hook error is a check met.
 plugin_case P772-res-hook-error-not-counted T11 "$UXS" 's/) CHK\["R2"\]++$/) nb = 0/'
 plugin_case P773-res-newline-path-read T11 "$UXS" 's/ ! -path "$NLNAME" / /'
+plugin_case P790-res-core-list-piped T11 "$UXS" 's/grep -qxF -e "\$c" <<< "\$FILES"/printf "%s\\n" "$FILES" | grep -qxF -e "$c"/'
 # ascent-ops runs as six groups so each CI job stays well inside its timeout:
 # one control runs the ops tests (about 20 s), against 7 s for the other plugins.
 OPS=plugins/ascent-ops

@@ -92,13 +92,15 @@ ALL=$(printf '%s' "$ALL" | grep -v '^$' | sed 's|^\./||' | LC_ALL=C sort -u || t
 SCAN=$(printf '%s\n' "$ALL" | grep -Ei "\\.($MARKUP)\$" | grep -Ev '\.min\.|\.(test|spec)\.|\.d\.ts$' || true)
 CONF=$(printf '%s\n' "$ALL" | grep -E '(^|/)(package\.json|\.browserslistrc|tsconfig\.json|\.babelrc|babel\.config\.[a-z]+|vite\.config\.[a-z]+|nginx\.conf|[^/]*\.conf|_redirects|netlify\.toml|vercel\.json)$' || true)
 [ -n "$SCAN" ] || { echo "check-flow-integrity: no markup or JS files under: ${PATHS[*]}" >&2; exit 2; }
-while IFS= read -r c; do [ -n "$c" ] || continue; printf '%s\n' "$SCAN" | grep -qxF -e "$c" || { echo "check-flow-integrity: --core $c is not among the scanned files" >&2; exit 2; }; done <<EOF_CORE
+# the lists are read from a here-string, not a pipe: grep -q stops at the first match,
+# and under pipefail the writer's broken pipe would fail the check at random
+while IFS= read -r c; do [ -n "$c" ] || continue; grep -qxF -e "$c" <<< "$SCAN" || { echo "check-flow-integrity: --core $c is not among the scanned files" >&2; exit 2; }; done <<EOF_CORE
 $CORE
 EOF_CORE
 STEPS=$(printf '%s' "$FLOWS" | sed 's/^[^=]*=//' | tr ',' '\n' | sed 's|^\./||' | grep -v '^$' || true)
 while IFS= read -r s; do
   case "$s" in ""|/*) continue ;; esac
-  printf '%s\n' "$ALL" | grep -qxF -e "$s" || { echo "check-flow-integrity: flow step $s is not among the scanned files" >&2; exit 2; }
+  grep -qxF -e "$s" <<< "$ALL" || { echo "check-flow-integrity: flow step $s is not among the scanned files" >&2; exit 2; }
 done <<EOF_STEPS
 $STEPS
 EOF_STEPS

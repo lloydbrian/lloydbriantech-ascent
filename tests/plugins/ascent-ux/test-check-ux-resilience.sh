@@ -273,6 +273,12 @@ EOF_TSX
   run "$GOOD" --help; [ "$RC" -eq 2 ] && printf '%s\n' "$OUT" | grep -q '^Usage: check-ux-resilience.sh' && ok || bad "--help must print the usage line"
 }
 
+# Static: the script runs under pipefail, so it never pipes into grep -q. grep -q stops at
+# the first match and the writer's broken pipe fails the pipeline at random (the CI flake
+# of PR #72); lists are read from a here-string.
+AWKNAME=static
+if grep -nE '\|[ \t]*grep[ \t]+-[A-Za-z]*q' "$CHECK" >"$WORK/pipes"; then bad "a pipe into grep -q can fail at random under pipefail: $(head -1 "$WORK/pipes" | cut -c1-80)"; else ok; fi
+
 realpath_of() { (cd "$(dirname "$1")" && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")"); }
 AWKS="default"; SEEN=" $(realpath_of "$(command -v awk)") "
 [ "${ASCENT_HOOK_TEST_ONE_AWK:-0}" = 1 ] || for a in mawk gawk original-awk nawk; do

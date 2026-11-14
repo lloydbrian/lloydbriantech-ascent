@@ -85,7 +85,7 @@ for p in "${PATHS[@]}"; do
       | grep -Ei "\\.($EXT)\$" | grep -Ev '\.min\.|\.(test|spec)\.|\.d\.ts$' | LC_ALL=C sort || true)
 "
   elif [ -f "$p" ]; then
-    printf '%s\n' "$p" | grep -Eiq "\\.($EXT)\$" || { echo "check-ux-resilience: not a markup, CSS or JS file: $p" >&2; exit 2; }
+    grep -Eiq "\\.($EXT)\$" <<< "$p" || { echo "check-ux-resilience: not a markup, CSS or JS file: $p" >&2; exit 2; }
     FILES="$FILES$p
 "
   else
@@ -94,7 +94,9 @@ for p in "${PATHS[@]}"; do
 done
 FILES=$(printf '%s' "$FILES" | grep -v '^$' | sed 's|^\./||' | LC_ALL=C sort -u || true)
 [ -n "$FILES" ] || { echo "check-ux-resilience: no markup, CSS or JS files under: ${PATHS[*]}" >&2; exit 2; }
-while IFS= read -r c; do [ -n "$c" ] || continue; printf '%s\n' "$FILES" | grep -qxF -e "$c" || { echo "check-ux-resilience: $c (--core or --url-state) is not among the scanned files" >&2; exit 2; }; done <<EOF_CORE
+# the list is read from a here-string, not a pipe: grep -q stops at the first match,
+# and under pipefail the writer's broken pipe would fail the check at random
+while IFS= read -r c; do [ -n "$c" ] || continue; grep -qxF -e "$c" <<< "$FILES" || { echo "check-ux-resilience: $c (--core or --url-state) is not among the scanned files" >&2; exit 2; }; done <<EOF_CORE
 $CORE$URLSTATE
 EOF_CORE
 
