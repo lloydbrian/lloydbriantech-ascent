@@ -209,13 +209,20 @@ M
 | `ascent-delivery` | Plugin · 1 skill | 0.1.2 | ✅ Released | v9.3.0 |
 | `lloydbriantech-ascent` | Parent skill · 9 roles, 1 embedded skills | 9.9.0 | ✅ Released | v9.0.0 |
 M
+  for theme in light dark; do mk docs/assets/ascent-banner-$theme.svg <<'M'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 356" role="img">
+  <desc>Fixture banner. 3 plugins, 5 components, 1 project skills, 2 test suites, 5 negative controls, 2 ADRs.</desc>
+  <text x="80" y="150" font-size="88">FIXTURE</text>
+  <text x="84" y="280" font-size="20" fill="#0B6E4F">alpha · beta · delivery</text>
+  <text x="84" y="314" font-size="20" fill="#0B6E4F">3 plugins · 5 components · 1 project skills · 2 test suites · 5 negative controls · 2 ADRs</text>
+</svg>
+M
+  done
   mk README.md <<'M'
 # Fixture
 
+<img alt="Fixture banner. 3 plugins, 5 components, 1 project skills, 2 test suites, 5 negative controls, 2 ADRs." src="docs/assets/ascent-banner-light.svg">
 <img alt="Plugins: 3" src="https://img.shields.io/badge/plugins-3-0b6e4f">
-
-| **3**<br>plugins released | **5**<br>plugin skills, agents and hooks | **1**<br>skills in every scaffolded project | **2**<br>behavior-test suites | **5**<br>negative controls | **2**<br>decision records |
-|:---:|:---:|:---:|:---:|:---:|:---:|
 
 | Plugin | Version | Pillars | Ask | What it does |
 |---|---|---|---|---|
@@ -438,7 +445,7 @@ matrix() {
   c unknown-prefix; edit plugins/ascent-alpha/references/rules.md 's/^| AL-R2 |/| AL-Q2 |/' && expect T13.10 "id prefix AL-Q is not a registered or reserved family"
   c reserved-prefix-ok; edit plugins/ascent-alpha/skills/alpha-check/SKILL.md 's/^# Alpha check$/# Alpha check (GA-X1 later)/' && expect none
 
-  # T13.11 capability map and README figures
+  # T13.11 capability map, the banner and its figures
   c map-missing; rm "$F/docs/framework/CAPABILITY-MAP.md"; expect T13.11 "docs/framework/CAPABILITY-MAP.md not found"
   if grep '^FAIL  T13.11' "$WORK/out" | grep -q 'README.md says'; then bad "map-missing: the README's figures were judged without the plugins: $(grep '^FAIL  T13.11' "$WORK/out")"; else ok; fi
   c map-row-version; edit docs/framework/CAPABILITY-MAP.md 's/^| `ascent-beta` | Plugin · 1 skill | 0.1.0 |/| `ascent-beta` | Plugin · 1 skill | 0.1.1 |/' && expect T13.11 "the map says ascent-beta 0.1.1, plugin.json says 0.1.0"
@@ -452,11 +459,23 @@ matrix() {
   c map-parent-version; edit docs/framework/CAPABILITY-MAP.md 's/ 1 embedded skills | 9.9.0 |/ 1 embedded skills | 9.8.0 |/' && expect T13.11 "the map says lloydbriantech-ascent 9.8.0, the Makefile says 9.9.0"
   c map-counts-from; edit docs/framework/CAPABILITY-MAP.md 's/at v9.9.0\./at v9.8.0./' && expect T13.11 "the map counts from v9.8.0, the Makefile says 9.9.0"
   c template-skill-added; mkdir -p "$F/skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-tpl2"; expect T13.11 "the template has 2"
-  c readme-controls; edit README.md 's/\*\*5\*\*<br>negative controls/**6**<br>negative controls/' && expect T13.11 "README.md says 6 negative controls, the repository has 5"
+  c alt-controls; edit README.md 's/5 negative controls, 2 ADRs\./6 negative controls, 2 ADRs./' && expect T13.11 "README.md says 6 negative controls, the repository has 5"
   c control-added; printf '%s\n' "expect_case SURVIVED P4-d T13.2 README.md 's/x/y/'" >> "$F/make/test-mutants.sh"; expect T13.11 "the repository has 6"
   c map-adr-count; edit docs/framework/CAPABILITY-MAP.md 's/\*\*2\*\*<br>decision records/**3**<br>decision records/' && expect T13.11 "docs/framework/CAPABILITY-MAP.md says 3 decision records, the repository has 2"
-  c readme-figure-dropped; edit README.md 's/ \*\*2\*\*<br>behavior-test suites |//' && expect T13.11 "README.md has no \"behavior-test suites\" figure"
-  c readme-figure-comma; for i in 4 5 6 7 8 9; do echo "M$i	a.sh	s/a/b/	test-a.sh	more" >> "$F/make/mutants.tsv"; done; edit README.md 's/\*\*5\*\*<br>negative controls/**1,1**<br>negative controls/' && expect T13.11 "docs/framework/CAPABILITY-MAP.md says 5 negative controls, the repository has 11"
+  c alt-figure-dropped; edit README.md 's/, 2 test suites//' && expect T13.11 "README.md has no \"test suites\" figure"
+  c banner-figure-comma; for i in 4 5 6 7 8 9; do echo "M$i	a.sh	s/a/b/	test-a.sh	more" >> "$F/make/mutants.tsv"; done; edit docs/assets/ascent-banner-light.svg 's/ 5 negative controls/ 1,1 negative controls/g' && expect T13.11 "docs/framework/CAPABILITY-MAP.md says 5 negative controls, the repository has 11"
+  if grep '^FAIL  T13.11' "$WORK/out" | grep -q 'ascent-banner-light.svg says'; then bad "banner-figure-comma: 1,1 was not read as 11: $(grep '^FAIL  T13.11' "$WORK/out")"; else ok; fi
+  c banner-light-figure; edit docs/assets/ascent-banner-light.svg 's/>3 plugins · />4 plugins · /' && expect T13.11 "docs/assets/ascent-banner-light.svg says 4 plugins, the repository has 3"
+  c banner-two-digit-figure; edit docs/assets/ascent-banner-light.svg 's/>3 plugins · />13 plugins · /' && expect T13.11 "docs/assets/ascent-banner-light.svg says 13 plugins, the repository has 3"
+  c banner-dark-description; edit docs/assets/ascent-banner-dark.svg 's/2 ADRs\.</3 ADRs.</' && expect T13.11 "docs/assets/ascent-banner-dark.svg says 3 ADRs, the repository has 2"
+  c banner-leading-zero; edit docs/assets/ascent-banner-dark.svg 's/ · 2 test suites · / · 002 test suites · /' && expect none
+  c banner-no-figures-line; edit docs/assets/ascent-banner-light.svg '/>3 plugins · /d' && expect T13.11 "docs/assets/ascent-banner-light.svg has no figures line"
+  c banner-missing; rm "$F/docs/assets/ascent-banner-dark.svg"; expect T13.11 "docs/assets/ascent-banner-dark.svg not found"
+  c banner-plugin-missing; edit docs/assets/ascent-banner-light.svg 's/>alpha · beta · delivery</>alpha · beta</' && expect T13.11 "docs/assets/ascent-banner-light.svg's plugin line is missing delivery"
+  c banner-plugin-extra; edit docs/assets/ascent-banner-dark.svg 's/>alpha · beta · delivery</>alpha · beta · delivery · gamma</' && expect T13.11 "docs/assets/ascent-banner-dark.svg's plugin line names gamma, which is not a released plugin"
+  c banner-no-plugin-line; edit docs/assets/ascent-banner-light.svg '/>alpha · beta · delivery</d' && expect T13.11 "docs/assets/ascent-banner-light.svg has no plugin line"
+  c banner-plugin-order; edit docs/assets/ascent-banner-light.svg 's/>alpha · beta · delivery</>delivery · alpha · beta</' && expect none
+  c readme-stray-figure; printf '%s\n' "We ship 4 plugins." >> "$F/README.md"; expect T13.11 "README.md says 4 plugins, the repository has 3"
   c skill-version; edit skills/lloydbriantech-ascent/SKILL.md 's/^version: 9.9.0$/version: 9.8.0/' && expect T13.11 "SKILL.md says version 9.8.0, the Makefile says 9.9.0"
   c badge; edit README.md 's/badge\/plugins-3-/badge\/plugins-2-/' && expect T13.11 "the README plugin badge says 2, 3 plugins are released"
 }

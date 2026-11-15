@@ -183,7 +183,7 @@ flowchart TB
 
 ### The plugin gate
 
-`make test-plugins` runs T1–T14 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md) and the README from the repository. T14 is the self-test of the gate's fast mode.
+`make test-plugins` runs T1–T14 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md), the README banner and its alt text from the repository, and checks that the banner names every released plugin. T14 is the self-test of the gate's fast mode.
 
 `make test-mutants` holds the negative controls: each one breaks a rule in a copy of the repository and requires a named gate check to fail. Controls run in groups, one CI job per group and platform, listed by `make test-mutants-groups`. In fast mode, the default, a control runs only the check it names (`ASCENT_ONLY`), T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel; a control fast mode does not kill reruns on the whole gate. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, `tests/meta/test-gate-sections.sh` proves each section gives the same results alone, and T14 tests fast mode itself. CI runs every control in full mode weekly ([ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)).
 
@@ -212,8 +212,8 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 Lockstep across layers, with `FRAMEWORK_VERSION` in the `Makefile` as the reference; T13.11 fails when the `SKILL.md` version or the capability map disagrees with it:
 
-- Layer 1: git tag on the meta-repo (`v0.4.16`)
-- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.16`)
+- Layer 1: git tag on the meta-repo (`v0.4.17`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.17`)
 - Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4: `framework_version` field in `.ascent-meta.json`
 

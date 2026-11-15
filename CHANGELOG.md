@@ -32,6 +32,32 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.17] — 2026-11-15
+
+**The headline figures in the banner, checked against the repository.** The README banner now carries the six figures on one line under the plugin line, which names all six released plugins, `quality` included. The ownership gate reads both banner files and the image's alt text, so the banner cannot drift from the repository.
+
+### Added
+
+- `docs/assets/ascent-banner-light.svg` and `-dark.svg`: a figures line in the plugin line's font, size and colour (`6 plugins · 30 components · 28 project skills · 51 test suites · 877 negative controls · 22 ADRs`); the banner grows from 320 to 356 px, and its description and the README's alt text repeat the plugins and figures for screen readers
+- T13.11 (`make/check-ownership.sh`): in both banners, the plugin line must name exactly the released plugins, in any order, and a figures line must exist; every "N label" figure in the banners, their descriptions included, and in the README must match the repository, so a stray "4 plugins" anywhere in the README fails too
+- `tests/meta/test-check-ownership.sh`: two fixture banners and cases for the banner, 100 checks per awk, up from 87 (a stale figure in each banner and the alt text, a two-digit figure, a thousands comma, leading zeros, a missing figures line, a missing banner, a missing, an extra and a reordered plugin, no plugin line, a stray README figure)
+- Controls P804–P809 in the `ownership` group break a banner (a stale figure in each file, a stale description, `quality` dropped, the figures line removed, a banner removed); P810–P812 break the checker and must be caught by its fixture tests
+
+### Changed
+
+- Framework 0.4.16 → 0.4.17
+- README: the "At a glance" section is removed, and its nav link opens the capability map instead; the Now, Next and Later table opens "Status and roadmap", and the capability-map link ends it; v0.4.12 moves into "Earlier releases"
+- The banner's chart starts 30 px later along the same slope, at (790, 248), so its first point clears the longer plugin line
+- The capability map's figures stay in its own table; control P795 now breaks the README's alt text, and P794 and P798 follow the version bump
+- ARCHITECTURE, ROADMAP, CLAUDE.md, the capability map and the PR template describe the banner check
+
+### Notes
+
+- The negative-control figure counts declared controls: 877, 868 before this release plus P804–P812. A CI run of every group reports more, because each group also runs one or two baseline checks of an unmodified copy, which break nothing and are not controls (52 at v0.4.16: 920 in CI, 868 controls)
+- No plugin changed, so no plugin version or `make/plugins.lock` row changed
+
+---
+
 ## [0.4.16] — 2026-11-15
 
 **A capability map, checked against the repository.** `docs/framework/CAPABILITY-MAP.md` shows what ASCENT can do today: every plugin with its skills, rules and next step, the parent skill and the roadmap, and the README opens with the same headline figures. The ownership gate counts every version and figure on both pages from the repository, so they cannot drift. A documentation audit brought the framework docs, GitHub templates and security policy up to date.
