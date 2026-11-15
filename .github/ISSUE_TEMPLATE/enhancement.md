@@ -25,6 +25,7 @@ What does this proposal cost? What becomes harder if we accept it?
 ## Affected surface area
 
 - [ ] Parent skill `lloydbriantech-ascent`
+- [ ] A plugin (`ascent-<name>`: ____________)
 - [ ] One or more project-embedded skills (list: ____________)
 - [ ] Reference modules (list: ____________)
 - [ ] Template assets (list: ____________)

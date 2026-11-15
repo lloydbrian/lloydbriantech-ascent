@@ -1248,11 +1248,24 @@ plugin_case P231-pillars-unknown-component T13.9 docs/framework/PILLARS.md 's/| 
 plugin_case P232-rule-cell-unqualified T13.10 plugins/ascent-ops/references/secure-config-rules.md 's/^| OPS-S1 | High |/| S1 | High |/'
 plugin_case P233-script-header-unqualified T13.10 plugins/ascent-architecture/scripts/check-cfn-static-site.sh 's/^#   ARC-C8  High /#   C8  High /'
 plugin_case P234-prefix-unregistered T13.10 plugins/ascent-ux/references/contract-template.yml 's/^  direction: UX-D1 /  direction: UX-Q1 /'
+plugin_case P791-map-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 |/| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.2.0 |/'
+plugin_case P792-map-skill-count-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ux` | Plugin · 5 skills, 1 agent |/| `ascent-ux` | Plugin · 4 skills, 1 agent |/'
+plugin_case P793-map-heading-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^### `ascent-quality` 0.2.0 ·/### `ascent-quality` 0.1.0 ·/'
+plugin_case P794-map-parent-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/ 28 embedded skills | 0.4.16 |/ 28 embedded skills | 0.4.15 |/'
+plugin_case P795-readme-controls-stale T13.11 README.md 's/\*\*[0-9,]*\*\*<br>negative controls/**1**<br>negative controls/'
+plugin_case P796-map-adrs-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/\*\*22\*\*<br>decision records/**21**<br>decision records/'
+plugin_case P797-readme-badge-stale T13.11 README.md 's#badge/plugins-6-#badge/plugins-5-#'
+plugin_case P798-skill-version-stale T13.11 skills/lloydbriantech-ascent/SKILL.md 's/^version: 0.4.16$/version: 0.4.15/'
+plugin_case_rm P799-map-removed T13.11 docs/framework/CAPABILITY-MAP.md
 plugin_case P235-checker-stops-early T13 "$CHKO" 's/^# T13.6 — cross-plugin markers$/exit 0/'
 T13_SELFTEST=1 plugin_case P236-checker-keeps-cr T13.0 "$CHKO" 's/sub(\/\\r\$\/, "", line)/sub(\/NEVERCR\/, "", line)/g'
 T13_SELFTEST=1 plugin_case P237-checker-ignores-cell-count T13.0 "$CHKO" 's/if (NC != want) printf/if (0) printf/'
 T13_SELFTEST=1 plugin_case P238-checker-ignores-lens-claims T13.0 "$CHKO" "s/| grep -q 'delivery-loop review lens' || continue/| grep -q 'never-matches' || continue/"
 T13_SELFTEST=1 plugin_case P239-checker-skips-readme-lenses T13.0 "$CHKO" 's# "$ROOT/plugins/ascent-delivery/README.md"; do$#; do#'
+T13_SELFTEST=1 plugin_case P800-checker-ignores-map-versions T13.0 "$CHKO" 's/\[ "\$mv" = "\$v" \] ||/true ||/'
+T13_SELFTEST=1 plugin_case P801-checker-ignores-figures T13.0 "$CHKO" 's/elif \[ "\$got" != "\$want" \]; then/elif false; then/'
+T13_SELFTEST=1 plugin_case P802-checker-ignores-badge T13.0 "$CHKO" 's/\[ "\$bn" = "\$NREL" \] ||/true ||/'
+T13_SELFTEST=1 plugin_case P803-checker-ignores-skill-version T13.0 "$CHKO" 's/\[ "\$SKV" = "\$FV" \] ||/true ||/'
 T13_SELFTEST=1 plugin_case_rm P240-checker-tests-removed T13.0 tests/meta/test-check-ownership.sh
 T11_FORCE=""
 

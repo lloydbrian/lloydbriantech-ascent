@@ -95,6 +95,14 @@ Engagement is "review the design before I commit it," not "review the implementa
 - **Make-framework drift.** Adding ad-hoc shell scripts instead of make targets. The vocabulary is the discipline.
 - **Mid-implementation redesign.** Discovering at Stage 3 that the design was wrong, then rewriting it in code without an ADR. Either revise the design (and the ADR) or accept the constraint and move on.
 
+## Checking this role in any repository
+
+The `ascent-architecture` plugin (ADR-011) makes this role checkable in an existing repository:
+- `architecture-review` rates the architecture against the `architecture:` section of the project contract and recommends deeper skills only where a surface check flags a concern
+- `quality-attributes` sets measurable targets and scores each quality attribute as met, at risk or unmeasured
+- `design-principles-check` checks separation of concerns, coupling, object-oriented design, twelve-factor configuration and API design with file evidence
+- `deployment-options` compares deployment options by setup effort, dated monthly cost and operations burden, and drafts the ADR
+
 ## What this role doesn't own
 
 - **Implementation details.** That's [role-developer.md](role-developer.md). The architect designs; the developer implements.

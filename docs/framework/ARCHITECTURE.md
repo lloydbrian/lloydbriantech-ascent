@@ -28,7 +28,7 @@ ASCENT is a four-layer system. Each layer has a single responsibility and a clea
 │  ──────────────────────────────────────────────────────────     │
 │   A ready-made scaffold, published as a GitHub template.         │
 │   Users gh repo create --template for instant working stack.     │
-│   Generated from Layer 2 by CI on every framework tag.           │
+│   To be generated from Layer 2 by CI on each tag (Phase 6).      │
 │   Force-pushed; never edited directly.                           │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -124,7 +124,7 @@ The scaffolding scripts (`scripts/scaffold.py`, `bootstrap.py`, `enhance.py`, `m
 
 The `lloydbrian/lloydbriantech-ascent-starter` repository is a separate GitHub repo marked as a GitHub Template. Users `gh repo create --template` from it to get a 5-second working scaffold.
 
-This layer is **generated**, not authored. The CI workflow `release.yml` runs `tools/build-starter.sh` on every framework tag, which:
+This layer is **generated**, not authored. From Phase 6, the CI workflow `release.yml` will run `tools/build-starter.sh` on every framework tag (the job is disabled and the script does not exist yet). It will:
 
 1. Takes the parent skill's `assets/template/` directory
 2. Resolves all slug placeholders to the default `ascent-starter` slug
@@ -168,7 +168,7 @@ flowchart TB
 | `ascent-security` | Hybrid: three skills generated from the template's security skills, so there is one source of truth; the hand-written `dependency-check` and its scripts | [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md), [ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md) |
 | `ascent-delivery` | Hand-written; the delivery loop, the finding verifier and the operator-boundary hook | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) |
 | `ascent-architecture` | Hand-written; introduces the shared project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
-| `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`) | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md) |
+| `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`); since 0.3.0, four principles and flow-integrity checks with `flow-check` | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md), [ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md) |
 | `ascent-ops` | Hand-written; operations manuals, the `/-/health` endpoint names, and recovery drills checked against the operator's records | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md) |
 | `ascent-quality` | Hand-written; test strategy, load tests and mutation evidence read statically, never run | [ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-019](DECISIONS/ADR-019-quality-plugin-rules.md), [ADR-021](DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md) |
 
@@ -183,9 +183,22 @@ flowchart TB
 
 ### The plugin gate
 
-`make test-plugins` runs T1–T14 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). T14 is the self-test of the gate's fast mode.
+`make test-plugins` runs T1–T14 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md) and the README from the repository. T14 is the self-test of the gate's fast mode.
 
 `make test-mutants` holds the negative controls: each one breaks a rule in a copy of the repository and requires a named gate check to fail. Controls run in groups, one CI job per group and platform, listed by `make test-mutants-groups`. In fast mode, the default, a control runs only the check it names (`ASCENT_ONLY`), T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel; a control fast mode does not kill reruns on the whole gate. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, `tests/meta/test-gate-sections.sh` proves each section gives the same results alone, and T14 tests fast mode itself. CI runs every control in full mode weekly ([ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)).
+
+### Continuous integration
+
+`.github/workflows/validate-skills.yml` runs on every pull request and push to `main`, and weekly on Monday morning:
+
+| Job | What it runs |
+|---|---|
+| Repository structure, Internal links | required files and ADRs exist; internal Markdown links resolve |
+| Gate, on ubuntu and macOS | `make qa`, `make test-skills`, `make test-plugins` |
+| Harness self-test, on ubuntu and macOS | `tests/meta/test-gate-sections.sh` and `tests/meta/test-mutants-harness.sh` (`make test-harness`) |
+| Negative controls, one job per group and platform | `make test-mutants GROUP=<group>`, groups from `make test-mutants-groups`; fast mode on pull requests, full mode in the weekly run |
+
+`.github/workflows/release.yml` runs on a version tag and creates the GitHub release from the tag's CHANGELOG entry, titled from its lead sentence. Its starter-repository job is disabled until Phase 6.
 
 ### Release path
 
@@ -197,10 +210,10 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 ### Versioning
 
-Lockstep across layers:
+Lockstep across layers, with `FRAMEWORK_VERSION` in the `Makefile` as the reference; T13.11 fails when the `SKILL.md` version or the capability map disagrees with it:
 
-- Layer 1: git tag on the meta-repo (`v0.3.0`)
-- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.3.0`)
+- Layer 1: git tag on the meta-repo (`v0.4.16`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.16`)
 - Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4: `framework_version` field in `.ascent-meta.json`
 
@@ -289,4 +302,13 @@ ASCENT is for projects with one or a small handful of services. Service-to-servi
 | The project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
 | Plugin dependencies and design directions | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md) |
 | Operations manuals and endpoint names | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md) |
+| Which plugin owns testing, dependency scans and restore proof | [ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md) |
+| The ownership registry and gate | [ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md), [OWNERSHIP.md](OWNERSHIP.md) |
+| Dependency checks and the vulnerability scan | [ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md) |
+| Fast negative controls | [ADR-017](DECISIONS/ADR-017-faster-negative-controls.md), [ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md) |
+| The quality plugin's rules, load tests and mutation evidence | [ADR-019](DECISIONS/ADR-019-quality-plugin-rules.md), [ADR-021](DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md) |
+| Recovery drills and readiness exercises | [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md) |
+| UX as four principles | [ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md) |
+| Which quality attributes each plugin checks | [PILLARS.md](PILLARS.md) |
+| What ASCENT can do today | [CAPABILITY-MAP.md](CAPABILITY-MAP.md) |
 | What's planned for future phases | [`ROADMAP.md`](ROADMAP.md) |

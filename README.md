@@ -8,11 +8,12 @@
 <p align="center">
   <a href="https://github.com/lloydbrian/lloydbriantech-ascent/actions/workflows/validate-skills.yml"><img alt="CI status (validate-skills workflow)" src="https://github.com/lloydbrian/lloydbriantech-ascent/actions/workflows/validate-skills.yml/badge.svg"></a>
   <a href="https://github.com/lloydbrian/lloydbriantech-ascent/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/lloydbrian/lloydbriantech-ascent?sort=semver&label=release"></a>
-  <a href="#plugins-for-any-repository"><img alt="Plugins: 5" src="https://img.shields.io/badge/plugins-5-0b6e4f"></a>
+  <a href="#plugins-for-any-repository"><img alt="Plugins: 6" src="https://img.shields.io/badge/plugins-6-0b6e4f"></a>
   <a href="LICENSE"><img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue"></a>
 </p>
 
 <p align="center">
+  <a href="#at-a-glance">At a glance</a> ·
   <a href="#plugins-for-any-repository">Plugins</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -28,14 +29,34 @@ You can use it in two ways:
 | Aspect | **Plugins** | **Parent skill** |
 |---|---|---|
 | For | Any repository, ASCENT or not | Starting, enhancing or migrating a project |
-| You get | Five read-only review plugins and the delivery loop | A scaffolded project with 28 embedded `ascent-*` skills |
+| You get | Five review plugins, read-only by default, and the delivery loop | A scaffolded project with 28 embedded `ascent-*` skills |
 | Install | Two commands in Claude Code | `make install` from this repository |
+
+## At a glance
+
+| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **51**<br>behavior-test suites | **868**<br>negative controls | **22**<br>decision records |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+
+| | What | Status |
+|---|---|---|
+| **Now** | v0.4.16: this capability map, with every version and count checked against the repository. v0.4.15 shipped `ascent-ux` 0.3.0, functional, reliable, accessible, pleasant | ✅ Released |
+| **Next** | `ascent-ux` 0.3.1: trial calibrations and the first Firefox and WebKit run on real repositories | Planned |
+| **Later** | Live security testing (`ascent-security` 0.3.0), acceptance sign-off (`ascent-delivery` 0.2.0), four more plugins, then Phases 4–7 | Planned |
+
+Every plugin, skill, rule family and next step: **[the capability map](docs/framework/CAPABILITY-MAP.md)**.
 
 ## Why ASCENT
 
-Most frameworks optimize for the first commit and the scaffold. ASCENT optimizes for **what comes after**: the years in production where decisions turn into lore, documentation drifts from the code, and quality slips. Most of that slippage is not a skill problem. It is a consistency problem under fatigue, handoff and time pressure.
+Most frameworks stop at the scaffold. ASCENT is for **what comes after**: the years in production when decisions turn into lore, documentation drifts from the code, and quality slips under fatigue, handoffs and deadlines. ASCENT turns those patterns into checks against your own targets, each finding tied to a file and line and rated from a fixed severity table. Every check serves one of four outcomes:
 
-ASCENT writes those patterns down as checks with evidence: a project contract with measurable targets, severity tables that leave no room for invented ratings, operator runbooks with pre-flight and post-flight checks, and ADRs for every decision someone might later question. The framework is built with its own rules: 19 ADRs, phase-gated delivery, and a plugin gate with hundreds of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
+| Pillar | What the checks cover |
+|---|---|
+| **Business value** | Flows that work, quality attributes against measurable targets, tests that cover what matters, a delivery loop that ships |
+| **Compliance** | WCAG 2.2 AA evidence, a dated accessibility law map, ADRs for every decision and waiver, operations that pass an audit |
+| **Trust and security** | Secrets, credentials, hardened containers, supply chain and vulnerability scans, and a hard line: Claude never commits or deploys |
+| **Resilience** | Runbooks someone else can run, restore and failover proven by drill records, load tests held to latency and throughput targets |
+
+[PILLARS.md](docs/framework/PILLARS.md) maps each quality attribute to the plugin or skill that checks it, the evidence it produces and the gaps that remain. The framework is built with its own rules: an ADR for every decision, phase-gated delivery and a gate of negative controls. [PHILOSOPHY.md](docs/framework/PHILOSOPHY.md) has the full rationale.
 
 ## Plugins for any repository
 
@@ -52,25 +73,6 @@ Every review plugin has a read-only reviewer agent for delivery-loop reviews and
 
 Every finding carries a plugin-qualified rule id, such as `OPS-S3` or `UX-D2`, so you can always tell which plugin raised it.
 
-The pillars are the four outcomes the checks serve: driving business value, compliance, trust and security, and resilience. [PILLARS.md](docs/framework/PILLARS.md) maps each quality attribute to the plugin or skill that checks it, the evidence it produces and the gaps that remain.
-
-### What every plugin promises
-
-- **Read-only by default.** Reviews never edit your files. Skills that write, such as `ops-manuals` or `design-directions`, write only the files they name and never commit.
-- **Evidence or it is not a finding.** Every finding cites `path/to/file:line`, or the paths searched when something is absent, plus a failure scenario and a fix.
-- **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops, quality and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
-- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
-- **You own every write.** Claude never commits, pushes, tags, merges or deploys. It writes a numbered runbook and you run it; `ascent-delivery`'s hook enforces this.
-- **No personal data.** Secret values, account ids and contact details never appear in a report.
-
-### The bar a plugin must clear before release
-
-1. Hardened source, with severity tables pinned by the plugin gate (`make test-plugins`).
-2. Behavior tests for every script and rule (Principle §16), run on macOS and Linux; scripts also run under the stock macOS `/bin/bash` 3.2.
-3. Negative controls (`make test-mutants`): every rule is broken on purpose, and a named test must fail.
-4. A version bump for any change, enforced by `make/plugins.lock`, so installed copies always update.
-5. A read-only trial on real repositories, with calibration rounds until the findings hold up.
-6. A release record: CHANGELOG entry, ADR and tag.
 
 ## Quick start
 
@@ -180,16 +182,43 @@ Each has a behavior test that runs on macOS and Linux (`make test-skills`); nega
 
 </details>
 
+## Built to be trusted
+
+Every plugin makes the same promises:
+
+- **Read-only by default.** Reviews never edit your files. Skills that write, such as `ops-manuals` or `design-directions`, write only the files they name and never commit.
+- **Evidence or it is not a finding.** Every finding cites `path/to/file:line`, or the paths searched when something is absent, plus a failure scenario and a fix.
+- **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops, quality and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
+- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
+- **You own every write.** Claude never commits, pushes, tags, merges or deploys. It writes a numbered runbook and you run it; `ascent-delivery`'s hook enforces this.
+- **No personal data.** Secret values, account ids and contact details never appear in a report.
+
+Before release, every plugin clears the same bar:
+
+1. Hardened source, with severity tables pinned by the plugin gate (`make test-plugins`).
+2. Behavior tests for every script and rule (Principle §16), run on macOS and Linux; scripts also run under the stock macOS `/bin/bash` 3.2.
+3. Negative controls (`make test-mutants`): every rule is broken on purpose, and a named test must fail.
+4. A version bump for any change, enforced by `make/plugins.lock`, so installed copies always update.
+5. A read-only trial on real repositories, with calibration rounds until the findings hold up.
+6. A release record: CHANGELOG entry, ADR and tag.
+
 ## Status and roadmap
 
 ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELOG](CHANGELOG.md).
 
 | Release | Date | Highlights |
 |---|---|---|
-| v0.4.13 | 2026-11-01 | `ascent-quality` 0.2.0: k6, Artillery and Locust load tests checked against the `p95_latency_ms` and `peak_rps` targets, `QA-L1`–`L5`; mutation tool, break threshold, CI run and a current score in the repository, `QA-M1`–`M4` (ADR-021) |
+| v0.4.16 | 2026-11-15 | The [capability map](docs/framework/CAPABILITY-MAP.md), with an ownership check (T13.11) that every version and count in it and in this README matches the repository |
 | v0.4.15 | 2026-11-13 | `ascent-ux` 0.3.0: functional, reliable, accessible, pleasant. Flow integrity (`UX-F1`–`F7`) and reliability as experienced (`UX-R1`–`R7`, `UX-P1`–`P4`), the `flow-check` skill with a browser walk of each core flow and an engine loop, and `ux-review` rebuilt on four principles (ADR-022) |
 | v0.4.14 | 2026-11-12 | Negative controls: a repository copy that fails (a full disk on a CI runner) is reported as `COPY FAIL`, counted apart and failing the run, instead of being misread as a surviving control |
+| v0.4.13 | 2026-11-01 | `ascent-quality` 0.2.0: k6, Artillery and Locust load tests checked against the `p95_latency_ms` and `peak_rps` targets, `QA-L1`–`L5`; mutation tool, break threshold, CI run and a current score in the repository, `QA-M1`–`M4` (ADR-021) |
 | v0.4.12 | 2026-11-01 | `ascent-ops` 0.3.0: recovery drills and readiness exercises, `OPS-R1`–`R8` and `OPS-X1`–`X3`, checked against records the operator commits (ADR-020); `OPS-S8` classifies on the repository-relative path |
+
+<details>
+<summary><strong>Earlier releases (v0.1.0-alpha to v0.4.11)</strong></summary>
+
+| Release | Date | Highlights |
+|---|---|---|
 | v0.4.11 | 2026-10-31 | `ascent-quality` 0.1.0: test types and CI, untested boundaries, criteria and core rules traced to tests, and test hygiene, `QA-I1`–`I5`, `QA-T1`–`T4`, `QA-H1`–`H4` (ADR-019); `ascent-delivery` 0.1.3 uses it for the Tests lens |
 | v0.4.10 | 2026-10-29 | Faster negative controls: only the named check, behavior tests stopped at their first failure, controls in parallel, survivors rerun in full, with guards and a weekly full run (ADR-018) |
 | v0.4.9 | 2026-10-27 | `ascent-security` 0.2.0: dependency checks (lockfiles, pinning, sources, licences, waived ignore entries) and an offline vulnerability scan of dependencies and local images, `SEC-D1`–`D10` |
@@ -207,6 +236,8 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 | v0.2.0 | 2026-05-15 | Phase 1: the parent skill and reference modules |
 | v0.1.0-alpha | 2026-05-14 | Phase 0: foundation and the first ADRs |
 
+</details>
+
 **Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality ✅ · session · adr · docs · node-stack.
 **Phases:** Phase 4, scripted scaffolding, waits for its go-signal; then the eval harness (5), the template repository (6) and a first production project (7, v1.0). Details and exit criteria: [ROADMAP.md](docs/framework/ROADMAP.md).
 
@@ -220,7 +251,8 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 | See which quality attributes each plugin checks, by pillar | [PILLARS.md](docs/framework/PILLARS.md) |
 | Learn how the framework and plugins are built | [ARCHITECTURE.md](docs/framework/ARCHITECTURE.md) |
 | Read the decisions and their trade-offs | [DECISIONS/INDEX.md](docs/framework/DECISIONS/INDEX.md) |
-| See what is next | [ROADMAP.md](docs/framework/ROADMAP.md) |
+| See everything ASCENT can do today, and what is next | [CAPABILITY-MAP.md](docs/framework/CAPABILITY-MAP.md) |
+| Follow the roadmap and its exit criteria | [ROADMAP.md](docs/framework/ROADMAP.md) |
 | Contribute a fix, a skill or a plugin | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | See what changed | [CHANGELOG.md](CHANGELOG.md) |
 

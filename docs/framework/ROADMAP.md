@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant), November 13, 2026. Phase 4 awaits its go-signal.
+**Current state:** v0.4.16 (a capability map checked against the repository), November 15, 2026; the last plugin release is v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant). Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
@@ -12,9 +12,9 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 |---|---|---|---|
 | — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9; 0.3.0 ⏳ Planned |
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3, 0.1.3 in v0.4.11 |
-| 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4 |
-| 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions; 0.3.0 adds flow integrity and reliability under four principles (`UX-F`, `UX-R`, `UX-P`, ADR-022) | ✅ v0.4.5; 0.3.0 in v0.4.15 |
-| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014, ADR-020) | ✅ v0.4.6; 0.3.0 in v0.4.12 |
+| 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4; 0.2.0 in v0.4.8 |
+| 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions; 0.3.0 adds flow integrity and reliability under four principles (`UX-F`, `UX-R`, `UX-P`, ADR-022) | ✅ v0.4.5; 0.2.0 in v0.4.8; 0.3.0 in v0.4.15 |
+| 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014, ADR-020) | ✅ v0.4.6; 0.2.0 in v0.4.8; 0.3.0 in v0.4.12 |
 | 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence (`QA-L`, `QA-M`, ADR-021) | ✅ v0.4.11; 0.2.0 in v0.4.13 |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
 | 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
@@ -35,7 +35,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
 | Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Planned |
 
-Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)).
+Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, and v0.4.16 adds the checked capability map.
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 
@@ -172,7 +172,7 @@ Two delivery loops. Loop 1 made the 28 embedded-skill tests portable across macO
 
 **Status:** ✅ Complete (October 26, 2026)
 
-`ascent-ops` 0.1.0 rates how a system is run, changed and recovered against the `ops:` section of the project contract: secure-by-design IaC configuration (S1–S10), zero-touch scripts and runbooks with pre-flight and post-flight checks (Z1–Z9), and a Maintenance and Operations Manual and a Troubleshooting Manual that a script can prove are current (M1–M8). Health endpoints become `/-/health` and `/-/ready` across the scaffold template ([ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), Proposed). A read-only trial on three real repositories drove a calibration round before release.
+`ascent-ops` 0.1.0 rates how a system is run, changed and recovered against the `ops:` section of the project contract: secure-by-design IaC configuration (S1–S10), zero-touch scripts and runbooks with pre-flight and post-flight checks (Z1–Z9), and a Maintenance and Operations Manual and a Troubleshooting Manual that a script can prove are current (M1–M8). Health endpoints become `/-/health` and `/-/ready` across the scaffold template ([ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md)). A read-only trial on three real repositories drove a calibration round before release.
 
 
 ### v0.4.7: Housekeeping
@@ -229,6 +229,13 @@ A full disk on a macOS CI runner broke the repository copy a control runs on: `t
 **Status:** ✅ Complete (November 13, 2026)
 
 `ascent-ux` 0.3.0 asks whether users can finish the core flows and whether those flows hold up, not only whether the pages are accessible ([ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md)). Four principles order the report as a ladder (functional, reliable, accessible, pleasant) over seven lenses, two of them new. `check-flow-integrity.sh` checks links, router targets, in-page and ARIA id targets, ways forward and out, the not-found route and build targets (`UX-F1`–`F4`, `F7`); `check-ux-resilience.sh` checks double submits, request failures the user can see, retry, drafts, view state in the URL, the offline notice, optimistic rollback and four observations of pleasantness (`UX-R1`–`R7`, `UX-P1`–`P4`). The new `flow-check` skill runs both with the contract's values, walks each core flow in the browser (`UX-F5`) and repeats it in every engine the operator runs (`UX-F6`). A read-only trial on five real repositories calibrated about 15 false positives at the source, found three defects only the browser sees and confirmed a static one; the contract-driven options were then run on two of them. Controls P612–P790 run in two new groups and in `ascent-ux`; the fast-mode CI job limit is 25 minutes.
+
+
+### v0.4.16: Capability map
+
+**Status:** ✅ Complete (November 15, 2026)
+
+[CAPABILITY-MAP.md](CAPABILITY-MAP.md) shows what ASCENT can do today: every plugin with its skills, rules and next step, the parent skill and the roadmap, with the headline figures also at the top of the README. The ownership gate checks it (T13.11): every version, skill, agent and hook count, the parent skill's version, the plugin badge and the six headline figures are counted from the repository, so the pages cannot drift. A documentation audit brought the framework docs, GitHub templates and security policy up to date. See [CHANGELOG.md](../../CHANGELOG.md#0416--2026-11-15).
 
 ---
 

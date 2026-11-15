@@ -4,7 +4,7 @@
 
 ASCENT's checks serve four outcomes: driving business value, compliance, trust and security, and resilience. This page maps each one to the quality attributes (the "-ilities") behind it, the plugin or skill that checks each attribute, the evidence it produces, and what is not covered yet.
 
-Every review is read-only. The architecture, ux and ops plugins judge against the targets in the project contract, `.ascent/contract.yml`, and an attribute with no target is reported as **unmeasured**, never as met. `ascent-delivery` reads its own contract, `.delivery-loop.yml`.
+Every review is read-only. The architecture, ux, ops, quality and security plugins judge against the targets in the project contract, `.ascent/contract.yml`, and an attribute with no target is reported as **unmeasured**, never as met. `ascent-delivery` reads its own contract, `.delivery-loop.yml`.
 
 ---
 
@@ -14,7 +14,7 @@ Every review is read-only. The architecture, ux and ops plugins judge against th
 |---|---|---|---|
 | **Driving business value** | Does the system deliver what users need at a cost and speed the business can sustain? | `ascent-architecture`, `ascent-delivery`, `ascent-ux`, `ascent-quality` | Partial: cost and delivery speed are measured; the outcome a change achieves is not |
 | **Compliance** | Can the team show evidence against the standards it must meet? | `ascent-ux`, `ascent-ops`, `ascent-security` | Partial by design: evidence for WCAG 2.2 AA and secure configuration; no certification preparation |
-| **Trust and security** | Can users and operators trust the system with their data and their infrastructure? | `ascent-security`, `ascent-delivery`, `ascent-ops` | Partial: secrets, hardening and posture are strong; no threat model and no scan for known vulnerabilities |
+| **Trust and security** | Can users and operators trust the system with their data and their infrastructure? | `ascent-security`, `ascent-delivery`, `ascent-ops` | Partial: secrets, hardening and posture are strong; no threat model and no live security testing |
 | **Resilience** | Does the system keep running, and recover quickly when it does not? | `ascent-ops`, `ascent-architecture`, `ascent-delivery`, `ascent-quality` | Partial: restore, failover and readiness are proven by the operator's drill records; availability and portability are read from design and configuration |
 
 Coverage levels:

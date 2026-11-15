@@ -2,12 +2,12 @@
 
 ## Supported versions
 
-ASCENT is currently in alpha (v0.1.x). Only the latest released version receives security updates during the alpha phase.
+ASCENT is pre-1.0 (v0.4.x). Only the latest framework release, and the latest version of each `ascent-*` plugin, receive security fixes.
 
 | Version | Supported |
 |---|---|
-| 0.1.x (alpha) | ✓ |
-| < 0.1 | n/a |
+| 0.4.x, latest release | ✓ |
+| older releases | upgrade to the latest |
 
 Once v1.0 ships, the support window will be defined explicitly: latest minor version plus the previous minor version receive security updates.
 
@@ -27,6 +27,9 @@ Please do not disclose the issue publicly until it has been addressed.
 - Scaffolding scripts that could be tricked into writing outside their intended directory
 - Skill behavior that could exfiltrate or leak project content unintentionally
 - Reference modules that recommend patterns now known to be insecure
+- Plugin scripts, hooks or agents that can be made to write, run commands or reach the network when they are documented as read-only
+- A way to get around the `ascent-delivery` operator-boundary hook, so Claude can commit, push, merge, tag or deploy while it is enabled
+- A report that prints a secret value, an account id or contact details
 
 ## What doesn't count
 

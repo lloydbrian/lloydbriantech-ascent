@@ -121,6 +121,9 @@ If this philosophy resonates, read:
 - [`PRINCIPLES.md`](PRINCIPLES.md): the sixteen invariants the philosophy produces
 - [`SCOPE.md`](SCOPE.md): what ASCENT is for and what it isn't
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): how the framework is built
+- [`PILLARS.md`](PILLARS.md): the four outcomes every check serves
+- [`CAPABILITY-MAP.md`](CAPABILITY-MAP.md): what ASCENT can do today, plugin by plugin
+- [`OWNERSHIP.md`](OWNERSHIP.md): who owns each plugin, rule family and contract section
 - [`ROADMAP.md`](ROADMAP.md): where the framework is heading
 
 If this philosophy doesn't resonate, save yourself the time and use a different framework. ASCENT is not trying to be universal. It is trying to be right for the projects it's right for.

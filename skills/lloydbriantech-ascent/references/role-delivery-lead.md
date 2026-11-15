@@ -94,6 +94,12 @@ Delivery-lead receives status updates from every other role and synthesizes them
 - **Avoidance of kill decisions.** A feature that should die but doesn't because no one wants to make the call. The role exists to make the call.
 - **Bypassing phase gates.** Letting Phase N+1 work begin while Phase N is "almost done." The literal "Proceed with Phase N+1" signal exists for a reason.
 
+## Checking this role in any repository
+
+The `ascent-delivery` plugin (ADR-010) brings this role's delivery discipline to any repository:
+- `delivery-loop` takes a change from decision to production: build with a file-modification audit, test with negative controls, gate, independent review by the ASCENT reviewers checked by `finding-verifier`, and an operator runbook
+- the operator-boundary hook blocks Claude from committing, pushing, merging, tagging and deploying while the plugin is enabled, so the operator runs every write from the runbook
+
 ## What this role doesn't own
 
 - **The technical design.** That's [role-architect.md](role-architect.md).

@@ -54,6 +54,8 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 - [ ] Behavior tests cover every new or changed script, hook and rule
 - [ ] Every new rule has a `plugin_case` in `make/test-mutants.sh` that the gate kills
 - [ ] Severity table copies still match (T5), and agents stay read-only (T4)
+- [ ] Every new plugin, skill, agent, hook, rule family, contract section, domain or lens has its `docs/framework/OWNERSHIP.md` row (`make ownership`)
+- [ ] The capability map and README figures still match (T13.11)
 - [ ] CHANGELOG.md entry added under `[Unreleased]`
 
 ### For architectural PRs
@@ -69,6 +71,7 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 - [ ] Manual verification performed (describe below)
 - [ ] CI passes
 - [ ] `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` pass locally
+- [ ] If `make/test-plugins.sh` or `make/test-mutants.sh` changed, `make test-harness` passes
 - [ ] Skill tests use the `tests/skills/lib/portable.sh` helpers only (no direct `stat`, `touch -t/-d`, `date -d/-j/-v`, `sed -i`), per ADR-008
 - [ ] Every new or changed rule has a negative control whose named test fails when the rule is broken (a `make/mutants.tsv` row for embedded skills, a `plugin_case` in `make/test-mutants.sh` for plugins)
 - [ ] If this changes skill behavior, an eval scenario covers the change (Phase 5+)

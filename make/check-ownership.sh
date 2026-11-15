@@ -25,6 +25,14 @@
 #   T13.10 id format: rule-table ids and script-header ids in plugins are
 #          plugin-qualified (<CODE>-<family><n>), and every qualified id names a
 #          registered or reserved family
+#   T13.11 capability map: docs/framework/CAPABILITY-MAP.md exists; its table row
+#          and heading for each released plugin give the plugin.json version and
+#          the plugin's skill, agent and hook counts; the parent skill row and
+#          "Counts from the repository at vX" give the Makefile's version and the
+#          template's skill count, as does the parent SKILL.md version; the at-a-glance figures in the map and the
+#          README (plugins, plugin parts, embedded skills, behavior-test suites,
+#          negative controls, ADRs) and the README's plugin badge are counted
+#          from the repository
 #
 # Usage: check-ownership.sh [ROOT]   (ROOT defaults to the repo root)
 # Exit 0 when every rule passes, 1 otherwise.
@@ -296,5 +304,64 @@ done
   is_in "$pre" "$W/prefixes" || echo "id prefix $pre is not a registered or reserved family" >> "$W/t10"
 done
 report "T13.10" "id format: plugin rule ids are qualified and registered" "$W/t10"
+
+# T13.11 — the capability map and the README's figures, counted from the repository
+: > "$W/t11"
+MAP="$ROOT/docs/framework/CAPABILITY-MAP.md"
+nfiles() { { find "$@" 2>/dev/null || true; } | wc -l | tr -d ' '; }   # FIND-ARGS -> number of matches
+FV=$({ sed -n 's/^FRAMEWORK_VERSION[[:space:]]*:=[[:space:]]*\([^[:space:]]*\).*/\1/p' "$ROOT/Makefile" 2>/dev/null || true; } | head -1)
+[ -n "$FV" ] || echo "Makefile sets no FRAMEWORK_VERSION" >> "$W/t11"
+SKV=$({ sed -n 's/^version:[[:space:]]*\([^[:space:]]*\).*/\1/p' "$ROOT/skills/lloydbriantech-ascent/SKILL.md" 2>/dev/null || true; } | head -1)
+[ "$SKV" = "$FV" ] || echo "skills/lloydbriantech-ascent/SKILL.md says version ${SKV:-nothing}, the Makefile says $FV" >> "$W/t11"
+NREL=$(wc -l < "$W/released" | tr -d ' '); NTPL=$(wc -l < "$W/template" | tr -d ' '); PARTS=0
+[ -f "$MAP" ] || echo "docs/framework/CAPABILITY-MAP.md not found" >> "$W/t11"
+while read -r p; do
+  pj="$ROOT/plugins/$p/.claude-plugin/plugin.json"; [ -f "$pj" ] || continue   # T13.2 reports it
+  v=$(sed -n 's/^  "version":[[:space:]]*"\([^"]*\)".*/\1/p' "$pj" | head -1)
+  s=$(nfiles "$ROOT/plugins/$p/skills" -mindepth 2 -maxdepth 2 -name SKILL.md)
+  a=$(nfiles "$ROOT/plugins/$p/agents" -maxdepth 1 -name '*.md')
+  h=$(nfiles "$ROOT/plugins/$p/hooks" -maxdepth 1 -name '*.json')
+  PARTS=$((PARTS + s + a + h))
+  [ -f "$MAP" ] || continue
+  row=$(sed -n "s/^| \`$p\` | Plugin · \([^|]*\) | \([^ |]*\) |.*/\1|\2/p" "$MAP" | head -1)
+  if [ -z "$row" ]; then echo "the map's table has no row for $p" >> "$W/t11"; continue; fi
+  kind=${row%|*}; mv=${row##*|}
+  [ "$mv" = "$v" ] || echo "the map says $p $mv, plugin.json says $v" >> "$W/t11"
+  for part in "skill:$s" "agent:$a" "hook:$h"; do
+    n=$(printf '%s\n' "$kind" | tr ',' '\n' | sed -n "s/^ *\([0-9][0-9]*\) ${part%%:*}s\{0,1\} *\$/\1/p" | head -1); n=${n:-0}
+    [ "$n" = "${part#*:}" ] || echo "the map says $p has $n ${part%%:*}(s), the plugin has ${part#*:}" >> "$W/t11"
+  done
+  hv=$(sed -n "s/^### \`$p\` \([^ ]*\) ·.*/\1/p" "$MAP" | head -1)
+  [ "$hv" = "$v" ] || echo "the map's $p heading says ${hv:-nothing}, plugin.json says $v" >> "$W/t11"
+done < "$W/released"
+if [ -f "$MAP" ]; then
+  prow=$(sed -n 's/^| `lloydbriantech-ascent` | Parent skill · [^|]* \([0-9][0-9]*\) embedded skills | \([^ |]*\) |.*/\1|\2/p' "$MAP" | head -1)
+  if [ -z "$prow" ]; then echo "the map's table has no lloydbriantech-ascent row" >> "$W/t11"
+  else
+    [ "${prow%|*}" = "$NTPL" ] || echo "the map says ${prow%|*} embedded skills, the template has $NTPL" >> "$W/t11"
+    [ "${prow#*|}" = "$FV" ] || echo "the map says lloydbriantech-ascent ${prow#*|}, the Makefile says $FV" >> "$W/t11"
+  fi
+  at=$(sed -n 's/.*Counts from the repository at v\([0-9][0-9.]*[0-9]\).*/\1/p' "$MAP" | head -1)
+  [ "$at" = "$FV" ] || echo "the map counts from v${at:-?}, the Makefile says $FV" >> "$W/t11"
+fi
+# The at-a-glance figures, in the README and the map: "**N**<br>label" table cells.
+SUITES=$(( $(nfiles "$ROOT/tests/plugins" -mindepth 2 -maxdepth 2 -name 'test-*.sh') + $(nfiles "$ROOT/skills/lloydbriantech-ascent/assets/template/tests/skills" -maxdepth 1 -name 'test-*.sh') ))
+CTRL=$({ grep -cE '^([A-Z][A-Z0-9_]*=[^ ]* )*(plugin_case|plugin_case_rm|expect_case|validator_case) ' "$ROOT/make/test-mutants.sh" 2>/dev/null || true; } | head -1)
+TSV=$({ grep -v '^#' "$ROOT/make/mutants.tsv" 2>/dev/null || true; } | grep -c . || true)
+CTRL=$(( ${CTRL:-0} + ${TSV:-0} ))
+ADRS=$(nfiles "$ROOT/docs/framework/DECISIONS" -maxdepth 1 -name 'ADR-[0-9]*.md')
+for doc in README.md docs/framework/CAPABILITY-MAP.md; do
+  [ -f "$ROOT/$doc" ] || continue
+  for fig in "plugins released:$NREL" "plugin skills, agents and hooks:$PARTS" "skills in every scaffolded project:$NTPL" \
+             "behavior-test suites:$SUITES" "negative controls:$CTRL" "decision records:$ADRS"; do
+    label=${fig%:*}; want=${fig##*:}
+    got=$(sed -n "s/.*\*\*\([0-9][0-9,]*\)\*\*<br>$label *|.*/\1/p" "$ROOT/$doc" | head -1 | tr -d ',' | sed 's/^0*\([0-9]\)/\1/')
+    if [ -z "$got" ]; then echo "$doc has no \"$label\" figure" >> "$W/t11"
+    elif [ "$got" != "$want" ]; then echo "$doc says $got $label, the repository has $want" >> "$W/t11"; fi
+  done
+done
+bn=$({ sed -n 's/.*badge\/plugins-\([0-9][0-9]*\)-.*/\1/p' "$ROOT/README.md" 2>/dev/null || true; } | head -1)
+[ "$bn" = "$NREL" ] || echo "the README plugin badge says ${bn:-nothing}, $NREL plugins are released" >> "$W/t11"
+report "T13.11" "capability map: versions and counts match the repository" "$W/t11"
 
 [ "$NFAIL" -eq 0 ]

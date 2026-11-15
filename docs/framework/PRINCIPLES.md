@@ -145,7 +145,7 @@ Tests verify behavior through mechanical stand-ins and controlled fixtures, asse
 | 13. `dev-status` family | `make/dev-status.mk`; row-by-row deep-dive commands; context-aware Next Actions |
 | 14. Persona-segmented docs | README's role-segmented tables; `ascent-persona-coverage` skill; doc-architecture reference |
 | 15. Session resumption | `session-state.md` + `working-memory.md` artifacts; `make session-snapshot`; `session-protocol.md` reference module |
-| 16. Behavior verification | All 28 skill test scripts; mechanical stand-in discipline established in Phase 3 Cluster 2; `ascent-self-audit` structural checks complement (not replace) behavior tests |
+| 16. Behavior verification | All 28 skill test scripts and the plugin behavior tests in `tests/plugins/` (T11), each proved able to fail by negative controls (`make test-mutants`); mechanical stand-in discipline established in Phase 3 Cluster 2; `ascent-self-audit` structural checks complement (not replace) behavior tests |
 
 ## When a principle is broken
 
