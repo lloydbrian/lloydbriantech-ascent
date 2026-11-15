@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.16 (a capability map checked against the repository), November 15, 2026; the last plugin release is v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant). Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
+**Current state:** v0.4.17 (the headline figures in the README banner, checked against the repository), November 15, 2026; the last plugin release is v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant). Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
@@ -35,7 +35,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
 | Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Planned |
 
-Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, and v0.4.16 adds the checked capability map.
+Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, and v0.4.17 puts its figures in the README banner.
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 
@@ -236,6 +236,13 @@ A full disk on a macOS CI runner broke the repository copy a control runs on: `t
 **Status:** ✅ Complete (November 15, 2026)
 
 [CAPABILITY-MAP.md](CAPABILITY-MAP.md) shows what ASCENT can do today: every plugin with its skills, rules and next step, the parent skill and the roadmap, with the headline figures also at the top of the README. The ownership gate checks it (T13.11): every version, skill, agent and hook count, the parent skill's version, the plugin badge and the six headline figures are counted from the repository, so the pages cannot drift. A documentation audit brought the framework docs, GitHub templates and security policy up to date. See [CHANGELOG.md](../../CHANGELOG.md#0416--2026-11-15).
+
+
+### v0.4.17: Figures in the banner
+
+**Status:** ✅ Complete (November 15, 2026)
+
+The README banner carries the headline figures on one line under the plugin line, which now names all six released plugins, `quality` included. The ownership gate (T13.11) reads both banner files and the image's alt text: the plugin line must name exactly the released plugins, and every figure must match the repository. The README's "At a glance" section is gone; its Now, Next and Later table opens "Status and roadmap". See [CHANGELOG.md](../../CHANGELOG.md#0417--2026-11-15).
 
 ---
 

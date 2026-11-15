@@ -55,7 +55,7 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 - [ ] Every new rule has a `plugin_case` in `make/test-mutants.sh` that the gate kills
 - [ ] Severity table copies still match (T5), and agents stay read-only (T4)
 - [ ] Every new plugin, skill, agent, hook, rule family, contract section, domain or lens has its `docs/framework/OWNERSHIP.md` row (`make ownership`)
-- [ ] The capability map and README figures still match (T13.11)
+- [ ] The capability map and the banner figures still match (T13.11); a new plugin is added to the banner's plugin line
 - [ ] CHANGELOG.md entry added under `[Unreleased]`
 
 ### For architectural PRs

@@ -1,7 +1,7 @@
 <h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ascent-banner-dark.svg">
-  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch" src="docs/assets/ascent-banner-light.svg" width="100%">
+  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 30 components, 28 project skills, 51 test suites, 877 negative controls, 22 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
 </picture>
 </h1>
 
@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="#at-a-glance">At a glance</a> ·
+  <a href="docs/framework/CAPABILITY-MAP.md">Capability map</a> ·
   <a href="#plugins-for-any-repository">Plugins</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -31,19 +31,6 @@ You can use it in two ways:
 | For | Any repository, ASCENT or not | Starting, enhancing or migrating a project |
 | You get | Five review plugins, read-only by default, and the delivery loop | A scaffolded project with 28 embedded `ascent-*` skills |
 | Install | Two commands in Claude Code | `make install` from this repository |
-
-## At a glance
-
-| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **51**<br>behavior-test suites | **868**<br>negative controls | **22**<br>decision records |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-
-| | What | Status |
-|---|---|---|
-| **Now** | v0.4.16: this capability map, with every version and count checked against the repository. v0.4.15 shipped `ascent-ux` 0.3.0, functional, reliable, accessible, pleasant | ✅ Released |
-| **Next** | `ascent-ux` 0.3.1: trial calibrations and the first Firefox and WebKit run on real repositories | Planned |
-| **Later** | Live security testing (`ascent-security` 0.3.0), acceptance sign-off (`ascent-delivery` 0.2.0), four more plugins, then Phases 4–7 | Planned |
-
-Every plugin, skill, rule family and next step: **[the capability map](docs/framework/CAPABILITY-MAP.md)**.
 
 ## Why ASCENT
 
@@ -206,19 +193,26 @@ Before release, every plugin clears the same bar:
 
 ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELOG](CHANGELOG.md).
 
+| | What | Status |
+|---|---|---|
+| **Now** | v0.4.17: the headline figures in the banner, checked against the repository like the [capability map](docs/framework/CAPABILITY-MAP.md) (v0.4.16). v0.4.15 shipped `ascent-ux` 0.3.0, functional, reliable, accessible, pleasant | ✅ Released |
+| **Next** | `ascent-ux` 0.3.1: trial calibrations and the first Firefox and WebKit run on real repositories | Planned |
+| **Later** | Live security testing (`ascent-security` 0.3.0), acceptance sign-off (`ascent-delivery` 0.2.0), four more plugins, then Phases 4–7 | Planned |
+
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.17 | 2026-11-15 | The headline figures move into the banner, and the ownership check (T13.11) counts them in both banner files and the image description; the banner names all six plugins, `quality` included |
 | v0.4.16 | 2026-11-15 | The [capability map](docs/framework/CAPABILITY-MAP.md), with an ownership check (T13.11) that every version and count in it and in this README matches the repository |
 | v0.4.15 | 2026-11-13 | `ascent-ux` 0.3.0: functional, reliable, accessible, pleasant. Flow integrity (`UX-F1`–`F7`) and reliability as experienced (`UX-R1`–`R7`, `UX-P1`–`P4`), the `flow-check` skill with a browser walk of each core flow and an engine loop, and `ux-review` rebuilt on four principles (ADR-022) |
 | v0.4.14 | 2026-11-12 | Negative controls: a repository copy that fails (a full disk on a CI runner) is reported as `COPY FAIL`, counted apart and failing the run, instead of being misread as a surviving control |
 | v0.4.13 | 2026-11-01 | `ascent-quality` 0.2.0: k6, Artillery and Locust load tests checked against the `p95_latency_ms` and `peak_rps` targets, `QA-L1`–`L5`; mutation tool, break threshold, CI run and a current score in the repository, `QA-M1`–`M4` (ADR-021) |
-| v0.4.12 | 2026-11-01 | `ascent-ops` 0.3.0: recovery drills and readiness exercises, `OPS-R1`–`R8` and `OPS-X1`–`X3`, checked against records the operator commits (ADR-020); `OPS-S8` classifies on the repository-relative path |
 
 <details>
-<summary><strong>Earlier releases (v0.1.0-alpha to v0.4.11)</strong></summary>
+<summary><strong>Earlier releases (v0.1.0-alpha to v0.4.12)</strong></summary>
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.12 | 2026-11-01 | `ascent-ops` 0.3.0: recovery drills and readiness exercises, `OPS-R1`–`R8` and `OPS-X1`–`X3`, checked against records the operator commits (ADR-020); `OPS-S8` classifies on the repository-relative path |
 | v0.4.11 | 2026-10-31 | `ascent-quality` 0.1.0: test types and CI, untested boundaries, criteria and core rules traced to tests, and test hygiene, `QA-I1`–`I5`, `QA-T1`–`T4`, `QA-H1`–`H4` (ADR-019); `ascent-delivery` 0.1.3 uses it for the Tests lens |
 | v0.4.10 | 2026-10-29 | Faster negative controls: only the named check, behavior tests stopped at their first failure, controls in parallel, survivors rerun in full, with guards and a weekly full run (ADR-018) |
 | v0.4.9 | 2026-10-27 | `ascent-security` 0.2.0: dependency checks (lockfiles, pinning, sources, licences, waived ignore entries) and an offline vulnerability scan of dependencies and local images, `SEC-D1`–`D10` |
@@ -240,6 +234,8 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 **Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality ✅ · session · adr · docs · node-stack.
 **Phases:** Phase 4, scripted scaffolding, waits for its go-signal; then the eval harness (5), the template repository (6) and a first production project (7, v1.0). Details and exit criteria: [ROADMAP.md](docs/framework/ROADMAP.md).
+
+Every plugin, skill, rule family and next step: **[the capability map](docs/framework/CAPABILITY-MAP.md)**.
 
 ## Documentation
 
