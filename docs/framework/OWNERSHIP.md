@@ -23,7 +23,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | any repository with git | `ascent-delivery` | ship each change through the delivery loop, with the operator running every git write and deploy |
 | `.env` files, configuration, a `Dockerfile`, `nginx.conf`, server or client code, package manifests and lockfiles | `ascent-security` | secrets, credentials, container privilege, security headers, dynamic code, and dependency vulnerabilities and supply chain |
 | infrastructure as code (CloudFormation, CDK, Terraform), a deployed service, a budget | `ascent-architecture` | quality attributes against targets, design principles, deployment options and cost |
-| HTML, JSX, Vue or Svelte templates, CSS, design tokens | `ascent-ux` | WCAG 2.2 AA evidence, design tokens and contrast, design directions |
+| HTML, JSX, Vue or Svelte templates, CSS, design tokens, router files, forms that submit through a script | `ascent-ux` | flows that complete, UI that keeps the user's work, WCAG 2.2 AA evidence, design tokens and contrast, design directions |
 | infrastructure as code, operator scripts, runbooks, Compose files, health endpoints, backups and drill records | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals, recovery drills and readiness exercises |
 | test files, a test runner configuration, CI workflows, acceptance criteria, load-test scripts, a mutation tool | `ascent-quality` | test types and whether CI runs them, boundaries no test reaches, criteria and core rules traced to tests, test hygiene, load tests against the targets, mutation evidence |
 <!-- ownership:signals:end -->
@@ -72,6 +72,7 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-ux` | skill | `accessibility-audit` |
 | `ascent-ux` | skill | `design-system-check` |
 | `ascent-ux` | skill | `design-directions` |
+| `ascent-ux` | skill | `flow-check` |
 | `ascent-ux` | agent | `ux-reviewer` |
 | `ascent-ops` | skill | `ops-review` |
 | `ascent-ops` | skill | `iac-config-check` |
@@ -113,6 +114,9 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
 | `UX-D` | `ascent-ux` | catalogue | `plugins/ascent-ux/skills/design-directions/SKILL.md` |
+| `UX-F` | `ascent-ux` | rule | `plugins/ascent-ux/references/flow-and-reliability.md` |
+| `UX-R` | `ascent-ux` | rule | `plugins/ascent-ux/references/flow-and-reliability.md` |
+| `UX-P` | `ascent-ux` | rule | `plugins/ascent-ux/references/flow-and-reliability.md` |
 | `T` | — | internal | `make/test-plugins.sh` |
 | `P` | — | internal | `make/test-mutants.sh` |
 | `V` | — | internal | `make/test-mutants.sh` |
@@ -151,8 +155,9 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | accessibility (WCAG 2.2 AA) | `ascent-ux` | `ascent-ux` | released |
 | design tokens and contrast | `ascent-ux` | `ascent-ux` | released |
 | front-end performance | `ascent-ux` | `ascent-ux` | released |
-| navigational integrity | `ascent-ux` | `ascent-ux` | planned |
-| cross-browser compatibility | `ascent-architecture` | `ascent-ux` | planned |
+| navigational integrity | `ascent-ux` | `ascent-ux` | released |
+| cross-browser compatibility | `ascent-architecture` | `ascent-ux` | released |
+| UI reliability (as experienced) | `ascent-ux` | `ascent-ux` | released |
 | secure IaC configuration | `ascent-ops` | `ascent-ops` | released |
 | operator scripts and runbooks | `ascent-ops` | `ascent-ops` | released |
 | operations manuals | `ascent-ops` | `ascent-ops` | released |

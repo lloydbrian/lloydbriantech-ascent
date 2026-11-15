@@ -1,0 +1,4 @@
+:root { --motion-fast: 150ms; --ease-out: cubic-bezier(0.2, 0, 0, 1); }
+.banner { transition: opacity var(--motion-fast) var(--ease-out); }
+/* transition: opacity 300ms ease; in a comment is ignored */
+@media (prefers-reduced-motion: reduce) { .banner { transition: none; } }

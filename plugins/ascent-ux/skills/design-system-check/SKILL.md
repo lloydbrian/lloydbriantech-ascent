@@ -7,7 +7,7 @@ description: >-
   bypass it, checks theming through tokens and reduced motion, computes WCAG
   contrast for every token pair in every theme, and checks component states.
   Read-only.
-version: 0.2.0
+version: 0.3.0
 allowed-tools: Read, Grep, Glob
 ---
 

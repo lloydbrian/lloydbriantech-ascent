@@ -3,22 +3,27 @@ name: ux-review
 description: >-
   Use when asked "review the UX", "is this UI accessible?", "rate our
   accessibility against the contract", "WCAG 2.2 AA evidence", or before
-  shipping a user-facing change. Rates a web UI against the project contract:
-  maps pages, components and tokens, runs surface checks for accessibility,
-  design system, usability, states and performance, runs the static checks and
-  a Playwright browser pass, and reports strong, moderate or weak with WCAG
-  evidence. For a quick design-level critique, design:accessibility-review fits.
-version: 0.2.0
+  shipping a user-facing change. Rates a web UI against the project contract
+  on four principles, functional, reliable, accessible and pleasant: maps
+  pages, components and tokens, checks seven lenses (flow integrity,
+  reliability, accessibility, design system, usability, states, performance),
+  runs the static checks and a Playwright browser pass with a walk of each core
+  flow, and reports strong, moderate or weak with file:line and WCAG evidence.
+  For a quick design-level critique, design:accessibility-review fits.
+version: 0.3.0
 allowed-tools: Read, Grep, Glob
 ---
 
 # ux-review
 
-One review of a web UI, judged against the project's own targets. It is the entry point of the `ascent-ux` plugin. It runs surface checks itself and recommends [accessibility-audit](../accessibility-audit/SKILL.md), [design-system-check](../design-system-check/SKILL.md) or [design-directions](../design-directions/SKILL.md) only for the areas a surface check flags (the hybrid pattern). It never invokes them; they read the same sources.
+One review of a web UI, judged against the project's own targets. It is the entry point of the `ascent-ux` plugin. It runs surface checks itself and recommends [flow-check](../flow-check/SKILL.md), [accessibility-audit](../accessibility-audit/SKILL.md), [design-system-check](../design-system-check/SKILL.md) or [design-directions](../design-directions/SKILL.md) only for the areas a surface check flags (the hybrid pattern). It never invokes them; they read the same sources.
 
-It makes the ASCENT ui-ux-designer role checkable: one token set, theming through tokens, every state specified, and accessibility designed in, not retrofitted.
+It makes the ASCENT ui-ux-designer role checkable: flows that complete, a UI that keeps the user's work when something fails, one token set, theming through tokens, every state specified, and accessibility designed in, not retrofitted.
+
+The review climbs four principles in order ([flow-and-reliability.md](../../references/flow-and-reliability.md), ADR-022): **functional** (can any user finish the core flows?), **reliable** (does the UI survive a failure, a reload, a double click?), **accessible** (can everyone use it?), **pleasant** (is it free of friction and tricks?). The report names the lowest principle at risk, and lists the unmeasured principles apart with the key each one needs: an unmeasured principle has no evidence against it, only no target. The ladder orders the report; it never changes a severity.
 
 Shared sources:
+- [flow-and-reliability.md](../../references/flow-and-reliability.md): the UX-F, UX-R and UX-P rules and the ladder
 - [wcag-22-checklist.md](../../references/wcag-22-checklist.md): every WCAG 2.2 A and AA criterion with what to look for
 - [aria-patterns.md](../../references/aria-patterns.md)
 - [usability-heuristics.md](../../references/usability-heuristics.md)
@@ -32,7 +37,7 @@ The companion plugins are installed with this one: `design`, `frontend-design` a
 
 ## Rules
 
-- **Read-only.** Never edit files, start servers, submit forms or deploy. The browser pass only reads pages (Step 4).
+- **Read-only.** Never edit files, start servers or deploy. The browser pass only reads pages; it submits a form only in the Step 4 walk, with the operator's `test_data` fixture and on `localhost`.
 - **Evidence or it is not a finding.** Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory) or "absent: searched <paths>", the WCAG 2.2 criterion or the heuristic it breaks, a concrete scenario (who cannot do what), and a fix.
 - **Fresh evidence.** Re-read the evidence for every finding in this run. Never carry findings over from an earlier pass, an agent's report or another session.
 - **Rate only with the severity table.** A concern that matches no row goes under **Other observations (unrated)** and does not count toward the rating. Never invent a severity.
@@ -40,9 +45,9 @@ The companion plugins are installed with this one: `design`, `frontend-design` a
 - **No conformance claims from automation.** Automated checks find only part of WCAG failures. The report never says "conforms to WCAG 2.2 AA". It says what was checked, what failed, and what the manual checklist must still cover.
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **Never "met" without a target.** A lens or attribute whose target is missing from the contract is unmeasured, or at risk when the evidence shows a gap. Good evidence alone never makes it met.
-- **Guessed core flows are labelled.** Until the operator confirms the contract, every severity that depends on a core flow (High for UX-U3, UX-U12 and the first severity row) carries "(core flow guessed)".
+- **Guessed core flows are labelled.** Until the operator confirms the contract, every severity that depends on a core flow (High for UX-U3, UX-U12, and every severity row that names a core flow, the UX-F and UX-R rows among them) carries "(core flow guessed)".
 - **One contrast finding per failing foreground token**, listing every background and theme it fails on. The fix is one token change, so it is one finding.
-- **Maturity gaps are always rated.** With no confirmed contract, rate them against the enterprise defaults (Step 5) and say so; never list them unrated.
+- **Maturity gaps are always rated.** With no confirmed contract, rate them against the enterprise defaults (Step 5) and say so; never list them unrated. A gap that only a missing contract key causes belongs to the one no-contract finding (Step 6).
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Credentials in client code are `ascent-security`'s and `ascent-architecture`'s finding: cite the location, mark it `→ ascent-security`, and never print the value.
 - **Security-only concerns** (authorization, CSP, cookie flags) go under Other observations marked `→ ascent-security`. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
 - **Dated sources.** The law map and the standards status carry `as_of`. If it is more than 90 days old, say "standards status as_of <date>: refresh due" in the report.
@@ -57,6 +62,7 @@ Every finding carries one of these severities. The `ux-reviewer` agent uses the 
 | Finding | Severity |
 |---|---|
 | A keyboard or screen-reader user cannot complete a core task (keyboard trap 2.1.2, unreachable control 2.1.1, unnamed control 4.1.2 on a core flow) | High |
+| A core flow cannot be completed by any user: a broken link or missing target on a step (UX-F1, UX-F2), a step with no way forward (UX-F3), a same-origin error on the walk (UX-F5), or a failure in a listed engine (UX-F6) | High |
 | Content that flashes more than three times a second (2.3.1) | High |
 | Inaccessible authentication on a core flow: a cognitive test with no alternative (3.3.8) | High |
 | Any other WCAG 2.2 Level A or AA failure on a page in scope | Medium |
@@ -64,9 +70,17 @@ Every finding carries one of these severities. The `ux-reviewer` agent uses the 
 | No design-token source, or core components built from hard-coded values, at the standard or enterprise target | Medium |
 | A core flow with no error, empty or loading state, or errors that do not say how to recover (3.3.1, 3.3.3) | Medium |
 | A Core Web Vital in the "poor" band against a stated budget | Medium |
+| A broken link or missing target off the core flows (UX-F1, UX-F2), or a core-flow step with no way back or out (UX-F3) | Medium |
+| A same-origin 4xx or 5xx response, an uncaught error or a dead script on a page off the core flows (UX-F5) | Medium |
+| A core flow that can send a request twice (UX-R1), hides a failed request (UX-R2), loses a long form on reload (UX-R4), or loses listed view state on Back or refresh (UX-R5) | Medium |
+| No offline notice when the contract requires one (UX-R6) | Medium |
+| A consent or marketing option checked by default (UX-P3) | Medium |
+| A layout or focus defect in one listed engine that does not block a core flow (UX-F6) | Medium |
 | A usability-heuristic violation on a core flow that breaks no WCAG criterion, with the heuristic named | Low |
+| No not-found route (UX-F4), build targets that miss the contract's browsers (UX-F7), no retry after a failure (UX-R3), no rollback of an optimistic update (UX-R7), a double submit or hidden failure off the core flows (UX-R1, UX-R2), a page off the core flows that no link reaches or that has no way back (UX-F3), listed view state lost on Back or refresh off the core flows (UX-R5) | Low |
+| No progress feedback (UX-P1), motion outside tokens (UX-P2), a sign-up with no way out (UX-P4) | Low |
 | Hard-coded values outside tokens in non-core screens, or theming through component variants | Low |
-| A ux target missing from the contract ("unmeasured") | Low |
+| A ux target missing from the contract ("unmeasured"); with no confirmed contract, one finding for all of them (Step 6) | Low |
 | Any other item the maturity target requires, missing with no waiver (Step 5) | Low |
 | A gap covered by a waiver ADR | Info |
 <!-- ux-severity:end -->
@@ -104,30 +118,45 @@ Build the inventory from the repository, not from memory:
 
 List the pages or routes, layouts, shared components (header, nav, forms, dialogs, tables), the style and token sources, and the third-party UI kits. Name the core flows from the contract, or the input-taking routes when there is no contract. Mark components that hard-code styles.
 
-### Step 2 — Surface checks (five lenses)
+### Step 2 — Surface checks (seven lenses, four principles)
 
-One line per lens: what the contract asks, the evidence found, and the status **met**, **at risk** or **unmeasured**. A lens whose target is missing from the contract is unmeasured, never met; it is at risk instead when the evidence shows a gap. Report these five lenses, in this order, and no others:
+One line per lens: what the contract asks, the evidence found, and the status **met**, **at risk** or **unmeasured**. A lens whose target is missing from the contract is unmeasured, never met; it is at risk instead when the evidence shows a gap. Report these seven lenses, grouped by principle in this order, and no others:
 
-- **Accessibility:** landmarks, headings, labels, names, focus, keyboard reachability, alternative text, captions, status messages, target size (2.5.8, 24 by 24 px), reflow (1.4.10).
-- **Design system:** one token source, hard-coded colors and spacing, theming through tokens, motion tokens with a `prefers-reduced-motion` path.
+**Functional**
+- **Flow integrity:** links, form actions and router targets resolve; in-page and ARIA targets exist; each core-flow step has a way forward and a way out; a not-found route; build targets that match the contract's browsers (UX-F1–F7). Unmeasured without `core_flows[].steps`.
 - **Usability heuristics:** Nielsen's 10 on the core flows ([usability-heuristics.md](../../references/usability-heuristics.md)). A heuristic concern that breaks a WCAG criterion is rated under that criterion; otherwise it is a Low finding on a core flow, or an unrated observation elsewhere.
+
+**Reliable**
+- **Reliability:** scripted submits guarded against a double click, failed requests shown and retryable, long core forms kept across reload, listed view state in the URL, an offline notice when required, optimistic updates rolled back (UX-R1–R7). Unmeasured without the `reliability` block.
 - **States and content:** empty, loading, error and success for each core flow; errors that say how to fix (3.3.1, 3.3.3); labels and instructions (3.3.2); redundant entry (3.3.7); consistent help (3.2.6); plain wording (use `design:ux-copy` when it helps).
 - **Performance UX:** contract budgets with Lighthouse or field data only ([performance-ux.md](../../references/performance-ux.md)). Without evidence, one line: "Core Web Vitals unmeasured".
 
-Two or more lenses at risk or unmeasured: recommend [accessibility-audit](../accessibility-audit/SKILL.md) or [design-system-check](../design-system-check/SKILL.md) for the lens concerned.
+**Accessible**
+- **Accessibility:** landmarks, headings, labels, names, focus, keyboard reachability, alternative text, captions, status messages, target size (2.5.8, 24 by 24 px), reflow (1.4.10).
+- **Design system:** one token source, hard-coded colors and spacing, theming through tokens, motion tokens with a `prefers-reduced-motion` path.
+
+**Pleasant** is reported on one line from the UX-P results (progress feedback, motion tokens, no pre-checked consent, a way out after sign-up) as **observed** or **at risk**, never met.
+
+Flow integrity or reliability at risk or unmeasured: recommend [flow-check](../flow-check/SKILL.md). Two or more of the other lenses at risk or unmeasured: recommend [accessibility-audit](../accessibility-audit/SKILL.md) or [design-system-check](../design-system-check/SKILL.md) for the lens concerned.
 
 ### Step 3 — Mechanical checks
 
-Run both scripts and include their output verbatim:
+Run the four scripts and include their output verbatim:
 
 ```bash
+bash "$PLUGIN_ROOT/scripts/check-flow-integrity.sh" --core <core-flow file> --flow <name>=<step>,<step>,... --browsers <contract browsers> <pages or src directory>
+bash "$PLUGIN_ROOT/scripts/check-ux-resilience.sh" --core <core-flow file> [--url-state <page>] [--offline <value>] [--draft-fields <n>] [--motion-tokens] <src directory>
 bash "$PLUGIN_ROOT/scripts/check-web-accessibility.sh" --core <core-flow file> <pages or src directory>
 bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" [--pairs <contract contrast_pairs>] <token files or CSS>
 ```
 
+- Every option of the first two comes from a contract key (flow-check Step 1 maps them). A missing key is left out. Then `draft_fields` defaults to 6 and `offline` to `optional` (UX-R6 not applied); every other rule whose key is missing is reported as unmeasured, whatever the script prints, since its N/A also means "nothing found to check".
+- **Quote contract values.** Single-quote every value taken from the contract in the commands above (`--core 'app/score.html'`). A value that contains a quote, `$`, `;`, a backtick or a newline is not passed: report it as a contract error, not a finding.
+
 - Pass `--core` once for each file of a core flow, so UX-U3 and UX-U12 failures there are High.
 - Each static `FAIL` line is a finding with the severity it prints, marked "static".
-- Each `NOTE` line is unrated: list it under Other observations and settle it in the browser pass (an `<h1>` rendered by a script, a box-shadow focus ring whose contrast is not computed).
+- Each `NOTE` line is unrated: list it under Other observations and settle it in the browser pass (an `<h1>` rendered by a script, a box-shadow focus ring whose contrast is not computed, a link built at runtime, a flow step that is a route).
+- A UX-R `FAIL` is read against the shared hook or service the file imports before it is rated: the script does not follow imports (flow-check Step 3).
 - Contrast `FAIL` lines are Medium findings (1.4.3 or 1.4.11). Pairs marked "inferred" came from CSS rules or token names; say so.
 - If Bash is unavailable or the operator declines it, apply UX-U1–U12 by reading the markup and say "checks applied by reading; scripts not run". Never estimate a contrast ratio by eye: say "contrast not computed".
 
@@ -135,7 +164,7 @@ bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" [--pairs <contract contrast_
 
 When the Playwright tools (`mcp__plugin_playwright_playwright__*`) are available, the browser pass is **not optional**. Check the core flows in a real browser:
 
-- **Where:** only `file://` pages or a `localhost` server, or a URL the operator names. Some Playwright setups block `file://`; then, and whenever the app needs a dev server, ask the operator to start one and **wait for their answer** before writing the report. Give the exact command: `make up`, the project's dev command, or for static files `python3 -m http.server 8000 --bind 127.0.0.1` in the site folder. Never start it yourself.
+- **Where:** only `file://` pages, a `localhost` server (`localhost`, `127.0.0.1` or `[::1]`, on the port the operator confirms), or a URL the operator names, for navigation only. Some Playwright setups block `file://`; then, and whenever the app needs a dev server, ask the operator to start one and **wait for their answer** before writing the report. Give the exact command: `make up`, the project's dev command, or for static files `python3 -m http.server 8000 --bind 127.0.0.1` in the site folder. Never start it yourself. A dev server runs the reviewed repository's own code: when the repository is not the operator's own, say so and suggest a container or a throwaway machine.
 - **"Not run" needs a concrete reason:** the Playwright tools are missing, the operator declined, or the operator did not start the server. Anything else is a skipped step, not a reason.
 - **Never** submit forms with real data, sign in with real credentials, or follow links off the site.
 - **Accessibility tree:** `browser_snapshot` on each core page. Every interactive element has a role and a name (4.1.2), and headings and landmarks match the static map (1.3.1).
@@ -144,11 +173,13 @@ When the Playwright tools (`mcp__plugin_playwright_playwright__*`) are available
 - **Reflow and zoom:** `browser_resize` to 320 by 800 with no horizontal scrolling (1.4.10). At 1280 wide with text zoomed to 200%, nothing is lost (1.4.4).
 - **Preferences:** `browser_emulate_media` with `reducedMotion: reduce` (2.3.3), and `colorScheme: dark` for every shipped theme. Contrast is still checked by the script, not by eye.
 - **Target size:** `browser_evaluate` reads the bounding boxes of interactive elements. Each is at least 24 by 24 CSS px, or has the spacing exception (2.5.8).
+- **The walk (UX-F5):** reach each step of each core flow the way a user would, and read the network and console after each one, as flow-check Step 4 describes. On `localhost` only, check Back and refresh on the `url_state` pages (UX-R5). Navigation only, unless `test_data` names a fixture file and the target is `localhost`; on a URL the operator names, navigation only. The fixture is a file inside the reviewed repository, never `.env*`, a key or a credentials file, and it is named to the operator before the first fill (flow-check Step 4).
+- **Engines (UX-F6):** the Playwright server runs one engine per launch. For each further engine in `ux.engines`, ask the operator to add a server for that engine ([Other engines](../../README.md#other-engines)) and wait, then repeat the core-flow checks (flow-check Step 5). An engine not run is unmeasured.
 - **axe-core:** only when `node_modules/axe-core/axe.min.js` already exists. Inject it with `browser_evaluate`, run `axe.run()` with the `wcag2a`, `wcag2aa`, `wcag21aa` and `wcag22aa` tags, and report violations with their WCAG criterion. Never install it.
 
 Without Playwright, say "browser pass not run: <reason>". Every finding then stays "static", and the rating carries "(static only)".
 
-After the pass, run `git status` in the reviewed repository. The Playwright server may write snapshots to `.playwright-mcp/` in its working directory. If that folder appeared, tell the operator and suggest adding it to `.gitignore`. Never delete files in the reviewed repository yourself.
+After the pass, check with Glob whether `.playwright-mcp/` exists in the reviewed repository: the Playwright server may write snapshots there. Never run `git status` there; an untrusted repository's git config can run commands. If that folder appeared, tell the operator and suggest adding it to `.gitignore`. Never delete files in the reviewed repository yourself.
 
 ### Step 5 — Maturity gaps
 
@@ -156,7 +187,7 @@ Compare what you found with the `maturity_target` row by row, using the maturity
 
 ### Step 6 — Report
 
-The counts and the rating cover rated findings only. Every rated finding gets the full `X<n>` block, Low ones included: no condensed lists.
+The counts and the rating cover rated findings only. Every rated finding gets the full `X<n>` block, Low ones included: no condensed lists. One exception: with no confirmed contract, the unmeasured targets, and the maturity gaps that a missing key alone causes, are one Low finding, `no confirmed contract: <n> targets unmeasured`, whose Fix is a table of each key and the rule it would measure.
 
 ```
 ux-review: <strong | moderate | weak> [(static only)] — <H> High, <M> Medium, <L> Low, <I> Info
@@ -164,7 +195,8 @@ Contract: <path, or "none — enterprise defaults, WCAG 2.2 AA (proposal shown i
 Maturity target: <target>   Conformance target: <target>   Direction: <Dn or none>
 
 UI map (Step 1): <inventory table>
-Lenses (Step 2): <one line per lens: target | evidence | status (met only when the contract sets a target)>
+Principles: functional <met | at risk | unmeasured> → reliable <…> → accessible <…> → pleasant <observed | at risk>; lowest at risk: <principle or "none">; unmeasured: <principle (missing key), … or "none">
+Lenses (Step 2): <one line per lens, grouped by principle: target | evidence | status (met only when the contract sets a target)>
 
 Findings, most severe first:
 X<n>  <severity>  <file>:<line or "absent: searched …">  [static | browser] [(core flow guessed)]
@@ -175,8 +207,8 @@ X<n>  <severity>  <file>:<line or "absent: searched …">  [static | browser] [(
 Other observations (unrated):
 O<n>  <file>:<line>  <concern>  [→ ascent-security]
 
-Mechanical checks (Step 3): <both scripts' output, verbatim>
-Browser pass (Step 4): <what ran, per flow, or "not run: <reason>">
+Mechanical checks (Step 3): <the four scripts' output, verbatim>
+Browser pass (Step 4): <what ran, per flow and per engine, including the walk, or "not run: <reason>">
 Manual checklist: <the keyboard and screen-reader items from manual-test-checklist.md still to do, with "record the date in ux.manual_tests">
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
 ```

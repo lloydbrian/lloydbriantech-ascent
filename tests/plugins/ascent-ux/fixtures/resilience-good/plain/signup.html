@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Join the league</title><link rel="stylesheet" href="css/app.css"></head>
+<body>
+<main>
+<h1>Join the league</h1>
+<form id="join">
+  <label>Name <input name="name" required></label>
+  <label>Email <input name="email" type="email" required></label>
+  <label>Team <input name="team"></label>
+  <label>Phone <input name="phone" type="tel"></label>
+  <label>City <input name="city"></label>
+  <label>Notes <textarea name="notes"></textarea></label>
+  <label><input type="checkbox" name="marketing"> Send me league news and offers</label>
+  <input type="hidden" name="source" value="web">
+  <!-- <input type="checkbox" name="consent" checked> an old pre-checked box, ignored -->
+  <button type="submit">Join</button>
+</form>
+<p id="status" role="status"></p>
+<button id="again" type="button" hidden>Try again</button>
+</main>
+<script>
+const form = document.getElementById('join');
+const KEY = 'join-draft';
+// console.log only; this comment is ignored: } catch (e) { console.error(e) } <input type="checkbox" name="consent" checked>
+const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+for (const [k, v] of Object.entries(saved)) if (form.elements[k] && form.elements[k].type !== 'checkbox') form.elements[k].value = v;
+form.addEventListener('input', () => localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(new FormData(form)))));
+async function send() {
+  const button = form.querySelector('button');
+  button.disabled = true;
+  form.setAttribute('aria-busy', 'true');
+  try {
+    const res = await fetch('/api/join', { method: 'POST', body: new FormData(form) });
+    if (!res.ok) throw new Error('join');
+    localStorage.removeItem(KEY);
+    location.href = 'welcome.html';
+  } catch (err) {
+    document.getElementById('status').textContent = 'We could not send your request.';
+    document.getElementById('again').hidden = false;
+  } finally {
+    button.disabled = false;
+    form.removeAttribute('aria-busy');
+  }
+}
+form.addEventListener('submit', (e) => { e.preventDefault(); send(); });
+document.getElementById('again').addEventListener('click', send);
+</script>
+</body>
+</html>

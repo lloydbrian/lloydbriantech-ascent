@@ -200,14 +200,15 @@ jobs:
 
   mutants:
     # Named negative controls, one job per group and platform (ADR-008).
-    # Fast mode (ADR-018) on pull requests and pushes, 15 minutes: four CI runs
-    # on PR #62 and main showed every macOS group under 10 (ADR-017 decision 5).
-    # Full mode, weekly and on request, takes up to about 50 s a control on
-    # macOS, hence 40 minutes. The condition is MODE's, below.
+    # Fast mode (ADR-018) on pull requests and pushes, 25 minutes: slow macOS
+    # runners took one group 4 to over 15 minutes on the same code (ADR-022
+    # decision 10); a group that needs more is split. Full mode, weekly and on
+    # request, takes up to about 50 s a control on macOS, hence 40 minutes. The
+    # condition is MODE's, below.
     name: Negative controls (${{ matrix.os }}, ${{ matrix.group }})
     needs: mutant-groups
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && 40 || 15 }}
+    timeout-minutes: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && 40 || 25 }}
     strategy:
       fail-fast: false
       matrix:
