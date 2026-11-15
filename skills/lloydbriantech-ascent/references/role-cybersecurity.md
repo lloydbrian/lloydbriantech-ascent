@@ -119,6 +119,16 @@ Validation is concrete: produced findings are either "cleared" or "remediation t
 - **Hardening retrofit.** Production image hardening discovered as a finding rather than designed. Engage at architect's Stage 2 topology design.
 - **Compliance scrambles.** Audit deadline approaches; controls aren't in place. Compliance is a slow-and-steady discipline, not a deadline panic.
 
+## Checking this role in any repository
+
+The `ascent-security` plugin (ADR-009, ADR-016) makes this role checkable in an existing repository:
+- `env-audit` checks `.env` discipline: ignored, declared, never committed or baked into images
+- `security-audit` lists findings across hardcoded credentials, container privilege, security headers, production URLs and dynamic code execution
+- `sec-posture` rates the overall security stance from those findings
+- `dependency-check` checks lockfiles, pinning, sources and licences, and runs an offline vulnerability scan of dependencies and local images (`SEC-D1`–`D10`)
+
+Live, operator-run security testing and a threat model are planned for `ascent-security` 0.3.0.
+
 ## What this role doesn't own
 
 - **Implementing security fixes in code.** That's [role-developer.md](role-developer.md). Cybersecurity finds, developer fixes.

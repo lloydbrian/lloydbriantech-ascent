@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent`, the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops and quality released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15). Phase 4 awaits its go-signal.
-**Version:** 0.4.15
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops and quality released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16). Phase 4 awaits its go-signal.
+**Version:** 0.4.16
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -47,7 +47,7 @@ These are non-negotiable for any change to this repository:
 2. **Modify, never overwrite.** When changing skill assets or reference modules, use surgical edits. If a change requires rewriting an entire file, capture the rewrite rationale in an ADR.
 3. **Substantive content, not skeletons.** Every template file shipped by ASCENT must contain working, opinionated, productive defaults. A file that says only `// TODO` violates this rule.
 4. **No documentation theater.** A doc exists only if someone reads it. Lazy-generated docs are created on demand via `make doc-stub TYPE=<name>`, not eagerly.
-5. **Test what you ship.** Every skill mode (scaffold / enhance / migrate) must have at least one eval scenario in `tests/`.
+5. **Test what you ship.** Every embedded skill and plugin has behavior tests and negative controls today; every skill mode (scaffold / enhance / migrate) will have at least one eval scenario once the Phase 5 harness lands.
 6. **Slug input is one variable.** A user provides one project slug; all derivations (uppercase env-var prefix, title case, package name, container label) are computed mechanically.
 
 ## Repository layout
@@ -67,6 +67,7 @@ lloydbriantech-ascent/
 │   ├── assets/                        # README banner (light and dark)
 │   └── framework/                     # Framework's own documentation, OWNERSHIP.md (the registry)
 │       ├── PRINCIPLES.md, PHILOSOPHY.md, SCOPE.md, ROADMAP.md, ARCHITECTURE.md
+│       ├── PILLARS.md, CAPABILITY-MAP.md (checked by T13.11), RETROSPECTIVES/
 │       └── DECISIONS/                 # Framework-level ADRs
 ├── skills/
 │   └── lloydbriantech-ascent/         # Parent skill: SKILL.md, references/, assets/template/
@@ -94,7 +95,7 @@ The embedded-skill tests live in the template (`skills/lloydbriantech-ascent/ass
 
 - **Conventional Commits** format: `<type>(<scope>): <subject>`
 - Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`
-- Scopes: `skill`, `references`, `template`, `tests`, `tools`, `docs`, `meta`
+- Scopes: `skill`, `references`, `template`, `tests`, `tools`, `docs`, `framework`, `release`, `meta`
 - Subject in imperative mood, lowercase, no trailing period
 
 Examples:
@@ -149,7 +150,7 @@ A phase ends when its exit criteria (listed in [`docs/framework/ROADMAP.md`](doc
 
 1. Verify exit criteria, with `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` green
 2. Update `CHANGELOG.md` with the phase summary
-3. The operator tags the release (`git tag v0.N.0 && git push origin v0.N.0`) from the runbook Claude writes
+3. The operator tags the release from the runbook Claude writes (`git tag v0.N.0 && git push origin v0.N.0`; `make release-tag` refuses to overwrite an existing tag)
 4. Wait for explicit signal: **"Proceed with Phase N+1"**
 5. Update phase status in this CLAUDE.md and in [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md)
 
@@ -162,11 +163,11 @@ No phase begins implicitly. The signal is the gate.
 ```
 META    — reference (help, version, status)
 DEV     — work on the framework locally
-TEST    — run eval scenarios against the skill
+TEST    — skill tests, plugin gate, negative controls, harness, ownership
 QA      — validate skill structure, frontmatter, links
 DOCS    — generate / audit documentation
 DIST    — package the skill, build the starter repo
-RELEASE — tag, changelog, publish
+RELEASE — tag (the release workflow publishes from the CHANGELOG)
 ```
 
 The targets used most:

@@ -5,13 +5,13 @@
 #
 # Section order (META · DEV · TEST · QA · DOCS · DIST · RELEASE) matches the
 # meta-repo convention in CLAUDE.md. Scaffolded projects use a project-level
-# section list that adds SEC · VALIDATE · INFRA — those land in Phase 2 templates.
+# section list that adds SEC · VALIDATE · INFRA, from the project template.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRAMEWORK_NAME    := lloydbriantech-ascent
-FRAMEWORK_VERSION := 0.4.15
+FRAMEWORK_VERSION := 0.4.16
 
 export FRAMEWORK_NAME
 export FRAMEWORK_VERSION

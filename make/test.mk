@@ -1,4 +1,5 @@
-# TEST — eval scenarios for the skill (lands in Phase 5)
+# TEST — skill tests, the plugin gate, negative controls, harness self-tests and ownership
+# (`make test`, the eval scenarios, lands in Phase 5)
 
 .PHONY: test test-skills test-mutants test-mutants-groups test-harness test-plugins ownership plugins
 
@@ -24,7 +25,7 @@ test-mutants-groups:  ## TEST: List the negative-control groups as JSON (one CI 
 test-harness:  ## TEST: The harness's slow self-tests — gate sections run alone, parallel runs report as serial ones (ADR-018)
 	@bash tests/meta/test-gate-sections.sh && bash tests/meta/test-mutants-harness.sh
 
-test-plugins:  ## TEST: Plugin gate — drift, placeholders, names, read-only agents, links, ownership (ADR-009)
+test-plugins:  ## TEST: Plugin gate T1–T14 — drift, names, versions, read-only agents, links, behavior tests, ownership, fast-mode self-test
 	@bash make/test-plugins.sh
 
 ownership:  ## TEST: Ownership gate T13 alone — OWNERSHIP.md against the repository (ADR-015)

@@ -42,11 +42,11 @@ ASCENT follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 The framework version is shared lockstep between:
 
 - This repository's git tags (`v0.1.0`, `v0.2.0`, etc.)
-- The `version:` field in `skills/lloydbriantech-ascent/SKILL.md` frontmatter (Phase 1+)
+- The `version:` field in `skills/lloydbriantech-ascent/SKILL.md` frontmatter, equal to `FRAMEWORK_VERSION` in the `Makefile`
 - The starter repo's tagged release (`lloydbriantech-ascent-starter v0.1.0`), from Phase 6; the starter repository does not exist yet
 - The `framework_version` field that scaffolded projects write into their `.ascent-meta.json`
 
-Mismatched versions are a CI failure.
+The ownership gate checks the `SKILL.md` version, the `Makefile` and the capability map against each other (T13.11, `make ownership`), so a mismatch fails CI. The git tag is the operator's, from the release runbook.
 
 Plugins version independently. Any change to a plugin's files bumps the `version` in its `plugin.json` and its marketplace entry; `make test-plugins` (T10) fails until it does, because installed copies only update on a new version. A version that has not been released yet keeps its number: delete its row from `make/plugins.lock` and run `make plugins` to record the new hash.
 
@@ -163,7 +163,7 @@ If a contribution is rejected, the rejection includes a specific reason and (whe
 
 ## Code of conduct
 
-Be respectful. Engage with substance, not personality. Disagreements are resolved by examining the evidence and the principles. The project is small enough that this works without formal machinery; if it grows, formal codes will be adopted.
+Be respectful. Engage with substance, not personality. Disagreements are resolved by examining the evidence and the principles. The full text is in the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
 ---
 
@@ -183,8 +183,8 @@ When a phase delivers multiple related artifacts, group them into clusters and s
    - Verbatim file content for every new or modified file (not summaries, not "read the file" placeholders)
    - Validator outputs (`make qa-skill-frontmatter`, `make qa-links`, `make qa-template-placeholders`) and test outputs (`make test-skills`, `make test-mutants`)
    - Confirmations checklist naming each design decision by letter and confirming it landed
-4. **Pre-push spot-check.** Run validators and tests locally (`make test-skills`, `make test-mutants`), then export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend, not before. Cluster 2's stale-file incident established this discipline.
-5. **Push and PR.** Open the PR with a substantive description capturing architectural decisions, validator output, and phase-progress update.
+4. **Pre-push spot-check.** Run validators and tests locally (`make test-skills`, `make test-mutants`), then export files to `/tmp/ClaudeCodeResponses/` AFTER the final amend, not before. Cluster 2's stale-file incident established this discipline. (Phase 3 practice; today Claude hands over a patch and a runbook, and the maintainer commits and pushes.)
+5. **Push and PR.** The maintainer pushes and opens the PR with a substantive description capturing architectural decisions, validator output, and phase-progress update.
 
 **What this does NOT prescribe:** Cluster size, skill count per cluster, or PR description format. The discipline is about the propose → approve → implement → review → push flow. Phase 4 clusters may be larger or smaller than Phase 3 clusters.
 

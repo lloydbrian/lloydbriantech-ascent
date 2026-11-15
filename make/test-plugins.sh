@@ -36,7 +36,7 @@
 #       marketplace's allowCrossMarketplaceDependenciesOn (without it the plugin
 #       installs but fails to load; ADR-012)
 #   T13 the ownership registry docs/framework/OWNERSHIP.md matches the
-#       repository (ADR-015): T13.1-T13.10 from make/check-ownership.sh, one
+#       repository (ADR-015): T13.1-T13.11 from make/check-ownership.sh, one
 #       result each, and T13.0 runs that checker's own fixture tests
 #       (tests/meta/test-check-ownership.sh)
 #   T14 the fast-mode self-test (ADR-018): tests/meta/test-gate-fast.sh runs this

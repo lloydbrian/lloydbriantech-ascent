@@ -1,4 +1,4 @@
-# DOCS — documentation generation and audit (lands in Phase 2)
+# DOCS — documentation generation and audit (lands with the ascent-docs plugin)
 
 .PHONY: doc-stub
 

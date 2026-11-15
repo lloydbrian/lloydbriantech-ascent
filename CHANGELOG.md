@@ -20,6 +20,8 @@ Dates are in **America/New_York** timezone.
 - `ascent-ux` 0.3.1 candidates: from the 0.2.0 trial, delegated listeners across files and for compound selectors, and the box-shadow ring's contrast computed rather than left to the browser (ADR-022 decision 9); from the 0.3.0 trial, a static UX-F3 check for a page with no link at all, reading the shared hook or service a file imports before rating UX-R1 and UX-R2, and a Firefox and WebKit run of the walk on real repositories
 - `ascent-delivery` 0.2.0: a user acceptance sign-off record (ADR-014); read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security`: the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
+- `ascent-ux` 0.3.1 also: the `plugin.json` description and the README's Evidence line name the flow-integrity and reliability checks and the four principles (the marketplace entry already does, since v0.4.16)
+- `ascent-architecture` next release: its README still calls `ascent-ux` planned, and "Recommended next" should also point to `ascent-ops`
 - `ascent-architecture` 0.3.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
 - Phase 4: scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5: test harness with three eval scenarios
@@ -27,6 +29,41 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.16] — 2026-11-15
+
+**A capability map, checked against the repository.** `docs/framework/CAPABILITY-MAP.md` shows what ASCENT can do today: every plugin with its skills, rules and next step, the parent skill and the roadmap, and the README opens with the same headline figures. The ownership gate counts every version and figure on both pages from the repository, so they cannot drift. A documentation audit brought the framework docs, GitHub templates and security policy up to date.
+
+### Added
+
+- `docs/framework/CAPABILITY-MAP.md`: at-a-glance figures (plugins released, plugin skills, agents and hooks, embedded skills, behavior-test suites, negative controls, decision records), one section per plugin, the parent skill, the roadmap and a table of every component. The claude.ai page stays as its visual copy
+- README: an "At a glance" section with the same figures and a Now, Next, Later status; the four pillars as a table under "Why ASCENT"; "Built to be trusted" joins the plugin promises and the release bar; releases are listed newest first, with releases before v0.4.12 folded away
+- Ownership check T13.11 (`make/check-ownership.sh`, `make ownership`): the map's row and heading for each released plugin give its `plugin.json` version and its skill, agent and hook counts; the parent skill row, "Counts from the repository at vX" and the parent `SKILL.md` version give the `Makefile`'s `FRAMEWORK_VERSION`; the six figures in the map and the README, and the README's plugin badge, are counted from the repository. A figure may carry a thousands comma
+- `tests/meta/test-check-ownership.sh`: the fixture gains a map, a Makefile, controls, ADRs and test suites, and 17 cases for T13.11, among them a two-digit skill count, a control written with an environment prefix and a missing map (87 checks per awk)
+- Controls P791–P799 in the `ownership` group break the map, the README or `SKILL.md` and must be caught by T13.11; P800–P803 break the checker and must be caught by its fixture tests (T13.0)
+- "Checking this role in any repository" sections for the architect, cybersecurity and delivery-lead role references, pointing to their plugins, as the tester and devops references already do
+
+### Changed
+
+- Framework 0.4.15 → 0.4.16; the parent skill's `SKILL.md` version, which had stayed at 0.4.9, is 0.4.16 again and is now checked
+- `.claude-plugin/marketplace.json`: the `ascent-ux` entry describes 0.3.0 (four principles, flow integrity and reliability checks, a browser walk of each core flow)
+- `.github/SECURITY.md`: supported versions are the latest 0.4.x release and the latest version of each plugin; what counts as a security issue now covers plugin scripts, hooks and agents, a way around the operator-boundary hook, and a report that prints a secret
+- ARCHITECTURE: the ownership gate's T13.1–T13.11, a continuous-integration section, the starter-repository build described as Phase 6 work, ADR-022 in the `ascent-ux` row, and "Reading further" through ADR-022, PILLARS, OWNERSHIP and the map
+- CLAUDE.md: version, phase line, the layout's PILLARS and CAPABILITY-MAP, the `framework` and `release` commit scopes, the TEST and RELEASE make sections, eval scenarios as Phase 5 work, and `make release-tag`
+- CONTRIBUTING: the version lockstep is enforced by T13.11; the Code of Conduct is linked; the Phase 3 export-and-push steps are marked as history
+- PILLARS and SCOPE: the quality and security plugins also rate against the contract; the security gap is the threat model and live testing, not a vulnerability scan
+- PRINCIPLES §16 names the plugin behavior tests and the negative controls; PHILOSOPHY links PILLARS, OWNERSHIP and the map
+- ROADMAP: the current state, a v0.4.16 section, the 0.2.0 releases in the plugin rows, and ADR-013 shown as accepted
+- DECISIONS/INDEX: ADR-022 under its exact title
+- The PR template asks for OWNERSHIP rows and `make test-harness` when the harness changes; the enhancement template lists plugins
+- `make status`, `make help` for `test-plugins`, the `validate-skills` and `release` workflow comments, and the make files' stale "lands in Phase N" headers describe what exists today
+
+### Notes
+
+- No plugin changed, so no plugin version or `make/plugins.lock` row changed. Two audit findings need a plugin bump and are listed under Unreleased: the `ascent-ux` `plugin.json` description and README Evidence line (0.3.1), and two `ascent-architecture` README lines
+- ADR bodies, the Phase 3 plans and earlier CHANGELOG sections are records and were not edited
 
 ---
 

@@ -1,8 +1,7 @@
 # DEV — work on the framework locally
 #
 # install/uninstall symlink the parent skill into ~/.claude/skills/ so Claude
-# Code can load it from this working tree. The skill source itself lands in
-# Phase 1 Chunk 2 — `make install` will fail with a clear message until then.
+# Code can load it from this working tree.
 
 SKILL_NAME := $(FRAMEWORK_NAME)
 SKILL_SRC  := $(CURDIR)/skills/$(SKILL_NAME)

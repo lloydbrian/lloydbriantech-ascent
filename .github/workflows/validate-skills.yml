@@ -7,7 +7,8 @@
 #       make qa            frontmatter (incl. trigger-first descriptions),
 #                          links, template placeholders
 #       make test-skills   renders the template, runs all 28 skill tests
-#       make test-plugins  plugin drift, names, read-only agents (ADR-009);
+#       make test-plugins  plugin gate T1–T14: drift, names, versions, read-only
+#                          agents, links, behavior tests, ownership, fast-mode self-test;
 #                          'claude plugin validate' runs locally, SKIPs in CI
 #   - mutant-groups:   lists the negative-control groups (make test-mutants-groups)
 #   - harness:         the two make test-harness self-tests, per platform: each gate
@@ -109,8 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           # Extract all relative Markdown links and verify each target exists.
-          # Skips external (http://, https://) links — those are checked by a
-          # separate workflow that runs on cron, not on every PR.
+          # Skips external (http://, https://) links; they are not checked.
           broken=0
           while IFS=: read -r file link; do
             # Strip anchors (#section); link target is everything before #

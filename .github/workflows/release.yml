@@ -1,6 +1,6 @@
 # Release workflow
 #
-# Triggered on tag push (v*.*.*). At Phase 0 this just creates a GitHub
+# Triggered on tag push (v*.*.*). Until Phase 6 this just creates a GitHub
 # release with the CHANGELOG entry for the tagged version. Phase 6 expands
 # this to also:
 #   - Package the skill as a .skill archive

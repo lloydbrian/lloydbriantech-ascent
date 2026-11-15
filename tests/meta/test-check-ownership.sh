@@ -152,11 +152,70 @@ M
   ]
 }
 J
+  mk skills/lloydbriantech-ascent/SKILL.md <<'M'
+---
+name: lloydbriantech-ascent
+version: 9.9.0
+---
+M
   mk skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-tpl/SKILL.md <<'M'
 # template skill
 M
+  mk Makefile <<'M'
+FRAMEWORK_VERSION := 9.9.0
+M
+  mk make/test-mutants.sh <<'M'
+plugin_case P1-a T13.2 README.md 's/a/b/'
+plugin_case P2-b T13.2 README.md 's/b/c/'
+plugin_case_rm P3-c T13.1 docs/framework/OWNERSHIP.md
+T13_SELFTEST=1 plugin_case P5-e T13.0 make/check-ownership.sh 's/a/b/'
+plugin_case() { :; }
+M
+  mk make/mutants.tsv <<'M'
+# id	file	expr	test	description
+M1	a.sh	s/a/b/	test-a.sh	one
+M
+  mk docs/framework/DECISIONS/ADR-001-first.md <<'M'
+# ADR-001
+M
+  mk docs/framework/DECISIONS/ADR-002-second.md <<'M'
+# ADR-002
+M
+  mk docs/framework/DECISIONS/INDEX.md <<'M'
+# Index
+M
+  mk tests/plugins/ascent-alpha/test-check-alpha.sh <<'M'
+# alpha test
+M
+  mk skills/lloydbriantech-ascent/assets/template/tests/skills/test-ascent-tpl.sh <<'M'
+# template test
+M
+  mk docs/framework/CAPABILITY-MAP.md <<'M'
+# Capability map
+
+> Counts from the repository at v9.9.0.
+
+| **3**<br>plugins released | **5**<br>plugin skills, agents and hooks | **1**<br>skills in every scaffolded project | **2**<br>behavior-test suites | **5**<br>negative controls | **2**<br>decision records |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+
+### `ascent-alpha` 0.2.0 · ✅ Released v9.1.0
+### `ascent-beta` 0.1.0 · ✅ Released v9.2.0
+### `ascent-delivery` 0.1.2 · ✅ Released v9.3.0
+
+| Component | Kind | Version | Status | Since |
+|---|---|---|---|---|
+| `ascent-alpha` | Plugin · 2 skills, 1 agent | 0.2.0 | ✅ Released | v9.1.0 |
+| `ascent-beta` | Plugin · 1 skill | 0.1.0 | ✅ Released | v9.2.0 |
+| `ascent-delivery` | Plugin · 1 skill | 0.1.2 | ✅ Released | v9.3.0 |
+| `lloydbriantech-ascent` | Parent skill · 9 roles, 1 embedded skills | 9.9.0 | ✅ Released | v9.0.0 |
+M
   mk README.md <<'M'
 # Fixture
+
+<img alt="Plugins: 3" src="https://img.shields.io/badge/plugins-3-0b6e4f">
+
+| **3**<br>plugins released | **5**<br>plugin skills, agents and hooks | **1**<br>skills in every scaffolded project | **2**<br>behavior-test suites | **5**<br>negative controls | **2**<br>decision records |
+|:---:|:---:|:---:|:---:|:---:|:---:|
 
 | Plugin | Version | Pillars | Ask | What it does |
 |---|---|---|---|---|
@@ -246,17 +305,17 @@ edit() {
   cat "$WORK/edit" > "$F/$1"
 }
 run() { PATH="$SHIM:$PATH" bash "$CHK" "$F" > "$WORK/out" 2>&1; RC=$?; }
-# expect RULE — only RULE fails (all ten rules still print), exit 1; "none" — all pass, exit 0
+# expect RULE — only RULE fails (all eleven rules still print), exit 1; "none" — all pass, exit 0
 expect() {
   run
   local fails n
   fails=$(sed -n 's/^FAIL  \(T13\.[0-9]*\) .*/\1/p' "$WORK/out" | tr '\n' ' ' | sed 's/ $//')
   n=$(grep -cE '^(PASS|FAIL)  T13\.[0-9]+ ' "$WORK/out")
   if [ "$1" = none ]; then
-    if [ -z "$fails" ] && [ "$RC" -eq 0 ] && [ "$n" -eq 10 ]; then ok
-    else bad "$CASE: expected all 10 to pass, got rc=$RC n=$n fails='$fails': $(grep '^FAIL' "$WORK/out" | head -2 | tr '\n' ';')"; fi
-  elif [ "$fails" = "$1" ] && [ "$RC" -eq 1 ] && [ "$n" -eq 10 ]; then
-    if [ -n "${2:-}" ] && ! grep "^FAIL  $1 " "$WORK/out" | grep -qF -- "$2"; then bad "$CASE: $1 failed without '$2': $(grep "^FAIL  $1 " "$WORK/out")"; else ok; fi
+    if [ -z "$fails" ] && [ "$RC" -eq 0 ] && [ "$n" -eq 11 ]; then ok
+    else bad "$CASE: expected all 11 to pass, got rc=$RC n=$n fails='$fails': $(grep '^FAIL' "$WORK/out" | head -2 | tr '\n' ';')"; fi
+  elif [ "$fails" = "$1" ] && [ "$RC" -eq 1 ] && [ "$n" -eq 11 ]; then
+    if [ -n "${2:-}" ] && ! grep "^FAIL  ${1%% *} " "$WORK/out" | grep -qF -- "$2"; then bad "$CASE: $1 failed without '$2': $(grep "^FAIL  ${1%% *} " "$WORK/out")"; else ok; fi
   else bad "$CASE: expected only $1 to fail, got rc=$RC n=$n fails='$fails': $(grep '^FAIL' "$WORK/out" | head -3 | tr '\n' ';')"; fi
 }
 c() { CASE="$1"; build; }
@@ -286,7 +345,7 @@ matrix() {
   # T13.2 plugins
   c dir-without-row; mkdir -p "$F/plugins/ascent-rogue"; expect T13.2 "plugins/ascent-rogue has no released row"
   c row-without-dir; rm -rf "$F/plugins/ascent-beta"; edit .claude-plugin/marketplace.json 's/"ascent-beta"/"ascent-zzz"/'; edit README.md '/ascent-beta/d'; edit docs/framework/PILLARS.md 's/`beta-audit`, //'
-  edit docs/framework/OWNERSHIP.md '/| `ascent-beta` | skill |/d' && expect T13.2 "released ascent-beta has no plugins/ascent-beta directory"
+  edit docs/framework/OWNERSHIP.md '/| `ascent-beta` | skill |/d' && expect "T13.2 T13.11" "released ascent-beta has no plugins/ascent-beta directory"
   c market-extra; edit .claude-plugin/marketplace.json 's/"ascent-beta",/"ascent-beta2",/' && expect T13.2 "released ascent-beta has no marketplace entry"
   c planned-with-dir; mkdir -p "$F/plugins/ascent-gamma"; expect T13.2 "planned ascent-gamma already has a plugins/ascent-gamma directory"
   c bad-status; edit docs/framework/OWNERSHIP.md 's/| `GA` | planned |/| `GA` | maybe |/' && expect T13.2 'unknown status "maybe"'
@@ -304,7 +363,7 @@ matrix() {
 
   # T13.3 components
   c skill-unregistered; mkdir -p "$F/plugins/ascent-beta/skills/beta-extra"; expect T13.3 "skill ascent-beta:beta-extra is not registered"
-  c agent-missing; rm "$F/plugins/ascent-alpha/agents/alpha-reviewer.md"; expect T13.3 "registered agent ascent-alpha:alpha-reviewer does not exist"
+  c agent-missing; rm "$F/plugins/ascent-alpha/agents/alpha-reviewer.md"; expect "T13.3 T13.11" "registered agent ascent-alpha:alpha-reviewer does not exist"
   c hook-unregistered; printf '#!/bin/sh\n' > "$F/plugins/ascent-delivery/hooks/second.sh"; expect T13.3 "hook ascent-delivery:second is not registered"
   c component-twice; edit docs/framework/OWNERSHIP.md 's/^\(| `ascent-beta` | skill | `beta-audit` |\)$/\1\
 \1/' && expect T13.3 "two rows for ascent-beta:beta-audit"
@@ -378,6 +437,28 @@ matrix() {
   c unqualified-header; edit plugins/ascent-alpha/scripts/check-alpha.sh 's/^#   AL-R2  Low /#   R2  Low /' && expect T13.10 "unqualified header id R2"
   c unknown-prefix; edit plugins/ascent-alpha/references/rules.md 's/^| AL-R2 |/| AL-Q2 |/' && expect T13.10 "id prefix AL-Q is not a registered or reserved family"
   c reserved-prefix-ok; edit plugins/ascent-alpha/skills/alpha-check/SKILL.md 's/^# Alpha check$/# Alpha check (GA-X1 later)/' && expect none
+
+  # T13.11 capability map and README figures
+  c map-missing; rm "$F/docs/framework/CAPABILITY-MAP.md"; expect T13.11 "docs/framework/CAPABILITY-MAP.md not found"
+  if grep '^FAIL  T13.11' "$WORK/out" | grep -q 'README.md says'; then bad "map-missing: the README's figures were judged without the plugins: $(grep '^FAIL  T13.11' "$WORK/out")"; else ok; fi
+  c map-row-version; edit docs/framework/CAPABILITY-MAP.md 's/^| `ascent-beta` | Plugin · 1 skill | 0.1.0 |/| `ascent-beta` | Plugin · 1 skill | 0.1.1 |/' && expect T13.11 "the map says ascent-beta 0.1.1, plugin.json says 0.1.0"
+  c map-row-missing; edit docs/framework/CAPABILITY-MAP.md '/^| `ascent-beta` | Plugin/d' && expect T13.11 "the map's table has no row for ascent-beta"
+  c map-skill-count; edit docs/framework/CAPABILITY-MAP.md 's/Plugin · 2 skills, 1 agent/Plugin · 3 skills, 1 agent/' && expect T13.11 "the map says ascent-alpha has 3 skill(s), the plugin has 2"
+  c map-agent-dropped; edit docs/framework/CAPABILITY-MAP.md 's/Plugin · 2 skills, 1 agent/Plugin · 2 skills/' && expect T13.11 "the map says ascent-alpha has 0 agent(s), the plugin has 1"
+  c map-two-digit-count; mkdir -p "$F/plugins/ascent-beta/skills"; for i in 2 3 4 5 6 7 8 9 10 11 12; do mkdir -p "$F/plugins/ascent-beta/skills/beta-$i"; echo x > "$F/plugins/ascent-beta/skills/beta-$i/SKILL.md"
+    printf '| `ascent-beta` | skill | `beta-%s` |\n' "$i" > "$WORK/row"; sed "/^| \`ascent-beta\` | skill | \`beta-audit\` |\$/r $WORK/row" "$F/docs/framework/OWNERSHIP.md" > "$WORK/own" && cat "$WORK/own" > "$F/docs/framework/OWNERSHIP.md"; done
+  edit docs/framework/CAPABILITY-MAP.md 's/^| `ascent-beta` | Plugin · 1 skill |/| `ascent-beta` | Plugin · 2 skills |/' && expect T13.11 "the map says ascent-beta has 2 skill(s), the plugin has 12"
+  c map-heading-version; edit docs/framework/CAPABILITY-MAP.md 's/^### `ascent-delivery` 0.1.2 ·/### `ascent-delivery` 0.1.1 ·/' && expect T13.11 "the map's ascent-delivery heading says 0.1.1, plugin.json says 0.1.2"
+  c map-parent-version; edit docs/framework/CAPABILITY-MAP.md 's/ 1 embedded skills | 9.9.0 |/ 1 embedded skills | 9.8.0 |/' && expect T13.11 "the map says lloydbriantech-ascent 9.8.0, the Makefile says 9.9.0"
+  c map-counts-from; edit docs/framework/CAPABILITY-MAP.md 's/at v9.9.0\./at v9.8.0./' && expect T13.11 "the map counts from v9.8.0, the Makefile says 9.9.0"
+  c template-skill-added; mkdir -p "$F/skills/lloydbriantech-ascent/assets/template/.claude/skills/ascent-tpl2"; expect T13.11 "the template has 2"
+  c readme-controls; edit README.md 's/\*\*5\*\*<br>negative controls/**6**<br>negative controls/' && expect T13.11 "README.md says 6 negative controls, the repository has 5"
+  c control-added; printf '%s\n' "expect_case SURVIVED P4-d T13.2 README.md 's/x/y/'" >> "$F/make/test-mutants.sh"; expect T13.11 "the repository has 6"
+  c map-adr-count; edit docs/framework/CAPABILITY-MAP.md 's/\*\*2\*\*<br>decision records/**3**<br>decision records/' && expect T13.11 "docs/framework/CAPABILITY-MAP.md says 3 decision records, the repository has 2"
+  c readme-figure-dropped; edit README.md 's/ \*\*2\*\*<br>behavior-test suites |//' && expect T13.11 "README.md has no \"behavior-test suites\" figure"
+  c readme-figure-comma; for i in 4 5 6 7 8 9; do echo "M$i	a.sh	s/a/b/	test-a.sh	more" >> "$F/make/mutants.tsv"; done; edit README.md 's/\*\*5\*\*<br>negative controls/**1,1**<br>negative controls/' && expect T13.11 "docs/framework/CAPABILITY-MAP.md says 5 negative controls, the repository has 11"
+  c skill-version; edit skills/lloydbriantech-ascent/SKILL.md 's/^version: 9.9.0$/version: 9.8.0/' && expect T13.11 "SKILL.md says version 9.8.0, the Makefile says 9.9.0"
+  c badge; edit README.md 's/badge\/plugins-3-/badge\/plugins-2-/' && expect T13.11 "the README plugin badge says 2, 3 plugins are released"
 }
 
 realpath_of() { (cd "$(dirname "$1")" && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")"); }
