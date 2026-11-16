@@ -183,20 +183,23 @@ flowchart TB
 
 ### The plugin gate
 
-`make test-plugins` runs T1–T14 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md), the README banner and its alt text from the repository, and checks that the banner names every released plugin. T14 is the self-test of the gate's fast mode.
+`make test-plugins` runs T1–T15 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md), the README banner and its alt text from the repository, and checks that the banner names every released plugin. T14 is the self-test of the gate's fast mode, and T15 the self-test of the CI scope.
 
-`make test-mutants` holds the negative controls: each one breaks a rule in a copy of the repository and requires a named gate check to fail. Controls run in groups, one CI job per group and platform, listed by `make test-mutants-groups`. In fast mode, the default, a control runs only the check it names (`ASCENT_ONLY`), T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel; a control fast mode does not kill reruns on the whole gate. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, `tests/meta/test-gate-sections.sh` proves each section gives the same results alone, and T14 tests fast mode itself. CI runs every control in full mode weekly ([ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)).
+`make test-mutants` holds the negative controls: each one breaks a rule in a copy of the repository and requires a named gate check to fail. Controls run in groups, listed by `make test-mutants-groups`; `IDS=` runs named controls, and `--list` prints every control with its group, check and file. In fast mode, the default, a control runs only the check it names (`ASCENT_ONLY`), a run's baseline only its controls' checks, T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel; a control fast mode does not kill reruns on the whole gate. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, `tests/meta/test-gate-sections.sh` proves each section gives the same results alone, and T14 tests fast mode itself. CI runs every control in full mode weekly ([ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)).
 
 ### Continuous integration
 
-`.github/workflows/validate-skills.yml` runs on every pull request and push to `main`, and weekly on Monday morning:
+`.github/workflows/validate-skills.yml` runs on every pull request and push to `main`, and weekly on Monday morning. A pull request runs what its changes can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)); a push to `main`, the weekly run and a manual run run everything:
 
 | Job | What it runs |
 |---|---|
 | Repository structure, Internal links | required files and ADRs exist; internal Markdown links resolve |
-| Gate, on ubuntu and macOS | `make qa`, `make test-skills`, `make test-plugins` |
-| Harness self-test, on ubuntu and macOS | `tests/meta/test-gate-sections.sh` and `tests/meta/test-mutants-harness.sh` (`make test-harness`) |
-| Negative controls, one job per group and platform | `make test-mutants GROUP=<group>`, groups from `make test-mutants-groups`; fast mode on pull requests, full mode in the weekly run |
+| Scope | `make/gate-scope.sh`: which slow checks this run needs, with each changed path's rule in the job summary |
+| Gate, on ubuntu and macOS | `make qa`, `make test-skills`, `make test-plugins`, on every run; T11 for the plugins the scope names, T13.0 when it asks |
+| Harness self-test, on ubuntu and macOS | `tests/meta/test-gate-sections.sh` and `tests/meta/test-mutants-harness.sh` (`make test-harness`), when the harness or the gate changes |
+| Negative controls, one job per target and platform | `make test-mutants GROUP=<group>` for each group the scope runs whole, and one "selected" job, `IDS=<ids>`, for the controls that edit a changed file; fast mode on pull requests and pushes, full mode in the weekly run |
+
+The scope's rules, per changed path: a plugin's files run its behavior tests, its groups and `ownership`; the ownership checker or its fixture runs T13.0, `ownership` and `ownership-checker`; the template and `make/mutants.tsv` run `core`; a harness self-test file runs that self-test; a changed control line runs that control; documentation, metadata and a version-only Makefile change run nothing more; the gate, the harness, the scope script, workflows, make files and any path without a rule run everything. Every path also runs the controls that edit it, and the behavior tests that read it: a `$ROOT/<path>` in a plugin's tests, or a glob over every plugin's directory, found in the tests when the scope runs. A newer push to a pull request cancels the older run; runs on `main` are never cancelled. `make gate-scope` shows the same scope for a local branch, and `make gate-changed` runs it.
 
 `.github/workflows/release.yml` runs on a version tag and creates the GitHub release from the tag's CHANGELOG entry, titled from its lead sentence. Its starter-repository job is disabled until Phase 6.
 
@@ -212,8 +215,8 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 Lockstep across layers, with `FRAMEWORK_VERSION` in the `Makefile` as the reference; T13.11 fails when the `SKILL.md` version or the capability map disagrees with it:
 
-- Layer 1: git tag on the meta-repo (`v0.4.17`)
-- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.17`)
+- Layer 1: git tag on the meta-repo (`v0.4.18`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.18`)
 - Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4: `framework_version` field in `.ascent-meta.json`
 

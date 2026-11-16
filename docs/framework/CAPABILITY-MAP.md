@@ -1,12 +1,12 @@
 # ASCENT capability map
 
-> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.17. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
+> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.18. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
 
 [At a glance](#at-a-glance) · [Plugins](#plugins) · [Parent skill](#parent-skill) · [Roadmap](#roadmap) · [Everything in one table](#everything-in-one-table)
 
 ## At a glance
 
-| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **51**<br>behavior-test suites | **877**<br>negative controls | **22**<br>decision records |
+| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **51**<br>behavior-test suites | **904**<br>negative controls | **23**<br>decision records |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 
 Every behavior-test suite runs on macOS and Linux. A negative control breaks one rule on purpose, and a named test must catch it.
@@ -83,7 +83,7 @@ Which test types exist and whether CI runs them, boundaries no test reaches, acc
 | When | What | Status |
 |---|---|---|
 | v0.1 – v0.4.1 | Phases 0–3: foundation, parent skill, template assets, embedded skills | ✅ Done |
-| v0.4.2 – v0.4.17 | Six plugins, an ownership registry, a hardened gate and this map | ✅ Done |
+| v0.4.2 – v0.4.18 | Six plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, and this map | ✅ Done |
 | next releases | `ascent-ux` 0.3.1; live security testing and a threat model (`ascent-security` 0.3.0); acceptance sign-off (`ascent-delivery` 0.2.0); auditability for projects and a launch go/no-go conductor | Planned |
 | plugin roadmap | `ascent-session`, `ascent-adr`, `ascent-docs` and `ascent-node-stack`, scoped when each starts | Planned |
 | Phases 4–7 | Scaffolding scripts, eval harness, starter repository, first production project | Awaiting go-signal |
@@ -100,4 +100,4 @@ Details and exit criteria: [ROADMAP.md](ROADMAP.md). Every change: [CHANGELOG.md
 | `ascent-ux` | Plugin · 5 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.5 · flows in v0.4.15 |
 | `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.6 · drills in v0.4.12 |
 | `ascent-quality` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.11 · evidence in v0.4.13 |
-| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.17 | ✅ Released | Phase 3, v0.4.0 |
+| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.18 | ✅ Released | Phase 3, v0.4.0 |

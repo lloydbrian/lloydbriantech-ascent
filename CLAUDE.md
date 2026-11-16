@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent`, the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops and quality released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16; its figures in the README banner since v0.4.17). Phase 4 awaits its go-signal.
-**Version:** 0.4.17
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops and quality released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16; its figures in the README banner since v0.4.17; CI scoped to what a change can affect since v0.4.18). Phase 4 awaits its go-signal.
+**Version:** 0.4.18
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -178,7 +178,9 @@ The targets used most:
 | `make qa` | Frontmatter, internal links and template placeholders |
 | `make test-skills` | Render the template and run the 28 embedded-skill tests |
 | `make plugins` | Regenerate the generated plugin skills and refresh `make/plugins.lock` |
-| `make test-plugins` | The plugin gate, T1–T14, including each plugin's behavior tests, the ownership check and the fast-mode self-test |
+| `make test-plugins` | The plugin gate, T1–T15, including each plugin's behavior tests, the ownership check, and the fast-mode and scope self-tests |
+| `make gate-scope [BASE=<ref>]` | Which slow checks this branch needs, and why, from its changes against `origin/main` ([ADR-023](docs/framework/DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)) |
+| `make gate-changed [BASE=<ref>]` | Runs what CI runs for this branch: the cheap checks, then the slow checks its changes need |
 | `make ownership` | The ownership check (T13) alone: `docs/framework/OWNERSHIP.md` against the repository |
 | `make test-mutants [GROUP=<group>] [MODE=full] [JOBS=<n>]` | Negative controls, in parallel (`JOBS`), in fast mode unless `MODE=full` ([ADR-018](docs/framework/DECISIONS/ADR-018-fast-negative-control-harness.md)), with a progress bar in a terminal and a summary at the end; `make test-mutants-groups` lists the groups CI runs in parallel |
 | `make test-harness` | The harness's slow self-tests: each gate section alone matches the full gate, and parallel runs report what serial runs report |

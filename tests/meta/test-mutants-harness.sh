@@ -13,7 +13,9 @@
 # count before the run cannot see it must fail the run. A copy that fails (tar's
 # "Write error" on a full disk) must be reported as COPY FAIL, counted as neither
 # a kill nor a survivor, and fail the run, with tar's message kept out of the
-# result's status line.
+# result's status line. Naming controls (ASCENT_MUTANT_IDS) must run exactly those
+# and a baseline of only their checks; an id the group does not have must stop
+# the run; --list must list exactly the controls a run launches.
 #
 # Uses set -u only: every case runs and reports, and the summary decides.
 #
@@ -118,6 +120,27 @@ else bad "a failed copy was counted as a kill or a survivor: $(grep '^test-mutan
 if ! grep -qE '^ {0,2}tar: |^          (r: |tar)' "$WORK/copyfail" && grep -q 'copying the repository failed: tar: Write error$' "$WORK/copyfail"; then ok
 else bad "tar's message reached a status line or the not-killed list: $(grep -nE 'tar: ' "$WORK/copyfail" | head -3 | tr '\n' ';')"; fi
 check_summary "$WORK/copyfail" FAIL
+
+# --list names the controls the run launched, in order, and nothing else
+ASCENT_MUTANT_GROUP=harness bash "$ROOT/make/test-mutants.sh" --list | cut -f2 > "$WORK/listed"
+results "$WORK/run-1" | awk '/^  [A-Za-z]/ { print ($1 ~ /^(ANCHOR|MODES|CONTROL|COPY)$/ ? $3 : $2) }' | grep -v '^P00-' > "$WORK/ran"
+if [ -s "$WORK/listed" ] && cmp -s "$WORK/listed" "$WORK/ran"; then ok
+else bad "--list differs from the controls the run launched: $(diff "$WORK/listed" "$WORK/ran" | grep '^[<>]' | head -3 | tr '\n' ';')"; fi
+
+# Two named controls: those two and one baseline, of only their checks (T5, T13; no
+# T11 control, so no fast-mode T11 baseline)
+rc=0
+ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="P373-harness-other-subcheck P359-harness-survivor" ASCENT_MUTANT_JOBS=4 ASCENT_MUTANT_PROGRESS=0 \
+  bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/ids" 2>&1 || rc=$?
+got=$(results "$WORK/ids" | awk '/^  [A-Za-z]/ { print $2 }' | tr '\n' ' ')
+if [ "$rc" -eq 0 ] && [ "$got" = "P00-baseline P359-harness-survivor P373-harness-other-subcheck " ]; then ok
+else bad "ASCENT_MUTANT_IDS did not run exactly the named controls (rc $rc): $got"; fi
+if grep -q '^  control      P00-baseline .*(fast mode: T5 T13; T11: none)$' "$WORK/ids"; then ok
+else bad "the baseline of two named controls did not run only their checks: $(grep 'P00-baseline' "$WORK/ids")"; fi
+rc=0
+ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="P359-harness-survivor P000-not-a-control" bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/badid" 2>&1 || rc=$?
+if [ "$rc" -eq 2 ] && grep -q "unknown control id 'P000-not-a-control'" "$WORK/badid" && ! grep -q '^  ' "$WORK/badid"; then ok
+else bad "an unknown id did not stop the run before any control (rc $rc): $(head -2 "$WORK/badid" | tr '\n' ';')"; fi
 
 printf "test-mutants-harness: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

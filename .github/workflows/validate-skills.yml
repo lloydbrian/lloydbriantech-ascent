@@ -3,18 +3,24 @@
 # Runs on every PR and push to main. Jobs:
 #   - structure-check: required framework files and ADR-001..007 exist
 #   - link-check:      internal markdown links resolve
-#   - gate:            on ubuntu-latest and macos-latest (ADR-008)
+#   - scope:           which slow checks this run needs (make/gate-scope.sh, ADR-023):
+#                      on a pull request, from the paths it changes; on a push to
+#                      main, the weekly run and a manual run, everything
+#   - gate:            on ubuntu-latest and macos-latest (ADR-008), every run
 #       make qa            frontmatter (incl. trigger-first descriptions),
 #                          links, template placeholders
 #       make test-skills   renders the template, runs all 28 skill tests
-#       make test-plugins  plugin gate T1–T14: drift, names, versions, read-only
-#                          agents, links, behavior tests, ownership, fast-mode self-test;
-#                          'claude plugin validate' runs locally, SKIPs in CI
-#   - mutant-groups:   lists the negative-control groups (make test-mutants-groups)
-#   - harness:         the two make test-harness self-tests, per platform: each gate
-#                      section alone matches the full gate, parallel runs match serial (ADR-018)
-#   - mutants:         one job per group and platform, in parallel:
-#       make test-mutants GROUP=<group>  named negative controls; any survivor fails.
+#       make test-plugins  plugin gate T1–T15: drift, names, versions, read-only
+#                          agents, links, behavior tests, ownership, fast-mode and
+#                          scope self-tests; 'claude plugin validate' runs locally,
+#                          SKIPs in CI. T11 runs the behavior tests of the plugins
+#                          the scope names, T13.0 when the scope asks for it
+#   - harness:         the make test-harness self-tests the scope names, per platform:
+#                      each gate section alone matches the full gate, parallel runs
+#                      match serial (ADR-018)
+#   - mutants:         one job per target and platform, in parallel: a whole group,
+#                      or the controls the scope selects by id in one "selected" job
+#       make test-mutants GROUP=<group> IDS=<ids>  named negative controls; any survivor fails.
 #       Fast mode on pull requests and pushes; full mode weekly and on request
 #
 # Not yet checked here: INTENT-MAP phrase sync (review responsibility),
@@ -42,6 +48,12 @@ on:
 # Least privilege: these jobs only read the repository (F34).
 permissions:
   contents: read
+
+# A newer push to a pull request cancels the run it supersedes. Every other run
+# has a group of its own, so a run on main is never cancelled (ADR-023).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   structure-check:
@@ -135,11 +147,47 @@ jobs:
           fi
           echo "✓ All internal links resolve"
 
+  scope:
+    # What this run needs (ADR-023). A pull request's checkout is its merge
+    # commit, so HEAD^1 is the base it merges into and the diff is the change.
+    name: Scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      t11: ${{ steps.scope.outputs.t11 }}
+      t13_selftest: ${{ steps.scope.outputs.t13_selftest }}
+      harness: ${{ steps.scope.outputs.harness }}
+      targets: ${{ steps.scope.outputs.targets }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - name: What this change runs
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = pull_request ]; then set -- --base HEAD^1; else set -- --full; fi
+          # The explanation goes outside the checkout: an untracked file there
+          # would count as a changed path, and run everything
+          out="$RUNNER_TEMP/scope.txt"
+          rc=0; bash make/gate-scope.sh "$@" --explain >> "$GITHUB_OUTPUT" 2> "$out" || rc=$?
+          cat "$out"
+          { echo '```'; cat "$out"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
   gate:
     # The framework's own gate on both platforms ASCENT supports (ADR-008):
     # validators, all 28 embedded-skill tests on a rendered template, and the
-    # plugin gate. The negative controls run in the mutants jobs below.
+    # plugin gate, on every run. The scope sets which plugins' behavior tests
+    # T11 runs and whether T13.0 runs; if the scope job fails, the whole gate
+    # runs. The negative controls run in the mutants jobs below.
     name: Gate (${{ matrix.os }})
+    needs: scope
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -157,22 +205,32 @@ jobs:
         run: make test-skills
 
       - name: Plugin gate
-        run: make test-plugins
+        env:
+          T11: ${{ needs.scope.outputs.t11 }}
+          T13_SELFTEST: ${{ needs.scope.outputs.t13_selftest }}
+        run: |
+          if [ -z "$T11" ]; then echo "::warning::the scope job gave no answer: running the whole gate"; T11=all; T13_SELFTEST=1; fi
+          if [ "$T11" = all ]; then T11=""; fi
+          echo "T11: ${T11:-every plugin} · T13.0: $([ "$T13_SELFTEST" = 1 ] && echo yes || echo no)"
+          ASCENT_T11_ONLY="$T11" ASCENT_T13_SELFTEST="$T13_SELFTEST" make test-plugins
 
   harness:
     # The harness's slow self-tests (ADR-018): fast mode runs one gate section at
     # a time, which is sound only while the sections are independent, and runs
     # controls in parallel, which must report exactly what a serial run reports.
     # Together they take about 15 minutes locally, so they run as separate jobs;
-    # macOS runners are slower and have 3 cores, hence 45 minutes.
+    # macOS runners are slower and have 3 cores, hence 45 minutes. They run when
+    # the harness or the gate changes, on main and weekly: the scope names them.
     name: Harness self-test (${{ matrix.os }}, ${{ matrix.test }})
+    needs: scope
+    if: needs.scope.outputs.harness != '[]'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        test: [test-gate-sections, test-mutants-harness]
+        test: ${{ fromJSON(needs.scope.outputs.harness) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -182,44 +240,33 @@ jobs:
           TEST: ${{ matrix.test }}
         run: bash "tests/meta/$TEST.sh"
 
-  mutant-groups:
-    # The group list comes from make/test-mutants.sh itself, so a new plugin's
-    # controls get their own job without a change to this file.
-    name: Mutant groups
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      groups: ${{ steps.list.outputs.groups }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-
-      - name: List groups
-        id: list
-        run: echo "groups=$(make --no-print-directory test-mutants-groups)" >> "$GITHUB_OUTPUT"
-
   mutants:
-    # Named negative controls, one job per group and platform (ADR-008).
+    # Named negative controls, one job per target and platform (ADR-008). The
+    # targets come from the scope, and the groups from make/test-mutants.sh
+    # itself, so a new plugin's controls get their own job without a change to
+    # this file.
     # Fast mode (ADR-018) on pull requests and pushes, 25 minutes: slow macOS
     # runners took one group 4 to over 15 minutes on the same code (ADR-022
     # decision 10); a group that needs more is split. Full mode, weekly and on
     # request, takes up to about 50 s a control on macOS, hence 40 minutes. The
     # condition is MODE's, below.
-    name: Negative controls (${{ matrix.os }}, ${{ matrix.group }})
-    needs: mutant-groups
+    name: Negative controls (${{ matrix.os }}, ${{ matrix.target.name }})
+    needs: scope
+    if: needs.scope.outputs.targets != '[]'
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && 40 || 25 }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        group: ${{ fromJSON(needs.mutant-groups.outputs.groups) }}
+        target: ${{ fromJSON(needs.scope.outputs.targets) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Negative controls
         env:
-          GROUP: ${{ matrix.group }}
+          GROUP: ${{ matrix.target.group }}
+          IDS: ${{ matrix.target.ids }}
           MODE: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && 'full' || 'fast' }}
-        run: make test-mutants GROUP="$GROUP" MODE="$MODE"
+        run: make test-mutants GROUP="$GROUP" IDS="$IDS" MODE="$MODE"
