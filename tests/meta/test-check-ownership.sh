@@ -10,6 +10,9 @@
 # (allowed only for Reserved) and a row with the wrong number of cells.
 #
 # Runs with the default awk and every other awk found (mawk, gawk, BWK awk).
+# The cases run in parallel: each awk's cases are split into shards, as many in
+# all as there are cores (ASCENT_TEST_JOBS=<n> sets the number; make test-mutants
+# sets 1), each on its own copy of the fixture, and the results are added up.
 # Usage: test-check-ownership.sh [CHECKER]   (defaults to make/check-ownership.sh)
 # Prints "test-check-ownership: N/N PASS" last (make/test-plugins.sh T13.0).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -21,13 +24,16 @@ CHK="${1:-$HERE/../../make/check-ownership.sh}"
 [ -f "$CHK" ] || { echo "test-check-ownership: missing $CHK"; echo "test-check-ownership: 0/1 PASS"; exit 1; }
 
 PASS=0; FAIL=0
-ok()  { PASS=$((PASS + 1)); }
-bad() { FAIL=$((FAIL + 1)); printf "FAIL  [%s] %s\n" "$AWKNAME" "$1"; }
+# A shard runs every case's setup but checks only its own cases: SKIP=1 makes
+# run, expect, edit, ok and bad do nothing, so each check counts in exactly one shard.
+SKIP=0; NCASE=0; OWNED=0; SHARD=0; NSHARD=1; RC=0
+ok()  { [ "$SKIP" = 1 ] || PASS=$((PASS + 1)); }
+bad() { [ "$SKIP" = 1 ] || { FAIL=$((FAIL + 1)); printf "FAIL  [%s] %s\n" "$AWKNAME" "$1"; }; }
 
 # ---------------------------------------------------------------------------
-# The fixture: everything agrees.
+# The fixture: everything agrees. Built once, into $PRISTINE; each case copies it.
 F="$WORK/fixture"
-build() {
+build_fixture() {
   rm -rf "$F"; mkdir -p "$F"
   mk() { mkdir -p "$(dirname "$F/$1")"; cat > "$F/$1"; }
   pj() { mk "plugins/$1/.claude-plugin/plugin.json" <<J
@@ -307,13 +313,15 @@ M
 # ---------------------------------------------------------------------------
 # Helpers. edit FILE SED — the case is void (and fails) when sed changes nothing.
 edit() {
+  [ "$SKIP" = 1 ] && return 0
   sed -e "$2" "$F/$1" > "$WORK/edit" || { bad "$CASE: sed failed on $1"; return 1; }
   if cmp -s "$WORK/edit" "$F/$1"; then bad "$CASE: anchor miss in $1 ($2)"; return 1; fi
   cat "$WORK/edit" > "$F/$1"
 }
-run() { PATH="$SHIM:$PATH" bash "$CHK" "$F" > "$WORK/out" 2>&1; RC=$?; }
+run() { [ "$SKIP" = 1 ] && return 0; PATH="$SHIM:$PATH" bash "$CHK" "$F" > "$WORK/out" 2>&1; RC=$?; }
 # expect RULE — only RULE fails (all eleven rules still print), exit 1; "none" — all pass, exit 0
 expect() {
+  [ "$SKIP" = 1 ] && return 0
   run
   local fails n
   fails=$(sed -n 's/^FAIL  \(T13\.[0-9]*\) .*/\1/p' "$WORK/out" | tr '\n' ' ' | sed 's/ $//')
@@ -325,7 +333,16 @@ expect() {
     if [ -n "${2:-}" ] && ! grep "^FAIL  ${1%% *} " "$WORK/out" | grep -qF -- "$2"; then bad "$CASE: $1 failed without '$2': $(grep "^FAIL  ${1%% *} " "$WORK/out")"; else ok; fi
   else bad "$CASE: expected only $1 to fail, got rc=$RC n=$n fails='$fails': $(grep '^FAIL' "$WORK/out" | head -3 | tr '\n' ';')"; fi
 }
-c() { CASE="$1"; build; }
+build() { rm -rf "$F"; cp -R "$PRISTINE" "$F"; }
+c() {  # NAME — start a case; it is this shard's when its number falls to the shard
+  CASE="$1"; NCASE=$((NCASE + 1))
+  if [ $(((NCASE - 1) % NSHARD)) -eq "$SHARD" ]; then
+    SKIP=0; OWNED=$((OWNED + 1)); F="$WORK/fixture"; exec 2>&3; build
+  else
+    # another shard's case: its setup lines run, quietly, on a scratch copy never checked
+    SKIP=1; F="$WORK/skip"; exec 2>/dev/null
+  fi
+}
 
 matrix() {
   CASE=help; PATH="$SHIM:$PATH" bash "$CHK" --help > "$WORK/out" 2>&1
@@ -488,11 +505,48 @@ AWKS="default"; SEEN=" $(realpath_of "$(command -v awk)") "
   case "$SEEN" in *" $r "*) continue ;; esac
   SEEN="$SEEN$r "; AWKS="$AWKS $a"
 done
+PRISTINE="$WORK/pristine"; F=$PRISTINE; build_fixture
+JOBS="${ASCENT_TEST_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)}"
+case "$JOBS" in ''|*[!0-9]*|0) JOBS=1 ;; esac
+NAWK=$(echo $AWKS | wc -w); NSHARD=$(((JOBS + NAWK - 1) / NAWK))   # shards per awk: one per core in all
+# shard AWK N — run the cases of shard N with AWK in its own directory; prints its
+# FAIL lines, then "shard PASS FAIL OWNED CASES" last
+shard() {
+  AWKNAME=$1; SHARD=$2; SHIM="$WORK/shim-$1"
+  WORK="$WORK/s-$1-$2"; mkdir -p "$WORK"; F="$WORK/fixture"
+  cp -R "$PRISTINE" "$WORK/skip"; exec 3>&2
+  SKIP=$([ "$SHARD" -eq 0 ] && echo 0 || echo 1)   # lines before the first case belong to shard 0
+  matrix
+  exec 2>&3
+  echo "shard $PASS $FAIL $OWNED $NCASE"
+}
 for AWKNAME in $AWKS; do
   SHIM="$WORK/shim-$AWKNAME"; mkdir -p "$SHIM"
   if [ "$AWKNAME" != default ]; then ln -s "$(command -v "$AWKNAME")" "$SHIM/awk"; fi
-  matrix
 done
+n=0
+for AWKNAME in $AWKS; do
+  s=0
+  while [ "$s" -lt "$NSHARD" ]; do
+    while [ "$(jobs -pr | wc -l)" -ge "$JOBS" ]; do sleep 0.1; done
+    n=$((n + 1)); ( trap - EXIT INT TERM; shard "$AWKNAME" "$s" ) > "$WORK/res-$n" 2>&1 &
+    s=$((s + 1))
+  done
+done
+wait
+# Every case must run in exactly one shard of each awk: the shards' cases add up to the cases seen.
+: > "$WORK/owned"
+for f in "$WORK"/res-*; do
+  last=$(tail -1 "$f")
+  case "$last" in
+    "shard "*) set -- $last; PASS=$((PASS + $2)); FAIL=$((FAIL + $3)); echo "$4 $5" >> "$WORK/owned"; sed '$d' "$f" ;;
+    *) FAIL=$((FAIL + 1)); echo "FAIL  a shard ended without its count: $(tail -3 "$f" | tr '\n' ';')" ;;
+  esac
+done
+nawk=$(echo $AWKS | wc -w)
+if ! awk -v a="$nawk" '{ o += $1; if (n == "") n = $2; else if ($2 != n) bad = 1 } END { exit !(!bad && n > 0 && o == a * n) }' "$WORK/owned"; then
+  FAIL=$((FAIL + 1)); echo "FAIL  the shards did not run each case once per awk: $(tr '\n' ';' < "$WORK/owned")"
+fi
 
 printf "test-check-ownership: %s/%s PASS (awk: %s)\n" "$PASS" "$((PASS + FAIL))" "$AWKS"
 [ "$FAIL" -eq 0 ]

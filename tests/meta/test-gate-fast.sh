@@ -7,9 +7,10 @@
 # first FAIL line and stops its children, stops T11 at the first failing test,
 # runs first the tests that name ASCENT_T11_FIRST, gives each test its own TMPDIR,
 # and reaches the same verdict as full mode; that a test printing a FAIL line and
-# exiting 0 fails in both modes; that ASCENT_ONLY runs one section and rejects
-# an unknown label; and that T7 names each failing file and its reason, or shows
-# the checker's last lines when it gave none.
+# exiting 0 fails in both modes; that ASCENT_ONLY runs one section, or the
+# sections of a list of labels, and rejects an unknown label; that T7 names each
+# failing file and its reason, or shows the checker's last lines when it gave
+# none; and that ASCENT_T11_ONLY runs the behavior tests of the plugins it lists.
 #
 # Usage: test-gate-fast.sh [GATE]   (defaults to make/test-plugins.sh)
 # Prints "test-gate-fast: N/N PASS" last (make/test-plugins.sh T14). A failing case
@@ -187,6 +188,27 @@ cp "$(dirname "$GATE")/qa-skill-frontmatter.sh" "$F/make/"
 RC=0; ASCENT_ONLY=T7 bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
 if [ "$RC" -eq 0 ] && grep -q '^PASS  test-plugins: T7 ' "$WORK/out"; then ok
 else bad "G12 T7 failed a valid skill with a large frontmatter (rc $RC): $(grep -E '^ +(FAIL|Checking)' "$WORK/out" | head -2 | tr '\n' ';')"; fi
+
+# --- G13 ASCENT_ONLY with a list runs each label's section and no other, and rejects
+# a list with an unknown label
+fixture g13; passing test-a "x.sh y.sh"
+RC=0; ASCENT_ONLY="T11 T13.4" ASCENT_T11_ONLY= bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
+others=$(grep '^\(PASS\|FAIL\|SKIP\)  test-plugins: ' "$WORK/out" | grep -v '^\(PASS\|FAIL\)  test-plugins: T1[13]' || true)
+if [ -z "$others" ] && grep -q '^PASS  test-plugins: T11 ' "$WORK/out" && grep -q '^\(PASS\|FAIL\)  test-plugins: T13' "$WORK/out"; then ok
+else bad "G13 ASCENT_ONLY='T11 T13.4' did not run T11 and T13 alone: $(printf '%s' "$others" | head -2 | tr '\n' ';')"; fi
+RC=0; ASCENT_ONLY="T11 T99" bash "$GATE" "$F" </dev/null >"$WORK/out" 2>&1 || RC=$?
+if [ "$RC" -eq 2 ] && grep -q "unknown ASCENT_ONLY label 'T99'" "$WORK/out"; then ok; else bad "G13 the list 'T11 T99' was not rejected (rc $RC)"; fi
+
+# --- G14 ASCENT_T11_ONLY runs the behavior tests of the plugins it lists, and none for "none"
+fixture g14 fa; fixture g14 fb; fixture g14 fc
+for pl in fa fb fc; do testfile test-a "# exercises x.sh y.sh
+touch '$WORK/g14-$pl-ran'; echo 'test-a: 1/1 PASS'" "$pl"; done
+gate full ASCENT_T11_ONLY="fa fc"
+if [ "$RC" -eq 0 ] && [ -e "$WORK/g14-fa-ran" ] && [ ! -e "$WORK/g14-fb-ran" ] && [ -e "$WORK/g14-fc-ran" ]; then ok
+else bad "G14 ASCENT_T11_ONLY='fa fc' did not run exactly fa and fc (rc $RC): $(ls "$WORK" | grep g14- | tr '\n' ' ')"; fi
+rm -f "$WORK"/g14-*-ran
+gate full ASCENT_T11_ONLY=none
+if [ "$RC" -eq 0 ] && ! ls "$WORK" | grep -q 'g14-.*-ran'; then ok; else bad "G14 ASCENT_T11_ONLY=none ran behavior tests (rc $RC)"; fi
 
 printf "test-gate-fast: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

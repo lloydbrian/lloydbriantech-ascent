@@ -42,6 +42,9 @@
 #   T14 the fast-mode self-test (ADR-018): tests/meta/test-gate-fast.sh runs this
 #       gate on fixture plugins and checks that fast mode stops where it should;
 #       each failing case reports as its own result, T14.G<n>
+#   T15 the scope self-test (ADR-023): tests/meta/test-gate-scope.sh checks which
+#       slow checks make/gate-scope.sh runs for fixture changes, and the
+#       repository's list of negative controls it reads
 #
 # A behavior test fails when it prints a FAIL line, whatever its exit status: T11
 # fails a test that prints one and exits 0, which keeps fast mode and full mode in
@@ -50,14 +53,17 @@
 # Usage: test-plugins.sh [ROOT]   (ROOT defaults to the repo root)
 #        ASCENT_SKIP_CLAUDE_CLI=1 skips T8 (the negative controls use this so they
 #        give the same answer with or without the CLI installed).
-#        ASCENT_T11_ONLY=<plugin> runs T11 for that plugin only. make test-mutants sets it
-#        when a control edits one plugin's files, which keeps the suite fast; running
-#        fewer tests can only make a control harder to kill, never easier.
+#        ASCENT_T11_ONLY="<plugin> ..." runs T11 for those plugins only ("none" runs no
+#        behavior tests). make test-mutants sets it when a control edits one plugin's
+#        files, which keeps the suite fast; running fewer tests can only make a
+#        control harder to kill, never easier. make/gate-scope.sh sets it to the
+#        plugins a change touches.
 #        ASCENT_T13_SELFTEST=0 skips T13.0. make test-mutants sets it, except for the
 #        controls that edit the ownership checker itself.
-#        ASCENT_ONLY=<label> runs one check after the shared setup: the label's
-#        section (T13.4 runs T13). An unknown label is an error, so a typo cannot
-#        pass by checking nothing. make test-mutants sets it in fast mode.
+#        ASCENT_ONLY="<label> ..." runs only those checks after the shared setup: each
+#        label's section (T13.4 runs T13). An unknown label is an error, so a typo
+#        cannot pass by checking nothing. make test-mutants sets it in fast mode,
+#        one label for a control and its controls' labels for a baseline.
 #        ASCENT_T11_FAST=1 stops a behavior test at its first FAIL line and T11 at
 #        its first failing test; ASCENT_T11_FIRST=<name> runs first the tests that
 #        name that file. make test-mutants sets both in fast mode.
@@ -79,12 +85,12 @@ PASS=0; FAIL=0
 ok()  { PASS=$((PASS + 1)); printf "PASS  test-plugins: %s\n" "$1"; }
 bad() { FAIL=$((FAIL + 1)); printf "FAIL  test-plugins: %s\n" "$1"; }
 
-SECTIONS=" T1 T2 T3 T4 T4b T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 "
-ONLY=${ASCENT_ONLY:-}; ONLY=${ONLY%%.*}
-if [ -n "${ASCENT_ONLY:-}" ]; then
-  case "$SECTIONS" in *" $ONLY "*) ;; *) echo "test-plugins: unknown ASCENT_ONLY label '$ASCENT_ONLY' (sections:$SECTIONS)" >&2; exit 2 ;; esac
-fi
-run() { [ -z "$ONLY" ] || [ "$ONLY" = "$1" ]; }  # SECTION — does this run include it?
+SECTIONS=" T1 T2 T3 T4 T4b T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 "
+ONLY=""
+for l in ${ASCENT_ONLY:-}; do
+  case "$SECTIONS" in *" ${l%%.*} "*) ONLY="$ONLY ${l%%.*} " ;; *) echo "test-plugins: unknown ASCENT_ONLY label '$l' (sections:$SECTIONS)" >&2; exit 2 ;; esac
+done
+run() { [ -z "$ONLY" ] || case "$ONLY" in *" $1 "*) true ;; *) false ;; esac; }  # SECTION — does this run include it?
 FAST=${ASCENT_T11_FAST:-0}
 
 # Skills that must carry the shared severity table (T5), as plugin:skill.
@@ -349,7 +355,7 @@ t11_run() {
 if run T11; then
 T11_FAILED=0
 for p in $PLUGINS; do
-  [ -n "${ASCENT_T11_ONLY:-}" ] && [ "$p" != "$ASCENT_T11_ONLY" ] && continue
+  if [ -n "${ASCENT_T11_ONLY:-}" ]; then case " $ASCENT_T11_ONLY " in *" $p "*) ;; *) continue ;; esac; fi
   [ "$FAST" = 1 ] && [ "$T11_FAILED" = 1 ] && break  # T11 has failed; more plugins cannot change that
   [ -d "$ROOT/plugins/$p/hooks" ] || [ -d "$ROOT/plugins/$p/scripts" ] || continue
   problems=""
@@ -469,6 +475,22 @@ else
     for c in $cases; do bad "T14.$c gate self-test: $(awk -v c="$c" '$2 == c { if (++n <= 2) print }' "$WORK/t14.out" | cut -c1-100 | tr '\n' ';')"; done
   else
     bad "T14 gate self-test: rc $rc, $(tail -1 "$WORK/t14.out" | cut -c1-100)"
+  fi
+fi
+fi
+
+# T15 — the scope self-test (ADR-023)
+if run T15; then
+ST="$ROOT/tests/meta/test-gate-scope.sh"
+if [ ! -f "$ST" ]; then
+  bad "T15 scope self-test: tests/meta/test-gate-scope.sh not found"
+else
+  rc=0; bash "$ST" "$ROOT/make/gate-scope.sh" </dev/null >"$WORK/t15.out" 2>&1 || rc=$?
+  n=$(sed -n 's|^test-gate-scope: \([1-9][0-9]*\)/\([0-9]*\) PASS.*|\1 \2|p' "$WORK/t15.out" | tail -1)
+  if [ "$rc" -eq 0 ] && [ -n "$n" ] && [ "${n% *}" = "${n#* }" ]; then
+    ok "T15 scope self-test: $(tail -1 "$WORK/t15.out" | sed 's/^test-gate-scope: //')"
+  else
+    bad "T15 scope self-test: rc $rc, $(grep '^FAIL' "$WORK/t15.out" | head -3 | cut -c1-120 | tr '\n' ';')"
   fi
 fi
 fi

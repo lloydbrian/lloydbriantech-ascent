@@ -70,7 +70,7 @@ If this PR addresses an issue, reference it: `Closes #NN` or `Refs #NN`.
 
 - [ ] Manual verification performed (describe below)
 - [ ] CI passes
-- [ ] `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` pass locally
+- [ ] `make gate-changed` passes locally (the cheap checks and the slow checks this change needs, as CI runs them; ADR-023), or `make qa`, `make test-skills`, `make test-plugins` and `make test-mutants` for a full run
 - [ ] If `make/test-plugins.sh` or `make/test-mutants.sh` changed, `make test-harness` passes
 - [ ] Skill tests use the `tests/skills/lib/portable.sh` helpers only (no direct `stat`, `touch -t/-d`, `date -d/-j/-v`, `sed -i`), per ADR-008
 - [ ] Every new or changed rule has a negative control whose named test fails when the rule is broken (a `make/mutants.tsv` row for embedded skills, a `plugin_case` in `make/test-mutants.sh` for plugins)

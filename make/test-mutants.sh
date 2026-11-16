@@ -17,6 +17,12 @@
 # every group. --groups-json prints the group list for the CI matrix, so a new
 # plugin section joins CI without a workflow change.
 #
+# ASCENT_MUTANT_IDS="<id> ..." runs only the named plugin controls of the group (CI
+# runs the controls whose files a change touches this way, ADR-023); an id the
+# group does not have is an error. --list prints the controls the run would
+# launch, one line each, without running them: group, id, label, kind, file, T11
+# scope and the T13.0 and T14 switches, tab-separated (make/gate-scope.sh reads it).
+#
 # ASCENT_MUTANT_MODE=full runs every control on the whole gate, as before v0.4.10;
 # ASCENT_MUTANT_JOBS=<n> sets how many controls run at once (default: the number
 # of cores); ASCENT_MUTANT_RAW=1 makes the harness group report its expect_case
@@ -44,6 +50,7 @@ if [ "${1:-}" = --groups-json ]; then
   printf '%s\n' "$GROUPS_ALL" | awk '{ s = "["; for (i = 1; i <= NF; i++) s = s (i > 1 ? "," : "") "\"" $i "\""; print s "]" }'
   exit 0
 fi
+LIST=0; [ "${1:-}" = --list ] && LIST=1
 GROUP="${ASCENT_MUTANT_GROUP:-all}"
 case " all $GROUPS_ALL " in *" $GROUP "*) ;; *) echo "test-mutants: unknown group '$GROUP' (groups: all $GROUPS_ALL)" >&2; exit 2 ;; esac
 MODE="${ASCENT_MUTANT_MODE:-fast}"
@@ -60,9 +67,16 @@ case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
   *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) FULL='█'; EMPTY='░'; DOT='·'; RULE='─' ;;
   *) FULL='#'; EMPTY='-'; DOT='|'; RULE='-' ;;
 esac
+IDS=$(printf '%s' "${ASCENT_MUTANT_IDS:-}" | tr -s ' \t\n' '   ' | sed 's/^ //; s/ $//')
 CUR_GROUP=core
 mutant_group() { CUR_GROUP="$1"; }
 in_group() { [ "$GROUP" = all ] || [ "$GROUP" = "$CUR_GROUP" ]; }
+selected() { [ -z "$IDS" ] || case " $IDS " in *" $1 "*) true ;; *) false ;; esac; }  # ID — is it in the run?
+# listed KIND ID LABEL FILE — in list mode, print the control's line instead of running it
+listed() {
+  [ "$LIST" = 1 ] || return 1
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$CUR_GROUP" "$2" "$3" "$1" "$4" "${T11_ONLY:-all}" "${T13_SELFTEST:-0}" "${T14_SELFTEST:-0}"
+}
 killed=0; survived=0; missed=0; copyfail=0; total=0
 # Every finished control adds a line, seconds<TAB>status<TAB>id, to $WORK/done
 # (core rows to $WORK/done-core, untimed): the progress bar and the summary read them.
@@ -71,7 +85,7 @@ T0=$SECONDS
 note_core() { printf -- '-\t%s\t%s\n' "$1" "$2" >> "$WORK/done-core"; }  # STATUS ID
 clock() { printf '%d:%02d' $(($1 / 60)) $(($1 % 60)); }  # SECONDS -> m:ss
 
-if in_group; then
+if in_group && [ "$LIST" = 0 ] && [ -z "$IDS" ]; then
 
 bash "$REPO_ROOT/make/render-template.sh" "$WORK/base" >/dev/null
 
@@ -178,28 +192,34 @@ copy_failed() {  # ID DIR — if DIR's copy failed, print COPY FAIL with tar's f
 # T13.0 (the ownership checker's fixture tests) and T14 (the fast-mode self-test)
 # are skipped unless a control sets T13_SELFTEST=1 or T14_SELFTEST=1: only the
 # controls that edit the checker, fast mode or their tests need them.
-plugin_gate() {  # DIR [fast LABEL EDITED-FILE] — run test-plugins on a copy; output in DIR.out
-  local only="" t11fast=0 first=""
+# A baseline (base) runs what the run's controls are judged by, from the BASE_
+# settings below: in fast mode only their checks and their plugins' behavior
+# tests, in full mode the whole gate; T13.0 and T14 when a control needs them.
+plugin_gate() {  # DIR [fast LABEL EDITED-FILE | base] — run test-plugins on a copy; output in DIR.out
+  local only="" t11fast=0 first="" t11=${T11_ONLY:-} t13=${T13_SELFTEST:-0} t14=${T14_SELFTEST:-0}
   if [ "${2:-}" = fast ]; then
     # MUTANT_FAULT=fast-pass makes fast mode pass everything: only the harness
     # group sets it, to prove that a disagreement between the modes is reported
     if [ "${MUTANT_FAULT:-}" = fast-pass ]; then : > "$1.out"; return 0; fi
     only=$3; t11fast=1; first=$(basename "$4")
+  elif [ "${2:-}" = base ]; then
+    only=$BASE_ONLY; t11=$BASE_T11; t13=$BASE_T13; t14=$BASE_T14
   fi
-  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_T11_ONLY="${T11_ONLY:-}" \
-    ASCENT_T13_SELFTEST="${T13_SELFTEST:-0}" ASCENT_T14_SELFTEST="${T14_SELFTEST:-0}" \
+  # One awk and one shard for T13.0's fixture tests: the controls already run in parallel
+  ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_TEST_JOBS=1 ASCENT_T11_ONLY="$t11" \
+    ASCENT_T13_SELFTEST="$t13" ASCENT_T14_SELFTEST="$t14" \
     ASCENT_ONLY="$only" ASCENT_T11_FAST="$t11fast" ASCENT_T11_FIRST="$first" \
     bash "$1/make/test-plugins.sh" "$1" </dev/null >"$1.out" 2>&1
 }
 # fails OUT — its FAIL lines, each with up to 5 of the indented reason lines the
 # gate prints under it (T7), all indented
 fails() { awk 'BEGIN { d = -1 } /^FAIL/ { print; d = 0; next } d >= 0 && d < 5 && /^      / { print; d++; next } { d = -1 }' "$1" | sed 's/^/                 /'; }
-plugin_baseline() {  # ID COPY [NOTE] — the unmodified copy must pass the full gate
+plugin_baseline() {  # ID COPY — the unmodified copy must pass what the run's controls are judged by
   if copy_failed "$1" "$2"; then return 1; fi
-  if plugin_gate "$2"; then
-    printf "  control      %-28s unmodified copy passes test-plugins%s\n" "$1" "${3:-}"
+  if plugin_gate "$2" base; then
+    printf "  control      %-28s unmodified copy passes test-plugins%s\n" "$1" "$BASE_NOTE"
   else
-    printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins%s:\n" "$1" "${3:-}"
+    printf "  CONTROL FAIL %-28s unmodified copy fails test-plugins%s:\n" "$1" "$BASE_NOTE"
     fails "$2.out"; return 1
   fi
 }
@@ -219,11 +239,16 @@ mkdir -p "$WORK/r"
 seq=0; next=1; T1=$SECONDS; BARRED=0
 # The number of controls this run launches, counted from the declarations in this
 # file so the bar knows its end; the run fails if it launched a different number.
-PLANNED=$(awk -v g="$GROUP" -v mode="$MODE" '
+# A control's id is the first P<n>- word of its line and its label the word after;
+# the fast-mode T11 baseline runs only when a control is judged by T11.
+PLANNED=$(awk -v g="$GROUP" -v mode="$MODE" -v ids=" $IDS " '
   /^mutant_group [a-z0-9-]+$/ { cur = $2; next }
   cur == "" || (g != "all" && g != cur) { next }
-  /^([A-Z0-9_]+=[^ ]* )*(plugin_case|plugin_case_rm|expect_case) / || /^ *([A-Z0-9_]+=[^ ]* )*launch plugin_baseline P00-/ { n++ }
-  END { if (g != "core") n += 1 + (mode == "fast"); print n + 0 }' "$0")
+  /^([A-Z0-9_]+=[^ ]* )*(plugin_case|plugin_case_rm|expect_case) / {
+    id = ""; for (i = 1; i < NF; i++) if ($i ~ /^P[0-9]+-/) { id = $i; label = $(i + 1); break }
+    if (ids != "  " && index(ids, " " id " ") == 0) next
+    n++; if (label == "T11") t11 = 1 }
+  END { if (g != "core") n += 1 + (mode == "fast" && t11); print n + 0 }' "$0")
 unbar() { if [ "$BARRED" = 1 ]; then printf '\r\033[K' >&2; BARRED=0; fi; }
 bar() {  # [final] — redraw the progress bar on stderr
   [ "$PROGRESS" = 1 ] && [ "$seq" -gt 0 ] || return 0
@@ -273,6 +298,7 @@ launch() {  # COMMAND ARGS... — run one control in the background, at most $JO
 # only there would otherwise turn every T11 control into a kill.
 plugin_fast_baseline() {  # ID COPY
   if copy_failed "$1" "$2"; then return 1; fi
+  T11_ONLY=$BASE_T11
   if plugin_gate "$2" fast T11 ""; then
     printf "  control      %-28s unmodified copy passes T11 in fast mode\n" "$1"
   else
@@ -280,11 +306,33 @@ plugin_fast_baseline() {  # ID COPY
     fails "$2.out"; return 1
   fi
 }
-if [ "$GROUP" != core ]; then
+# What the baselines run comes from the run's own controls (--list): the checks
+# they are judged by, the plugins whose behavior tests their T11 controls run,
+# and T13.0 and T14 when a control needs them (ADR-023). Full mode runs the whole
+# gate. Before v0.4.18 every group's baseline ran the whole gate.
+BASE_ONLY=""; BASE_T11=""; BASE_T13=0; BASE_T14=0; BASE_NOTE=""
+if [ "$LIST" = 0 ] && { [ "$GROUP" != core ] || [ -n "$IDS" ]; }; then
+  if ! bash "$0" --list > "$WORK/manifest" 2> "$WORK/manifest.err"; then
+    echo "test-mutants: listing the controls failed: $(head -3 "$WORK/manifest.err" | tr '\n' ';')"; exit 2
+  fi
+  for id in $IDS; do
+    awk -F'\t' -v id="$id" '$2 == id { f = 1 } END { exit !f }' "$WORK/manifest" \
+      || { echo "test-mutants: unknown control id '$id' (group: $GROUP)" >&2; exit 2; }
+  done
+  [ -s "$WORK/manifest" ] || { echo "test-mutants: group '$GROUP' has no plugin controls to run" >&2; exit 2; }
+  BASE_T13=$(awk -F'\t' '$7 == 1 { f = 1 } END { print f + 0 }' "$WORK/manifest")
+  BASE_T14=$(awk -F'\t' '$8 == 1 { f = 1 } END { print f + 0 }' "$WORK/manifest")
+  if [ "$MODE" = fast ]; then
+    BASE_ONLY=$(awk -F'\t' '{ s = $3; sub(/\..*/, "", s); if (!(s in seen)) { seen[s] = 1; o = o (o == "" ? "" : " ") s } } END { print o }' "$WORK/manifest")
+    BASE_T11=$(awk -F'\t' '$3 == "T11" { n++; if ($6 == "all") all = 1; else if ($6 != "none" && !($6 in seen)) { seen[$6] = 1; o = o (o == "" ? "" : " ") $6 } }
+      END { print (n == 0 ? "none" : all ? "" : (o == "" ? "none" : o)) }' "$WORK/manifest")
+    BASE_NOTE=" (fast mode: $BASE_ONLY; T11: ${BASE_T11:-all})"
+  fi
+fi
+if [ "$LIST" = 0 ] && [ "$GROUP" != core ]; then
 plugin_copy "$WORK/p-baseline" || true   # a failed copy is reported by the baseline
-T11_ONLY=""
 launch plugin_baseline P00-baseline "$WORK/p-baseline"
-if [ "$MODE" = fast ]; then
+if [ "$MODE" = fast ] && awk -F'\t' '$3 == "T11" { f = 1 } END { exit !f }' "$WORK/manifest"; then
   plugin_copy "$WORK/p-fast-baseline" || true
   launch plugin_fast_baseline P00-fast-baseline "$WORK/p-fast-baseline"
 fi
@@ -336,14 +384,14 @@ plugin_verdict() {  # ID EXPECT-LABEL COPY EDITED-PATH — run the gate and clas
   [ -n "$(grep '^FAIL' "$3.out" || true)" ] || echo "                 (no FAIL lines)"
 }
 plugin_case() {  # ID EXPECT-LABEL FILE(relative to repo) SED-EXPRESSION [rebuild]
-  in_group || return 0
+  in_group && selected "$1" || return 0
   t11_scope "$3"
-  launch control_run edit "$@"
+  listed edit "$1" "$2" "$3" || launch control_run edit "$@"
 }
 plugin_case_rm() {  # ID EXPECT-LABEL PATH(relative to repo) — the control deletes PATH
-  in_group || return 0
+  in_group && selected "$1" || return 0
   t11_scope "$3"
-  launch control_run rm "$@"
+  listed rm "$1" "$2" "$3" || launch control_run rm "$@"
 }
 mutant_group ascent-security
 SEC=plugins/ascent-security
@@ -1201,18 +1249,13 @@ plugin_case P610-mut-standard-drops-m1 T11 "$QEA" 's/(k == "L1" || k == "L2" || 
 
 # Ownership gate T13 (ADR-015). Every control expects one T13 rule; T11 is
 # skipped (T11_FORCE names no plugin) because no control here is about behavior
-# tests. The checker-code controls at the end set T13_SELFTEST=1 and expect the
-# fixture tests (T13.0) to catch them.
+# tests. The checker-code controls, in the ownership-checker group below, set
+# T13_SELFTEST=1 and expect the fixture tests (T13.0) to catch them.
 mutant_group ownership
 T11_FORCE=none
 OWN=docs/framework/OWNERSHIP.md
 CHKO=make/check-ownership.sh
 DLS=plugins/ascent-delivery/skills/delivery-loop
-# The T13.0 controls below are judged on T13.0, so T13.0 must pass unmutated first.
-if in_group; then
-  plugin_copy "$WORK/p-ownership-baseline"; T11_ONLY=none
-  T13_SELFTEST=1 launch plugin_baseline P00-ownership-baseline "$WORK/p-ownership-baseline" " with T13.0"
-fi
 plugin_case_rm P205-registry-removed T13.1 "$OWN"
 plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
 plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `OPS-R` | `ascent-ops` | rule | `plugins\/ascent-ops\/scripts\/check-drills.sh` |$/| `OPS-R` | `ascent-ops` | rule |/'
@@ -1251,11 +1294,11 @@ plugin_case P234-prefix-unregistered T13.10 plugins/ascent-ux/references/contrac
 plugin_case P791-map-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 |/| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.2.0 |/'
 plugin_case P792-map-skill-count-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ux` | Plugin · 5 skills, 1 agent |/| `ascent-ux` | Plugin · 4 skills, 1 agent |/'
 plugin_case P793-map-heading-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^### `ascent-quality` 0.2.0 ·/### `ascent-quality` 0.1.0 ·/'
-plugin_case P794-map-parent-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/ 28 embedded skills | 0.4.17 |/ 28 embedded skills | 0.4.16 |/'
+plugin_case P794-map-parent-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/ 28 embedded skills | [0-9.]* |/ 28 embedded skills | 0.0.1 |/'
 plugin_case P795-readme-controls-stale T13.11 README.md 's/, [0-9][0-9,]* negative controls,/, 1 negative controls,/'
-plugin_case P796-map-adrs-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/\*\*22\*\*<br>decision records/**21**<br>decision records/'
+plugin_case P796-map-adrs-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/\*\*[0-9]*\*\*<br>decision records/**1**<br>decision records/'
 plugin_case P797-readme-badge-stale T13.11 README.md 's#badge/plugins-6-#badge/plugins-5-#'
-plugin_case P798-skill-version-stale T13.11 skills/lloydbriantech-ascent/SKILL.md 's/^version: 0.4.17$/version: 0.4.16/'
+plugin_case P798-skill-version-stale T13.11 skills/lloydbriantech-ascent/SKILL.md 's/^version: [0-9.]*$/version: 0.0.1/'
 plugin_case_rm P799-map-removed T13.11 docs/framework/CAPABILITY-MAP.md
 plugin_case P804-banner-light-figure-stale T13.11 docs/assets/ascent-banner-light.svg 's/>[0-9]* plugins · />5 plugins · /'
 plugin_case P805-banner-dark-figure-stale T13.11 docs/assets/ascent-banner-dark.svg 's/ · [0-9][0-9,]* negative controls · / · 1 negative controls · /'
@@ -1264,6 +1307,10 @@ plugin_case P807-banner-quality-dropped T13.11 docs/assets/ascent-banner-dark.sv
 plugin_case P808-banner-figures-line-removed T13.11 docs/assets/ascent-banner-light.svg '/>[0-9]* plugins · /d'
 plugin_case_rm P809-banner-removed T13.11 docs/assets/ascent-banner-dark.svg
 plugin_case P235-checker-stops-early T13 "$CHKO" 's/^# T13.6 — cross-plugin markers$/exit 0/'
+# The ownership checker's own code (ADR-023 moved these out of ownership: they
+# depend on the checker and its fixture tests only, so a plugin or registry change
+# need not run them). Judged on T13.0, so the baseline runs T13.0.
+mutant_group ownership-checker
 T13_SELFTEST=1 plugin_case P236-checker-keeps-cr T13.0 "$CHKO" 's/sub(\/\\r\$\/, "", line)/sub(\/NEVERCR\/, "", line)/g'
 T13_SELFTEST=1 plugin_case P237-checker-ignores-cell-count T13.0 "$CHKO" 's/if (NC != want) printf/if (0) printf/'
 T13_SELFTEST=1 plugin_case P238-checker-ignores-lens-claims T13.0 "$CHKO" "s/| grep -q 'delivery-loop review lens' || continue/| grep -q 'never-matches' || continue/"
@@ -1275,6 +1322,7 @@ T13_SELFTEST=1 plugin_case P803-checker-ignores-skill-version T13.0 "$CHKO" 's/\
 T13_SELFTEST=1 plugin_case P810-checker-ignores-banner-plugins T13.0 "$CHKO" 's/\$(comm -23 "\$W\/t11-plugins" "\$W\/t11-line")/$(true)/'
 T13_SELFTEST=1 plugin_case P811-checker-ignores-banner-figures T13.0 "$CHKO" 's/\[ "\$got" = "\$want" \] || echo "\$doc says/true || echo "$doc says/'
 T13_SELFTEST=1 plugin_case P812-checker-ignores-figures-line T13.0 "$CHKO" 's/|| echo "\$doc has no figures line"/|| true/'
+T13_SELFTEST=1 plugin_case P832-checker-tests-shard-skips-cases T13.0 tests/meta/test-check-ownership.sh 's/if \[ \$(((NCASE - 1) % NSHARD)) -eq "\$SHARD" \]; then/if [ $(((NCASE - 1) % NSHARD)) -eq 99 ]; then/'
 T13_SELFTEST=1 plugin_case_rm P240-checker-tests-removed T13.0 tests/meta/test-check-ownership.sh
 T11_FORCE=""
 
@@ -1286,15 +1334,11 @@ T11_FORCE=""
 mutant_group harness
 ARCHT=plugins/ascent-architecture/scripts/estimate-cost.sh
 GATEP=make/test-plugins.sh
-# T14 must pass unmutated for its controls to mean anything.
-if in_group; then
-  plugin_copy "$WORK/p-harness-baseline" || true; T11_ONLY=none
-  T14_SELFTEST=1 launch plugin_baseline P00-harness-baseline "$WORK/p-harness-baseline" " with T14"
-fi
+# T14 must pass unmutated for its controls to mean anything: they set T14_SELFTEST=1, so the baseline runs T14.
 expect_case() {  # STATUS ID LABEL FILE SED — the harness must report STATUS for this control
-  in_group || return 0
+  in_group && selected "$2" || return 0
   t11_scope "$4"
-  launch expect_run "$@"
+  listed expect "$2" "$3" "$4" || launch expect_run "$@"
 }
 expect_run() {
   local want=$1 out line got; shift
@@ -1341,6 +1385,44 @@ T14_SELFTEST=1 plugin_case P374-t7-reasons-dropped T14.G10 "$GATEP" "s/^  printf
 FMQA=make/qa-skill-frontmatter.sh
 T14_SELFTEST=1 plugin_case P375-frontmatter-field-pipe T14.G12 "$FMQA" 's/if ! grep -qE "^\${field}:" <<< "\$fm"; then/if ! printf "%s\\n" "$fm" | grep -qE "^${field}:"; then/'
 T14_SELFTEST=1 plugin_case P376-frontmatter-description-pipe T14.G12 "$FMQA" 's/desc=\$(awk /desc=$(printf "%s\\n" "$fm" | awk /; s/}'\'' <<< "\$fm" | tr /}'\'' | tr /'
+T14_SELFTEST=1 plugin_case P833-only-list-first-label T14.G13 "$GATEP" 's/^for l in \${ASCENT_ONLY:-}; do$/for l in ${ASCENT_ONLY%% *}; do/'
+T14_SELFTEST=1 plugin_case P834-t11-only-first-plugin T14.G14 "$GATEP" 's/case " \$ASCENT_T11_ONLY " in/case " ${ASCENT_T11_ONLY%% *} " in/'
+# The baseline runs the behavior tests of the plugins the run's T11 controls edit: a
+# copy with a broken behavior test must fail it (the harness reports CONTROL FAIL).
+expect_case "CONTROL FAIL" P835-harness-baseline-t11 T11 "$ARCHT" 's/^      f = fr\[k\] + 0$/      f = 0/'
+
+# Which slow checks a change runs (ADR-023). Every control narrows the scope, the
+# direction that would let a change skip a check it needs, and T15, the scope
+# self-test, must catch it. T11 is skipped: no control here is about behavior tests.
+mutant_group scope
+T11_FORCE=none
+SCO=make/gate-scope.sh
+plugin_case P813-scope-plugin-no-t11 T15 "$SCO" 's/^add_t11() { case " \$T11 " in \*" \$1 "\*) ;; \*) T11="\$T11 \$1" ;; esac; }/add_t11() { :; }/'
+plugin_case P814-scope-plugin-groups-dropped T15 "$SCO" 's/  for g in \$GROUPS_ALL; do case "\$g" in "\$2"|"\$2"-\*) group "\$g"; gs="\$gs \$g" ;; esac; done/  :/'
+plugin_case P815-scope-plugin-no-ownership T15 "$SCO" 's/^  group ownership$/  :/'
+plugin_case P816-scope-unknown-path-narrow T15 "$SCO" 's/^    \*) everything "\$p" "no rule for this path" ;;/    *) why "$p" "no rule" ;;/'
+plugin_case P817-scope-harness-line-narrow T15 "$SCO" 's/  if \[ "\$other" = 1 \]; then everything make\/test-mutants.sh/  if false; then everything make\/test-mutants.sh/'
+plugin_case P818-scope-checker-no-selftest T15 "$SCO" 's/      T13=1; group ownership;/      group ownership;/'
+plugin_case P819-scope-file-controls-dropped T15 "$SCO" 's/  { if (\$5 in p) {/  { if (0) {/'
+plugin_case P820-scope-dir-controls-dropped T15 "$SCO" 's/for (q in p) if (index(q, \$5 "\/") == 1)/for (q in p) if (0)/'
+plugin_case P821-scope-full-flag-ignored T15 "$SCO" 's/^    --full) FULL=1 ;;/    --full) ;;/'
+plugin_case P822-scope-full-not-every-group T15 "$SCO" 's/WHOLE=" \$GROUPS_ALL "; IDS=""/IDS=""/'
+plugin_case P823-scope-makefile-any-line T15 "$SCO" 's/if \[ -s "\$W\/make-lines" \] && ! grep/if true || ! grep/'
+plugin_case P824-scope-validator-not-core T15 "$SCO" 's/; then group core$/; then :/'
+plugin_case P825-scope-template-not-core T15 "$SCO" 's/^\(    make\/mutants.tsv|skills\/lloydbriantech-ascent\/assets\/\*)\) group core;/\1/'
+plugin_case P826-scope-harness-tests-dropped T15 "$SCO" 's/t=\${p#tests\/meta\/}; harness_test "\${t%.sh}";/t=${p#tests\/meta\/};/'
+plugin_case P827-scope-gate-narrow T15 "$SCO" 's/^    make\/test-plugins.sh) everything /    make\/test-plugins.sh) why /'
+plugin_case P828-scope-workflow-narrow T15 "$SCO" 's/^    .github\/workflows\/\*) everything /    .github\/workflows\/*) why /'
+plugin_case P829-scope-selected-dropped T15 "$SCO" 's/\[ -z "\$SEL" \] || targets=/[ -n "$SEL" ] || targets=/'
+plugin_case P830-scope-docs-rule-too-wide T15 "$SCO" 's/^    tests\/\*|make\/\*) everything /    tests\/*|make\/*) why /'
+plugin_case P836-scope-readers-dropped T15 "$SCO" 's/^  done < "\$W\/readers"$/  done < \/dev\/null/'
+plugin_case P837-scope-every-plugin-readers-dropped T15 "$SCO" 's/; done < "\$W\/allreaders" ;;/; done < \/dev\/null ;;/'
+plugin_case P838-scope-harness-group-no-selftest T15 "$SCO" 's/if \[ "\$g" = harness \]; then harness_test test-mutants-harness; fi/:/'
+plugin_case P839-scope-no-diff-narrow T15 "$SCO" 's/^  \[ -s "\$W\/harness-lines" \] || other=1$/  :/'
+plugin_case_rm P831-scope-tests-removed T15 tests/meta/test-gate-scope.sh
+T11_FORCE=""
+
+[ "$LIST" = 0 ] || exit 0
 
 # Every control has finished: print the rest and count the results.
 while [ -n "$(jobs -pr)" ]; do flush; sleep 0.2; done

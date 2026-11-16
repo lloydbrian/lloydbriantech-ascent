@@ -32,6 +32,58 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.18] — 2026-11-15
+
+**CI runs what a change can affect.** A pull request always runs the cheap checks, `make qa`, `make test-skills` and the plugin gate, on both platforms. The slow checks run only where its changed paths reach: behavior tests, T13.0, harness self-tests and negative controls. Every control that edits a changed file runs too, and every behavior test that reads one. Baselines run only what their controls are judged by, T13.0 runs in parallel, and a newer push cancels the older run. Pushes to main and the weekly run still run everything (ADR-023).
+
+### Added
+
+- `make/gate-scope.sh`: from the paths a change touches, which plugins' behavior tests T11 runs, whether T13.0 runs, which harness self-tests run, and which negative controls run, as whole groups or by id. Paths without a rule run everything. `--explain` gives each path's rule; CI writes it to the job summary
+- `make gate-scope` and `make gate-changed`: the same scope for a local branch, against `origin/main` (or `BASE=<ref>`), with uncommitted and untracked files; `gate-changed` also runs it
+- `make/test-mutants.sh`:
+  - `--list` prints every control with its group, check, kind, file, T11 scope and T13.0 and T14 switches
+  - `ASCENT_MUTANT_IDS` (`make test-mutants IDS="<id> ..."`) runs named controls only; an unknown id stops the run
+- T15 (`make test-plugins`): the scope self-test, `tests/meta/test-gate-scope.sh`. 52 checks: fixture changes with all five outputs checked, the outside reads found in the repository's own behavior tests, and the repository's own control list
+- `validate-skills.yml`:
+  - a Scope job;
+  - `concurrency`, which cancels a superseded pull-request run, never one on main;
+  - gate, harness and negative-control jobs that follow the scope
+- Controls:
+  - the `scope` group, P813–P831 and P836–P839, each narrowing a scope rule;
+  - P832, cases dropped from the fixture shards;
+  - P833 and P834, the list forms of `ASCENT_ONLY` and `ASCENT_T11_ONLY`;
+  - P835, a broken behavior test the baseline must catch
+- T14 cases G13 and G14 (`tests/meta/test-gate-fast.sh`) and harness self-test cases for `--list`, named controls and an unknown id
+- ADR-023
+
+### Changed
+
+- Framework 0.4.17 → 0.4.18
+- A fast-mode baseline runs only the checks its controls name and the behavior tests of the plugins its T11 controls edit, plus T13.0 or T14 when a control needs them, instead of the whole gate; the fast-mode T11 baseline runs only when a control is judged by T11. Full mode keeps the whole gate. P00-ownership-baseline and P00-harness-baseline are folded into P00-baseline
+- `ASCENT_ONLY` and `ASCENT_T11_ONLY` (`make/test-plugins.sh`) take lists; `ASCENT_T11_ONLY=none` runs no behavior tests
+- `tests/meta/test-check-ownership.sh` runs its cases in parallel: each awk's cases are split into shards, as many in all as there are cores (`ASCENT_TEST_JOBS`), each on its own fixture copy. The shards must cover every case once per awk. About 2.8 times faster locally (104 s for three awks, from about 290); the harness keeps one shard, since its controls already run in parallel
+- The ownership group's 13 checker-code controls, judged by T13.0, move to a new `ownership-checker` group, so a plugin or registry change runs `ownership` without them
+- P794, P796 and P798 match any version or figure, so a version bump no longer edits them
+- The harness self-test jobs run when the harness or the gate changes, and on main and weekly
+- ARCHITECTURE, ROADMAP, CLAUDE.md, CONTRIBUTING, the capability map, the README and the PR template describe the scoped CI
+
+### Notes
+
+- The control figure is 904 (877 plus P813–P839) and the decision figure 23
+- Review before release (correctness, checked against the code and by running it). Two under-selections, fixed:
+  - `ascent-ops`'s behavior tests read the observability contract and the template;
+  - `ascent-architecture`'s R12 reads every plugin's directory.
+
+  Both are now found from the tests themselves (a `$ROOT/<path>`, a glob over every plugin), when the scope runs. Also fixed:
+  - the Scope job's own output file sat in the checkout, untracked, and would have made every pull request run everything; it now goes to `$RUNNER_TEMP`;
+  - the harness diff is read with git's colour, external diff and prefixes reset, and fails closed when no changed line is found;
+  - a harness-group control line also runs `test-mutants-harness`;
+  - a pipe that SIGPIPE could have misread is gone;
+  - if the Scope job fails, the gate runs whole
+- No plugin changed, so no plugin version or `make/plugins.lock` row changed
+
+---
+
 ## [0.4.17] — 2026-11-15
 
 **The headline figures in the banner, checked against the repository.** The README banner now carries the six figures on one line under the plugin line, which names all six released plugins, `quality` included. The ownership gate reads both banner files and the image's alt text, so the banner cannot drift from the repository.
