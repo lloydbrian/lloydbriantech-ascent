@@ -14,7 +14,7 @@ Every review is read-only. The architecture, ux, ops, quality and security plugi
 |---|---|---|---|
 | **Driving business value** | Does the system deliver what users need at a cost and speed the business can sustain? | `ascent-architecture`, `ascent-delivery`, `ascent-ux`, `ascent-quality` | Partial: cost and delivery speed are measured; the outcome a change achieves is not |
 | **Compliance** | Can the team show evidence against the standards it must meet? | `ascent-ux`, `ascent-ops`, `ascent-security` | Partial by design: evidence for WCAG 2.2 AA and secure configuration; no certification preparation |
-| **Trust and security** | Can users and operators trust the system with their data and their infrastructure? | `ascent-security`, `ascent-delivery`, `ascent-ops` | Partial: secrets, hardening and posture are strong; no threat model and no live security testing |
+| **Trust and security** | Can users and operators trust the system with their data and their infrastructure? | `ascent-security`, `ascent-delivery`, `ascent-ops` | Partial: secrets, hardening and posture are strong; the threat model and live security testing are checked, and their evidence depends on the operator's runs and a person's review |
 | **Resilience** | Does the system keep running, and recover quickly when it does not? | `ascent-ops`, `ascent-architecture`, `ascent-delivery`, `ascent-quality` | Partial: restore, failover and readiness are proven by the operator's drill records; availability and portability are read from design and configuration |
 
 Coverage levels:
@@ -63,8 +63,8 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 | Operator boundary and privacy | `ascent-delivery` hook and privacy rules | Claude cannot commit, push or deploy; credentials and personal data never stored | Strong |
 | AI behavior | embedded `ascent-ai-evals` | Eval cases for AI features | Partial: scaffolded projects only |
 | Dependency vulnerabilities and supply chain | `ascent-security` (`dependency-check`, SEC-D1–D10); embedded `ascent-dependency-health` | Lockfiles, sources and licences; an offline trivy scan of lockfiles and local images with the database date; scanner ignore entries tied to waiver ADRs | Strong with trivy and a current database; Partial without one (the scan is reported unmeasured) ([ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md)) |
-| Security testing (live) | — | — | **Gap, committed:** `ascent-security` 0.3.0, operator-run ([ROADMAP.md](ROADMAP.md#committed-follow-ups)) |
-| Threat model | — | — | **Gap** |
+| Security testing (live) | `ascent-security` (`security-test`, SEC-L1–L10) | Headers, TRACE and CONNECT, path traversal, unauthenticated writes, oversized bodies, disclosure, a prompt-injection canary and an AI burst, run by the operator against local or beta; ZAP, nuclei and dalfox reports from pinned containers | Partial: unauthenticated only, and only as fresh as the operator's last run |
+| Threat model | `ascent-security` (`threat-model`, SEC-T1–T4) | STRIDE per entry point; every contract endpoint an entry point, every threat mitigated in a named file or accepted under an ADR, reviewed by a person | Partial: checks that threats are recorded and answered, not that the answers are right |
 
 ### Resilience
 

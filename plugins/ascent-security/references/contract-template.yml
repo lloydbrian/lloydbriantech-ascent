@@ -53,10 +53,50 @@ security:
     #   - app:1.4.2
     #   - build/app-image.tar
 
+  # What an attacker can reach (security-test, threat-model; live-rules.md). Proposed
+  # from the routes in the code. auth: required | none. flags: write (changes data),
+  # ai (calls a model). Each entry is passed to the scripts as one
+  # --endpoint 'METHODS PATH AUTH FLAGS'.
+  endpoints: []
+  #   - path: /api/items/{id}
+  #     methods: [GET, DELETE]
+  #     auth: required
+  #     flags: [write]
+  #   - path: /api/chat
+  #     methods: [POST]
+  #     auth: required
+  #     flags: [ai]
+
+  # Live checks the operator runs (security-test, SEC-L1–L10). Targets are local or
+  # beta: a target named prod or production, or marked prod: yes, runs only with
+  # allow_prod: yes. No credentials in these URLs; the checks are unauthenticated.
+  live:
+    targets: []
+    #   - name: local
+    #     url: http://127.0.0.1:8080
+    #   - name: beta
+    #     url: https://beta.example.com
+    allow_prod: no
+    results_dir: docs/security/live/
+    # Results older than this many days are SEC-L10. Default 30.
+    max_age_days: 30
+    # The body size the application accepts; the oversize probe sends 100 KB more.
+    max_body_bytes: 1048576
+    # The lowest ZAP, nuclei or dalfox severity that is rated (SEC-L9): Critical |
+    # High | Medium | Low. Below it, findings are counted, unrated. Default High.
+    scan_threshold: High
+
+  # The threat model (threat-model, SEC-T1–T4). A person reviews it within this many
+  # days. Default 180.
+  threat_model:
+    path: docs/security/THREAT-MODEL.md
+    review_max_age_days: 180
+
   adr_dir: docs/adr/
-  # Accepted risks: a scanner ignore entry (SEC-D10) or an advisory (SEC-D7, SEC-D9)
-  # whose id is listed under an ADR here is Info. review_by is when it is looked at
-  # again.
+  # Accepted risks: a scanner ignore entry (SEC-D10), an advisory (SEC-D7, SEC-D9) or
+  # a live or threat finding (SEC-L4:/api/items/{id}, a ZAP pluginid, a nuclei
+  # template-id, dalfox:<param>) whose id is listed under an ADR here is Info.
+  # review_by is when it is looked at again.
   waivers: []
   # waivers:
   #   - id: ADR-021

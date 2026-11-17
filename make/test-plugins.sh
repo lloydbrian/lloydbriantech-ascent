@@ -12,7 +12,8 @@
 #       and all copies are identical; every copy of the architecture severity
 #       table (arch-severity markers), the UX severity table (ux-severity markers),
 #       the operations severity table (ops-severity markers), the dependency
-#       severity table (dep-severity markers) and the quality severity table
+#       severity table (dep-severity markers), the live security severity table
+#       (live-severity markers) and the quality severity table
 #       (qa-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
@@ -238,6 +239,7 @@ marked_table arch-severity architecture
 marked_table ux-severity UX
 marked_table ops-severity operations
 marked_table dep-severity dependency
+marked_table live-severity live
 marked_table qa-severity quality
 fi
 
