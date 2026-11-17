@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.18 (CI runs what a change can affect), November 15, 2026; the last plugin release is v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant). Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
+**Current state:** v0.4.19 (the CI scope on macOS's bash 3.2), November 16, 2026, after v0.4.18 (CI runs what a change can affect); the last plugin release is v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant). Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
@@ -35,7 +35,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
 | Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Planned |
 
-Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, v0.4.17 puts its figures in the README banner, and v0.4.18 scopes CI to what a change can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)).
+Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, v0.4.17 puts its figures in the README banner, and v0.4.18 scopes CI to what a change can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)), fixed for macOS's bash 3.2 in v0.4.19.
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 
@@ -249,6 +249,12 @@ The README banner carries the headline figures on one line under the plugin line
 **Status:** ✅ Complete (November 15, 2026)
 
 A pull request runs the cheap checks (`make qa`, `make test-skills`, the plugin gate) on both platforms, and only the slow checks its changed paths can affect: the behavior tests of the plugins it touches, T13.0 when the ownership checker changes, the harness self-tests when the harness or the gate changes, and the negative controls of the groups it affects plus every control that edits a changed file. Fast-mode baselines run only their controls' checks, T13.0 runs in parallel, and a newer push cancels the older run. Pushes to main and the weekly run still run everything. `make gate-changed` runs the same scope locally ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)).
+
+### v0.4.19: The CI scope on macOS's bash 3.2
+
+**Status:** ✅ Complete (November 16, 2026)
+
+v0.4.18's scope script put a `case` statement inside `$( )`, which bash 3.2, macOS's `/bin/bash`, cannot parse, so the macOS gate failed on main and on every pull request. The script no longer does, and the scope self-test (T15) fails a case on any shell error.
 
 ---
 
