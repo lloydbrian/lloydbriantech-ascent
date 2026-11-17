@@ -59,7 +59,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1.30-alpine
     container_name: <<CONTAINER_DEV>>-nginx
     labels:
       project: <<PROJECT_LABEL>>

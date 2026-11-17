@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Render SDLC-sectioned help by parsing make targets annotated with `## SECTION: description`.
+# Usage: make help (or bash make/help.sh). --help prints this text.
 #
 # Project-level section order per MAKE-NAMING.md:
 #   META · DEV · TEST · QA · SEC · VALIDATE · DOCS · INFRA
@@ -7,6 +8,8 @@
 # Compatible with bash 3.2.
 
 set -euo pipefail
+
+case "${1:-}" in -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;; esac
 
 SECTIONS=(META DEV TEST QA SEC VALIDATE DOCS INFRA)
 

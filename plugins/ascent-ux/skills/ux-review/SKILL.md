@@ -10,7 +10,7 @@ description: >-
   runs the static checks and a Playwright browser pass with a walk of each core
   flow, and reports strong, moderate or weak with file:line and WCAG evidence.
   For a quick design-level critique, design:accessibility-review fits.
-version: 0.3.0
+version: 0.3.1
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -155,8 +155,8 @@ bash "$PLUGIN_ROOT/scripts/check-token-contrast.sh" [--pairs <contract contrast_
 
 - Pass `--core` once for each file of a core flow, so UX-U3 and UX-U12 failures there are High.
 - Each static `FAIL` line is a finding with the severity it prints, marked "static".
-- Each `NOTE` line is unrated: list it under Other observations and settle it in the browser pass (an `<h1>` rendered by a script, a box-shadow focus ring whose contrast is not computed, a link built at runtime, a flow step that is a route).
-- A UX-R `FAIL` is read against the shared hook or service the file imports before it is rated: the script does not follow imports (flow-check Step 3).
+- Each `NOTE` line is unrated: list it under Other observations and settle it in the browser pass (an `<h1>` rendered by a script, a box-shadow focus ring whose colour cannot be read, a link built at runtime, a flow step that is a route).
+- A UX-R `FAIL` is read against the shared hook or service the file imports before it is rated: for UX-R1 and UX-R2 the script reads relative imports one level deep and names them in the finding, and follows nothing further (flow-check Step 3).
 - Contrast `FAIL` lines are Medium findings (1.4.3 or 1.4.11). Pairs marked "inferred" came from CSS rules or token names; say so.
 - If Bash is unavailable or the operator declines it, apply UX-U1–U12 by reading the markup and say "checks applied by reading; scripts not run". Never estimate a contrast ratio by eye: say "contrast not computed".
 

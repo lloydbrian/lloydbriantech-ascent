@@ -19,9 +19,9 @@ Installing it also installs and enables its companions: `design` (Anthropic dire
 | `design-system-check` | skill | token source, values that bypass tokens, contrast in every theme, theming, motion, component states |
 | `design-directions` | skill | five predefined directions shown as checked mocks of the project's pages, more on request, ADR and token hand-off |
 | `ux-reviewer` | agent, read-only | independent static review; a delivery-loop review lens for UI changes |
-| `check-web-accessibility.sh` | script | UX-U1–U12 static checks on HTML, JSX/TSX, Vue, Svelte, Astro, server templates and HTML inside JS/TS template literals (single-page-app views) |
-| `check-flow-integrity.sh` | script | UX-F1–F4 and F7 static checks: links, form actions, router links and navigation calls resolve to a file or route (React Router, Vue Router, file-based routes in pages/, app/ and SvelteKit); in-page and ARIA targets exist; core-flow steps have a way forward and a way out; a not-found route exists; build targets match the contract's browsers |
-| `check-ux-resilience.sh` | script | UX-R1–R7 and UX-P1–P4 static checks: scripted submits are guarded, failed requests (fetch, axios, React Query, SWR) are shown and can be retried, long core forms keep a draft, listed view state is in the URL, an offline notice when required, optimistic updates roll back, progress feedback, motion through tokens, no pre-checked consent, a way to cancel after sign-up |
+| `check-web-accessibility.sh` | script | UX-U1–U12 static checks on HTML, JSX/TSX, Vue, Svelte, Astro, server templates and HTML inside JS/TS template literals (single-page-app views); a box-shadow focus ring needs 3:1 against the page background in every theme, and a delegated click selector is matched in every scanned file |
+| `check-flow-integrity.sh` | script | UX-F1–F4 and F7 static checks: links, form actions, router links and navigation calls resolve to a file or route (React Router, Vue Router, file-based routes in pages/, app/ and SvelteKit); in-page and ARIA targets exist; core-flow steps have a way forward and a way out, and no other page is a dead end; a not-found route exists; build targets match the contract's browsers |
+| `check-ux-resilience.sh` | script | UX-R1–R7 and UX-P1–P4 static checks: scripted submits are guarded, failed requests (fetch, axios, React Query, SWR) are shown and can be retried, long core forms keep a draft, listed view state is in the URL, an offline notice when required, optimistic updates roll back, progress feedback, motion through tokens, no pre-checked consent, a way to cancel after sign-up; a guard or failure path in a local hook or service the file imports counts |
 | `check-token-contrast.sh` | script | exact WCAG contrast for token pairs, per theme, from Design Tokens JSON or CSS custom properties |
 | `tokens-to-css.sh` | script | Design Tokens JSON to CSS custom properties, light and dark |
 | `directions/` | data | UX-D1 Clean neutral, UX-D2 Bold brand, UX-D3 Editorial, UX-D4 Soft friendly, UX-D5 Dense professional |
@@ -31,22 +31,25 @@ Installing it also installs and enables its companions: `design` (Anthropic dire
 ## Evidence, strongest first
 
 1. **Browser pass** (Playwright): the live accessibility tree, a keyboard walk, focus screenshots, 320px reflow, reduced motion, dark mode and target sizes. It runs on `file://`, `localhost` or, for navigation only, a URL the operator names, never with real data; it submits a form only with the operator's `test_data` fixture on `localhost`.
-2. **Scripts:** exact contrast; static markup checks, labelled "static" until the browser confirms them.
+2. **Scripts:** exact contrast; static markup, flow-integrity and reliability checks, labelled "static" until the browser confirms them.
 3. **Reading code:** the agent's view.
 
 No report claims WCAG conformance. Every report ends with the manual keyboard and screen-reader checklist still to do.
 
 ## Other engines
 
-The `playwright` companion runs Chromium. For UX-F6, `flow-check` asks the operator to add one more Playwright server per engine in `ux.engines`, beside the companion (Firefox and WebKit have not been trialled yet, so report what goes wrong):
+The `playwright` companion runs Chromium. For UX-F6, `flow-check` asks the operator to add one more Playwright server per engine in `ux.engines`, beside the companion. Install the browsers with the `playwright` version the server itself uses: a plain `npx playwright install` takes the latest stable release, whose browser revisions the server may not load.
 
 ```bash
-npx playwright install firefox webkit
+PW="$(npm view @playwright/mcp@latest dependencies.playwright)"
+npx -y "playwright@$PW" install firefox webkit
 claude mcp add --scope local playwright-firefox -- npx @playwright/mcp@latest --browser firefox
 claude mcp add --scope local playwright-webkit -- npx @playwright/mcp@latest --browser webkit
 ```
 
 Restart Claude Code after adding one; its tools are `mcp__playwright-firefox__*` (or `-webkit`). WebKit is Safari's engine, not Safari. Remove them afterwards with `claude mcp remove playwright-firefox` and `claude mcp remove playwright-webkit`; the companion server is never changed.
+
+Trialled in v0.4.20 with Firefox 159 and WebKit 27.2 on three of the 0.3.0 trial repositories: both engines walked every page and confirmed what Chromium found. Where the engines differ, and how the walk allows for it, is in `flow-check` Step 5.
 
 ## Maturity targets
 

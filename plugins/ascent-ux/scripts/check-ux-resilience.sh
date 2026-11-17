@@ -39,9 +39,14 @@
 # PASS line per check with no finding (with the count checked), N/A when a check
 # found nothing to check or its contract key is missing, then
 # "check-ux-resilience: ...".
-# Limits: static and file-scoped. A guard, failure branch, draft or retry counts when
-# it is in the same file as the form or request it serves; logic in another file
-# (a shared hook or service) is not followed, so read it before rating. A failure
+# Limits: static. A guard, failure branch, draft or retry counts when it is in the
+# same file as the form or request it serves. For UX-R1 and UX-R2 the local modules
+# that file imports are read too (relative imports, one level: a shared hook or
+# service, resolved with .js, .ts, .jsx, .tsx, .mjs, .cjs, .vue, .svelte or
+# /index.*): a guard there counts for UX-R1, and a module whose every failure branch
+# shows something counts for a request with no failure path of its own; a finding
+# names the modules read. Logic further away is not followed, so read it before
+# rating. A failure
 # branch is the body of a .catch(), a catch block, an !res.ok / status check or an
 # onError handler. Every finding is "static" until the browser pass confirms it.
 # Exit: 0 no FAIL; 1 at least one FAIL; 2 bad input.
@@ -196,6 +201,73 @@ function tag_end(s,   i, c, d, q) {
   return 0
 }
 function is_code(f) { return f !~ /\.(css|scss)$/ }
+# A guard against a second submit, in lowercased text.
+function has_guard(lt) { return lt ~ /\.disabled[ \t]*=[ \t]*true|[ \t:]disabled[ \t]*=[ \t]*[{"\047]?[ \t]*\{?[ \t]*!?[a-z0-9_$]*[.]?(issubmitting|submitting|pending|ispending|busy|isbusy|saving|issaving|loading|isloading)|aria-disabled|issubmitting|useformstatus|usetransition|debounce|throttle|toosoon|if[ \t]*\([ \t]*(this\.)?(busy|submitting|pending|saving|inflight|isbusy|issubmitting|issaving)[ \t]*\)[ \t]*return/ }
+# A failure branch that shows something itself: a throw only hands it to the caller.
+function shows_user(b) { gsub(/throw[ \t(][^;\n}]*/, "", b); return visible(b) }
+# Local imports: relative specifiers, resolved against the scanned files.
+function dirof(f) { return (f ~ /\//) ? substr(f, 1, match(f, /\/[^\/]*$/) - 1) : "" }
+function normpath(p,   n, a, i, k, out) {
+  n = split(p, a, "/"); k = 0
+  for (i = 1; i <= n; i++) { if (a[i] == "" || a[i] == ".") continue; if (a[i] == "..") { if (k == 0) return ""; k--; continue } NP[++k] = a[i] }
+  out = (p ~ /^\//) ? "/" : ""; for (i = 1; i <= k; i++) out = out (i > 1 ? "/" : "") NP[i]
+  return out
+}
+function resolve_import(f, spec,   q, n, ex, e) {
+  q = normpath((dirof(f) == "" ? "" : dirof(f) "/") spec); if (q == "") return ""
+  if (q in FIDX) return q
+  n = split(".js .ts .jsx .tsx .mjs .cjs .vue .svelte", ex, " ")
+  for (e = 1; e <= n; e++) if ((q ex[e]) in FIDX) return q ex[e]
+  for (e = 1; e <= n; e++) if ((q "/index" ex[e]) in FIDX) return q "/index" ex[e]
+  return ""
+}
+function imports_of(f, t,   rest, sp, g, out) {
+  out = ""; rest = t
+  while (match(rest, /(from|import|require)[ \t]*\(?[ \t]*["\047]\.\.?\/[^"\047\n]+["\047]/)) {
+    sp = substr(rest, RSTART, RLENGTH); rest = substr(rest, RSTART + RLENGTH)
+    sub(/^[^"\047]*["\047]/, "", sp); sub(/["\047]$/, "", sp)
+    g = resolve_import(f, sp)
+    if (g != "" && g != f && index(out SUBSEP, SUBSEP g SUBSEP) == 0) out = out SUBSEP g
+  }
+  return out
+}
+# The first module F imports that holds a guard ("guard") or shows its failures ("shows").
+function imp_with(f, what,   n, im, i) {
+  n = split(IMPS[f], im, SUBSEP)
+  for (i = 2; i <= n; i++) if ((what == "guard" && (im[i] in GUARD)) || (what == "shows" && (im[i] in SHOWS))) return im[i]
+  return ""
+}
+function imp_note(f,   n, im, i, out) {
+  n = split(IMPS[f], im, SUBSEP); if (n < 2) return ""
+  out = ""; for (i = 2; i <= n; i++) out = out (i > 2 ? ", " : "") shown(im[i])
+  return "; the local modules it imports were read too: " out
+}
+# UX-R2 failure branches of the requests in T: returns their number, sets NVIS to the
+# number that show something; with EMIT, counts them and fails the silent ones.
+function r2_branches(f, t, sev, emit,   nb, rest, off, ms, ml, at, m, x, b) {
+  nb = 0; NVIS = 0; rest = t; off = 0
+  while (match(rest, /\.catch\(|catch[ \t]*(\([^)]*\))?[ \t]*\{|!(res|resp|response|r)\.ok|\.status[ \t]*(>=[ \t]*[45]|!==?[ \t]*2)|onError[ \t]*[:=(]|\.onerror[ \t]*=/)) {
+    ms = RSTART; ml = RLENGTH; at = off + ms; m = substr(rest, ms, ml)
+    off += ms + ml - 1; rest = substr(rest, ms + ml)
+    # !res.ok and a status test are a branch only as an if condition, not inside an expression
+    if (m ~ /\.ok$|status/ && rest !~ /^[ \t]*\)/ && rest !~ /^[ \t]*[0-9]*[ \t]*\)/) continue
+    if (m ~ /^\.catch\(/) {
+      x = chain_before(t, at)
+      # a .catch on .json() or .text() is a parse fallback, not a request failure
+      if (!has_req(x) || x ~ /\.(json|text|blob|arrayBuffer)\(\)[ \t\r\n]*$/) continue
+      b = bracket_body(t, at + ml - 1)
+    } else if (m ~ /^catch/) {
+      if (!has_req(try_body(t, at))) continue
+      b = bracket_body(t, at + ml - 1)
+      # a finally block that runs after the catch counts with it
+      x = substr(t, at + ml - 1 + length(b) + 2)
+      if (match(x, /^[ \t\r\n]*finally[ \t\r\n]*\{/)) b = b " " bracket_body(x, RLENGTH)
+    } else b = branch_body(t, at + ml)
+    nb++; if (shows_user(b)) NVIS++
+    if (emit) { CHK["R2"]++; if (!visible(b) && !handed_on(b)) fail("R2", f, line_at(t, at), "a failed request shows nothing to the user here (only logging, or nothing); set an error state or message, or hand it to the caller", sev) }
+  }
+  return nb
+}
 
 function check_file(f, t,   lt, core, sev, req, hooks, ms, ml, rest, off, at, b, nb, ln, m, n, i, k, form, cnt, tag, nm, ty, sub_, fl, x, hk) {
   lt = tolower(t); core = (f in COREF); sev = core ? "" : "Low"
@@ -209,30 +281,14 @@ function check_file(f, t,   lt, core, sev, req, hooks, ms, ml, rest, off, at, b,
   # UX-R2: every failure branch of a request shows something, or hands the failure to
   # the caller; a request with no failure branch is returned to its caller or fails.
   if (req || hooks) {
-    nb = 0; rest = t; off = 0
-    while (match(rest, /\.catch\(|catch[ \t]*(\([^)]*\))?[ \t]*\{|!(res|resp|response|r)\.ok|\.status[ \t]*(>=[ \t]*[45]|!==?[ \t]*2)|onError[ \t]*[:=(]|\.onerror[ \t]*=/)) {
-      ms = RSTART; ml = RLENGTH; at = off + ms; m = substr(rest, ms, ml)
-      off += ms + ml - 1; rest = substr(rest, ms + ml)
-      # !res.ok and a status test are a branch only as an if condition, not inside an expression
-      if (m ~ /\.ok$|status/ && rest !~ /^[ \t]*\)/ && rest !~ /^[ \t]*[0-9]*[ \t]*\)/) continue
-      if (m ~ /^\.catch\(/) {
-        x = chain_before(t, at)
-        # a .catch on .json() or .text() is a parse fallback, not a request failure
-        if (!has_req(x) || x ~ /\.(json|text|blob|arrayBuffer)\(\)[ \t\r\n]*$/) continue
-        b = bracket_body(t, at + ml - 1)
-      } else if (m ~ /^catch/) {
-        if (!has_req(try_body(t, at))) continue
-        b = bracket_body(t, at + ml - 1)
-        # a finally block that runs after the catch counts with it
-        x = substr(t, at + ml - 1 + length(b) + 2)
-        if (match(x, /^[ \t\r\n]*finally[ \t\r\n]*\{/)) b = b " " bracket_body(x, RLENGTH)
-      } else b = branch_body(t, at + ml)
-      nb++; CHK["R2"]++
-      if (!visible(b) && !handed_on(b)) fail("R2", f, line_at(t, at), "a failed request shows nothing to the user here (only logging, or nothing); set an error state or message, or hand it to the caller", sev)
-    }
+    nb = r2_branches(f, t, sev, 1)
     # a data hook whose error the component shows is a failure path that was checked and met
     if (nb == 0 && hooks && t ~ /isError|[^A-Za-z_.]error[ \t]*(&&|\?|\))|\.error[ \t]*(&&|\?|\))|[^A-Za-z_.]error\.message|status[ \t]*===?[ \t]*["\047`]error|v-if="[^"]*error|\{#if[^}]*error/) CHK["R2"]++
-    else if (nb == 0 && t !~ /\.kind[ \t]*[!=]==?[ \t]*["\047`]|\.(ok|error)[ \t]*(\)|&&|\|\||\?)/ && !(req && t ~ /return[ \t]+(await[ \t]+)?(fetch|axios|\$fetch|ofetch|[A-Za-z_.]*[Aa]pi\.)|=>[ \t]*(fetch|axios|\$fetch|ofetch|[A-Za-z_.]*[Aa]pi\.)[.(A-Za-z]/)) { CHK["R2"]++; fail("R2", f, line_at(t, req ? req : hk), "this request has no failure path (no .catch, catch block, ok or status check); a failure is invisible", sev) }
+    else if (nb == 0 && t !~ /\.kind[ \t]*[!=]==?[ \t]*["\047`]|\.(ok|error)[ \t]*(\)|&&|\|\||\?)/ && !(req && t ~ /return[ \t]+(await[ \t]+)?(fetch|axios|\$fetch|ofetch|[A-Za-z_.]*[Aa]pi\.)|=>[ \t]*(fetch|axios|\$fetch|ofetch|[A-Za-z_.]*[Aa]pi\.)[.(A-Za-z]/)) {
+      # a local module this file imports that shows every failure it catches serves it
+      CHK["R2"]++
+      if (imp_with(f, "shows") == "") fail("R2", f, line_at(t, req ? req : hk), "this request has no failure path (no .catch, catch block, ok or status check); a failure is invisible" imp_note(f), sev)
+    }
     # UX-R3: a core file that handles failures lets the user try again.
     if (core && nb > 0) { CHK["R3"]++; if (lt !~ /retry|try again|tryagain|refetch\(|mutate\(|reload\(/) fail("R3", f, line_at(t, req ? req : 1), "failed requests in a core flow offer no way to try again (a retry control, or retry in code)") }
   }
@@ -241,8 +297,8 @@ function check_file(f, t,   lt, core, sev, req, hooks, ms, ml, rest, off, at, b,
   if (sub_ && (req || hooks || lt ~ /\$emit\(|dispatch\(|mutate\(|action\(/)) {
     ln = match(lt, /onsubmit[ \t]*=|@submit|on:submit|v-on:submit|addeventlistener\([ \t]*["\047]submit|\.onsubmit[ \t]*=|handlesubmit\(/) ? line_at(t, RSTART) : 1
     CHK["R1"]++
-    if (lt !~ /\.disabled[ \t]*=[ \t]*true|[ \t:]disabled[ \t]*=[ \t]*[{"\047]?[ \t]*\{?[ \t]*!?[a-z0-9_$]*[.]?(issubmitting|submitting|pending|ispending|busy|isbusy|saving|issaving|loading|isloading)|aria-disabled|issubmitting|useformstatus|usetransition|debounce|throttle|toosoon|if[ \t]*\([ \t]*(this\.)?(busy|submitting|pending|saving|inflight|isbusy|issubmitting|issaving)[ \t]*\)[ \t]*return/)
-      fail("R1", f, ln, "this form is submitted by a script with no guard against a second click (disable the button, aria-disabled, or a pending flag)", sev)
+    if (!has_guard(lt) && imp_with(f, "guard") == "")
+      fail("R1", f, ln, "this form is submitted by a script with no guard against a second click (disable the button, aria-disabled, or a pending flag)" imp_note(f), sev)
     if (core) { CHK["P1"]++; if (lt !~ /aria-busy|spinner|loading|isloading|saving|issaving|<progress|role="progressbar"|role=.progressbar|pending|ispending|issubmitting/) fail("P1", f, ln, "an async action in a core flow shows no progress before the request returns (aria-busy, a spinner, a loading or saving state)") }
   }
 
@@ -325,7 +381,17 @@ BEGIN {
     g = ARGV[i]; f = g; sub(/^\.\//, "", f); T = ""; big = 0; while ((getline x < g) > 0) { T = T x "\n"; if (length(T) > 524288) { big = 1; break } } close(g)
     if (big) { BIG = BIG sprintf("NOTE  %-7s %-6s %s:1  not read: larger than 512 KB, so a bundle rather than source; the browser pass covers it\n", "UX-R", "-", shown(f)); T = "" }
     T = blank_between(T, "<!--", "-->"); T = code_comments(T, f)
-    FILES[i] = f; TEXT[i] = T
+    FILES[i] = f; TEXT[i] = T; FIDX[f] = i
+  }
+  # what each code file offers the files that import it
+  for (i = 1; i < ARGC; i++) {
+    f = FILES[i]; T = TEXT[i]; if (!is_code(f)) continue
+    IMPS[f] = imports_of(f, T)
+    if (has_guard(tolower(T))) GUARD[f] = 1
+    if (has_req(T) && (nb = r2_branches(f, T, "", 0)) > 0 && NVIS == nb) SHOWS[f] = 1
+  }
+  for (i = 1; i < ARGC; i++) {
+    f = FILES[i]; T = TEXT[i]
     check_file(f, T)
     if (MOTION) check_motion(f, T)
     lt = tolower(T)

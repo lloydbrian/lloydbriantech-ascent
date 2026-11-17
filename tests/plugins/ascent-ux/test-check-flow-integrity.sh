@@ -132,6 +132,26 @@ matrix() {
   run "$GOOD" --flow "spa=react/src/Teams.jsx,react/src/main.jsx" --browsers "$BROWSERS" .
   clean "f3: component steps are not failed"; has_line "f3-component" 'is a component without a file-based route'
 
+  # UX-F3, 0.3.1 (from the 0.3.0 trial): with more than one HTML page, a full page with no
+  # link, form, button, script, back control or refresh is a dead end (Low; Medium in a
+  # --core file, like a core step with no way out). One page
+  # alone, a page with a script, an external link or a refresh, and a flow step are not.
+  rm -rf "$WORK/dead"; mkdir -p "$WORK/dead"
+  printf '<html lang="en"><head><title>Home</title></head><body><h1>Home</h1><a href="thanks.html">Thanks</a> <a href="ext.html">e</a> <a href="spa.html">s</a> <a href="refresh.html">r</a></body></html>\n' > "$WORK/dead/index.html"
+  printf '<html lang="en"><head><title>Thanks</title></head><body><h1>Thanks</h1><p>All done.</p></body></html>\n' > "$WORK/dead/thanks.html"
+  printf '<html lang="en"><head><title>E</title></head><body><a href="https://example.org/">Elsewhere</a></body></html>\n' > "$WORK/dead/ext.html"
+  printf '<html lang="en"><head><title>S</title></head><body><div id="root"></div><script src="main.js"></script></body></html>\n' > "$WORK/dead/spa.html"
+  printf 'console.log(1)\n' > "$WORK/dead/main.js"
+  printf '<html lang="en"><head><title>R</title><meta http-equiv="refresh" content="3; url=index.html"></head><body><p>Moving.</p></body></html>\n' > "$WORK/dead/refresh.html"
+  run "$WORK/dead" .
+  [ "$RC" -eq 1 ] && [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  UX-F3 ')" = 1 ] && printf '%s\n' "$OUT" | grep -qF "FAIL  UX-F3   Low    ./thanks.html:1  the page has no link, form, button or script: a user can leave it only with the browser's back button (a dead end)" && ok || bad "f3-dead: only thanks.html is a dead end: $(printf '%s' "$OUT" | grep 'UX-F3' | tr '\n' ';')"
+  run "$WORK/dead" --core thanks.html .
+  printf '%s\n' "$OUT" | grep -q '^FAIL  UX-F3   Medium \./thanks\.html:1  the page has no link' && ok || bad "f3-dead: a dead end in a --core file is Medium: $(printf '%s' "$OUT" | grep 'UX-F3' | tr '\n' ';')"
+  run "$WORK/dead" --flow "done=index.html,thanks.html" .
+  [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  UX-F3 ')" = 1 ] && printf '%s\n' "$OUT" | grep -q '^FAIL  UX-F3   Medium .\/thanks.html:1  flow done: step 2 has no way back or out' && ok || bad "f3-dead: a flow step is reported once, by the flow rule: $(printf '%s' "$OUT" | grep 'UX-F3' | tr '\n' ';')"
+  run "$WORK/dead" ./thanks.html
+  ! printf '%s\n' "$OUT" | grep -q '^FAIL  UX-F3 ' && ok || bad "f3-dead: one page alone is not a dead end: $(printf '%s' "$OUT" | grep 'UX-F3' | tr '\n' ';')"
+
   # UX-F4: a not-found page, a catch-all route or a server fallback, per app.
   for app in site react vue svelte; do run "$GOOD/$app" .; printf '%s\n' "$OUT" | grep -q '^PASS  UX-F4 ' && ok || bad "f4: $app alone must pass UX-F4: $(printf '%s\n' "$OUT" | grep UX-F4)"; done
   rm -rf "$WORK/f4"; cp -R "$GOOD/site" "$WORK/f4"; rm "$WORK/f4/404.html"

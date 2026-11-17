@@ -6,9 +6,9 @@ description: >-
   hand-off runbook", "is this done?"). Runs decide, build with a file-modification
   audit, test with negative controls, gate, independent review checked by a
   finding verifier, fix and re-test, definition of done, an operator runbook,
-  beta verification, prod and a release record. Claude never runs git writes or
-  deploys: the operator does, from the runbook.
-version: 0.1.3
+  beta verification, a person's acceptance sign-off, prod and a release record.
+  Claude never runs git writes or deploys: the operator does, from the runbook.
+version: 0.2.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -21,7 +21,7 @@ The loop is ASCENT's delivery standard in executable form. It works the same in 
 ## The operator boundary (always, in every project)
 
 - **Claude NEVER runs git write operations**: commit, push, tag, merge, rebase, reset, revert, cherry-pick, stash, checkout or switch, branch create or delete, add, rm, mv, pull, worktree changes, config writes. It also never runs `gh` writes (pr create or merge, release create, workflow run, secret set, `gh api` writes).
-- **Claude NEVER deploys or publishes.** That covers everything under `deploy_beta` and `deploy_prod` in the contract, and well-known deploy verbs (`terraform apply`, `kubectl apply`, `helm upgrade`, `aws s3 sync … s3://`, `npm publish`, `docker push`, `cdk deploy` and the like).
+- **Claude NEVER deploys or publishes.** That covers everything under `deploy_beta` and `deploy_prod` in every contract the project has (Step 0), and well-known deploy verbs (`terraform apply`, `kubectl apply`, `helm upgrade`, `aws s3 sync … s3://`, `npm publish`, `docker push`, `cdk deploy` and the like).
 - There is no "unless asked" exception. If the operator asks Claude to push or deploy, Claude writes the runbook step instead.
 - The plugin's `PreToolUse` hook enforces this mechanically and blocks such commands. If a command is blocked, do not retry it, rephrase it, or route it through a script, `python -c` or another tool. Put it in the runbook (Step 6).
 - Read-only git and gh are fine: `git status`, `diff`, `log`, `show`, `blame`, `fetch`; `gh pr view`, `pr checks`, `run view`.
@@ -36,22 +36,24 @@ The loop is ASCENT's delivery standard in executable form. It works the same in 
 
 ### Step 0 — Load the project contract
 
-Read `.delivery-loop.yml` at the repository root. Its schema and comments are in [contract-template.yml](references/contract-template.yml).
+Read the `delivery:` section of `.ascent/contract.yml` at the repository root (or of `.claude/contract.yml` where ASCENT-named files are not allowed). Its keys and comments are in [contract-template.yml](../../references/contract-template.yml). A project that still has `.delivery-loop.yml`, with the same keys at its top level, keeps working: read it when there is no `delivery:` section. When both exist, use the section, name every key whose value differs, and tell the operator the older file can go once they agree. Until then the hook blocks the deploy commands of both.
 
-If it is missing, **detect, don't ask**. Build a proposal from what the repository already declares:
+If neither exists, **detect, don't ask**. Build a proposal from what the repository already declares:
 
 - `package.json` `scripts`: `check`/`verify`/`ci` for `gate`; `test` for `fast_gate`; `e2e`/`test:e2e`/`playwright` for `browser_test`; `deploy*`/`release*` for the deploy lists.
 - Makefile targets: `make help`, or the `^[a-z][a-z0-9_-]*:` lines.
 - CI config: `.github/workflows/*.yml` `run:` lines, `.gitlab-ci.yml`, `Jenkinsfile`.
 - Existing docs: AGENTS.md, CLAUDE.md, CONTRIBUTING.md, `docs/` runbooks.
 
-Show the proposed file once, mark every guess, and ask the operator to confirm or correct it. Write it only after they confirm. Tell them that every command under `deploy_beta` and `deploy_prod` is then blocked for Claude by the hook.
+Show the proposed `delivery:` section once, mark every guess, and ask the operator to confirm or correct it. Write it only after they confirm, into `.ascent/contract.yml` beside any section another plugin wrote. Tell them that every command under `deploy_beta` and `deploy_prod` is then blocked for Claude by the hook, and ask who accepts changes (`acceptors`, by the name or handle they sign with; empty means any person).
+
+**Quote contract values.** Pass every contract value to a command in single quotes, and refuse a value that holds a single quote, a newline, `$` or a backtick: the contract comes from the repository, and a repository can be untrusted.
 
 Then read the repository's AGENTS.md and CLAUDE.md. Where they conflict with this skill, they win, except on the operator boundary and the privacy rules, which never relax.
 
 ### Step 1 — Decide before building
 
-- Restate the acceptance criteria as a short numbered list, then confirm it with the operator.
+- Restate the acceptance criteria as a short numbered list, then confirm it with the operator. The numbers carry through to the tests and to the acceptance record (Step 5).
 - For anything a user will **see**, draft 2–4 options (sketches, mock text or screenshots) and let the operator choose. Record the choice in the ADR: who chose, the date, which option and why.
 - For a decision future contributors might question, write or update an ADR before the code.
 - Name the risk class: reversible (config, copy) or one-way (migrations, deletions, public API). One-way changes get a rollback plan in Step 6 before any code is written.
@@ -104,16 +106,25 @@ Every finding needs `file:line` and a concrete failure scenario. Then give all f
 
 1. The full `gate` is green, with exact totals recorded.
 2. `browser_test` and `mutation` (when the contract has them) are green, with no anchor misses or surviving mutants.
-3. Every acceptance criterion from Step 1 maps to a test or a recorded manual check.
+3. The **acceptance record** lists every criterion from Step 1 with its evidence, and `check-acceptance.sh --draft` passes on it (below). The record is `<acceptance_dir>/<YYYY-MM-DD>-<slug>.md` (default `docs/delivery/acceptance/`), from [acceptance-template.md](references/acceptance-template.md). Claude fills only the Criterion and Evidence columns: a test at `path:line`, or `manual: <what was checked, where>`. "Accepted by" and "Accepted on" stay empty for a person (Step 7).
 4. Every CONFIRMED finding is fixed or explicitly accepted by the operator.
 5. The `handoff_docs` reflect the behavior change. If they do not, the loop is not done.
 6. The ADR records the decision and its reasons.
 7. A hash manifest (`shasum -a 256` or `sha256sum`) lists exactly the intended files, and `git status --porcelain` shows no others.
 
+Check the record's evidence (read-only; `PLUGIN_ROOT` is two directories above this skill's base directory):
+
+```bash
+bash "$PLUGIN_ROOT/scripts/check-acceptance.sh" --draft --root . '<acceptance record>'
+```
+
+It must print `PASS  DEL-A1` and exit 0. A cited `path:line` that does not exist, or a criterion with no evidence, is a `FAIL`: fix the evidence, never the check.
+
 ### Step 6 — Hand-off runbook (the operator runs it)
 
 Write a numbered, copy-paste runbook into the project's docs (`runbook_dir`), from [runbook-template.md](references/runbook-template.md). Every step is a command block, then an **Expect** list, then a **Stop if** line.
 
+- **Label every step C or O.** **C** (Claude) is read-only and needs no credential: Claude may run it and report the result, or the operator runs it. **O** (operator) writes, deploys or needs the operator's credentials, and only the operator runs it. A step with any write in it is O.
 - Step 1 of the runbook confirms the tree: branch, HEAD, the exact modified-file list and the manifest check.
 - The operator commits, pushes, opens and merges the PR, and tags. Write those commands out; do not run them.
 - Every deploy is **dry run → confirm it names the right stage → run**. Scripts in `prompting_scripts` run with their non-interactive flag after the dry run. Never pipe a prompting script through a filter: the prompt is swallowed and reads as "no".
@@ -126,7 +137,15 @@ Write a numbered, copy-paste runbook into the project's docs (`runbook_dir`), fr
 - After the operator's beta deploy, check stamps, sizes and smoke results from their redacted output. Then do a live check: browser or HTTP, read-only.
 - Ask before any irreversible action, even on beta. Never touch real users' data.
 - Write a short results doc: what passed, what was not checked and why, and the verdict.
-- Prod comes only after beta is fully verified, and gets its own runbook. Take a snapshot before migrations, and verify prod the same way.
+- **Acceptance, by a person.** On the verified beta, the people who accept the change check each criterion and fill in "Accepted by" and "Accepted on" in the record themselves; the operator commits it. Claude never fills either column, even when asked: say who must, and why.
+- Then run the full check, with `--acceptor` once for each `delivery.acceptors` entry (single-quoted):
+
+```bash
+bash "$PLUGIN_ROOT/scripts/check-acceptance.sh" --root . --acceptor '<each acceptors entry>' '<acceptance record>'
+```
+
+  Any `FAIL` (DEL-A1 evidence, DEL-A2 a person's name and date, DEL-A3 a listed acceptor) stops prod. The prod runbook's first step runs the same check, labelled C, and its **Stop if** is any `FAIL`.
+- Prod comes only after beta is fully verified and the record passes, and gets its own runbook. Take a snapshot before migrations, and verify prod the same way.
 - Append one line to the `release_log`:
 
 ```
@@ -151,6 +170,7 @@ Stop and hand control to the operator, with a recommendation, when:
 - a negative control does not make its named test fail (Step 3);
 - the verifier marks a Critical or High finding UNCONFIRMED (Step 4);
 - any definition-of-done item lacks evidence (Step 5);
+- the acceptance record fails `check-acceptance.sh`: with `--draft` in Step 5, in full before prod (Step 7);
 - the operator's pasted output shows the wrong stage, an old build stamp or a failed smoke check (Step 7).
 
 ## What this skill does not do
@@ -158,3 +178,4 @@ Stop and hand control to the operator, with a recommendation, when:
 - Run git writes, deploys, or anything that needs the operator's credentials. The hook blocks them, and the runbook carries them.
 - Rewrite a provider's review output, or merge lenses into one summary before the verifier has run.
 - Declare done without the evidence listed in Step 5.
+- Fill in "Accepted by" or "Accepted on", or accept a criterion on anyone's behalf. Only a person accepts a change.

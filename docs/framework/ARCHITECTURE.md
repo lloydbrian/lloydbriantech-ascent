@@ -166,7 +166,7 @@ flowchart TB
 | Plugin | Source | Decision |
 |---|---|---|
 | `ascent-security` | Hybrid: three skills generated from the template's security skills, so there is one source of truth; the hand-written `dependency-check` and its scripts | [ADR-009](DECISIONS/ADR-009-plugins-generated-from-template-skills.md), [ADR-016](DECISIONS/ADR-016-dependency-checks-in-ascent-security.md) |
-| `ascent-delivery` | Hand-written; the delivery loop, the finding verifier and the operator-boundary hook | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md) |
+| `ascent-delivery` | Hand-written; the delivery loop, the finding verifier, the operator-boundary hook and the acceptance check | [ADR-010](DECISIONS/ADR-010-delivery-loop-plugin-and-operator-boundary-hook.md), [ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md) |
 | `ascent-architecture` | Hand-written; introduces the shared project contract | [ADR-011](DECISIONS/ADR-011-architecture-plugin-and-project-contract.md) |
 | `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`); since 0.3.0, four principles and flow-integrity checks with `flow-check` | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md), [ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md) |
 | `ascent-ops` | Hand-written; operations manuals, the `/-/health` endpoint names, and recovery drills checked against the operator's records | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md) |
@@ -215,8 +215,8 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 Lockstep across layers, with `FRAMEWORK_VERSION` in the `Makefile` as the reference; T13.11 fails when the `SKILL.md` version or the capability map disagrees with it:
 
-- Layer 1: git tag on the meta-repo (`v0.4.19`)
-- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.19`)
+- Layer 1: git tag on the meta-repo (`v0.4.20`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.20`)
 - Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4: `framework_version` field in `.ascent-meta.json`
 

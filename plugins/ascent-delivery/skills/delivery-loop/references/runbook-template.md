@@ -1,6 +1,8 @@
 # Runbook template
 
-The delivery-loop skill writes one runbook per hand-off (Step 6) into the project's `runbook_dir`. The operator runs it; Claude never does. Copy the shape below and fill in every `<…>`.
+The delivery-loop skill writes one runbook per hand-off (Step 6) into the project's `runbook_dir`. Copy the shape below and fill in every `<…>`.
+
+Every step is labelled **[C]** or **[O]**. **[C]** (Claude) is read-only and needs no credential: Claude may run it and report the result, or the operator runs it. **[O]** (operator) writes, deploys or needs the operator's credentials: only the operator runs it, never Claude. A step with any write in it is [O].
 
 ## Step format
 
@@ -20,7 +22,7 @@ A step that changes anything (commit, push, tag, deploy) comes right after a ste
 **Branch:** `<branch>`  **Expected HEAD after commit:** set in step 2
 **Stages:** beta, then prod (prod has its own runbook)
 
-### 0. Prepare the shell (secrets and redaction)
+### 0. [O] Prepare the shell (secrets and redaction)
 
 Secrets go into variables. They are never typed into a command line, never echoed, and never pasted to Claude.
 
@@ -44,7 +46,7 @@ redact() {
 
 **Stop if** the token prints anywhere on screen.
 
-### 1. Confirm the tree
+### 1. [C] Confirm the tree
 
 ```bash
 git status --short --branch
@@ -60,7 +62,7 @@ shasum -a 256 -c MANIFEST.sha256     # Linux: sha256sum -c MANIFEST.sha256
 
 **Stop if** any extra file appears or any manifest line fails.
 
-### 2. Commit and push
+### 2. [O] Commit and push
 
 ```bash
 git add <exact files>
@@ -74,7 +76,7 @@ git push -u origin <branch>
 
 **Stop if** the commit includes a file not in step 1.
 
-### 3. Pull request and merge
+### 3. [O] Pull request and merge
 
 ```bash
 gh pr create --fill --base main
@@ -87,7 +89,7 @@ gh pr checks --watch
 
 **Stop if** any check fails, or the totals differ from the local gate.
 
-### 4. Deploy to beta — dry run, confirm stage, run, prove
+### 4. [O] Deploy to beta — dry run, confirm stage, run, prove
 
 ```bash
 <deploy_beta command> --dry-run 2>&1 | redact
@@ -110,7 +112,7 @@ gh pr checks --watch
 
 **Stop if** the stamp is the old commit, however healthy the health check looks.
 
-### 5. Smoke on beta
+### 5. [C] Smoke on beta (O when the smoke check needs credentials)
 
 ```bash
 <smoke> beta 2>&1 | redact
@@ -123,7 +125,25 @@ gh pr checks --watch
 
 Paste the redacted output of steps 4–5 back to Claude for beta verification (delivery-loop Step 7).
 
-### 6. Tag (after prod is verified, in the prod runbook)
+### 6. [O] Accept on beta
+
+The people who accept the change check each criterion on beta, then fill in "Accepted by" and "Accepted on" in `<acceptance record>` themselves. Claude never fills them in.
+
+```bash
+git switch main && git pull --ff-only && git switch -c docs/accept-<slug>
+git add '<acceptance record>'
+git commit -m "docs(acceptance): <slug> accepted on beta"
+git push -u origin docs/accept-<slug>
+gh pr create --fill --base main
+```
+
+**Expect**
+- every row of the record has a name and a date
+- the pull request changes only the record; merge it as in step 3
+
+**Stop if** a criterion fails on beta: it is not accepted. Go to Rollback, or back to the delivery loop.
+
+### 7. [O] Tag (after prod is verified, in the prod runbook)
 
 ```bash
 git tag -a v<version> -m "<release summary>"
@@ -146,9 +166,26 @@ git push origin v<version>
 
 ---
 
+## The prod runbook starts with the acceptance check
+
+### P1. [C] The acceptance record passes
+
+```bash
+bash "<plugin root>/scripts/check-acceptance.sh" --root . --acceptor '<each delivery.acceptors entry>' '<acceptance record>'
+```
+
+**Expect**
+- `PASS  DEL-A1`, `PASS  DEL-A2`, and `PASS  DEL-A3` (or `N/A` when the contract lists no acceptors)
+- the last line ends `0 failure(s)`
+
+**Stop if** any line starts `FAIL`. Prod does not run until the named person accepts, or the evidence is fixed.
+
+---
+
 ## Rules for whoever writes the runbook
 
 - Claude writes every git, gh and deploy command here, and never runs them. The plugin hook blocks them anyway.
+- Every step is labelled [C] or [O]. A step with any write, deploy or credential in it is [O].
 - One deploy per step, always dry run → confirm stage → run, and proved by the artifact in the same step.
 - Prod gets its own runbook, with a snapshot or backup step before any migration.
 - **Stacked pull requests.** Build each change on `main` after the previous one merges, when you can. When a pull request must stack on another:

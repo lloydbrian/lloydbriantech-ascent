@@ -4,7 +4,7 @@
 
 ASCENT's checks serve four outcomes: driving business value, compliance, trust and security, and resilience. This page maps each one to the quality attributes (the "-ilities") behind it, the plugin or skill that checks each attribute, the evidence it produces, and what is not covered yet.
 
-Every review is read-only. The architecture, ux, ops, quality and security plugins judge against the targets in the project contract, `.ascent/contract.yml`, and an attribute with no target is reported as **unmeasured**, never as met. `ascent-delivery` reads its own contract, `.delivery-loop.yml`.
+Every review is read-only. The architecture, ux, ops, quality and security plugins judge against the targets in the project contract, `.ascent/contract.yml`, and an attribute with no target is reported as **unmeasured**, never as met. `ascent-delivery` reads the contract's `delivery:` section for its commands and acceptors, and still reads an older `.delivery-loop.yml`.
 
 ---
 
@@ -32,7 +32,7 @@ The attribute names follow the list in [`quality-attributes`](../../plugins/asce
 
 | Attribute | Checked by | Evidence | Status |
 |---|---|---|---|
-| Functional suitability | `ascent-quality` (`test-check`, QA-T1–T4; `test-inventory`, QA-I1–I5; `test-evidence`, QA-M1–M4); `ascent-delivery` (definition of done); `quality-attributes` | Each acceptance criterion and core rule named by a test; the required test types present and run in CI; no focused, assertion-less or unexplained skipped tests; a current mutation score in the repository at `min_score` | Strong: traceability, test types and hygiene have behavior tests and negative controls, and the mutation score shows the tests fail when the code is broken; whether a test checks what its criterion says is read, not measured |
+| Functional suitability | `ascent-quality` (`test-check`, QA-T1–T4; `test-inventory`, QA-I1–I5; `test-evidence`, QA-M1–M4); `ascent-delivery` (definition of done; the acceptance record, DEL-A1–A3); `quality-attributes` | Each acceptance criterion and core rule named by a test, and accepted by a person on beta before prod; the required test types present and run in CI; no focused, assertion-less or unexplained skipped tests; a current mutation score in the repository at `min_score` | Strong: traceability, test types and hygiene have behavior tests and negative controls, and the mutation score shows the tests fail when the code is broken; whether a test checks what its criterion says is read, not measured |
 | Cost efficiency | `deployment-options`; `architecture-review` (ARC-C11, budget alert); `quality-attributes`; embedded `ascent-cost-posture` | A dated monthly estimate against `monthly_budget_usd`; budget alert in the IaC | Strong |
 | Performance efficiency | `quality-attributes`; `ascent-ux` (Core Web Vitals); `ascent-quality` (`test-evidence`, QA-L1–L5) | `p95_latency_ms` target; CDN and cache policy; Core Web Vitals against a stated budget; a load test whose p95 threshold is no looser than the target, with an error-rate threshold, that something runs | Partial: thresholds read from the load-test scripts; the run is the operator's |
 | Scalability (capacity) | `quality-attributes`; `ascent-quality` (`test-evidence`, QA-L3) | `peak_rps` target; autoscaling or on-demand services; throttling limits; a load test whose request rate reaches `peak_rps` | Partial: the rate is read from the load-test script, not measured |

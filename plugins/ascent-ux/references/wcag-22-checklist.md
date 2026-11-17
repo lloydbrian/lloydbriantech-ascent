@@ -32,7 +32,7 @@ A criterion that needs `B` or `M` is never marked pass on `U#` or `R` alone.
 | 1.4.4 Resize Text | AA | text scales to 200% without loss; no `user-scalable=no` | fixed-height containers clip text; zoom blocked | UX-U5, B |
 | 1.4.5 Images of Text | AA | text rendered as text, not baked into images | headings as PNG | R |
 | 1.4.10 Reflow | AA | no horizontal scrolling at 320 CSS px wide (except data tables, maps) | fixed widths; `min-width: 1024px` | B |
-| 1.4.11 Non-text Contrast | AA | 3:1 for input borders, focus indicators, icons and chart marks that carry meaning | light-grey input borders; faint focus ring | C, B |
+| 1.4.11 Non-text Contrast | AA | 3:1 for input borders, focus indicators, icons and chart marks that carry meaning | light-grey input borders; faint focus ring | UX-U11 (box-shadow rings), C, B |
 | 1.4.12 Text Spacing | AA | content survives line-height 1.5, letter spacing 0.12em, word spacing 0.16em, paragraph spacing 2em | fixed heights cut off text | B |
 | 1.4.13 Content on Hover or Focus | AA | tooltips and popovers are dismissible (Escape), hoverable and persistent | tooltip disappears when the pointer moves onto it | B, M |
 

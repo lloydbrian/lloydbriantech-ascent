@@ -32,8 +32,9 @@
 #     repo view and list, search, status, auth status, and `gh api` only when the
 #     effective method is GET (fields imply POST) or a GraphQL query, not mutation.
 #   deploys — every command listed under deploy_beta / deploy_prod in the
-#     project's .delivery-loop.yml (found from the hook's cwd upward, then
-#     $CLAUDE_PROJECT_DIR): the last command of each entry, matched by command
+#     project's contracts, all of them: .delivery-loop.yml, and the delivery:
+#     section of .ascent/contract.yml and of .claude/contract.yml (each found
+#     from the hook's cwd upward, then $CLAUDE_PROJECT_DIR): the last command of each entry, matched by command
 #     name plus its positional words in any order, with any flags; plus well-known deploy and
 #     publish verbs (terraform/tofu apply|destroy|import|taint, kubectl/oc writes
 #     and rollout, helm install|upgrade|uninstall|rollback, aws cloudformation
@@ -445,7 +446,7 @@ function contract_hit(k,    j, cp, m, q) {
     if (cp == "") cp = cposl(k)
     m = split(DENYP[j], DPW, " ")
     for (q = 1; q <= m; q++) if (!has(cp, DPW[q])) break
-    if (q > m) return DENY[j] " — a deploy command listed under " DENYK[j] " in .delivery-loop.yml"
+    if (q > m) return DENY[j] " — a deploy command listed under " DENYK[j]
   }
   return ""
 }
@@ -726,7 +727,7 @@ function deploy_rule(b, k,    j) {
   if (b == "mvn" || b == "mvnw") { positionals(k, " -f --file -P -pl --projects -s --settings -D "); for (j = 1; j <= NP; j++) if (POS[j] == "deploy" || POS[j] ~ /:deploy$/) return dep(b " deploy"); return "" }
   return ""
 }
-# ---------- contract (.delivery-loop.yml) ----------
+# ---------- contracts (.delivery-loop.yml; delivery: in .ascent/ and .claude/contract.yml) ----------
 function uncomment(s,    i, c, q, n) {
   q = ""; n = length(s)
   for (i = 1; i <= n; i++) {
@@ -780,24 +781,33 @@ function add_deny(s, key,    t, k, j, inpipe, dn) {
   }
   NOQ = 0
 }
-function load_contract(    d, f, g, line, key, rest, cur, j, item) {
-  f = ""; d = CWD
-  for (g = 0; g < 2 && f == ""; g++) {
+# find_up: the nearest NAME from the hook's cwd upward, then from $CLAUDE_PROJECT_DIR, or "".
+function find_up(name,    d, g, line) {
+  d = CWD
+  for (g = 0; g < 2; g++) {
     while (d != "") {
-      if ((getline line < (d "/.delivery-loop.yml")) >= 0) { close(d "/.delivery-loop.yml"); f = d "/.delivery-loop.yml"; break }
+      if ((getline line < (d "/" name)) >= 0) { close(d "/" name); return d "/" name }
       if (d == "/" || index(d, "/") == 0) break
       sub(/\/[^\/]*$/, "", d); if (d == "") d = "/"
     }
     d = ENVIRON["CLAUDE_PROJECT_DIR"]
   }
-  if (f == "") return
-  cur = ""
+  return ""
+}
+# read_contract: the deploy entries of file F, shown as LABEL. With SEC, only the keys
+# indented under the top-level "SEC:" line count, up to the next top-level key.
+function read_contract(f, sec, label,    line, key, rest, cur, item, insec) {
+  cur = ""; insec = (sec == "")
   while ((getline line < f) > 0) {
     sub(/\r$/, "", line)
-    if (line ~ /^[A-Za-z_][A-Za-z0-9_]*[ \t]*:/) {
-      key = line; sub(/[ \t]*:.*/, "", key)
+    if (sec != "" && line ~ /^[A-Za-z_][A-Za-z0-9_]*[ \t]*:/) {
+      key = line; sub(/[ \t]*:.*/, "", key); insec = (key == sec); cur = ""; continue
+    }
+    if (!insec) continue
+    if ((sec == "") ? (line ~ /^[A-Za-z_][A-Za-z0-9_]*[ \t]*:/) : (line ~ /^[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:/)) {
+      key = line; sub(/^[ \t]+/, "", key); sub(/[ \t]*:.*/, "", key)
       rest = line; sub(/^[^:]*:[ \t]*/, "", rest); rest = uncomment(rest)
-      cur = (key == "deploy_beta" || key == "deploy_prod") ? key : ""
+      cur = (key == "deploy_beta" || key == "deploy_prod") ? ((sec == "") ? key : sec "." key) " in " label : ""
       if (cur != "" && rest != "") {
         if (rest ~ /^\[/) { sub(/^\[/, "", rest); sub(/\][ \t]*$/, "", rest); split_inline(rest, cur) }
         else add_item(unquote(rest), cur)
@@ -807,6 +817,12 @@ function load_contract(    d, f, g, line, key, rest, cur, j, item) {
     if (cur != "" && line ~ /^[ \t]*-[ \t]/) { item = line; sub(/^[ \t]*-[ \t]+/, "", item); add_item(unquote(uncomment(item)), cur) }
   }
   close(f)
+}
+# load_contract: the union of every contract found, so no file can unblock another's deploys.
+function load_contract(    f, j) {
+  if ((f = find_up(".delivery-loop.yml")) != "") read_contract(f, "", ".delivery-loop.yml")
+  if ((f = find_up(".ascent/contract.yml")) != "") read_contract(f, "delivery", ".ascent/contract.yml")
+  if ((f = find_up(".claude/contract.yml")) != "") read_contract(f, "delivery", ".claude/contract.yml")
   for (j = 1; j <= NI; j++) add_deny(ITEM[j], ITEMK[j])
   for (j = 1; j <= CQN && j <= 64; j++) add_deny(CQ[j], CQK[j])
 }

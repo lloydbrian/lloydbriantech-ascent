@@ -7,7 +7,7 @@ description: >-
   data-engineer, ai-engineer, tester, devops, cybersecurity). Inside a
   scaffolded project, day-to-day tasks such as ADRs, audits and status belong
   to the project's ascent-* skills.
-version: 0.4.19
+version: 0.4.20
 allowed-tools:
   - Read
   - Grep

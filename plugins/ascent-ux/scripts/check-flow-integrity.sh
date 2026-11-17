@@ -20,7 +20,10 @@
 #   UX-F2  Medium  in-page anchors (#id) and aria-controls, aria-describedby and
 #               aria-labelledby targets exist in the same file (High in a core file)
 #   UX-F3  High    each core-flow step has a way forward to the next step (High), and
-#               a way back or out (Medium); the last step needs only a way out
+#               a way back or out (Medium); the last step needs only a way out. When
+#               more than one HTML page is scanned, any other full page that has no
+#               link, form, button, script, back control or refresh is a dead end
+#               (Low; Medium in a --core file)
 #   UX-F4  Low     the app has a not-found page or a catch-all route
 #   UX-F7  Low     a project with a build step declares build targets, and they do not
 #               exclude a browser family the contract lists
@@ -280,6 +283,8 @@ function shown(f) { return (f ~ /^\// || f ~ /^\.\.\//) ? f : "./" f }
 # Record one navigation target v found at pos in file f. Returns nothing; checks UX-F1
 # and remembers what the link reaches, for UX-F3.
 function link(f, pos, v,   p, frag, r, hit, sev, q, d) {
+  # any link at all (resolved or not, external, built at runtime) is a way off the page
+  if (v == "\002" || (trim(v) != "" && trim(v) !~ /^#/)) LANY[f] = 1
   if (v == "\002") { DYN[f]++; if (!(f in DYNAT)) DYNAT[f] = lnat(pos); return }
   v = trim(v)
   if (v == "" || v ~ /^[A-Za-z][A-Za-z0-9+.-]*:/ || v ~ /^\/\//) { if (v != "") TGT[f, "\003ext"] = 1; return }
@@ -507,7 +512,7 @@ BEGIN {
   split("F1 F2 F3 F4 F7", ORDER, " ")
   SEV["F1"] = "Medium"; SEV["F2"] = "Medium"; SEV["F3"] = "High"; SEV["F4"] = "Low"; SEV["F7"] = "Low"
   D["F1"] = "links resolve to a file or a route"; D["F2"] = "in-page and ARIA id targets exist"
-  D["F3"] = "core-flow steps have a way forward and a way out"; D["F4"] = "a not-found page or catch-all route exists"
+  D["F3"] = "core-flow steps have a way forward and a way out; pages are not dead ends"; D["F4"] = "a not-found page or catch-all route exists"
   D["F7"] = "build targets match the contract browsers"
   BASE = ENVIRON["F_BASE"]; BROWSERS = ENVIRON["F_BROWSERS"]
   while ((getline f < ENVIRON["F_ALL"]) > 0) if (basename(f) == "package.json") {
@@ -552,7 +557,7 @@ BEGIN {
   # UX-F3: each core-flow step reaches the next and has a way back or out.
   for (i = 1; i <= NFLOW; i++) {
     n = split(FSTEPS[i], st, ",")
-    for (k = 1; k <= n; k++) { s = st[k]; sub(/^\.\//, "", s); st[k] = s }
+    for (k = 1; k <= n; k++) { s = st[k]; sub(/^\.\//, "", s); st[k] = s; STEP[s] = 1 }
     for (k = 1; k <= n; k++) {
       s = st[k]
       if (s ~ /^\//) { note("F3", "-", 0, "flow " FNAME[i] ": step " s " is a route, not a file; the browser walk (UX-F5) checks it"); continue }
@@ -586,6 +591,17 @@ BEGIN {
       }
       if (!hasout) fail("F3", s, 1, "flow " FNAME[i] ": step " k " has no way back or out (a link elsewhere, a back, cancel or close control)", "Medium")
     }
+  }
+  # UX-F3 for any other full HTML page, when there is more than one: a page with no
+  # link, form, button, script, back control or refresh is a dead end.
+  np = 0; for (i = 1; i < ARGC; i++) if (FILES[i] ~ /\.(html|htm)$/) np++
+  if (np > 1) for (i = 1; i < ARGC; i++) {
+    f = FILES[i]
+    if (f !~ /\.(html|htm)$/ || (f in STEP) || (f in BIG)) continue
+    lt = tolower(TEXT[i]); if (lt !~ /<(html|body)[ \t\r\n>]/) continue
+    CHK["F3"]++
+    if ((f in LANY) || (f in BACK) || lt ~ /<(script|button|form)[ \t\r\n>]|onclick[ \t\r\n]*=|http-equiv[ \t\r\n]*=[ \t\r\n]*["\047]?refresh/) continue
+    fail("F3", f, 1, "the page has no link, form, button or script: a user can leave it only with the browser\047s back button (a dead end)", (f in COREF) ? "Medium" : "Low")
   }
   # UX-F4: one finding for the whole app.
   for (i = 1; i < ARGC; i++) if (FILES[i] ~ /\.(html|htm)$/ || (FILES[i] in FROUTE)) { pages++; if (first == "" || basename(FILES[i]) == "index.html" && basename(first) != "index.html") first = FILES[i] }

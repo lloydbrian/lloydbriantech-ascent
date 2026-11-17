@@ -4,14 +4,15 @@
 # Usage: $(ENGINE) compose -f docker-compose.dist.yml up -d
 #
 # This file is self-contained — it does NOT extend docker-compose.yml.
-# All images are pre-built and tagged; no build step required.
+# All images are pre-built and tagged; no build step required. The backend is the
+# image docker-compose.prod.yml builds, tagged with PROJECT_VERSION (make exports it).
 # Suitable for air-gapped, offline, or edge deployments.
 #
 # All resources carry labels: project=<<PROJECT_LABEL>> (Principle 9).
 
 services:
   backend:
-    image: <<IMAGE_PROD>>-backend
+    image: <<IMAGE_PROD>>-backend-${PROJECT_VERSION}
     container_name: <<CONTAINER_PROD>>-backend
     labels:
       project: <<PROJECT_LABEL>>
@@ -39,7 +40,7 @@ services:
       start_period: 10s
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1.30-alpine
     container_name: <<CONTAINER_PROD>>-nginx
     labels:
       project: <<PROJECT_LABEL>>

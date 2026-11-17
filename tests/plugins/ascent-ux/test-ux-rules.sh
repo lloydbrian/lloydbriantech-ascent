@@ -46,6 +46,12 @@
 #   R37 an untrusted repository: contract values quoted, the fixture inside the repo,
 #       no git status there, a dev-server warning, navigation only on an operator's URL
 #   R38 the README shows how to add a server per engine, and flow-check links to it
+#   0.3.1:
+#   R39 the agent rates a box-shadow ring under 3:1, matches delegated selectors from any
+#       scanned file, and rates dead ends off the core flows; the docs say the script reads
+#       one level of imports for UX-R1 and UX-R2
+#   R40 the Firefox and WebKit trial: browsers installed with the server's own playwright
+#       version, and the engine differences that are not findings
 #
 # Prints "test-ux-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -285,6 +291,25 @@ has R38 "$PLUGIN/README.md" '## Other engines'
 has R38 "$PLUGIN/README.md" 'claude mcp add --scope local playwright-firefox -- npx @playwright/mcp@latest --browser firefox'
 has R38 "$FLOWCHK" '[Other engines](../../README.md#other-engines)'
 grep -qF -- '--browser firefox` (or' "$FLOWCHK" && bad "R38 flow-check still asks for a restart of the companion server" || ok
+
+# R39 — 0.3.1: ring contrast, delegated selectors across files, dead ends, imports
+has R39 "$AGENT" 'replaces it too when one of its layers has 3:1 against the page background'
+has R39 "$AGENT" 'Under 3:1 it is a finding'
+has R39 "$AGENT" 'a click listener in any scanned file finds'
+has R39 "$AGENT" 'is a dead end: Low, Medium in a core file'
+has R39 "$REF" 'a page with none is a dead end (Low; Medium in a core file)'
+has R39 "$REF" 'UX-R1 and UX-R2 also read the local modules a file imports'
+has R39 "$FLOWCHK" 'For UX-R1 and UX-R2 the script also reads the local modules a file imports'
+has R39 "$REVIEW" 'the script reads relative imports one level deep and names them in the finding'
+
+# R40 — the Firefox and WebKit trial (v0.4.20)
+has R40 "$PLUGIN/README.md" 'PW="$(npm view @playwright/mcp@latest dependencies.playwright)"'
+has R40 "$PLUGIN/README.md" 'npx -y "playwright@$PW" install firefox webkit'
+grep -q '^npx playwright install' "$PLUGIN/README.md" && bad "R40 the README installs browsers with the latest playwright, not the server's" || ok
+grep -qF 'have not been trialled yet' "$PLUGIN/README.md" && bad "R40 the README still says Firefox and WebKit are not trialled" || ok
+has R40 "$FLOWCHK" 'Check keyboard reach in WebKit with `Alt+Tab`.'
+has R40 "$FLOWCHK" 'Read UX-F5 from `browser_network_requests` in every engine, never from the console alone.'
+has R40 "$FLOWCHK" 'Reload once: report it only if it comes back.'
 
 printf "test-ux-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

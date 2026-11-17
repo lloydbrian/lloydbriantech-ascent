@@ -5,7 +5,15 @@
 #       retarget before the base merges, reopen to start CI, and replay with
 #       `git rebase --onto` after a squash merge, flagging the force push
 #   D2  the operator-boundary hook states why it is exempt from ascent-ops OPS-Z2 and OPS-Z3
-#   D3  every references/<file> the skill links to exists
+#   D3  every references/<file> the skill links to exists, in the skill or the plugin
+#   0.2.0 (ADR-024):
+#   D4  only a person accepts: Claude never fills "Accepted by" or "Accepted on"
+#   D5  the definition of done checks the record's evidence (--draft), and a failing
+#       record stops prod, in the skill and in the prod runbook's first step
+#   D6  the contract is the delivery: section of .ascent/contract.yml (or
+#       .claude/contract.yml); .delivery-loop.yml still works; the hook blocks both
+#   D7  every runbook step is labelled [C] (read-only) or [O] (writes, deploys)
+#   D8  the acceptance template's columns are the ones check-acceptance.sh reads
 #
 # Prints "test-delivery-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -17,7 +25,9 @@ PLUGIN="$HERE/../../../plugins/ascent-delivery"
 SKILL="$PLUGIN/skills/delivery-loop/SKILL.md"
 TEMPLATE="$PLUGIN/skills/delivery-loop/references/runbook-template.md"
 HOOK="$PLUGIN/hooks/operator-boundary.sh"
-for f in "$SKILL" "$TEMPLATE" "$HOOK"; do
+ACCEPT="$PLUGIN/skills/delivery-loop/references/acceptance-template.md"
+CONTRACT="$PLUGIN/references/contract-template.yml"
+for f in "$SKILL" "$TEMPLATE" "$HOOK" "$ACCEPT" "$CONTRACT"; do
   [ -f "$f" ] || { echo "test-delivery-rules: missing $f"; echo "test-delivery-rules: 0/1 PASS"; exit 1; }
 done
 
@@ -45,7 +55,48 @@ for r in $(grep -oE '\(references/[A-Za-z0-9._-]+\)' "$SKILL" | tr -d '()' | LC_
   NREF=$((NREF + 1))
   if [ -f "$PLUGIN/skills/delivery-loop/$r" ]; then ok; else bad "D3 skills/delivery-loop/SKILL.md links $r, which does not exist"; fi
 done
+for r in $(grep -oE '\(\.\./\.\./references/[A-Za-z0-9._-]+\)' "$SKILL" | tr -d '()' | LC_ALL=C sort -u); do
+  NREF=$((NREF + 1))
+  if [ -f "$PLUGIN/skills/delivery-loop/$r" ]; then ok; else bad "D3 skills/delivery-loop/SKILL.md links $r, which does not exist"; fi
+done
 [ "$NREF" -gt 0 ] || bad "D3 no references/ links found in the skill"
+
+# D4 — only a person accepts
+has D4 "$SKILL" 'Claude never fills either column, even when asked: say who must, and why.'
+has D4 "$SKILL" '- Fill in "Accepted by" or "Accepted on", or accept a criterion on anyone'"'"'s behalf.'
+has D4 "$ACCEPT" '**Only a person fills in "Accepted by" and "Accepted on"**'
+has D4 "$TEMPLATE" 'fill in "Accepted by" and "Accepted on" in `<acceptance record>` themselves. Claude never fills them in.'
+
+# D5 — the record is checked at done, and before prod
+has D5 "$SKILL" 'bash "$PLUGIN_ROOT/scripts/check-acceptance.sh" --draft --root .'
+has D5 "$SKILL" 'stops prod. The prod runbook'"'"'s first step runs the same check, labelled C'
+has D5 "$SKILL" '- the acceptance record fails `check-acceptance.sh`: with `--draft` in Step 5, in full before prod (Step 7);'
+has D5 "$TEMPLATE" '### P1. [C] The acceptance record passes'
+has D5 "$TEMPLATE" '**Stop if** any line starts `FAIL`. Prod does not run'
+
+# D6 — the contract: the delivery: section, the older file, the union in the hook
+has D6 "$SKILL" 'Read the `delivery:` section of `.ascent/contract.yml`'
+has D6 "$SKILL" 'read it when there is no `delivery:` section'
+has D6 "$SKILL" 'Until then the hook blocks the deploy commands of both.'
+has D6 "$HOOK" 'section of .ascent/contract.yml and of .claude/contract.yml'
+if [ "$(sed -n 's/^\([a-z_][a-z0-9_]*\):.*/\1/p' "$CONTRACT" | tr '\n' ' ')" = "version delivery " ]; then ok; else bad "D6 references/contract-template.yml declares more than version and delivery:"; fi
+for k in gate fast_gate deploy_beta deploy_prod acceptance_dir acceptors; do
+  if grep -q "^  $k:" "$CONTRACT"; then ok; else bad "D6 references/contract-template.yml has no delivery.$k"; fi
+done
+
+# D7 — every runbook step says who runs it
+has D7 "$SKILL" '**Label every step C or O.**'
+NSTEP=0
+while IFS= read -r h; do
+  NSTEP=$((NSTEP + 1))
+  case "$h" in *"[C]"*|*"[O]"*) ok ;; *) bad "D7 runbook-template.md step without [C] or [O]: $h" ;; esac
+done <<EOF_STEPS
+$(grep -E '^### (P?[0-9]+)\. ' "$TEMPLATE")
+EOF_STEPS
+[ "$NSTEP" -ge 8 ] || bad "D7 expected at least 8 numbered steps in runbook-template.md, found $NSTEP"
+
+# D8 — the template's table is the one the check reads
+has D8 "$ACCEPT" '| # | Criterion | Evidence | Accepted by | Accepted on |'
 
 printf "test-delivery-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

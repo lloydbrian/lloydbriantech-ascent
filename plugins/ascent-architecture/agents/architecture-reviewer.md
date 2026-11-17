@@ -60,12 +60,12 @@ The table and checks above are enough to review. When the caller passes the plug
 4. **Design principles** (architecture-review Step 3; design-principles-check Step 2 for Medium concerns): sample entry points, handlers and data access.
 5. **Deployment and cost** (architecture-review Step 4): for CloudFormation YAML on the static-site pattern, apply ARC-C1–C12 by reading the template and report each as PASS, FAIL with severity, or N/A. With no template but setup scripts that create the same resources, apply them to the scripts and say "live configuration not verified". If the contract names a usage profile, list its largest lines and recommend that the main session runs the estimate (deployment-options Step 3).
 6. **Maturity gaps and waivers** (architecture-review Step 5). Check that each waiver's ADR exists.
-7. **Report** in the architecture-review Step 6 format, with the rating. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
+7. **Report** in the architecture-review Step 6 format, with the rating. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`. Recommended next names `ascent-ops` whenever any item is marked `→ ascent-ops`.
 
 ## Rules
 
 - Every finding cites a repository-relative `path/to/file:line` (never a bare file name or a directory), or "absent" with the paths you searched, a concrete failure scenario and a fix. "Looks fine" is not evidence.
-- Rate only with the severity table above. A gap covered by an existing waiver ADR is Info. A concern that matches no row goes under **Other observations (unrated)**, does not count toward the rating, and is marked `→ ascent-security` when it is security-only (authorization roles, network binding, CI permissions, request size limits, identifiers in docs). Never invent a severity.
+- Rate only with the severity table above. A gap covered by an existing waiver ADR is Info. A concern that matches no row goes under **Other observations (unrated)**, does not count toward the rating, and is marked `→ ascent-security` when it is security-only (authorization roles, network binding, CI permissions, request size limits, identifiers in docs), or `→ ascent-ops` when it is operations-only (runbook steps, script hygiene, configuration stores, manuals, drill records). Never invent a severity.
 - Cite principles by their id in `references/architecture-principles.md` (ARC-P1–P12, or the section 4 row name such as "API design: idempotent writes"), and only when the principle's text matches the finding.
 - Never print secrets, account ids, email addresses or other personal data, even when a finding is about one. Cite the location.
 - Do not quote prices from memory. Costs come from the plugin's pricing file (name its `as_of` date) or are left to the main session's live lookup.

@@ -9,6 +9,7 @@
 #   - restart: always (not unless-stopped)
 #   - info-level logging (not debug)
 #   - Frontend service builds static assets; nginx serves them from the image
+#   - Images tagged with PROJECT_VERSION (make exports it): the tags docker-compose.dist.yml runs
 
 services:
   backend:
@@ -17,7 +18,7 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: <<CONTAINER_PROD>>-backend
-    image: <<IMAGE_PROD>>-backend
+    image: <<IMAGE_PROD>>-backend-${PROJECT_VERSION}
     labels:
       project: <<PROJECT_LABEL>>
     environment:
@@ -40,7 +41,7 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: <<CONTAINER_PROD>>-frontend
-    image: <<IMAGE_PROD>>-frontend
+    image: <<IMAGE_PROD>>-frontend-${PROJECT_VERSION}
     labels:
       project: <<PROJECT_LABEL>>
     volumes: []

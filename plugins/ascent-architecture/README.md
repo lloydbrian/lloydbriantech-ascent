@@ -44,7 +44,7 @@ Prices come from [pricing/aws-us-east-1.tsv](pricing/aws-us-east-1.tsv) (AWS us-
 - Read-only: the skills and the agent never edit files, call cloud APIs or deploy. The scripts only read files.
 - Deploys are the operator's, from a runbook. With `ascent-delivery` enabled, its hook blocks deploy commands for Claude.
 - Credentials, account ids and email addresses never go into templates, contracts, reports or chat; runbooks declare them as shell variables at run time.
-- Security scanning depth is `ascent-security`'s job; accessibility and UX are `ascent-ux` (planned).
+- Security scanning depth is `ascent-security`'s job; accessibility and UX are `ascent-ux`; operability is `ascent-ops`.
 
 ## Tests
 

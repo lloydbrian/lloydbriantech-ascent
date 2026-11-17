@@ -251,6 +251,31 @@ EOF_TSX
   { printf 'fetch("/x");\n'; head -c 600000 /dev/zero | tr '\0' 'a'; printf '\n'; } > "$R/big/bundle.js"; printf '<p>x</p>\n' > "$R/big/index.html"
   run "$R/big" .; has_line review-big 'NOTE  UX-R    -      ./bundle.js:1  not read: larger than 512 KB'
 
+  # 0.3.1: UX-R1 and UX-R2 read the local modules a file imports (one level): a guard
+  # in an imported hook counts, and so does a service that shows every failure it
+  # catches; a service that only throws does not. A finding names the modules read.
+  form() { mkdir -p "$1"; printf '%s\n' "import { useSave } from \"$2\";" 'export function Form() {' '  const { save } = useSave();' '  async function onSubmit(e) { e.preventDefault(); try { await api.save(1) } catch (err) { setError(err.message) } }' '  return <form onSubmit={onSubmit}><input name="a" /><button>Save</button></form>;' '}' > "$1/Form.jsx"; }
+  page() { mkdir -p "$1/src"; printf '%s\n' "import api from \"$2\";" 'export function Page() { api.load(1); return <p>x</p>; }' > "$1/src/Page.jsx"; }
+  GUARDED='export function useSave() { let pending = false; return { save: async (x) => { if (pending) return; pending = true; } }; }'
+  SHOWS='export default { load(id) { return fetch("/x/" + id).catch(e => { showToast("Could not load"); }) } };'
+  THROWS='export default { async load(id) { const r = await fetch("/x/" + id); if (!r.ok) throw new Error("load failed"); return r.json(); } };'
+  rm -rf "$WORK/imp"; mkdir -p "$WORK/imp"
+  form "$WORK/imp/guard" ./useSave; printf '%s\n' "$GUARDED" > "$WORK/imp/guard/useSave.js"
+  run "$WORK/imp/guard" .; clean "imp: a guard in the imported hook counts for UX-R1"; passes "imp-guard" UX-R1
+  form "$WORK/imp/noguard" ./useSave; printf '%s\n' 'export function useSave() { return { save: async (x) => x }; }' > "$WORK/imp/noguard/useSave.js"
+  run "$WORK/imp/noguard" .; verdict imp-noguard UX-R1 Low 'pending flag); the local modules it imports were read too: ./useSave.js'
+  form "$WORK/imp/deep" ./mid; printf '%s\n' 'export { useSave } from "./useSave";' > "$WORK/imp/deep/mid.js"; printf '%s\n' "$GUARDED" > "$WORK/imp/deep/useSave.js"
+  run "$WORK/imp/deep" .; verdict imp-deep UX-R1 Low 'the local modules it imports were read too: ./mid.js'
+  page "$WORK/imp/shows" ../lib/api; mkdir -p "$WORK/imp/shows/lib"; printf '%s\n' "$SHOWS" > "$WORK/imp/shows/lib/api.js"
+  run "$WORK/imp/shows" .; clean "imp: a service that shows its failures serves the request"; passes "imp-shows" UX-R2
+  page "$WORK/imp/throws" ../lib/api; mkdir -p "$WORK/imp/throws/lib"; printf '%s\n' "$THROWS" > "$WORK/imp/throws/lib/api.js"
+  run "$WORK/imp/throws" .; verdict imp-throws UX-R2 Low 'a failure is invisible; the local modules it imports were read too: ./lib/api.js'
+  page "$WORK/imp/index" ./svc; mkdir -p "$WORK/imp/index/src/svc"; printf '%s\n' "$SHOWS" > "$WORK/imp/index/src/svc/index.js"
+  run "$WORK/imp/index" .; clean "imp: ./svc resolves to svc/index.js"
+  page "$WORK/imp/missing" ./nowhere
+  run "$WORK/imp/missing" .; verdict imp-missing UX-R2 Low 'a failure is invisible'
+  printf '%s\n' "$OUT" | grep '^FAIL  UX-R2 ' | grep -q 'local modules' && bad "imp-missing: an import that resolves to no scanned file is not named" || ok
+
   # Line numbers stay right after non-ASCII text, in a UTF-8 caller locale.
   ARROWS=$(printf '\342\206\222%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30)
   mkdir -p "$WORK/utf8"; printf "const label = '%s';\n\n\n\n\n\n\n\n\nfetch('/api/x').then((r) => r.json());\n" "$ARROWS" > "$WORK/utf8/index.js"
