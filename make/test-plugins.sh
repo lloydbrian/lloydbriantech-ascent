@@ -65,8 +65,9 @@
 #        cannot pass by checking nothing. make test-mutants sets it in fast mode,
 #        one label for a control and its controls' labels for a baseline.
 #        ASCENT_T11_FAST=1 stops a behavior test at its first FAIL line and T11 at
-#        its first failing test; ASCENT_T11_FIRST=<name> runs first the tests that
-#        name that file. make test-mutants sets both in fast mode.
+#        its first failing test; ASCENT_T11_FIRST=<path> runs first the tests that
+#        name that path (relative to the plugin, as skills/x/SKILL.md), then those
+#        that name its file name. make test-mutants sets both in fast mode (ADR-025).
 #        ASCENT_T14_SELFTEST=0 skips T14. make test-mutants sets it, except for the
 #        controls that edit fast mode itself.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
@@ -378,11 +379,14 @@ for p in $PLUGINS; do
     grep -qF "$(basename "$sc")" $TESTS 2>/dev/null || problems="$problems scripts/$(basename "$sc") is not exercised by any test;"
   done
   if [ "$FAST" = 1 ] && [ -n "${ASCENT_T11_FIRST:-}" ]; then
-    # Tests that name the edited file run first. Any failing test fails T11, so the
-    # order cannot change the verdict, only how soon it is known.
-    FIRST=$(for t in $TESTS; do grep -qF "$ASCENT_T11_FIRST" "$t" && echo "$t"; done || true)
-    REST=$(for t in $TESTS; do grep -qF "$ASCENT_T11_FIRST" "$t" || echo "$t"; done || true)
-    TESTS="$FIRST $REST"
+    # Tests that name the edited path run first, then those that name its file name
+    # (SKILL.md alone names no one test). Any failing test fails T11, so the order
+    # cannot change the verdict, only how soon it is known.
+    F1=$ASCENT_T11_FIRST; F2=$(basename "$F1")
+    FIRST=$(for t in $TESTS; do grep -qF "$F1" "$t" && echo "$t"; done || true)
+    NEXT=$(for t in $TESTS; do grep -qF "$F1" "$t" || { grep -qF "$F2" "$t" && echo "$t"; }; done || true)
+    REST=$(for t in $TESTS; do grep -qF "$F1" "$t" || grep -qF "$F2" "$t" || echo "$t"; done || true)
+    TESTS="$FIRST $NEXT $REST"
   fi
   NTESTS=0; NCASES=0
   for t in $TESTS; do

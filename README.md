@@ -1,7 +1,7 @@
 <h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ascent-banner-dark.svg">
-  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 30 components, 28 project skills, 52 test suites, 977 negative controls, 24 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
+  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 30 components, 28 project skills, 52 test suites, 981 negative controls, 25 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
 </picture>
 </h1>
 
@@ -195,12 +195,13 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | | What | Status |
 |---|---|---|
-| **Now** | v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1, the 0.3.0 trial's calibrations; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
+| **Now** | v0.4.21: faster local verification, with timings, the right test first, a cheaper rules test and a kill cache for local reruns (ADR-025). v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
 | **Next** | Live security testing and a threat model (`ascent-security` 0.3.0) | Planned |
 | **Later** | Four more plugins (`ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`), then auditability for projects and the `ascent-governance` conductor, then Phases 4–7 | Planned |
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.21 | 2026-11-16 | Faster local verification (ADR-025): the controls' summary shows the checks and groups that took the time and `TIMES=<file>` writes every control's time; T11 runs first the tests that name the edited path; `test-ops-rules.sh` R13 in one awk pass, 2 seconds instead of 17; `CACHE=<dir>` reuses unchanged kills on local reruns, never in CI or the final run before a release |
 | v0.4.20 | 2026-11-16 | `ascent-delivery` 0.2.0: an acceptance record per change, whose evidence Claude drafts and only a person accepts, checked by `check-acceptance.sh` (`DEL-A1`–`A3`) before prod; the `delivery:` contract section, with the hook blocking the deploys of every contract; runbook steps labelled [C] or [O] (ADR-024). `ascent-ux` 0.3.1: delegated listeners across files, box-shadow ring contrast, dead-end pages, imported guards. `ascent-architecture` 0.2.1. A scaffold with pinned nginx, versioned images and `make/help.sh --help` |
 | v0.4.19 | 2026-11-16 | The CI scope script runs on macOS's bash 3.2: v0.4.18 put a `case` statement inside `$( )`, which bash 3.2 cannot parse, so the macOS gate failed; T15 now fails a case on any shell error |
 | v0.4.18 | 2026-11-15 | CI runs what a change can affect: the cheap checks always, and only the behavior tests, harness self-tests and negative controls the changed paths can affect, with every control that edits a changed file; smaller baselines, T13.0 in parallel, superseded runs cancelled, `make gate-changed` locally (ADR-023) |

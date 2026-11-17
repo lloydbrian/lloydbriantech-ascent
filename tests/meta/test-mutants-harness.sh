@@ -15,7 +15,9 @@
 # a kill nor a survivor, and fail the run, with tar's message kept out of the
 # result's status line. Naming controls (ASCENT_MUTANT_IDS) must run exactly those
 # and a baseline of only their checks; an id the group does not have must stop
-# the run; --list must list exactly the controls a run launches.
+# the run; --list must list exactly the controls a run launches. The times file
+# and the kill cache (ADR-025) are checked last: one row per control, and a cache
+# that reuses only kills whose inputs have not changed.
 #
 # Uses set -u only: every case runs and reports, and the summary decides.
 #
@@ -59,7 +61,7 @@ for j in 1 4; do
   # Four jobs run with the progress bar forced on, on stderr apart: the bar must
   # end at N/N 100%, N the controls the totals line counts, and never reach stdout
   ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_JOBS=$j ASCENT_MUTANT_PROGRESS=$([ "$j" = 4 ] && echo 1 || echo 0) \
-    bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/run-$j" 2>"$WORK/err-$j" || rc=$?
+    ASCENT_MUTANT_TIMES=$([ "$j" = 4 ] && echo "$WORK/times-4" || true) bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/run-$j" 2>"$WORK/err-$j" || rc=$?
   if [ "$rc" -eq 0 ]; then ok; else bad "the harness group failed with $j job(s) (rc $rc): $(grep -E '^  (SURVIVED|ANCHOR|MODES|CONTROL)' "$WORK/run-$j" | head -3 | tr '\n' ';')"; fi
 done
 results "$WORK/run-1" > "$WORK/a"; results "$WORK/run-4" > "$WORK/b"
@@ -70,6 +72,19 @@ last=$(tr '\r' '\n' < "$WORK/err-4" | tr -d '\033' | sed 's/^\[K//' | sed -n 's/
 if [ -n "$n" ] && [ "$last" = "$n/$n" ]; then ok; else bad "the progress bar did not end at $n/$n 100% (last: '$last')"; fi
 if ! grep -q "$(printf '\r')" "$WORK/run-4" && [ ! -s "$WORK/err-1" ]; then ok; else bad "the progress bar reached stdout, or showed with ASCENT_MUTANT_PROGRESS=0"; fi
 check_summary "$WORK/run-4" PASS
+# The times file (ADR-025): a header and one row per control the run launched,
+# baselines included, slowest first; the summary's per-check totals add up to it
+n=$(sed -n 's/^test-mutants: \([0-9]*\) mutants .*/\1/p' "$WORK/run-4")
+if [ -f "$WORK/times-4" ] && [ "$(sed -n 1p "$WORK/times-4")" = "$(printf 'seconds\tstatus\tid\tgroup\tcheck\tcached')" ] \
+  && [ "$(($(wc -l < "$WORK/times-4") - 1))" = "$n" ] \
+  && sed 1d "$WORK/times-4" | awk -F'\t' 'NF != 6 || $1 !~ /^[0-9]+$/ || (NR > 1 && $1 > p) { e = 1 } { p = $1 } END { exit e }'; then ok
+else bad "the times file is missing, not one row per control ($n), or not slowest first: $(head -3 "$WORK/times-4" 2>/dev/null | tr '\t\n' ' ;')"; fi
+want=$(sed 1d "$WORK/times-4" 2>/dev/null | awk -F'\t' '{ t[$5] += $1; n[$5]++ } END { for (k in t) printf "%s %d:%02d (%d)\n", k, int(t[k] / 60), t[k] % 60, n[k] }' | LC_ALL=C sort)
+got=$(sed -n 's/^ by check //p' "$WORK/run-4" | awk '{ n = split($0, a, / (·|\|) /); for (i = 1; i <= n; i++) print a[i] }' | LC_ALL=C sort)
+if [ -n "$got" ] && printf '%s\n' "$got" | while IFS= read -r l; do printf '%s\n' "$want" | grep -qxF "$l" || exit 1; done; then ok
+else bad "the summary's by-check line does not add up to the times file: '$got'"; fi
+if grep -q '^ by group ' "$WORK/run-4" && grep -q 'controls written to ' "$WORK/err-4" && ! grep -q 'controls written to ' "$WORK/run-4"; then ok
+else bad "no by-group line, or the times notice is not on stderr"; fi
 
 rc=0
 ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_JOBS=4 ASCENT_MUTANT_RAW=1 bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/raw" 2>&1 || rc=$?
@@ -141,6 +156,29 @@ rc=0
 ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="P359-harness-survivor P000-not-a-control" bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/badid" 2>&1 || rc=$?
 if [ "$rc" -eq 2 ] && grep -q "unknown control id 'P000-not-a-control'" "$WORK/badid" && ! grep -q '^  ' "$WORK/badid"; then ok
 else bad "an unknown id did not stop the run before any control (rc $rc): $(head -2 "$WORK/badid" | tr '\n' ';')"; fi
+
+# The kill cache (ADR-025), on a copy: a second run reuses both kills; an edit to
+# another plugin keeps them; an edit to the controls' plugin, to its tests or to
+# the gate reruns them; full mode says it ignores the cache.
+mkdir "$WORK/crepo"
+(cd "$ROOT" && tar --exclude ./.git --exclude ./tmp -cf - .) | (cd "$WORK/crepo" && tar -xf -)
+CIDS="P32-estimate-ignores-free-tier P35-cfn-allows-http"
+crun() {  # NAME — the two controls with the cache; prints "rc cached killed"
+  local rc=0
+  ASCENT_MUTANT_GROUP=ascent-architecture ASCENT_MUTANT_IDS="$CIDS" ASCENT_MUTANT_PROGRESS=0 \
+    ASCENT_MUTANT_CACHE="$WORK/cache" bash "$WORK/crepo/make/test-mutants.sh" </dev/null >"$WORK/cache-$1" 2>&1 || rc=$?
+  echo "$rc $(grep -c '^  killed .*(cached)$' "$WORK/cache-$1") $(grep -c '^  killed ' "$WORK/cache-$1")"
+}
+r=$(crun first);  if [ "$r" = "0 0 2" ] && [ "$(ls "$WORK/cache" | wc -l | tr -d ' ')" = 2 ]; then ok; else bad "the first cached run did not run and keep both kills: $r"; fi
+r=$(crun second); if [ "$r" = "0 2 2" ] && grep -q '^ cached   2 kills reused' "$WORK/cache-second"; then ok; else bad "the second run did not reuse both kills: $r"; fi
+echo '# not read by any architecture test' >> "$WORK/crepo/plugins/ascent-ux/README.md"
+r=$(crun other);  if [ "$r" = "0 2 2" ]; then ok; else bad "an edit to another plugin dropped the cached kills: $r"; fi
+for f in plugins/ascent-architecture/README.md tests/plugins/ascent-architecture/test-estimate-cost.sh make/test-plugins.sh; do
+  echo '# edited' >> "$WORK/crepo/$f"
+  r=$(crun "edit-$(basename "$f")"); if [ "$r" = "0 0 2" ]; then ok; else bad "an edit to $f did not rerun the cached controls: $r"; fi
+done
+if ASCENT_MUTANT_MODE=full ASCENT_MUTANT_CACHE="$WORK/cache" bash "$WORK/crepo/make/test-mutants.sh" --list 2>&1 >/dev/null | grep -q 'ASCENT_MUTANT_CACHE is ignored in full mode'; then ok
+else bad "full mode did not say it ignores the cache"; fi
 
 printf "test-mutants-harness: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]
