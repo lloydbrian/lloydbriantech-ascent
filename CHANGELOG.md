@@ -32,6 +32,25 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.19] — 2026-11-16
+
+**The CI scope runs on macOS's bash 3.2.** v0.4.18's `make/gate-scope.sh` built the `--explain` group list with a `case` statement inside `$( )`. bash 3.2, macOS's `/bin/bash`, cannot parse that: it reported a syntax error, skipped the block and still exited 0. The five outputs CI reads were right, so the Scope job and Linux were unaffected, but T15 failed on macOS. The macOS gate and the macOS `scope` controls failed on main and on every pull request.
+
+### Fixed
+
+- `make/gate-scope.sh` builds the group list with a plain loop, not a `case` inside `$( )`
+- T15 (`tests/meta/test-gate-scope.sh`) fails a case on any shell error (`<script>: line N: …`), so an error bash 3.2 skips past cannot pass. With the old line back, T15 fails 47 of its 52 cases under bash 3.2
+
+### Changed
+
+- Framework 0.4.18 → 0.4.19
+
+### Notes
+
+- v0.4.18's own pull request found the bug on macOS, but merged at its first commit, before the fix: the required checks are Repository structure and Internal links, and the macOS gate is not one of them
+- Verified under bash 3.2 and bash 5
+- No plugin changed, so no plugin version or `make/plugins.lock` row changed; no control was added, so the figures are unchanged
+
 ## [0.4.18] — 2026-11-15
 
 **CI runs what a change can affect.** A pull request always runs the cheap checks, `make qa`, `make test-skills` and the plugin gate, on both platforms. The slow checks run only where its changed paths reach: behavior tests, T13.0, harness self-tests and negative controls. Every control that edits a changed file runs too, and every behavior test that reads one. Baselines run only what their controls are judged by, T13.0 runs in parallel, and a newer push cancels the older run. Pushes to main and the weekly run still run everything (ADR-023).

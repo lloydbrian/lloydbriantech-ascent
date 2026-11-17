@@ -75,6 +75,8 @@ expect() {
   ASCENT_SCOPE_MANIFEST="$WORK/manifest" ASCENT_SCOPE_PATHS="$WORK/paths" ASCENT_SCOPE_DIFF="$WORK/diff" \
     ASCENT_SCOPE_TESTS="${SCOPE_TESTS-$WORK/tests}" bash "$SCOPE" $args > "$WORK/out" 2> "$WORK/err" || rc=$?
   [ "$rc" -eq 0 ] || { bad "$name: exit $rc: $(head -2 "$WORK/err" | tr '\n' ';')"; return; }
+  # bash 3.2 reports a syntax error, skips the command and exits 0: any shell error fails the case
+  if grep -q ': line [0-9][0-9]*: ' "$WORK/err"; then bad "$name: shell error: $(grep -m1 ': line [0-9]' "$WORK/err")"; return; fi
   for kv in "full=$full" "t11=$t11" "t13_selftest=$t13_selftest" "harness=$harness" "targets=$targets"; do
     got=$(grep "^${kv%%=*}=" "$WORK/out")
     [ "$got" = "$kv" ] || { bad "$name: expected $kv, got '$got'"; return; }

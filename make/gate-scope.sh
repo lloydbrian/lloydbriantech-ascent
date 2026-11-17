@@ -214,7 +214,8 @@ targets="${targets%,}]"
 printf 'full=%s\nt11=%s\nt13_selftest=%s\nharness=%s\ntargets=%s\n' "$FULL" "$t11" "$T13" "$harness" "$targets"
 
 if [ "$EXPLAIN" = 1 ]; then
-  gl=$(for g in $GROUPS_ALL; do case "$WHOLE" in *" $g "*) printf '%s ' "$g" ;; esac; done | sed 's/ $//')
+  # No case statement inside $( ): bash 3.2 reads its ")" as the end of the substitution
+  gl=""; for g in $GROUPS_ALL; do case "$WHOLE" in *" $g "*) gl="$gl $g" ;; esac; done; gl=${gl# }
   {
     if [ "$FROM" = --full ]; then echo "gate-scope: --full, everything runs"
     else echo "gate-scope: $(wc -l < "$W/paths" | tr -d ' ') changed path(s), from $FROM"; fi
