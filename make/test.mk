@@ -12,12 +12,12 @@ test-skills:  ## TEST: Render the template and run all 28 embedded-skill tests
 	bash make/render-template.sh "$$WORK/project" && \
 	$(MAKE) --no-print-directory -C "$$WORK/project" -f make/test.mk test-skills
 
-# MODE, JOBS, IDS and BASE count only when given on the command line: an exported
+# MODE, JOBS, IDS, TIMES, CACHE and BASE count only when given on the command line: an exported
 # one in the operator's shell must not change what runs.
 mutant_arg = $(if $(filter command line,$(origin $(1))),$($(1)))
 
-test-mutants:  ## TEST: Negative controls — every named mutant must be killed (ADR-008); GROUP=<group>, MODE=full, JOBS=<n> (ADR-018), IDS="<id> ..." (ADR-023)
-	@ASCENT_MUTANT_GROUP="$(GROUP)" ASCENT_MUTANT_MODE="$(call mutant_arg,MODE)" ASCENT_MUTANT_JOBS="$(call mutant_arg,JOBS)" ASCENT_MUTANT_IDS="$(call mutant_arg,IDS)" bash make/test-mutants.sh
+test-mutants:  ## TEST: Negative controls — every named mutant must be killed (ADR-008); GROUP=<group>, MODE=full, JOBS=<n> (ADR-018), IDS="<id> ..." (ADR-023), TIMES=<file>, CACHE=<dir> (ADR-025)
+	@ASCENT_MUTANT_GROUP="$(GROUP)" ASCENT_MUTANT_MODE="$(call mutant_arg,MODE)" ASCENT_MUTANT_JOBS="$(call mutant_arg,JOBS)" ASCENT_MUTANT_IDS="$(call mutant_arg,IDS)" ASCENT_MUTANT_TIMES="$(call mutant_arg,TIMES)" ASCENT_MUTANT_CACHE="$(call mutant_arg,CACHE)" bash make/test-mutants.sh
 
 test-mutants-groups:  ## TEST: List the negative-control groups as JSON (one CI job per group)
 	@bash make/test-mutants.sh --groups-json

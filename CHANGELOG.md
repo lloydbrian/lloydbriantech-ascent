@@ -27,6 +27,34 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.21] — 2026-11-16
+
+**Faster local verification, with the same checks.** Verifying v0.4.20 took two full runs of the negative controls, about 55 minutes each, the second after a fix that could not change a verdict ([ADR-025](docs/framework/DECISIONS/ADR-025-faster-local-verification.md)). Every run now shows where its time went, T11 runs the right test first, the slowest rules test is about eight times faster, and local reruns can reuse the kills whose inputs have not changed. CI and the final run before a release run everything, as before.
+
+### Added
+
+- `make test-mutants TIMES=<file>` (`ASCENT_MUTANT_TIMES`): every timed control, slowest first (seconds, status, id, group, check, cached); the summary adds the three checks and the three groups that took the most time
+- `make test-mutants CACHE=<dir>` (`ASCENT_MUTANT_CACHE`): reuses the kill of a single-plugin T11 control when nothing it can read has changed (the control, its plugin and tests, `skills/`, `.claude-plugin/`, `make/test-plugins.sh`, the harness without the other controls' declarations, bash and awk); only kills are kept, the baselines always run, full mode ignores it, and CI never sets it
+- `test-mutants-harness.sh`: the times file and seven cache cases (reuse, another plugin's edit kept, the plugin's, its tests' or the gate's edit rerun, full mode)
+- `test-gate-fast.sh` G4: the edited path first, then its file name
+- Controls P913–P916: T11's path tier and file-name fallback (`T14.G4`), and R13 for a named id and a range
+- ADR-025
+
+### Changed
+
+- Framework 0.4.20 → 0.4.21
+- `make/test-mutants.sh` passes T11 the edited path relative to its plugin; `make/test-plugins.sh` runs first the tests that name it, then those that name its file name. P368 moves to the new code
+- `tests/plugins/ascent-ops/test-ops-rules.sh` R13: one awk pass per script instead of a `grep` per id and row, 2 seconds instead of 17 for the whole test; checked to print the same results as before on the real table and five broken copies, under bash 5 and 3.2 and three awks
+- The README, CLAUDE.md, ROADMAP, ARCHITECTURE and the capability map for 0.4.21; the control figure is 981 and the decision figure 25
+
+### Notes
+
+- Measured on v0.4.20: T11 controls used 93% of the control time, and `ascent-ops` and `ascent-quality` controls took 40–53 seconds each. The behavior tests that spend their time running the script they test were left as they are
+- The full run's floor is its baseline, about eight minutes for the whole gate; a later change can scope it to the controls that run
+- Local verification runs on a frozen copy of the work tree, so the tree can be edited while it runs
+
+---
+
 ## [0.4.20] — 2026-11-16
 
 **A person accepts each change before prod.** `ascent-delivery` 0.2.0 adds an acceptance record to the delivery loop ([ADR-024](docs/framework/DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)): Claude drafts the criteria and their evidence, only a person fills in who accepted each one and when, and `check-acceptance.sh` stops prod until the record passes. The same release closes the `ascent-ux` trial candidates in 0.3.1, with the first Firefox and WebKit walk on real repositories, points operations-only architecture items to `ascent-ops` in `ascent-architecture` 0.2.1, and makes a fresh scaffold pass its own operations checks.

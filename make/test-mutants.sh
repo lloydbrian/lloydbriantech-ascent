@@ -30,7 +30,19 @@
 # While controls run, a progress bar on stderr shows how many are done and running,
 # how many were not killed, and the time left, when stderr is a terminal;
 # ASCENT_MUTANT_PROGRESS=0 turns it off and =1 forces it. Every run ends with a
-# summary block above the totals line.
+# summary block above the totals line: the three slowest controls, and the three
+# checks and groups that took the most time. ASCENT_MUTANT_TIMES=<file> also writes
+# every timed control, slowest first: seconds, status, id, group, check, cached (ADR-025);
+# the baselines are in group and check "baseline".
+#
+# ASCENT_MUTANT_CACHE=<dir> reuses kills on local reruns (ADR-025): a T11 control
+# of one plugin that was killed before is reported "killed … (cached)" without
+# running, when nothing it can read has changed: the control itself, the plugin,
+# its behavior tests, skills/, the marketplace, make/test-plugins.sh, this harness
+# (without the other controls' declarations), bash and awk. Only kills are kept;
+# a survivor, an anchor miss or a copy failure always runs again. Controls of
+# several plugins, of T13.0 or T14, with a fault or a rebuild, the expect_case
+# controls and full mode never use it. The baselines always run. CI never sets it.
 #
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
 
@@ -57,6 +69,14 @@ MODE="${ASCENT_MUTANT_MODE:-fast}"
 case "$MODE" in fast|full) ;; *) echo "test-mutants: unknown mode '$MODE' (fast or full)" >&2; exit 2 ;; esac
 JOBS="${ASCENT_MUTANT_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)}"
 case "$JOBS" in ''|*[!0-9]*|0) echo "test-mutants: ASCENT_MUTANT_JOBS must be a positive number, got '$JOBS'" >&2; exit 2 ;; esac
+CACHE="${ASCENT_MUTANT_CACHE:-}"
+if [ -n "$CACHE" ]; then
+  if [ "$MODE" = full ]; then echo "test-mutants: ASCENT_MUTANT_CACHE is ignored in full mode" >&2; CACHE=""
+  elif ! mkdir -p "$CACHE" 2>/dev/null || [ ! -w "$CACHE" ]; then echo "test-mutants: cannot write ASCENT_MUTANT_CACHE directory '$CACHE'" >&2; exit 2
+  else CACHE=$(cd "$CACHE" && pwd); fi
+fi
+TIMES="${ASCENT_MUTANT_TIMES:-}"
+if [ -n "$TIMES" ] && ! : 2>/dev/null >> "$TIMES"; then echo "test-mutants: cannot write ASCENT_MUTANT_TIMES file '$TIMES'" >&2; exit 2; fi
 PROGRESS="${ASCENT_MUTANT_PROGRESS:-auto}"
 case "$PROGRESS" in
   auto) if [ -t 2 ]; then PROGRESS=1; else PROGRESS=0; fi ;;
@@ -201,7 +221,9 @@ plugin_gate() {  # DIR [fast LABEL EDITED-FILE | base] — run test-plugins on a
     # MUTANT_FAULT=fast-pass makes fast mode pass everything: only the harness
     # group sets it, to prove that a disagreement between the modes is reported
     if [ "${MUTANT_FAULT:-}" = fast-pass ]; then : > "$1.out"; return 0; fi
-    only=$3; t11fast=1; first=$(basename "$4")
+    # the edited path relative to its plugin, so T11 runs the tests that name it first
+    only=$3; t11fast=1
+    case "$4" in plugins/*/*) first=${4#plugins/*/} ;; tests/plugins/*/*) first=${4#tests/plugins/*/} ;; *) first=$(basename "$4") ;; esac
   elif [ "${2:-}" = base ]; then
     only=$BASE_ONLY; t11=$BASE_T11; t13=$BASE_T13; t14=$BASE_T14
   fi
@@ -269,25 +291,27 @@ bar() {  # [final] — redraw the progress bar on stderr
     "$s" "$fin" "$tot" $((fin * 100 / tot)) "$DOT" "$run" "$DOT" "$nk" "$DOT" "$(clock "$el")" "$left" >&2
   BARRED=1
 }
-# record SECONDS RESULT — the line for $WORK/done: the result's status and id sit
-# at fixed columns of its first line ("  %-12s %-28s")
+# record SECONDS RESULT GROUP CHECK — the line for $WORK/done: the result's status
+# and id sit at fixed columns of its first line ("  %-12s %-28s")
 record() {
-  awk -v t="$1" 'NR == 1 { st = substr($0, 3, 12); sub(/ +$/, "", st); id = substr($0, 16); sub(/ .*/, "", id); print t "\t" st "\t" id }
-    END { if (NR == 0) print t "\t?\t?" }' "$2"
+  awk -v t="$1" -v g="$3" -v c="$4" 'NR == 1 { st = substr($0, 3, 12); sub(/ +$/, "", st); id = substr($0, 16); sub(/ .*/, "", id); print t "\t" st "\t" id "\t" g "\t" c "\t" (/ \(cached\)$/ ? "cached" : "") }
+    END { if (NR == 0) print t "\t?\t?\t" g "\t" c }' "$2"
 }
 flush() {
   while [ -f "$WORK/r/$next" ]; do unbar; cat "$WORK/r/$next"; next=$((next + 1)); done
   bar
 }
 launch() {  # COMMAND ARGS... — run one control in the background, at most $JOBS at a time
-  local n
+  local n grp=$CUR_GROUP chk=baseline
+  # control_run KIND ID LABEL … and expect_run STATUS ID LABEL …: the check is $4
+  case "$1" in control_run|expect_run) chk=$4 ;; *) grp=baseline ;; esac
   seq=$((seq + 1)); total=$((total + 1))
   while n=$(jobs -pr | wc -l) && [ $((n)) -ge "$JOBS" ]; do flush; sleep 0.2; done
   # stderr goes below the result, indented, so the first line is always its status
   ( s=$SECONDS; "$@" >"$WORK/r/$seq.part" 2>"$WORK/r/$seq.err" || true
     if [ -s "$WORK/r/$seq.err" ]; then sed 's/^/               stderr: /' "$WORK/r/$seq.err" >> "$WORK/r/$seq.part"; fi
     rm -f "$WORK/r/$seq.err"
-    record $((SECONDS - s)) "$WORK/r/$seq.part" >> "$WORK/done"
+    record $((SECONDS - s)) "$WORK/r/$seq.part" "$grp" "$chk" >> "$WORK/done"
     mv "$WORK/r/$seq.part" "$WORK/r/$seq" ) &
   flush
 }
@@ -338,10 +362,38 @@ if [ "$MODE" = fast ] && awk -F'\t' '$3 == "T11" { f = 1 } END { exit !f }' "$WO
 fi
 fi
 
+# The cache's digests (ADR-025), once per run: one per plugin, over every file a
+# T11 control of that plugin can read, the harness without the controls'
+# declarations, and the bash and awk that run them.
+if command -v shasum >/dev/null 2>&1; then SUMS="shasum -a 256"; else SUMS=sha256sum; fi
+sha() { $SUMS | awk '{ print $1 }'; }
+tree_sha() {  # PATH... (relative to the repository) — one hash over the files' paths and contents
+  (cd "$REPO_ROOT" && find "$@" -type f ! -name .DS_Store 2>/dev/null | LC_ALL=C sort | tr '\n' '\0' | xargs -0 $SUMS 2>/dev/null || true) | sha
+}
+if [ -n "$CACHE" ] && [ "$LIST" = 0 ]; then
+  mkdir -p "$WORK/digest"
+  COMMON=$( { tree_sha make/test-plugins.sh .claude-plugin skills
+    grep -vE '(^|[ =])(plugin_case|plugin_case_rm) P[0-9]' "$0" | sha
+    printf '%s\n' "$BASH_VERSION" "$(uname -s)"; ls -lL "$(command -v awk)"; } | sha)
+  for d in "$REPO_ROOT"/plugins/*/; do
+    p=$(basename "$d")
+    { echo "$COMMON"; tree_sha "plugins/$p" "tests/plugins/$p"; } | sha > "$WORK/digest/$p"
+  done
+fi
+cache_key() {  # KIND ID LABEL PATH [SED [rebuild]] — the control's key, or nothing when it may not use the cache
+  [ -n "$CACHE" ] && [ "$3" = T11 ] && [ -n "${T11_ONLY:-}" ] && [ -f "$WORK/digest/$T11_ONLY" ] \
+    && [ "${T13_SELFTEST:-0}" = 0 ] && [ "${T14_SELFTEST:-0}" = 0 ] && [ -z "${MUTANT_FAULT:-}" ] && [ "${6:-}" != rebuild ] || return 0
+  { echo "v1 $T11_ONLY"; cat "$WORK/digest/$T11_ONLY"; printf '%s\n' "$@"; } | sha
+}
+
 # control_run KIND ID LABEL PATH [SED [rebuild]] — one control on its own copy;
 # KIND is edit (apply SED to PATH) or rm (delete PATH). Prints its result.
 control_run() {
-  local kind=$1 id=$2 label=$3 path=$4 copy="$WORK/p-$2"
+  local kind=$1 id=$2 label=$3 path=$4 copy="$WORK/p-$2" key out
+  key=$(cache_key "$@")
+  if [ -n "$key" ] && [ -f "$CACHE/$key" ]; then
+    printf "  killed       %-28s by test-plugins %s (cached)\n" "$id" "$label"; return
+  fi
   plugin_copy "$copy" || { copy_failed "$id" "$copy"; return; }
   if [ "$kind" = rm ]; then
     if [ ! -e "$copy/$path" ]; then printf "  ANCHOR MISS  %-28s %s not found\n" "$id" "$path"; rm -rf "$copy"; return; fi
@@ -356,7 +408,9 @@ control_run() {
       printf "  SURVIVED     %-28s rebuild failed before the gate ran\n" "$id"; rm -rf "$copy" "$copy.before"; return
     fi
   fi
-  plugin_verdict "$id" "$label" "$copy" "$path"
+  out=$(plugin_verdict "$id" "$label" "$copy" "$path")
+  printf '%s\n' "$out"
+  case "$out" in "  killed "*) [ -z "$key" ] || : > "$CACHE/$key" ;; esac   # only kills are kept
   rm -rf "$copy" "$copy.before" "$copy.out" "$copy.fast"
 }
 plugin_verdict() {  # ID EXPECT-LABEL COPY EDITED-PATH — run the gate and classify the result
@@ -1053,6 +1107,9 @@ plugin_case P183-scripts-alpine-not-floating T11 "$OPZ" 's/ || t ~ \/:\[A-Za-z_-
 plugin_case P184-scripts-git-ssh-is-registry T11 "$OPZ" 's/|git::|git@|github/|git::|github/'
 plugin_case P185-manuals-fm-comment-kept T11 "$OPM" 's/^    sub(\/\[ \\t\]+#\.\*\$\/, "", line)$//'
 plugin_case P186-manuals-fm-comment-kept-in-bash T11 "$OPS/scripts/check-ops-manuals.sh" 's/{ sub(\/\[ \\t\]+#\.\*\$\/, ""); print }/{ print }/'
+# R13 in one awk pass (ADR-025): a row that names an id outright, and a range that names one
+plugin_case P915-r13-named-severity-drift T11 "$OPR" 's/reads it without -s or prints it (OPS-Z5) | High |/reads it without -s or prints it (OPS-Z5) | Medium |/'
+plugin_case P916-r13-range-shortened T11 "$OPR" 's/(OPS-M1–M4, OPS-M6, OPS-M7)/(OPS-M1, OPS-M6, OPS-M7)/'
 mutant_group ascent-ops-calibration
 plugin_case P187-scripts-help-helper-ignored T11 "$OPZ" 's/\[Hh\]elp\[A-Za-z0-9_\]\* +/[Hh]elpNEVER[A-Za-z0-9_]* +/'
 plugin_case P188-scripts-apply-not-a-dry-run T11 "$OPZ" 's/|--apply|(^|\[^A-Za-z_\])APPLY=|--preview|PREVIEW\//\//'
@@ -1457,7 +1514,9 @@ T14_SELFTEST=1 plugin_case P364-fast-never-stops-test T14.G2 "$GATEP" 's/kill -T
 T14_SELFTEST=1 plugin_case P365-fail-line-exit-0-passes T14.G5 "$GATEP" "s/if grep -q '^FAIL' \"\$WORK\/t11.out\"; then/if false; then/"
 T14_SELFTEST=1 plugin_case P366-unknown-label-accepted T14.G8 "$GATEP" 's/ >&2; exit 2 ;; esac$/ >\&2 ;; esac/'
 T14_SELFTEST=1 plugin_case P367-t11-runs-on-after-failure T14.G3 "$GATEP" 's/\[ "\$FAST" = 1 \] && break  # T11 has failed; the remaining tests/: # T11 has failed; the remaining tests/'
-T14_SELFTEST=1 plugin_case P368-first-tests-last T14.G4 "$GATEP" 's/TESTS="\$FIRST \$REST"/TESTS="\$REST \$FIRST"/'
+T14_SELFTEST=1 plugin_case P368-first-tests-last T14.G4 "$GATEP" 's/TESTS="\$FIRST \$NEXT \$REST"/TESTS="\$REST \$NEXT \$FIRST"/'
+T14_SELFTEST=1 plugin_case P913-first-path-tier-dropped T14.G4 "$GATEP" 's/TESTS="\$FIRST \$NEXT \$REST"/TESTS="\$NEXT \$FIRST \$REST"/'
+T14_SELFTEST=1 plugin_case P914-first-no-file-name-fallback T14.G4 "$GATEP" 's/F2=\$(basename "\$F1")/F2=\$F1/'
 T14_SELFTEST=1 plugin_case P369-only-runs-everything T14.G8 "$GATEP" 's/^run() { \[ -z "\$ONLY" \] ||/run() { true ||/'
 T14_SELFTEST=1 plugin_case P370-shared-tmpdir T14.G7 "$GATEP" 's/  TMPDIR="\$tmp" bash "\$1"/  bash "$1"/'
 T14_SELFTEST=1 plugin_case P371-fail-line-not-watched T14.G2 "$GATEP" "s/if grep -q '^FAIL' \"\$2\"; then/if grep -q '^NEVER' \"\$2\"; then/"
@@ -1529,25 +1588,42 @@ done
 # as killed, and MODES DIFFER and CONTROL FAIL as survived; COPY FAIL is neither),
 # what was not killed, the time and the three slowest controls.
 if [ "$total" -gt 0 ]; then
-  cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" '
+  cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v dot="$DOT" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" '
     function rep(n,  r) { r = ""; while (n-- > 0) r = r rule; return r }
     { if ($2 == "killed" || $2 == "confirmed") k++; else if ($2 == "control") c++; else if ($2 == "ANCHOR MISS") a++
       else if ($2 == "MODES DIFFER") d++; else if ($2 == "CONTROL FAIL") f++; else if ($2 == "COPY FAIL") x++; else s++
       if ($2 !~ /^(killed|confirmed|control)$/) nk[++nn] = sprintf("          %-13s %s", $2, $3)
-      if ($1 != "-") { t[++nt] = $1 + 0; id[nt] = $3 } }
+      if ($6 == "cached") cached++
+      if ($1 != "-") { t[++nt] = $1 + 0; id[nt] = $3; ct[$5] += $1; cn[$5]++; gt[$4] += $1; gn[$4]++ } }
+    # top3 TIMES COUNTS — the three largest totals, "name m:ss (n)", joined by the dot
+    function top3(tt, nn,  k, m, j, r, done) {
+      r = ""
+      for (j = 1; j <= 3; j++) {
+        m = ""; for (k in tt) if (!(k in done) && (m == "" || tt[k] > tt[m])) m = k
+        if (m == "") break
+        done[m] = 1; r = r (j > 1 ? " " dot " " : "") sprintf("%s %d:%02d (%d)", m, int(tt[m] / 60), tt[m] % 60, nn[m])
+      }
+      return r
+    }
     END {
       print ""; print rep(16) " summary " rep(16)
       printf " group    %-20s mode  %s\n jobs     %-20s time  %s\n", group, mode, jobs, time
       printf " killed   %d   control %d   survived %d\n", k, c, s
       printf " modes differ %d   anchor miss %d   control fail %d   copy fail %d\n", d, a, f, x
+      if (cached) printf " cached   %d kills reused, not rerun (ASCENT_MUTANT_CACHE)\n", cached
       for (j = 1; j <= 3 && j <= nt; j++) {
         m = 0; for (i = 1; i <= nt; i++) if (!(i in used) && (m == 0 || t[i] > t[m])) m = i
         used[m] = 1; printf " %-8s %-30s %ds\n", (j == 1 ? "slowest" : ""), id[m], t[m]
       }
+      if (nt) { printf " by check %s\n", top3(ct, cn); printf " by group %s\n", top3(gt, gn) }
       if (nn) { print " not killed"; for (i = 1; i <= nn; i++) print nk[i] }
       print " result   " ((s + d + f + a + x == 0 && NR > 0) ? "PASS" : "FAIL")
       print rep(41)
     }'
+fi
+if [ -n "$TIMES" ]; then
+  { printf 'seconds\tstatus\tid\tgroup\tcheck\tcached\n'; LC_ALL=C sort -t "$(printf '\t')" -k1,1nr "$WORK/done"; } > "$TIMES"
+  echo "test-mutants: times of $(wc -l < "$WORK/done" | tr -d ' ') controls written to $TIMES" >&2
 fi
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"
 printf "\ntest-mutants: %s mutants — %s killed, %s survived, %s anchor misses (group: %s, mode: %s)\n" \

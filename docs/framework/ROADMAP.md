@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.20 (acceptance sign-off in `ascent-delivery` 0.2.0, `ascent-ux` 0.3.1, `ascent-architecture` 0.2.1 and a scaffold that passes its own operations checks), November 16, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
+**Current state:** v0.4.21 (faster local verification: timings, the right test first, a cheaper rules test and a kill cache for local reruns), November 16, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
@@ -261,6 +261,12 @@ v0.4.18's scope script put a `case` statement inside `$( )`, which bash 3.2, mac
 **Status:** ✅ Complete (November 16, 2026)
 
 `ascent-delivery` 0.2.0 adds a person's acceptance to the delivery loop ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)). Each change gets an acceptance record: Claude drafts the criteria and their evidence, and only a person fills in who accepted each one and when, after checking it on beta. `check-acceptance.sh` (`DEL-A1`–`A3`) checks the evidence at the definition of done and the whole record before prod, and any failure stops prod. The contract moves to the `delivery:` section of `.ascent/contract.yml`; `.delivery-loop.yml` keeps working, and the hook blocks the deploy commands of both. Runbook steps are labelled [C] (read-only) or [O] (operator). `ascent-ux` 0.3.1 closes the 0.2.0 and 0.3.0 trial candidates, `ascent-architecture` 0.2.1 points operations-only items to `ascent-ops`, and a fresh scaffold passes `OPS-Z3` and `OPS-Z8`.
+
+### v0.4.21: Faster local verification
+
+**Status:** ✅ Complete (November 16, 2026)
+
+Verifying v0.4.20 took two full runs of the negative controls, about 55 minutes each, the second after a fix that could not change a verdict ([ADR-025](DECISIONS/ADR-025-faster-local-verification.md)). Every run now shows which checks and groups took the time, and `TIMES=<file>` writes every control's time. T11 runs first the tests that name the edited path, so a control on a skill stops at its rules test. R13 of `test-ops-rules.sh` is one awk pass, 2 seconds instead of 17, with the same verdicts. `CACHE=<dir>` reuses the kills of single-plugin T11 controls whose inputs have not changed, on local reruns only: CI and the final run before a release never use it.
 
 ---
 

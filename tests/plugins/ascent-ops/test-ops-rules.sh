@@ -161,31 +161,47 @@ if [ -n "$TKEYS" ] && [ "$TKEYS" = "$AKEYS" ]; then ok; else bad "R12 agent keys
 
 # R13 — every script check id is in the severity table at its severity
 TABLE=$(awk '/<!-- ops-severity:start/ { on = 1; next } /<!-- ops-severity:end/ { on = 0 } on' "$REVIEW")
+# One awk pass per script: a row names an id outright ("(OPS-S1," and the like) or
+# through a range of its letter ("OPS-M1–M4"), and the row must end with its severity.
+# Forking grep per id and row took most of this test's time.
 NIDS=0
 for s in "$PLUGIN"/scripts/*.sh; do
-  while read -r id sev; do
+  while IFS="$(printf '\t')" read -r verdict id sev; do
     [ -n "$id" ] || continue
-    NIDS=$((NIDS + 1)); L=$(printf '%s' "${id#OPS-}" | cut -c1); n=$(printf '%s' "$id" | tr -cd '0-9'); hit=0
-    while IFS= read -r row; do
-      [ -n "$row" ] || continue
-      named=0
-      if printf '%s\n' "$row" | grep -qE "[(, ]$id([,) ]|$(printf '\342\200\223'))"; then named=1
-      else
-        for r in $(printf '%s\n' "$row" | grep -oE "OPS-$L[0-9]+$(printf '\342\200\223')$L[0-9]+" || true); do
-          lo=$(printf '%s' "${r%%$(printf '\342\200\223')*}" | tr -cd '0-9'); hi=$(printf '%s' "${r##*$(printf '\342\200\223')}" | tr -cd '0-9')
-          [ "$n" -ge "$lo" ] && [ "$n" -le "$hi" ] && named=1
-        done
-      fi
-      [ "$named" = 1 ] || continue
-      case "$row" in *"| $sev |") hit=1 ;; esac
-    done <<EOF_ROWS
-$TABLE
-EOF_ROWS
-    if [ "$hit" = 1 ]; then ok; else bad "R13 $(basename "$s") prints $id as $sev, but no severity-table row names $id at $sev"; fi
+    NIDS=$((NIDS + 1))
+    if [ "$verdict" = ok ]; then ok; else bad "R13 $(basename "$s") prints $id as $sev, but no severity-table row names $id at $sev"; fi
   done <<EOF_IDS
 $( { sed -nE 's/^#   (OPS-[SZMRX][0-9]+) +(High|Medium|Low) .*/\1 \2/p' "$s"
       lib="$PLUGIN/scripts/lib/$(basename "$s" .sh).awk"
-      [ -f "$lib" ] && grep -ohE 'fail\("[SZMRX][0-9]+", "[A-Za-z]+"' "$lib" | sed -E 's/fail\("([^"]+)", "([^"]+)"/OPS-\1 \2/'; } | LC_ALL=C sort -u)
+      [ -f "$lib" ] && grep -ohE 'fail\("[SZMRX][0-9]+", "[A-Za-z]+"' "$lib" | sed -E 's/fail\("([^"]+)", "([^"]+)"/OPS-\1 \2/'; } | LC_ALL=C sort -u |
+   TABLE="$TABLE" LC_ALL=C awk '
+     BEGIN { D = "\342\200\223"; nt = split(ENVIRON["TABLE"], rows, "\n") }
+     NF == 2 {
+       id = $1; sev = $2; L = substr(id, 5, 1); n = substr(id, 6) + 0; hit = 0; suf = "| " sev " |"
+       for (i = 1; i <= nt; i++) {
+         row = rows[i]; if (row == "") continue
+         named = 0; s = row; off = 0
+         while (!named && (p = index(s, id)) > 0) {     # id after "(", "," or a space; before ",", ")", a space or an en dash
+           at = off + p; pre = (at > 1) ? substr(row, at - 1, 1) : ""; post = substr(row, at + length(id))
+           if (pre ~ /^[(, ]$/ && (post ~ /^[,) ]/ || index(post, D) == 1)) named = 1
+           s = substr(s, p + 1); off = at
+         }
+         s = row
+         while (!named && (p = index(s, "OPS-" L)) > 0) {  # OPS-<L>lo–<L>hi
+           t = substr(s, p + 5)
+           if (match(t, /^[0-9]+/)) {
+             lo = substr(t, 1, RLENGTH) + 0; t = substr(t, RLENGTH + 1)
+             if (index(t, D L) == 1 && match(substr(t, length(D) + 2), /^[0-9]+/)) {
+               hi = substr(t, length(D) + 2, RLENGTH) + 0
+               if (n >= lo && n <= hi) named = 1
+             }
+           }
+           s = substr(s, p + 1)
+         }
+         if (named && length(row) >= length(suf) && substr(row, length(row) - length(suf) + 1) == suf) hit = 1
+       }
+       printf "%s\t%s\t%s\n", (hit ? "ok" : "bad"), id, sev
+     }')
 EOF_IDS
 done
 [ "$NIDS" -ge 42 ] || bad "R13 expected at least 42 check ids in the script headers, found $NIDS"

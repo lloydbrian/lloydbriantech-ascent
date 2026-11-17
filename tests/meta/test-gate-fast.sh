@@ -96,6 +96,19 @@ gate fast ASCENT_T11_FIRST=y.sh
 if t11 | grep -q 'test-b failed: FAIL  from b;' && ! t11 | grep -q 'test-a'; then ok; else bad "G4 ASCENT_T11_FIRST=y.sh did not run test-b first: $(t11)"; fi
 gate fast
 if t11 | grep -q 'test-a failed: FAIL  from a;' && ! t11 | grep -q 'test-b'; then ok; else bad "G4 without ASCENT_T11_FIRST the tests did not run in name order: $(t11)"; fi
+# A path: the tests that name the path run before those that name only its file name,
+# and with no test naming the path, those that name the file name run first (ADR-025)
+fixture g4p
+testfile test-a "# reads skills/one/SKILL.md
+echo 'FAIL  from a'; echo 'test-a: 0/1 PASS'; exit 1"
+testfile test-b "# reads skills/two/SKILL.md and NOTES.md
+echo 'FAIL  from b'; echo 'test-b: 0/1 PASS'; exit 1"
+testfile test-c "# reads nothing named
+echo 'FAIL  from c'; echo 'test-c: 0/1 PASS'; exit 1"
+gate fast ASCENT_T11_FIRST=skills/two/SKILL.md
+if t11 | grep -q 'test-b failed: FAIL  from b;' && ! t11 | grep -q 'test-a'; then ok; else bad "G4 ASCENT_T11_FIRST=skills/two/SKILL.md did not run test-b first: $(t11)"; fi
+gate fast ASCENT_T11_FIRST=docs/NOTES.md
+if t11 | grep -q 'test-b failed: FAIL  from b;' && ! t11 | grep -q 'test-a'; then ok; else bad "G4 a path no test names did not fall back to its file name: $(t11)"; fi
 
 # --- G5  a FAIL line with exit status 0 fails T11 in both modes
 fixture g5; passing test-b y.sh
