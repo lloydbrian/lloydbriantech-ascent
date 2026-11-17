@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.21 (faster local verification: timings, the right test first, a cheaper rules test and a kill cache for local reruns), November 16, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
+**Current state:** v0.4.22 (`ascent-security` 0.3.0: live security testing the operator runs and a STRIDE threat model), November 17, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
@@ -10,7 +10,7 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 
 | Rank | Plugin | Scope | Status |
 |---|---|---|---|
-| — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9; 0.3.0 ⏳ Planned |
+| — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing and the threat model (`SEC-L1`–`L10`, `SEC-T1`–`T4`, ADR-026) | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9, 0.3.0 in v0.4.22 |
 | — | `ascent-delivery` | The delivery loop and the operator-boundary hook; 0.2.0 adds a person's acceptance sign-off, checked before prod (`DEL-A1`–`A3`, ADR-024) | ✅ v0.4.3, 0.1.3 in v0.4.11, 0.2.0 in v0.4.20 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4; 0.2.0 in v0.4.8; 0.2.1 in v0.4.20 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions; 0.3.0 adds flow integrity and reliability under four principles (`UX-F`, `UX-R`, `UX-P`, ADR-022) | ✅ v0.4.5; 0.2.0 in v0.4.8; 0.3.0 in v0.4.15; 0.3.1 in v0.4.20 |
@@ -33,7 +33,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | Recommended next names missing plugins | Business value | Each plugin's "Recommended next" line also names an uninstalled plugin whose signals the repository shows, from [OWNERSHIP.md](OWNERSHIP.md#which-plugins-do-i-need) | ⏳ Committed on 2026-10-27 |
 | Navigational integrity and cross-browser | Business value | `ascent-ux` 0.3.0: broken links, dead ends and lost state across flows, and a cross-browser pass (ADR-014) | ✅ `ascent-ux` 0.3.0, v0.4.15 ([ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md)); Firefox and WebKit trialled in v0.4.20 |
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ✅ `ascent-delivery` 0.2.0, v0.4.20 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)) |
-| Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Next (order of 2026-11-16) |
+| Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ✅ `ascent-security` 0.3.0, v0.4.22 ([ADR-026](DECISIONS/ADR-026-live-security-testing-and-threat-model.md)) |
 
 Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, v0.4.17 puts its figures in the README banner, and v0.4.18 scopes CI to what a change can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)), fixed for macOS's bash 3.2 in v0.4.19.
 
@@ -267,6 +267,12 @@ v0.4.18's scope script put a `case` statement inside `$( )`, which bash 3.2, mac
 **Status:** ✅ Complete (November 16, 2026)
 
 Verifying v0.4.20 took two full runs of the negative controls, about 55 minutes each, the second after a fix that could not change a verdict ([ADR-025](DECISIONS/ADR-025-faster-local-verification.md)). Every run now shows which checks and groups took the time, and `TIMES=<file>` writes every control's time. T11 runs first the tests that name the edited path, so a control on a skill stops at its rules test. R13 of `test-ops-rules.sh` is one awk pass, 2 seconds instead of 17, with the same verdicts. `CACHE=<dir>` reuses the kills of single-plugin T11 controls whose inputs have not changed, on local reruns only: CI and the final run before a release never use it.
+
+### v0.4.22: Live security testing and the threat model
+
+**Status:** ✅ Complete (November 17, 2026)
+
+`ascent-security` 0.3.0 adds two hand-written skills ([ADR-026](DECISIONS/ADR-026-live-security-testing-and-threat-model.md)). `security-test` writes the runbook for live checks the operator runs against a local or beta target, and for ZAP, nuclei and dalfox in pinned containers, then rates the committed results with `SEC-L1`–`L10`. `run-live-checks.sh` sends no credential and keeps no response body, refuses production unless the contract allows it, and inside Claude Code refuses anything but loopback; writes and model calls are opt-in. `threat-model` drafts `docs/security/THREAT-MODEL.md` with STRIDE, and `SEC-T1`–`T4` check that every endpoint is an entry point with threats, every threat is mitigated in a named file or accepted under an ADR, and a person reviewed it recently. The agent reads both. Controls P917–P1000 run in two new groups. A read-only trial on three repositories, with a live pass against a local copy of one, led to one calibration.
 
 ---
 

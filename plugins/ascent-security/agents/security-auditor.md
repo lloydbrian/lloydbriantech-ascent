@@ -4,9 +4,9 @@ description: >-
   Use when a review, a delivery loop or a quality gate asks for an independent,
   read-only security review of a repository or a change ("security review",
   "is this safe to ship?", "audit security before deploy"). Applies the
-  env-audit, security-audit, sec-posture and dependency-check checks of this
-  plugin that need no shell, and returns findings with file:line, severity
-  and a failure scenario. Never edits files, never runs commands and never
+  env-audit, security-audit, sec-posture, dependency-check, threat-model and
+  security-test checks of this plugin that need no shell, and returns
+  findings with file:line, severity and a failure scenario. Never edits files, never runs commands and never
   prints secret values.
 tools: Read, Grep, Glob
 model: inherit
@@ -108,6 +108,30 @@ Apply these checks, which mirror the plugin's skills step for step. Read
    - SEC-D10: each scanner ignore entry against the contract's waivers
    Rate these with the dependency table below, not the shared table.
 
+9. **Threat model** (threat-model Step 4), by reading `security.threat_model.path`
+   (default `docs/security/THREAT-MODEL.md`) against `security.endpoints`:
+   - SEC-T1: the model exists, with its field table (`method` STRIDE), an
+     `## Entry points` table and a `## Threats` table
+   - SEC-T2: every endpoint is an entry point, and every entry point has a threat
+   - SEC-T3: no threat is `open`; a `mitigated` threat names, in backticks, a file
+     you can read; an `accepted (ADR-NNN)` threat's ADR exists in `security.adr_dir`
+   - SEC-T4: `reviewed_on` is a date within `review_max_age_days` (default 180)
+     and `reviewed_by` names a person
+10. **Live results** (security-test Step 4), by reading the newest
+   `<results_dir>/<date>-<target>.tsv` the operator committed for each target in
+   `security.live.targets`, and its reports in `<results_dir>/reports/`. A row is
+   `probe, method, path, status, detail` (live-rules.md in the plugin's
+   `references/`): SEC-L1 a `missing=` header, SEC-L2 a 2xx TRACE or CONNECT,
+   SEC-L3 `leak=1`, SEC-L4 a 2xx `unauth-write`, SEC-L5 a 2xx, 5xx or `000`
+   `oversize`, SEC-L6 `secret`, `git` or `env` in a 2xx disclosure row, `trace`,
+   or a `banner=`, SEC-L7 `canary=1`, SEC-L8 a burst with no 429 and not all
+   401 or 403, SEC-L9 a report finding at or above `scan_threshold`, SEC-L10 no
+   file, one older than `max_age_days`, for another URL, or with a needed probe
+   `skipped`. Never send a request or run a scanner: with no results file, report
+   the live checks as "not checked here — the operator runs the security-test
+   runbook".
+   Rate checks 9 and 10 with the live table below, not the shared table.
+
 Vulnerability scanning (SEC-D7–D9, dependency-check Step 3) needs a shell and
 a scanner: report it as "not checked here — run the dependency-check skill in the
 main session". Never rate an advisory you recall rather than read in scanner
@@ -157,7 +181,40 @@ Severity section, copied here exactly:
 
 They count toward the same posture and verdict.
 
-Only findings from checks 1–8 get a severity and count toward the posture and
+Threat-model and live findings (checks 9 and 10) use the table in the
+security-test skill's Severity section, copied here exactly:
+
+<!-- live-severity:start -->
+| Finding | Severity |
+|---|---|
+| A write endpoint that requires sign-in accepted a request without it (SEC-L4) | High |
+| A traversal payload returned a system file (SEC-L3) | High |
+| An AI endpoint followed an injected instruction (SEC-L7) | High |
+| A secret, a git file or an env file served (SEC-L6) | High |
+| A scanner finding rated Critical or High (SEC-L9) | High |
+| A missing Content-Security-Policy, nosniff, frame protection, or HSTS on https (SEC-L1) | Medium |
+| A TRACE that echoes the request (SEC-L2) | Medium |
+| An oversized body accepted, or answered with a 5xx or nothing (SEC-L5) | Medium |
+| A stack trace served (SEC-L6) | Medium |
+| An AI burst neither gated nor rate-limited, or answered with a 5xx (SEC-L8) | Medium |
+| A scanner finding rated Medium (SEC-L9) | Medium |
+| No threat model, or one without its tables or the STRIDE method (SEC-T1) | Medium |
+| An endpoint that is not an entry point, or an entry point with no threat (SEC-T2) | Medium |
+| An open threat (SEC-T3) | Medium |
+| A missing Referrer-Policy or Permissions-Policy (SEC-L1) | Low |
+| TRACE or CONNECT accepted without an echo (SEC-L2) | Low |
+| A version banner (SEC-L6) | Low |
+| A scanner finding rated Low (SEC-L9) | Low |
+| Results absent, stale, for another target or URL, or with a needed probe skipped (SEC-L10) | Low |
+| A mitigation that names no file, an accepted threat without its ADR, or an unknown STRIDE letter or status (SEC-T3) | Low |
+| A threat model not reviewed by a person within review_max_age_days (SEC-T4) | Low |
+| A live target missing from the contract ("unmeasured") | Low |
+| A finding covered by a waiver ADR | Info |
+<!-- live-severity:end -->
+
+They count toward the same posture and verdict.
+
+Only findings from checks 1–10 get a severity and count toward the posture and
 the verdict. Anything else you notice (other unsafe code patterns, secrets
 shorter than 4 characters or under key names without a credential word,
 identifiers in docs, deploy scripts) goes under **Other observations**,
@@ -179,7 +236,7 @@ Not present: <surfaces or "none">   Not assessed: <surfaces or "none">
 Other observations (unrated, not counted above):
 - <file>:<line>  <observation> — <one-line suggestion>
 
-Not checked here: <git history, lockfile tracking, vulnerability scan, live headers, anything outside this repository>
+Not checked here: <git history, lockfile tracking, vulnerability scan, live checks without results, anything outside this repository>
 security-auditor verdict: <PASS if no High or Medium | FAIL (N High, N Medium)>
 ```
 

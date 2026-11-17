@@ -1,0 +1,36 @@
+# ascent-live-results 1
+# target	local
+# url	http://127.0.0.1:8080
+# date	2026-11-15
+# script	0.3.0
+probe	method	path	status	detail
+headers	GET	/	200	-
+verb	TRACE	/	405	-
+verb	CONNECT	/	405	-
+verb	TRACE	/api/items/ascent-probe	405	-
+verb	CONNECT	/api/items/ascent-probe	405	-
+verb	TRACE	/api/items	405	-
+verb	CONNECT	/api/items	405	-
+verb	TRACE	/api/chat	405	-
+verb	CONNECT	/api/chat	405	-
+traversal	GET	/api/items/../etc/passwd	404	-
+traversal	GET	/api/items/..%2fetc%2fpasswd	404	-
+traversal	GET	/api/items/....//etc/passwd	404	-
+traversal	GET	/api/items/%2e%2e%2fetc%2fpasswd	404	-
+traversal	GET	/api/items/../../../etc/passwd	404	-
+traversal	GET	/api/items/..%252fetc%252fpasswd	404	-
+disclosure	GET	/.env	404	-
+disclosure	GET	/.git/config	404	-
+disclosure	GET	/debug	404	-
+disclosure	GET	/api/debug	404	-
+disclosure	GET	/api/config	404	-
+disclosure	GET	/api/env	404	-
+disclosure	GET	/actuator/env	404	-
+disclosure	GET	/server-status	404	-
+disclosure	GET	/ascent-probe-missing	404	-
+unauth-write	DELETE	/api/items/ascent-probe	401	-
+unauth-write	POST	/api/items	401	-
+oversize	POST	/api/items	413	bytes=1150991
+malformed	POST	/api/items	401	-
+canary	POST	/api/chat	401	-
+burst	POST	/api/chat	-	401=10

@@ -12,8 +12,9 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Next, `ascent-security` 0.3.0 (order of 2026-11-16): live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
-- Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24 and 2026-11-16)
+- Next, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24 and 2026-11-16)
+- `ascent-security`: authenticated live checks, and a trial of the three scanner images against a real target, when a project needs them (ADR-026)
+- Tests: the `edit()` helpers of `test-check-drills.sh`, `test-check-ops-manuals.sh` and `test-check-iac-config.sh` do not fail a case when their awk edit fails, as `test-check-threat-model.sh` now does
 - Then auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
 - `ascent-quality`: more languages (Java, Ruby, Rust, .NET) when a trial needs them (ADR-019); Gatling and JMeter when a trial needs them (ADR-021)
 - `ascent-security`: the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
@@ -24,6 +25,39 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.22] — 2026-11-17
+
+**Live security testing and the threat model.** `ascent-security` 0.3.0 checks what no file can show: how a running application answers a hostile request, and which threats each way in faces ([ADR-026](docs/framework/DECISIONS/ADR-026-live-security-testing-and-threat-model.md)). The operator runs every request from a runbook Claude writes, against a local or beta target; Claude rates the committed results. Claude drafts the threat model, and only a person reviews it.
+
+### Added
+
+- `ascent-security` skill `security-test`: Step 0 proposes `security.endpoints` and `security.live` from the routes; it checks the threat model first, shows a dry run, writes the runbook (pre-flight, the live checks, ZAP baseline, nuclei and dalfox in pinned containers, post-flight), then rates the results; `live-severity` table, copied into the agent
+- `ascent-security` skill `threat-model`: drafts or updates `docs/security/THREAT-MODEL.md` with STRIDE per entry point (ids `EP-<n>` and `TH-<n>`), writes only that file, never fills `reviewed_on` or `reviewed_by`
+- `scripts/run-live-checks.sh` (the operator's): headers, TRACE and CONNECT, six traversal payloads, nine disclosure paths, and with `--allow-writes` unauthenticated writes, an oversized and a malformed body, with `--allow-ai` a prompt-injection canary whose answer an echo cannot produce, and a burst of ten; no credentials, no response bodies kept; refuses hosts off the allow-list, production without `--allow-prod`, and anything but loopback inside Claude Code; `--dry-run`
+- `scripts/check-live-results.sh`: `SEC-L1`–`L10`, the results file and ZAP JSON, nuclei JSONL and dalfox v3 JSONL reports, with waivers, a threshold and prototype notes
+- `scripts/check-threat-model.sh`: `SEC-T1`–`T4`
+- `references/live-rules.md`; the contract's `security.endpoints`, `security.live` and `security.threat_model`
+- `security-auditor` checks 9 (threat model) and 10 (committed live results), by reading
+- Tests: `test-run-live-checks.sh` against a Python test server on 127.0.0.1 (hardened, vulnerable and rate-limited modes, stopped after 300 seconds at most), `test-check-live-results.sh`, `test-check-threat-model.sh`, `test-live-rules.sh`
+- Controls P917–P1000 in groups `ascent-security-live` and `ascent-security-threat`
+- ADR-026
+
+### Changed
+
+- Framework 0.4.21 → 0.4.22; `ascent-security` 0.2.0 → 0.3.0
+- The registry: skills `security-test` and `threat-model`, families `SEC-L` and `SEC-T`, the `live-severity` marker; the "threat model" and "security testing (live, operator-run)" domains are released
+- The gate checks the `live-severity` table (T5)
+- PILLARS: security testing (live) and the threat model move from Gap to Partial
+- The README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and the banners for 0.4.22; the component figure is 32, the suite figure 56, the control figure 1065 (981 plus P917–P1000) and the decision figure 26
+
+### Notes
+
+- The scanner images are `zaproxy/zap-stable:2.17.0`, `projectdiscovery/nuclei:v3.11.1` and `hahwul/dalfox:v3.3.0`, tags checked on Docker Hub on 2026-11-17. The rater is tested on recorded reports, not on the scanners' own runs
+- The read-only trial (2026-11-17): no model in `regimedesk`, `sports-tennis-ptc-scoring` or `lloydbriantech-test-platform` (SEC-T1 Medium each); a drafted STRIDE model for a copy of `regimedesk` (one open threat, unreviewed); the live checks against that copy on 127.0.0.1, stopped in the same step (33 results, two Low SEC-L1 headers). One calibration: an oversized-body probe skipped for write endpoints without sign-in is now SEC-L10 and SEC-L5 unmeasured, not N/A
+- Not exercised before release: an https target (HSTS), the scanners against a real target, and the skills' full flow on a repository whose contract lists endpoints
 
 ---
 

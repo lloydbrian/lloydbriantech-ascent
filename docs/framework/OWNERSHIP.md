@@ -37,7 +37,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 <!-- ownership:plugins:start -->
 | Plugin | Code | Status | Build | Contract section | Severity marker |
 |---|---|---|---|---|---|
-| `ascent-security` | `SEC` | released | hybrid | `security` | `severity-table`, `dep-severity` |
+| `ascent-security` | `SEC` | released | hybrid | `security` | `severity-table`, `dep-severity`, `live-severity` |
 | `ascent-delivery` | `DEL` | released | hand-written | `delivery` | — |
 | `ascent-architecture` | `ARC` | released | hand-written | `architecture` | `arch-severity` |
 | `ascent-ux` | `UX` | released | hand-written | `ux` | `ux-severity` |
@@ -59,6 +59,8 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-security` | skill | `security-audit` |
 | `ascent-security` | skill | `sec-posture` |
 | `ascent-security` | skill | `dependency-check` |
+| `ascent-security` | skill | `security-test` |
+| `ascent-security` | skill | `threat-model` |
 | `ascent-security` | agent | `security-auditor` |
 | `ascent-delivery` | skill | `delivery-loop` |
 | `ascent-delivery` | agent | `finding-verifier` |
@@ -112,6 +114,8 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `QA-L` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-evidence.sh` |
 | `QA-M` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-evidence.sh` |
 | `SEC-D` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-dependencies.sh` |
+| `SEC-L` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
+| `SEC-T` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
 | `UX-D` | `ascent-ux` | catalogue | `plugins/ascent-ux/skills/design-directions/SKILL.md` |
@@ -143,8 +147,8 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | runtime hardening | `ascent-security` | `ascent-security` | released |
 | security posture | `ascent-security` | `ascent-security` | released |
 | dependency vulnerabilities and supply chain | `ascent-security` | `ascent-security` | released |
-| threat model | `ascent-security` | `ascent-security` | planned |
-| security testing (live, operator-run) | `ascent-security` | `ascent-security` | planned |
+| threat model | `ascent-security` | `ascent-security` | released |
+| security testing (live, operator-run) | `ascent-security` | `ascent-security` | released |
 | change delivery and the operator boundary | `ascent-delivery` | `ascent-delivery` | released |
 | smoke tests after a deploy | `ascent-delivery` | `ascent-delivery` | released |
 | user acceptance sign-off | `ascent-delivery` | `ascent-delivery` | released |

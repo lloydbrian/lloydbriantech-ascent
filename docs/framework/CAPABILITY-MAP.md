@@ -1,12 +1,12 @@
 # ASCENT capability map
 
-> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.21. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
+> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.22. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
 
 [At a glance](#at-a-glance) · [Plugins](#plugins) · [Parent skill](#parent-skill) · [Roadmap](#roadmap) · [Everything in one table](#everything-in-one-table)
 
 ## At a glance
 
-| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **52**<br>behavior-test suites | **981**<br>negative controls | **25**<br>decision records |
+| **6**<br>plugins released | **32**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **56**<br>behavior-test suites | **1065**<br>negative controls | **26**<br>decision records |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 
 Every behavior-test suite runs on macOS and Linux. A negative control breaks one rule on purpose, and a named test must catch it.
@@ -15,15 +15,15 @@ Every behavior-test suite runs on macOS and Linux. A negative control breaks one
 
 Install only what your repository needs. Each plugin works alone; one you skip leaves its review "unmeasured", never blocked. Every review is read-only, and every finding carries a plugin-qualified rule id such as `OPS-S3`.
 
-### `ascent-security` 0.2.0 · ✅ Released v0.4.9
+### `ascent-security` 0.3.0 · ✅ Released v0.4.22
 
-> "Any secrets committed? Are our dependencies safe?"
+> "Any secrets committed? Are our dependencies safe? Is the running app hardened?"
 
-`.env` discipline, hardcoded credentials, container privilege, security headers, production URLs and dynamic code; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images.
+`.env` discipline, hardcoded credentials, container privilege, security headers, production URLs and dynamic code; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; a STRIDE threat model; and live checks of a running application that the operator runs, with ZAP, nuclei and dalfox in pinned containers.
 
-- **Skills:** `env-audit` · `security-audit` · `sec-posture` · `dependency-check` · agent `security-auditor`
-- **Rules:** `SEC-D1`–`D10`, plus the security baselines
-- **Next:** 0.3.0, live operator-run security testing and a threat model
+- **Skills:** `env-audit` · `security-audit` · `sec-posture` · `dependency-check` · `threat-model` · `security-test` · agent `security-auditor`
+- **Rules:** `SEC-D1`–`D10`, `SEC-L1`–`L10`, `SEC-T1`–`T4`, plus the security baselines
+- **Next:** authenticated checks and a trial of the scanners against a real target, when a project needs them
 
 ### `ascent-delivery` 0.2.0 · ✅ Released v0.4.20
 
@@ -82,8 +82,7 @@ Which test types exist and whether CI runs them, boundaries no test reaches, acc
 | When | What | Status |
 |---|---|---|
 | v0.1 – v0.4.1 | Phases 0–3: foundation, parent skill, template assets, embedded skills | ✅ Done |
-| v0.4.2 – v0.4.21 | Six plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, faster local verification, and this map | ✅ Done |
-| next release | Live security testing and a threat model (`ascent-security` 0.3.0) | Planned |
+| v0.4.2 – v0.4.22 | Six plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, faster local verification, live security testing and a threat model, and this map | ✅ Done |
 | plugin roadmap | `ascent-session`, `ascent-adr`, `ascent-docs` and `ascent-node-stack`, scoped when each starts | Planned |
 | after the plugins | Auditability for projects and a launch go/no-go conductor (`ascent-governance`) | Planned |
 | Phases 4–7 | Scaffolding scripts, eval harness, starter repository, first production project | Awaiting go-signal |
@@ -94,10 +93,10 @@ Details and exit criteria: [ROADMAP.md](ROADMAP.md). Every change: [CHANGELOG.md
 
 | Component | Kind | Version | Status | Since |
 |---|---|---|---|---|
-| `ascent-security` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.2 · dependencies in v0.4.9 |
+| `ascent-security` | Plugin · 6 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.2 · dependencies in v0.4.9 · live testing in v0.4.22 |
 | `ascent-delivery` | Plugin · 1 skill, 1 agent, 1 hook | 0.2.0 | ✅ Released | v0.4.3 · acceptance in v0.4.20 |
 | `ascent-architecture` | Plugin · 4 skills, 1 agent | 0.2.1 | ✅ Released | v0.4.4 |
 | `ascent-ux` | Plugin · 5 skills, 1 agent | 0.3.1 | ✅ Released | v0.4.5 · flows in v0.4.15 |
 | `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.6 · drills in v0.4.12 |
 | `ascent-quality` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.11 · evidence in v0.4.13 |
-| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.21 | ✅ Released | Phase 3, v0.4.0 |
+| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.22 | ✅ Released | Phase 3, v0.4.0 |

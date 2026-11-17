@@ -11,8 +11,8 @@
     {
       "name": "ascent-security",
       "source": "./plugins/ascent-security",
-      "description": "Read-only security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs, dynamic code execution, and dependencies (lockfiles, pinning, sources, licences, offline vulnerability scans of packages and local images), plus a security-auditor agent.",
-      "version": "0.2.0",
+      "description": "Security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs, dynamic code execution, dependencies (lockfiles, pinning, sources, licences, offline vulnerability scans of packages and local images), a STRIDE threat model, and live checks of a running application the operator runs (headers, verbs, traversal, unauthenticated writes, body limits, disclosure, prompt injection, AI rate limits, ZAP, nuclei and dalfox reports), plus a security-auditor agent.",
+      "version": "0.3.0",
       "license": "MIT OR Apache-2.0"
     },
     {
