@@ -27,10 +27,12 @@
 #   UX-U10 Medium  autoplay media is muted and has controls              1.4.2, 2.2.2
 #   UX-U11 Medium  an outline removed on a selector is replaced by a :focus-visible style for
 #               that selector (or a universal :focus-visible rule), or by a box-shadow
-#               ring in the same :focus rule (a NOTE: ring contrast not computed)   2.4.7, 2.4.11
+#               ring in the same :focus rule with 3:1 against the page background in
+#               every theme the CSS defines (1.4.11; a NOTE when the ring's colour or
+#               the background cannot be read)                        2.4.7, 2.4.11
 #   UX-U12 Medium  click handlers sit on elements a keyboard can reach (role, tabindex, key
-#               handler), including elements a JS click listener in the same file finds
-#               with closest() or matches() on [attr], .class or #id ("[delegated]")   2.1.1
+#               handler), including elements a JS click listener in any scanned file
+#               finds with closest() or matches() ("[delegated]")     2.1.1
 #
 # Output: one FAIL line per finding (FAIL  Uk  SEVERITY  file:line  message), a
 # PASS line per check with no finding (with the count checked), N/A when a check
@@ -39,9 +41,14 @@
 # Limits: static. Markup is read as text: a ">" inside a template expression ends a
 # tag early, names built at runtime cannot be seen (a dynamic name counts as
 # present), capitalized JSX/Vue/Svelte components are skipped, elements built with
-# document.createElement are not seen, and delegated listeners are matched only
-# within one file and only for simple selectors (read the rest, and rely on the
-# browser pass). Every finding is "static" until the browser pass (live
+# document.createElement are not seen, and delegated listeners are matched only for
+# compound selectors (a tag, #id, .class, [attr] and [attr="value"]; a list is split
+# at its commas): a selector with a combinator or a pseudo-class is skipped, and a
+# bare tag (closest("li")) is matched only in the listener's own file. The key
+# listener that excuses a delegated element must be in the listener's file. A
+# box-shadow ring is measured against the html, body or :root background (white
+# when none is set), not against the element's own container (read the rest, and
+# rely on the browser pass). Every finding is "static" until the browser pass (live
 # accessibility tree) confirms it.
 # Exit: 0 no FAIL; 1 at least one FAIL; 2 bad input.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+, POSIX awk. awk runs with LC_ALL=C:
@@ -51,6 +58,9 @@
 set -euo pipefail
 
 usage() { sed -n '6p' "$0" | sed 's/^# //' >&2; exit 2; }
+HERE="$(cd "$(dirname "$0")" && pwd)"
+LIB="$HERE/lib/tokens.awk"
+[ -f "$LIB" ] || { echo "check-web-accessibility: missing $LIB" >&2; exit 2; }
 CORE=""
 PATHS=()
 while [ $# -gt 0 ]; do
@@ -84,7 +94,7 @@ FILES=$(printf '%s' "$FILES" | grep -v '^$' || true)
 for c in $(printf '%s' "$CORE"); do printf '%s\n' "$FILES" | sed 's|^\./||' | grep -qxF "${c#./}" || { echo "check-web-accessibility: --core $c is not among the scanned files" >&2; exit 2; }; done
 
 
-PROG='
+PROG="$(cat "$LIB")"'
 function blank(s) { gsub(/[^\n]/, " ", s); return s }
 function blank_between(opn, cls, keep,   out, rest, i, j, done) {
   out = ""; rest = B; done = 0
@@ -139,22 +149,148 @@ function ring(t, p,   j, e, body, v) {
   for (j = p; j > 0; j--) if (substr(t, j, 1) == "{") break
   e = index(substr(t, p), "}"); body = (e == 0) ? substr(t, j + 1) : substr(t, j + 1, p - j - 1 + e - 1)
   if (!match(body, /box-shadow[ \t\r\n]*:[^;}]*/)) return 0
-  v = substr(body, RSTART, RLENGTH); sub(/^box-shadow[ \t\r\n]*:/, "", v)
+  v = substr(body, RSTART, RLENGTH); sub(/^box-shadow[ \t\r\n]*:/, "", v); sub(/[ \t]*!important[ \t]*$/, "", v)
+  RINGV = v
   return v ~ /[1-9]/ && v !~ /^[ \t\r\n]*none/
 }
-function css_scan(t, base,   full, off, p, sel, rs, rl) {
+# The page background per theme: background(-color) on html, :root or body (body wins).
+function bg_load(text,   depth, seg, k, c, pre, j, decl) {
+  while (match(text, /\/\*/)) {
+    k = index(substr(text, RSTART + 2), "*/")
+    text = substr(text, 1, RSTART - 1) " " ((k == 0) ? "" : substr(text, RSTART + 2 + k + 1))
+  }
+  depth = 0
+  while (match(text, /[{}]/)) {
+    seg = substr(text, 1, RSTART - 1); c = substr(text, RSTART, 1); text = substr(text, RSTART + 1)
+    if (c == "{") {
+      j = 0; pre = seg
+      while (match(pre, /;/)) { j += RSTART; pre = substr(pre, RSTART + 1) }
+      decl = (j > 0) ? substr(seg, 1, j) : ""
+      if (depth > 0 && decl != "") bg_decls(decl, depth)
+      depth++; BCTX[depth] = trim(pre)
+    } else {
+      if (depth > 0) bg_decls(seg, depth)
+      depth--; if (depth < 0) depth = 0
+    }
+  }
+}
+function bg_decls(decls, depth,   ctx, i, np, parts, b, pri, th, n, d, k, prop, v) {
+  pri = 0; np = split(BCTX[depth], parts, ",")
+  for (i = 1; i <= np; i++) {
+    b = tolower(trim(parts[i]))
+    if (b ~ /^:root/) b = "html"; else sub(/[.#:[].*$/, "", b)
+    if (b == "body") pri = 2; else if (b == "html" && pri < 1) pri = 1
+  }
+  if (pri == 0) return
+  ctx = ""; for (i = 1; i <= depth; i++) ctx = ctx " " BCTX[i]
+  th = css_theme(ctx)
+  n = split(decls, d, ";")
+  for (i = 1; i <= n; i++) {
+    k = index(d[i], ":"); if (k == 0) continue
+    prop = tolower(trim(substr(d[i], 1, k - 1))); v = trim(substr(d[i], k + 1)); sub(/[ \t]*!important$/, "", v)
+    if ((prop == "background-color" || prop == "background") && pri >= BGP[th]) { BGV[th] = v; BGP[th] = pri }
+  }
+}
+# The first colour in S for THEME: the resolved value, or "?" and why it cannot be read.
+function color_in(s, th,   v, low) {
+  if (match(s, /var\([ \t]*--[A-Za-z0-9_-]+/)) {
+    v = substr(s, RSTART, RLENGTH); sub(/^var\([ \t]*--/, "", v)
+    v = resolve(th, v)
+    return (RESERR != "") ? "?" RESERR : v
+  }
+  if (match(s, /#[0-9A-Fa-f]+/)) return substr(s, RSTART, RLENGTH)
+  if (match(s, /rgba?\([^)]*\)/)) return substr(s, RSTART, RLENGTH)
+  low = " " tolower(s) " "; gsub(/[ \t\r\n]+/, " ", low)
+  if (index(low, " white ")) return "white"
+  if (index(low, " black ")) return "black"
+  if (index(low, "currentcolor")) return "?currentColor"
+  if (low ~ /(gradient|url)\(/) return "?a gradient or image"
+  if (low ~ / [a-z]+ / && low !~ /^( (inset|[-0-9.]+(px|em|rem)?|0))+ $/) return "?a named colour"
+  return "?no colour, so currentColor"
+}
+function lin(c) { c = c / 255; return (c <= 0.04045) ? c / 12.92 : ((c + 0.055) / 1.055) ^ 2.4 }
+function lum() { return 0.2126 * lin(CR) + 0.7152 * lin(CG) + 0.0722 * lin(CB) }
+# U11: "" when a ring layer has 3:1 against the page background in every theme,
+# "F" and the finding when one theme has none, "N" and why when it cannot be read.
+function ring_check(v, shown,   L, nl, i, k, depth, c, cur, nth, ths, t, th, raw, bg, assumed, br, bgg, bb, lb, best, bestc, col, unres, l1, rt, msg) {
+  nl = 0; depth = 0; cur = ""
+  for (i = 1; i <= length(v); i++) {
+    c = substr(v, i, 1)
+    if (c == "(") depth++; else if (c == ")") depth--
+    if (c == "," && depth == 0) { L[++nl] = cur; cur = "" } else cur = cur c
+  }
+  L[++nl] = cur
+  ths = "base"; if (NAMES["dark"] != "" || ("dark" in BGV)) ths = ths " dark"; if (NAMES["light"] != "" || ("light" in BGV)) ths = ths " light"
+  nth = split(ths, t, " ")
+  for (k = 1; k <= nth; k++) {
+    th = t[k]; assumed = 0
+    raw = (th in BGV) ? BGV[th] : (("base" in BGV) ? BGV["base"] : "")
+    if (raw == "") { bg = "#ffffff"; assumed = 1 } else bg = color_in(raw, th)
+    if (bg ~ /^\?/) return "Nthe page background is not a colour that can be read (" substr(bg, 2) ")"
+    if (!parse_color(bg)) return "Nthe page background " bg " is not a colour that can be read"
+    if (CA < 1) return "Nthe page background " bg " is translucent"
+    br = CR; bgg = CG; bb = CB; lb = lum()
+    best = 0; bestc = ""; unres = ""
+    for (i = 1; i <= nl; i++) {
+      if (tolower(L[i]) ~ /(^|[ \t])inset([ \t]|$)/) { if (unres == "") unres = "an inset ring sits on the element\047s own background"; continue }
+      col = color_in(L[i], th)
+      if (col ~ /^\?/) { unres = "the ring\047s colour is " substr(col, 2); continue }
+      if (!parse_color(col)) { unres = "the ring\047s colour " col " is not supported"; continue }
+      if (CA < 1) { CR = CA * CR + (1 - CA) * br; CG = CA * CG + (1 - CA) * bgg; CB = CA * CB + (1 - CA) * bb }
+      l1 = lum(); rt = (l1 > lb) ? (l1 + 0.05) / (lb + 0.05) : (lb + 0.05) / (l1 + 0.05)
+      if (rt > best) { best = rt; bestc = trim(col) }
+    }
+    if (bestc == "") return "N" unres
+    if (best < 3) {
+      msg = "outline on " shown " is replaced by a box-shadow ring (" bestc ") with " sprintf("%.2f", int(best * 100) / 100) ":1 against the page background (" (assumed ? "white: none is set" : trim(raw)) ")"
+      return "F" msg ((th == "base") ? "" : " in the " th " theme") "; a focus indicator needs 3:1 (1.4.11, 2.4.7)"
+    }
+  }
+  return ""
+}
+function css_scan(t, base,   full, off, p, sel, rs, rl, rc) {
   full = blank_css_comments(t); t = full; off = 0
   while (match(t, /outline[ \t]*:[ \t]*(none|0)([ \t;}!]|$)/)) {
     rs = RSTART; rl = RLENGTH
     p = off + rs; sel = selector_before(full, p)
-    if (sel ~ /:focus/ && ring(full, p)) { CHK["U11"]++; if (!covered(sel)) note("U11", base + p, "outline on " selnorm(sel) " is replaced by a box-shadow ring; its contrast is not computed (confirm in the browser pass)") }
+    if (sel ~ /:focus/ && ring(full, p)) {
+      CHK["U11"]++
+      if (!covered(sel)) {
+        rc = ring_check(RINGV, selnorm(sel))
+        if (rc ~ /^F/) fail("U11", base + p, substr(rc, 2))
+        else if (rc ~ /^N/) note("U11", base + p, "outline on " selnorm(sel) " is replaced by a box-shadow ring; its contrast is not computed: " substr(rc, 2) " (confirm in the browser pass)")
+      }
+    }
     else css_hit(base + p, sel)
     off += rs + rl - 1; t = substr(t, rs + rl)
   }
 }
 function lines_before(t, p,   s) { s = substr(t, 1, p - 1); return gsub(/\n/, "", s) + 1 }
-function add_dsel(f, kind, key, shown, line,   n) { n = ++DN[f]; DK[f, n] = kind; DV[f, n] = key; DS[f, n] = shown; DL[f, n] = line }
-function js_prepass(f, raw,   t, rest, off, s, a, line) {
+# A delegated selector: one compound selector (tag, #id, .class, [attr], [attr=value]).
+# Anything else (a combinator, a pseudo-class, a quoted value with a space) is skipped.
+function add_dsel(f, s, line,   n, rest, t, k, name, op, v, rl) {
+  s = trim(s); if (s == "" || s ~ /[ \t>+~:]/) return
+  n = DNN + 1; DTAG[n] = ""; DID[n] = ""; DCLS[n] = ""; DATN[n] = 0
+  rest = s
+  if (match(rest, /^[A-Za-z][A-Za-z0-9-]*/)) { DTAG[n] = tolower(substr(rest, 1, RLENGTH)); rest = substr(rest, RLENGTH + 1) }
+  while (rest != "") {
+    if (match(rest, /^#[-A-Za-z0-9_]+/)) DID[n] = substr(rest, 2, RLENGTH - 1)
+    else if (match(rest, /^\.[-A-Za-z0-9_]+/)) DCLS[n] = DCLS[n] " " tolower(substr(rest, 2, RLENGTH - 1))
+    else if (match(rest, /^\[[A-Za-z_][-A-Za-z0-9_]*([~|^$*]?=("[^"]*"|\047[^\047]*\047|[-A-Za-z0-9_]*))?\]/)) {
+      rl = RLENGTH; t = substr(rest, 2, rl - 2); k = DATN[n] + 1
+      if (match(t, /[~|^$*]?=/)) { name = substr(t, 1, RSTART - 1); op = substr(t, RSTART, RLENGTH); v = substr(t, RSTART + RLENGTH) }
+      else { name = t; op = ""; v = "" }
+      if (v ~ /^["\047]/) v = substr(v, 2, length(v) - 2)
+      DAN[n, k] = tolower(name); DAX[n, k] = (op == "="); DAV[n, k] = v; DATN[n] = k
+      rest = substr(rest, rl + 1); continue
+    }
+    else return
+    rest = substr(rest, RLENGTH + 1)
+  }
+  if (DTAG[n] == "" && DID[n] == "" && DCLS[n] == "" && DATN[n] == 0) return
+  DNN = n; DSF[n] = f; DSS[n] = s; DSL[n] = line; DSK[n] = (f in DKEY)
+}
+function js_prepass(f, raw,   t, rest, off, s, line, np, parts, i) {
   if (f !~ /\.(m|c)?(js|ts)$/) return
   t = js_templates(raw)
   if (JSH1 == "" && match(tolower(t), /<h1[ \t\r\n>]/)) JSH1 = f ":" lines_before(t, RSTART)
@@ -162,27 +298,34 @@ function js_prepass(f, raw,   t, rest, off, s, a, line) {
   DCLICK[f] = 1
   if (raw ~ /addEventListener\([ \t]*["\047]key(down|up|press)["\047]/) DKEY[f] = 1
   rest = raw; off = 0
-  while (match(rest, /target\.(closest|matches)\([ \t]*["\047][^"\047]+["\047][ \t]*\)/)) {
+  while (match(rest, /target\.(closest|matches)\([ \t]*("[^"]+"|\047[^\047]+\047)[ \t]*\)/)) {
     s = substr(rest, RSTART, RLENGTH); sub(/^target\.[a-z]+\([ \t]*["\047]/, "", s); sub(/["\047][ \t]*\)$/, "", s)
     line = lines_before(raw, off + RSTART)
     off += RSTART + RLENGTH - 1; rest = substr(rest, RSTART + RLENGTH)
-    if (s ~ /[ >+~,]/) continue
-    if (match(s, /\[[A-Za-z_][-A-Za-z0-9_:.]*/)) { a = substr(s, RSTART + 1, RLENGTH - 1); add_dsel(f, "a", tolower(a), s, line) }
-    else if (s ~ /^\.[-A-Za-z0-9_]+$/) add_dsel(f, "c", tolower(substr(s, 2)), s, line)
-    else if (s ~ /^#[-A-Za-z0-9_]+$/) add_dsel(f, "i", substr(s, 2), s, line)
+    np = split(s, parts, ",")
+    for (i = 1; i <= np; i++) add_dsel(f, parts[i], line)
   }
 }
-function delegated(tag,   i, k, cl) {
-  if (!(FILE in DCLICK)) return ""
-  cl = ""
-  for (i = 1; i <= DN[FILE]; i++) {
-    k = DK[FILE, i]
-    if (k == "a" && has(tag, DV[FILE, i])) return DS[FILE, i] " (line " DL[FILE, i] ")"
-    if (k == "c") {
-      if (cl == "") { cl = " " tolower(val(tag, "class|classname")) " "; gsub(/[ \t\r\n]+/, " ", cl) }
-      if (index(cl, " " DV[FILE, i] " ") > 0) return DS[FILE, i] " (line " DL[FILE, i] ")"
-    }
-    if (k == "i" && val(tag, "id") == DV[FILE, i]) return DS[FILE, i] " (line " DL[FILE, i] ")"
+function cmatch(n, tag, lname,   cl, nc, cs, i, v) {
+  if (DTAG[n] != "" && DTAG[n] != lname) return 0
+  if (DID[n] != "" && val(tag, "id") != DID[n]) return 0
+  if (DCLS[n] != "") {
+    cl = " " tolower(val(tag, "class|classname")) " "; gsub(/[ \t\r\n]+/, " ", cl)
+    nc = split(DCLS[n], cs, " ")
+    for (i = 1; i <= nc; i++) if (index(cl, " " cs[i] " ") == 0) return 0
+  }
+  for (i = 1; i <= DATN[n]; i++) {
+    if (!has(tag, DAN[n, i])) return 0
+    if (DAX[n, i]) { v = val(tag, DAN[n, i]); if (!dynamic(v) && v != DAV[n, i]) return 0 }
+  }
+  return 1
+}
+# The delegated selector an element matches, from any scanned file (a bare tag only
+# from the file of the element), shown with its line; sets DHIT to its index.
+function delegated(tag, lname,   n) {
+  for (n = 1; n <= DNN; n++) {
+    if (DSF[n] != FILE && DID[n] == "" && DCLS[n] == "" && DATN[n] == 0) continue
+    if (cmatch(n, tag, lname)) { DHIT = n; return DSS[n] ((DSF[n] == FILE) ? " (line " DSL[n] ")" : " (" DSF[n] ":" DSL[n] ")") }
   }
   return ""
 }
@@ -305,11 +448,11 @@ function process(   k, rest, off, tag, name, lname, pos, isclose, n, i, ty, lv, 
       if (!has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = c (c == "" ? "" : ", ") "a key handler"
       if (c != "") fail("U12", pos, "<" lname "> has a click handler but no " c "; use a <button> (2.1.1)", ISCORE ? "High" : "")
     }
-    else if (lname ~ /^(div|span|li|td|p|section|article|img|svg)$/ && (d = delegated(tag)) != "") {
+    else if (lname ~ /^(div|span|li|td|p|section|article|img|svg)$/ && (d = delegated(tag, lname)) != "") {
       CHK["U12"]++; c = ""
       if (!has(tag, "role")) c = "role"
       if (!has(tag, "tabindex")) c = c (c == "" ? "" : ", ") "tabindex"
-      if (!(FILE in DKEY) && !has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = c (c == "" ? "" : ", ") "a key listener"
+      if (!DSK[DHIT] && !has(tag, "onkeydown|onkeyup|onkeypress|keydown|keyup|keypress")) c = c (c == "" ? "" : ", ") "a key listener"
       if (c != "") fail("U12", pos, "<" lname "> matches the delegated click selector " d " but has no " c "; use a <button> (2.1.1) [delegated]", ISCORE ? "High" : "")
     }
   }
@@ -339,7 +482,20 @@ BEGIN {
   D["U7"] = "heading levels do not skip; pages have an <h1>"; D["U8"] = "ids are unique within each file"; D["U9"] = "pages have a title"
   D["U10"] = "autoplay media is muted and has controls"; D["U11"] = "removed focus outlines are replaced by :focus-visible"
   D["U12"] = "click handlers sit on keyboard-reachable elements"
-  for (i = 1; i < ARGC; i++) { T0 = ""; while ((getline line < ARGV[i]) > 0) T0 = T0 line "\n"; close(ARGV[i]); fv_prepass(T0); js_prepass(ARGV[i], T0) }
+  for (i = 1; i < ARGC; i++) {
+    T0 = ""; while ((getline line < ARGV[i]) > 0) T0 = T0 line "\n"; close(ARGV[i])
+    fv_prepass(T0); js_prepass(ARGV[i], T0)
+    if (ARGV[i] ~ /\.(css|scss)$/) { css_load(T0); bg_load(T0) }
+    else if (ARGV[i] !~ /\.(m|c)?(js|ts)$/) {
+      # the <style> blocks of a markup file
+      rest = T0
+      while ((p = index(tolower(rest), "<style")) > 0) {
+        rest = substr(rest, p); q = index(rest, ">"); if (q == 0) break
+        rest = substr(rest, q + 1); e = index(tolower(rest), "</style>"); if (e == 0) break
+        css_load(substr(rest, 1, e - 1)); bg_load(substr(rest, 1, e - 1)); rest = substr(rest, e + 8)
+      }
+    }
+  }
   nc = split(ENVIRON["ASCENT_CORE"], cl, "\n"); for (i = 1; i <= nc; i++) if (cl[i] != "") COREF[(cl[i] ~ /^\//) ? cl[i] : "./" cl[i]] = 1
   FILE = ""; NFILES = 0
 }

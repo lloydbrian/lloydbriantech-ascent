@@ -107,10 +107,28 @@ matrix() {
   printf '.x:focus { outline: none; }\n.y:focus-visible { outline: 2px solid; }\n' > "$WORK/uncovered.css"
   run "$WORK" ./uncovered.css; printf '%s\n' "$OUT" | grep -q '^FAIL  UX-U11  Medium ./uncovered.css:1  focus outline removed on .x' && ok || bad "u11: .y:focus-visible must not cover .x"
 
-  # A box-shadow ring in the same :focus rule replaces the outline, as a NOTE (C20);
-  # box-shadow: none, or a shadow outside a :focus rule, does not.
+  # A box-shadow ring in the same :focus rule replaces the outline when one of its
+  # layers has 3:1 against the page background, in every theme the CSS defines (C20,
+  # 0.3.1); it is a NOTE when the colour or the background cannot be read.
   printf '.x:focus { outline: none; box-shadow: 0 0 0 3px #0a58ca; }\n' > "$WORK/ring.css"
-  run "$WORK" ./ring.css; [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^NOTE  UX-U11  -      ./ring.css:1  outline on .x is replaced by a box-shadow ring' && ok || bad "u11: a box-shadow ring must be a NOTE, not a FAIL: $(printf '%s' "$OUT" | grep UX-U11)"
+  run "$WORK" ./ring.css; [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -q '^PASS  UX-U11 ' && ! printf '%s\n' "$OUT" | grep -q 'UX-U11.*box-shadow' && ok || bad "u11: a #0a58ca ring on white passes: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  printf '.x:focus { outline: none; box-shadow: 0 0 0 3px #dddddd; }\n' > "$WORK/ring-low.css"
+  run "$WORK" ./ring-low.css; [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -qF 'FAIL  UX-U11  Medium ./ring-low.css:1  outline on .x is replaced by a box-shadow ring (#dddddd) with 1.35:1 against the page background (white: none is set); a focus indicator needs 3:1 (1.4.11, 2.4.7)' && ok || bad "u11: a #dddddd ring on white fails at 1.35:1: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  printf ':root { --focus: #0a58ca; --bg: #ffffff; }\nbody { background: var(--bg); }\n.x:focus { outline: none; box-shadow: 0 0 0 2px var(--focus); }\n' > "$WORK/ring-token.css"
+  run "$WORK" ./ring-token.css; [ "$RC" -eq 0 ] && ! printf '%s\n' "$OUT" | grep -q 'UX-U11.*box-shadow' && ok || bad "u11: a token ring on a token background passes: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  printf ':root { --focus: #0a58ca; --bg: #ffffff; }\n@media (prefers-color-scheme: dark) { :root { --bg: #0b1220; } }\nbody { background: var(--bg); }\n.x:focus { outline: none; box-shadow: 0 0 0 2px var(--focus); }\n' > "$WORK/ring-dark.css"
+  run "$WORK" ./ring-dark.css; [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep '^FAIL  UX-U11  Medium ./ring-dark.css:4 ' | grep -qF 'against the page background (var(--bg)) in the dark theme' && ok || bad "u11: the same ring fails on the dark background: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  printf '.x:focus { outline: none; box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgb(10, 88, 202); }\n' > "$WORK/ring-double.css"
+  run "$WORK" ./ring-double.css; [ "$RC" -eq 0 ] && ok || bad "u11: a double ring passes when one layer has 3:1: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  printf '.x:focus { outline: none; box-shadow: 0 0 0 3px rgba(10, 88, 202, 0.3); }\n' > "$WORK/ring-alpha.css"
+  run "$WORK" ./ring-alpha.css; [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -q '^FAIL  UX-U11  Medium ./ring-alpha.css:1  outline on .x is replaced by a box-shadow ring (rgba(10, 88, 202, 0.3)) with 1\.' && ok || bad "u11: a translucent ring is blended over the background and fails: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  printf '<html lang="en"><head><title>t</title><style>body { background-color: #000; } .x:focus { outline: none; box-shadow: 0 0 0 3px #222; }</style></head><body><h1>t</h1></body></html>\n' > "$WORK/ring-style.html"
+  run "$WORK" ./ring-style.html; [ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -qF 'with 1.' && printf '%s\n' "$OUT" | grep -qF 'against the page background (#000)' && ok || bad "u11: a <style> block sets the page background: $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  for c in 'currentColor:the ring\047s colour is currentColor' 'teal:the ring\047s colour is a named colour' 'var(--nope):the ring\047s colour is no token nope' 'inset 0 0 0 2px #0a58ca:an inset ring sits on the element\047s own background'; do
+    v=${c%%:*}; why=$(printf "${c#*:}")
+    printf '.x:focus { outline: none; box-shadow: 0 0 0 3px %s; }\n' "$v" | sed 's/0 0 0 3px inset/inset/' > "$WORK/ring-note.css"
+    run "$WORK" ./ring-note.css; [ "$RC" -eq 0 ] && printf '%s\n' "$OUT" | grep -qF "NOTE  UX-U11  -      ./ring-note.css:1  outline on .x is replaced by a box-shadow ring; its contrast is not computed: $why (confirm in the browser pass)" && ok || bad "u11: '$v' is a NOTE ($why): $(printf '%s' "$OUT" | grep UX-U11 | tr '\n' ';')"
+  done
   printf '.x:focus { outline: none; box-shadow: none; }\n' > "$WORK/ring-none.css"
   run "$WORK" ./ring-none.css; printf '%s\n' "$OUT" | grep -q '^FAIL  UX-U11  Medium ./ring-none.css:1' && ok || bad "u11: box-shadow: none must not replace the outline"
   printf '.x { outline: none; box-shadow: 0 1px 2px #000; }\n' > "$WORK/ring-base.css"
@@ -141,6 +159,19 @@ matrix() {
   [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  UX-U12  Medium ./deleg.js:2  ')" = 3 ] && printf '%s\n' "$OUT" | grep -qF 'selector .row ' && printf '%s\n' "$OUT" | grep -qF 'selector #go ' && printf '%s\n' "$OUT" | grep -qF 'selector .hdr[data-open] ' && ! printf '%s\n' "$OUT" | grep -qF '.card' && ok || bad "deleg: expected .row, #go and .hdr[data-open], not .card: $(printf '%s' "$OUT" | grep UX-U12 | cut -c1-120 | tr '\n' ';')"
   printf 'el.addEventListener("mouseover", e => e.target.closest(".row"));\nconst v = `<div class="row">a</div>`;\n' > "$WORK/hover.js"
   run "$WORK" ./hover.js; [ "$RC" -eq 0 ] && ok || bad "deleg: closest() without a click listener must not fail UX-U12: $(printf '%s' "$OUT" | grep FAIL)"
+
+  # 0.3.1: a delegated selector from any scanned file, compound selectors and lists;
+  # combinators and pseudo-classes are skipped, and a bare tag only matches in its own file.
+  rm -rf "$WORK/x"; mkdir -p "$WORK/x"
+  printf 'document.body.addEventListener("click", e => { e.target.closest(".card, #go"); e.target.closest(\047div.tile[data-act="go"]\047); e.target.closest(".list > .item"); e.target.closest(".row:not(.off)"); e.target.closest("li"); });\nconst t = `<ul><li>own</li></ul>`;\n' > "$WORK/x/app.js"
+  printf '<div class="card">a</div>\n<span id="go">b</span>\n<div class="tile" data-act="go">c</div>\n<div class="tile" data-act="stop">d</div>\n<span class="tile" data-act="go">e</span>\n<ul class="list"><li class="item">f</li></ul>\n<div class="row">g</div>\n<ul><li>h</li></ul>\n' > "$WORK/x/part.html"
+  run "$WORK/x" .
+  got=$(printf '%s\n' "$OUT" | grep '^FAIL  UX-U12 ' | sed 's/^FAIL  UX-U12  Medium //; s/  .*selector / /; s/ but has.*//' | tr '\n' ';')
+  want='./app.js:2 li (line 1);./part.html:1 .card (./app.js:1);./part.html:2 #go (./app.js:1);./part.html:3 div.tile[data-act="go"] (./app.js:1);'
+  [ "$got" = "$want" ] && ok || bad "deleg-cross: expected [$want], got [$got]"
+  printf 'document.addEventListener("keydown", e => {});\n' >> "$WORK/x/app.js"
+  run "$WORK/x" .
+  [ "$(printf '%s\n' "$OUT" | grep '^FAIL  UX-U12 ' | grep -c 'a key listener')" = 0 ] && [ "$(printf '%s\n' "$OUT" | grep -c '^FAIL  UX-U12 ')" = 4 ] && ok || bad "deleg-cross: a key listener in the listener's file excuses the key handler: $(printf '%s' "$OUT" | grep UX-U12 | tr '\n' ';')"
 
   # --core raises UX-U3 and UX-U12 to High, and only in the named file.
   mutate core page.html 's/<input type="text" aria-label="Search">/<input type="text">/' page.html 's/ onkeydown="go()"//' Widget.jsx 's/ onKeyDown={save}//'

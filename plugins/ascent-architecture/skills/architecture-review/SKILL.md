@@ -7,7 +7,7 @@ description: >-
   design principles, deployment and cost against the project contract, rates
   findings by severity, and recommends deeper skills only where a surface
   check flags a concern. Read-only.
-version: 0.2.0
+version: 0.2.1
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -29,6 +29,7 @@ If `engineering:system-design` or `engineering:architecture` is installed, use t
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **No secrets, account ids or personal data** in the report, even when a finding is about one. Cite the location.
 - **Security depth belongs to `ascent-security`.** Flag what the architecture exposes (public origins, missing TLS, secrets in client code); leave credential scanning to that plugin. Security-only concerns that match no row (authorization roles, network binding, CI permissions, request size limits, identifiers in docs) go under Other observations marked `→ ascent-security`. Recommended next names `ascent-security` whenever any item is marked `→ ascent-security`.
+- **Operations depth belongs to `ascent-ops`.** Flag what the architecture leaves without an operator path (no deploy or rollback runbook, no restore ever tested); leave scripts, configuration stores, manuals and drill records to that plugin. Operations-only concerns that match no row (runbook steps, script hygiene, configuration stores, manuals, drill records) go under Other observations marked `→ ascent-ops`. Recommended next names `ascent-ops` whenever any item is marked `→ ascent-ops`.
 - **Scripts and data.** The plugin's read-only scripts are in `scripts/`, two directories above this skill's base directory (shown when the skill loads). Below, `PLUGIN_ROOT` means that directory: set it with `PLUGIN_ROOT="<skill base directory>/../.."`. The pricing files are `$PLUGIN_ROOT/pricing/aws-us-east-1.tsv` and `$PLUGIN_ROOT/pricing/aws-cloudfront-flat-rate.tsv`; the blueprint's sample usage profile is `$PLUGIN_ROOT/blueprints/static-site-serverless-aws/usage-small.tsv`.
 
 ## Severity
@@ -163,11 +164,11 @@ A<n>  <severity>  <file>:<line or "absent">
       Fix: <smallest change that closes it>
 
 Other observations (unrated):
-O<n>  <file>:<line>  <concern>  [→ ascent-security]
+O<n>  <file>:<line>  <concern>  [→ ascent-security | → ascent-ops]
 
 Mechanical checks (Step 4): <script output, verbatim, or "not applicable: <why>">
 Cost (Step 4): <total, as_of date, budget, or "no usage profile" (+ illustrative estimate if offered)>
-Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
+Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security, ascent-ops when any item is marked → ascent-ops>
 ```
 
 ## What this skill does not do

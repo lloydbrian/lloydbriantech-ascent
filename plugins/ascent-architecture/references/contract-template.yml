@@ -43,4 +43,4 @@ architecture:
   #     skips: multi-region failover
   #     review_by: 2027-06-30
 
-# delivery:   read by ascent-delivery 0.2.0 (planned); .delivery-loop.yml keeps working.
+# delivery:   read by ascent-delivery (0.2.0 and later); .delivery-loop.yml keeps working.

@@ -12,16 +12,11 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Scaffold template, from the `ascent-ops` review: pin `nginx:alpine` (`docker-compose.yml`, `docker-compose.dist.yml`, `frontend/Dockerfile`) to a verified release tag, tag the distributed backend image in `docker-compose.dist.yml`, and give `make/help.sh` a `--help`, so a fresh scaffold passes `OPS-Z8` and `OPS-Z3`
+- Next, `ascent-security` 0.3.0 (order of 2026-11-16): live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
+- Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24 and 2026-11-16)
+- Then auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
 - `ascent-quality`: more languages (Java, Ruby, Rust, .NET) when a trial needs them (ADR-019); Gatling and JMeter when a trial needs them (ADR-021)
-- `ascent-security` 0.3.0: live, operator-run security testing (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary, ZAP, dalfox, nuclei, an endpoint list in the contract) and the threat model. See ADR-016
-- Then `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24)
-- Auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
-- `ascent-ux` 0.3.1 candidates: from the 0.2.0 trial, delegated listeners across files and for compound selectors, and the box-shadow ring's contrast computed rather than left to the browser (ADR-022 decision 9); from the 0.3.0 trial, a static UX-F3 check for a page with no link at all, reading the shared hook or service a file imports before rating UX-R1 and UX-R2, and a Firefox and WebKit run of the walk on real repositories
-- `ascent-delivery` 0.2.0: a user acceptance sign-off record (ADR-014); read the `delivery:` section of `.ascent/contract.yml` (`.delivery-loop.yml` stays supported); runbook steps labelled C (Claude: read-only checks) and O (operator: writes)
 - `ascent-security`: the dynamic-code rule scans code files only; code embedded in shell scripts (e.g. `python -c "eval(…)"`) is listed under Other observations, not rated
-- `ascent-ux` 0.3.1 also: the `plugin.json` description and the README's Evidence line name the flow-integrity and reliability checks and the four principles (the marketplace entry already does, since v0.4.16)
-- `ascent-architecture` next release: its README still calls `ascent-ux` planned, and "Recommended next" should also point to `ascent-ops`
 - `ascent-architecture` 0.3.0 candidates: more blueprints (containers on Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing; from the trial: cite a principle by its id and its exact name, rate a missing ADR for a one-way door as Low every time, and drop API rows from the illustrative estimate when no API is deployed
 - Phase 4: scaffolding scripts (`scaffold.py`, `bootstrap.py`)
 - Phase 5: test harness with three eval scenarios
@@ -29,6 +24,52 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.20] — 2026-11-16
+
+**A person accepts each change before prod.** `ascent-delivery` 0.2.0 adds an acceptance record to the delivery loop ([ADR-024](docs/framework/DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)): Claude drafts the criteria and their evidence, only a person fills in who accepted each one and when, and `check-acceptance.sh` stops prod until the record passes. The same release closes the `ascent-ux` trial candidates in 0.3.1, with the first Firefox and WebKit walk on real repositories, points operations-only architecture items to `ascent-ops` in `ascent-architecture` 0.2.1, and makes a fresh scaffold pass its own operations checks.
+
+### Added
+
+- `ascent-delivery` 0.2.0 (ADR-024):
+  - `scripts/check-acceptance.sh`, read-only: every criterion has evidence that exists in the repository (`DEL-A1`), a person accepted it by name on a real date (`DEL-A2`), and that person is a listed acceptor (`DEL-A3`); `--draft` checks the evidence only. Any failure stops prod
+  - `skills/delivery-loop/references/acceptance-template.md`, the record: criterion, evidence, accepted by, accepted on
+  - `references/contract-template.yml`, the `delivery:` section of `.ascent/contract.yml`, with `acceptance_dir` and `acceptors`
+  - the definition of done drafts the record and runs `check-acceptance.sh --draft`; the beta step has a person accept and the operator commit the record; the prod runbook starts with the full check, and its Stop-if is any `FAIL`
+  - runbook steps labelled [C] (read-only, Claude may run it) or [O] (writes, deploys or credentials: the operator only)
+  - behavior test `tests/plugins/ascent-delivery/test-check-acceptance.sh` (60 cases on every awk found); `test-delivery-rules.sh` D4 to D8; union-contract cases in `test-operator-boundary.sh`
+- `ascent-ux` 0.3.1:
+  - UX-U12 matches delegated listeners in any scanned file, and compound selectors (`div.tile[data-act="go"]`); a key listener in the listener's file covers the key handler
+  - UX-U11 computes a box-shadow focus ring's contrast against the page background, in every theme: under 3:1 is a finding, and a colour it cannot read (`currentColor`, an unknown token, an inset ring) is a NOTE
+  - UX-F3 finds dead-end pages when more than one page is scanned: a full page with no link, form, button, script, back control or refresh (Low; Medium in a core file)
+  - UX-R1 and UX-R2 read the relative imports of a file one level deep, so a guard or a visible error in a shared hook or service counts, and the finding names the modules read
+- `ascent-architecture` 0.2.1: operations-only items go under Other observations marked `→ ascent-ops`, and Recommended next names `ascent-ops` when any item is
+- Template: a fresh scaffold passes `OPS-Z3` and `OPS-Z8`, checked by `test-check-ops-scripts.sh` on a rendered scaffold
+- Controls P840 to P912: `ascent-ux` (P840–P871, P908–P912), `ascent-architecture` (P872–P875), the template (P876–P880) and `ascent-delivery` (P881–P907)
+- ADR-024
+
+### Changed
+
+- Framework 0.4.19 → 0.4.20; `ascent-delivery` 0.1.3 → 0.2.0, `ascent-ux` 0.3.0 → 0.3.1, `ascent-architecture` 0.2.0 → 0.2.1
+- `ascent-delivery` reads the `delivery:` section of `.ascent/contract.yml` (or `.claude/contract.yml`); `.delivery-loop.yml` keeps working. The operator-boundary hook blocks the deploy commands of every contract it finds, and its message names the file and key
+- Template: nginx pinned to `1.30-alpine` (the stable line) in `docker-compose.yml`, `docker-compose.dist.yml` and `frontend/Dockerfile`; the prod and dist images tagged `-${PROJECT_VERSION}`; `make/help.sh --help` prints its usage
+- `ascent-ux`: the `plugin.json` description matches the marketplace's, and the README's Evidence line names the flow-integrity and reliability checks. The Firefox and WebKit install command uses the `playwright` version `@playwright/mcp` itself depends on, and `flow-check` Step 5 lists the engine differences that are not findings
+- `ascent-architecture`: the README no longer calls `ascent-ux` planned
+- OWNERSHIP: the `delivery` contract section, the `DEL-A` rule family, and user acceptance sign-off released; ROADMAP, the capability map, PILLARS, ARCHITECTURE, the README and CLAUDE.md for the new versions and the order of 2026-11-16
+
+### Notes
+
+- Order of 2026-11-16: `ascent-security` 0.3.0 next, then `ascent-session`, `ascent-adr`, `ascent-docs` and `ascent-node-stack`, then auditability for projects and the `ascent-governance` conductor
+- The control figure is 977 (904 plus P840–P912), the suite figure 52 and the decision figure 24
+- Firefox and WebKit trial, read-only, on three of the 0.3.0 trial repositories (a static site of 10 pages, a PWA served without its API, a single-page app), all verified unchanged afterwards. Firefox 159 and WebKit 27.2 walked every page and agreed with Chromium: the failed request shown as an empty list (UX-R2) and the page with no way out (UX-F3, also found by the new static rule) reproduced in both, and a reflow overflow at 320 px showed in both. No engine-only defect was found. Four engine differences, none of them findings, are now in `flow-check` Step 5:
+  - WebKit on macOS moves Tab through form controls only; Option+Tab reaches links
+  - Firefox gives focus to scrollable regions
+  - WebKit and Chromium log a failed request to the console and Firefox does not, so UX-F5 is read from the network requests
+  - WebKit once asked for a localhost page's images over https and failed with a TLS error; it did not come back on reload
+- `npx playwright install` installs the browsers of the latest stable `playwright` (1.65.1), while `@playwright/mcp@latest` uses 1.66.0-alpha and needs Firefox 1573 and WebKit 2391; the README's command now installs those
+- The `.delivery-loop.yml` contract is not removed; a project moves when the skill next runs and the operator agrees
 
 ---
 

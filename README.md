@@ -1,7 +1,7 @@
 <h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ascent-banner-dark.svg">
-  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 30 components, 28 project skills, 51 test suites, 904 negative controls, 23 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
+  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 30 components, 28 project skills, 52 test suites, 977 negative controls, 24 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
 </picture>
 </h1>
 
@@ -50,9 +50,9 @@ Most frameworks stop at the scaffold. ASCENT is for **what comes after**: the ye
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | 0.2.0 | Trust and security, compliance | "any secrets committed?", "are our dependencies safe?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; plus a `security-auditor` agent |
-| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.1.3 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A hook blocks Claude from git writes and deploys |
-| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.0 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
-| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.3.0 | Compliance, business value | "is this UI accessible?", "do our flows work and keep the user's work?" | Flows that complete and hold up (broken links, dead ends, double submits, lost drafts, a cross-browser pass), WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.2.0 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A person accepts each change on beta, and prod stops until the acceptance record passes. A hook blocks Claude from git writes and deploys |
+| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.1 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
+| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.3.1 | Compliance, business value | "is this UI accessible?", "do our flows work and keep the user's work?" | Flows that complete and hold up (broken links, dead ends, double submits, lost drafts, a cross-browser pass), WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
 | [`ascent-ops`](plugins/ascent-ops/README.md) | 0.3.0 | Resilience, compliance, trust and security | "is this operable?", "can we restore?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, Maintenance and Troubleshooting manuals proven current, and recovery drills and readiness exercises proven by the operator's records, plus an operable-service blueprint |
 | [`ascent-quality`](plugins/ascent-quality/README.md) | 0.2.0 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence |
 
@@ -176,7 +176,7 @@ Every plugin makes the same promises:
 - **Read-only by default.** Reviews never edit your files. Skills that write, such as `ops-manuals` or `design-directions`, write only the files they name and never commit.
 - **Evidence or it is not a finding.** Every finding cites `path/to/file:line`, or the paths searched when something is absent, plus a failure scenario and a fix.
 - **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops, quality and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
-- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins (`ascent-delivery` reads `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
+- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins, and the delivery loop's commands and acceptors (`ascent-delivery`, which still reads an older `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
 - **You own every write.** Claude never commits, pushes, tags, merges or deploys. It writes a numbered runbook and you run it; `ascent-delivery`'s hook enforces this.
 - **No personal data.** Secret values, account ids and contact details never appear in a report.
 
@@ -195,12 +195,13 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | | What | Status |
 |---|---|---|
-| **Now** | v0.4.19: v0.4.18's CI scoping, fixed for macOS's bash 3.2. CI runs what a change can affect, so a documentation change takes minutes, not most of an hour (ADR-023). v0.4.17 put the headline figures in the banner, checked like the [capability map](docs/framework/CAPABILITY-MAP.md); v0.4.15 shipped `ascent-ux` 0.3.0 | ✅ Released |
-| **Next** | `ascent-ux` 0.3.1: trial calibrations and the first Firefox and WebKit run on real repositories | Planned |
-| **Later** | Live security testing (`ascent-security` 0.3.0), acceptance sign-off (`ascent-delivery` 0.2.0), four more plugins, then Phases 4–7 | Planned |
+| **Now** | v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1, the 0.3.0 trial's calibrations; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
+| **Next** | Live security testing and a threat model (`ascent-security` 0.3.0) | Planned |
+| **Later** | Four more plugins (`ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`), then auditability for projects and the `ascent-governance` conductor, then Phases 4–7 | Planned |
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.20 | 2026-11-16 | `ascent-delivery` 0.2.0: an acceptance record per change, whose evidence Claude drafts and only a person accepts, checked by `check-acceptance.sh` (`DEL-A1`–`A3`) before prod; the `delivery:` contract section, with the hook blocking the deploys of every contract; runbook steps labelled [C] or [O] (ADR-024). `ascent-ux` 0.3.1: delegated listeners across files, box-shadow ring contrast, dead-end pages, imported guards. `ascent-architecture` 0.2.1. A scaffold with pinned nginx, versioned images and `make/help.sh --help` |
 | v0.4.19 | 2026-11-16 | The CI scope script runs on macOS's bash 3.2: v0.4.18 put a `case` statement inside `$( )`, which bash 3.2 cannot parse, so the macOS gate failed; T15 now fails a case on any shell error |
 | v0.4.18 | 2026-11-15 | CI runs what a change can affect: the cheap checks always, and only the behavior tests, harness self-tests and negative controls the changed paths can affect, with every control that edits a changed file; smaller baselines, T13.0 in parallel, superseded runs cancelled, `make gate-changed` locally (ADR-023) |
 | v0.4.17 | 2026-11-15 | The headline figures move into the banner, and the ownership check (T13.11) counts them in both banner files and the image description; the banner names all six plugins, `quality` included |

@@ -6,7 +6,8 @@
 # blocks, that the stderr reason names the right operation. Covers compound
 # commands, quoting, heredocs, git global options, env prefixes, substitutions,
 # gh API methods, built-in deploy verbs and deploys listed in a fixture
-# .delivery-loop.yml found through the hook's cwd input.
+# .delivery-loop.yml found through the hook's cwd input, and (0.2.0) in the delivery:
+# section of .ascent/contract.yml or .claude/contract.yml, all of them together.
 #
 # The matrix runs once with the default awk and once more with every other awk
 # found on PATH (mawk, gawk, original-awk/BWK as on macOS), so the hook's
@@ -72,6 +73,17 @@ cat > "$PROJ2/.delivery-loop.yml" <<'YAML'
 deploy_prod:
   - npm run build && npx wrangler deploy
 YAML
+
+# 0.2.0: the delivery: section of .ascent/contract.yml and .claude/contract.yml. A
+# deploy key outside that section is not a delivery entry.
+PROJ3="$WORK/proj3"; mkdir -p "$PROJ3/.ascent" "$PROJ3/src"
+printf '%s\r\n' 'version: 1' 'deploy_prod: ./top-level.sh prod' 'ops:' '  deploy_prod: ./ops-owned.sh prod' 'delivery:' '  gate: make check' '  # deploy_beta: ./commented.sh beta' '  deploy_beta:' '    - ./scripts/release.sh beta   # PROMPTS' '  deploy_prod: [make ship-prod, "npm run publish:prod"]' '  prompting_scripts:' '    - ./scripts/release.sh: --yes' 'delivery_notes:' '  deploy_prod: ./notes.sh prod' > "$PROJ3/.ascent/contract.yml"
+# both files: the union, each named in its block message
+PROJ4="$WORK/proj4"; mkdir -p "$PROJ4/.ascent"
+printf '%s\n' 'deploy_beta: ./legacy.sh beta' > "$PROJ4/.delivery-loop.yml"
+printf '%s\n' 'delivery:' '  deploy_prod:' '    - ./modern.sh prod' > "$PROJ4/.ascent/contract.yml"
+PROJ5="$WORK/proj5"; mkdir -p "$PROJ5/.claude"
+printf '%s\n' 'ux:' '  wcag: 2.2-aa' 'delivery:' '  deploy_prod: ./claude-dir.sh prod' > "$PROJ5/.claude/contract.yml"
 
 awk 'BEGIN { for (i = 0; i < 20000; i++) printf "echo line %d with some padding text ok\n", i }' > "$WORK/big.txt"
 head -c 300000 "$WORK/big.txt" > "$WORK/mid.txt"
@@ -322,6 +334,21 @@ git push' 'git push'
   t block 'kubectl --request-timeout 5s apply -f k.yml' 'kubectl apply'
   t block 'docker buildx build --output type=registry -t r/app .' 'buildx'
   t block 'npm publish --dry-run' 'npm publish'
+
+  # --- 0.2.0: the delivery: section of the project contract, and the union of contracts
+  t block './scripts/release.sh --yes beta' 'delivery.deploy_beta in .ascent/contract.yml' "$PROJ3"
+  t block 'make -j2 ship-prod' 'delivery.deploy_prod in .ascent/contract.yml' "$PROJ3/src"
+  t block 'npm run publish:prod' 'delivery.deploy_prod in .ascent/contract.yml' "$PROJ3"
+  t allow './top-level.sh prod' '' "$PROJ3"
+  t allow './ops-owned.sh prod' '' "$PROJ3"
+  t allow './notes.sh prod' '' "$PROJ3"
+  t allow './commented.sh beta' '' "$PROJ3"
+  t allow './scripts/release.sh --help' '' "$PROJ3"
+  t block './legacy.sh beta' 'deploy_beta in .delivery-loop.yml' "$PROJ4"
+  t block './modern.sh prod' 'delivery.deploy_prod in .ascent/contract.yml' "$PROJ4"
+  t block './claude-dir.sh prod' 'delivery.deploy_prod in .claude/contract.yml' "$PROJ5"
+  printf '%s' "$(payload './modern.sh prod' /nonexistent)" | CLAUDE_PROJECT_DIR="$PROJ4" PATH="$SHIM:$PATH" bash "$HOOK" >/dev/null 2>"$WORK/err"; RC=$?; ERR=$(cat "$WORK/err")
+  check 'the project contract found through CLAUDE_PROJECT_DIR' block 'delivery.deploy_prod in .ascent/contract.yml'
 
   # --- input handling
   run_raw "$(payload 'git push' "$PLAIN" Read)"; check 'non-Bash tool is ignored' allow ''

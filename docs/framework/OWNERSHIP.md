@@ -38,7 +38,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | Plugin | Code | Status | Build | Contract section | Severity marker |
 |---|---|---|---|---|---|
 | `ascent-security` | `SEC` | released | hybrid | `security` | `severity-table`, `dep-severity` |
-| `ascent-delivery` | `DEL` | released | hand-written | — | — |
+| `ascent-delivery` | `DEL` | released | hand-written | `delivery` | — |
 | `ascent-architecture` | `ARC` | released | hand-written | `architecture` | `arch-severity` |
 | `ascent-ux` | `UX` | released | hand-written | `ux` | `ux-severity` |
 | `ascent-ops` | `OPS` | released | hand-written | `ops` | `ops-severity` |
@@ -46,7 +46,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | `ascent-governance` | `GOV` | planned | hand-written | — | — |
 <!-- ownership:plugins:end -->
 
-`ascent-delivery` reads its own contract, `.delivery-loop.yml`, not a section of `.ascent/contract.yml`.
+`ascent-delivery` reads the `delivery` section of `.ascent/contract.yml` since 0.2.0 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)). Its older contract, `.delivery-loop.yml`, still works, and the operator-boundary hook blocks the deploy commands of both. `ascent-delivery` rates no findings, so it has no severity marker: any `DEL-A` failure stops prod.
 
 ## Components
 
@@ -100,6 +100,7 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `ARC-P` | `ascent-architecture` | catalogue | `plugins/ascent-architecture/references/architecture-principles.md` |
 | `ARC-O` | `ascent-architecture` | catalogue | `plugins/ascent-architecture/skills/deployment-options/SKILL.md` |
 | `ARC-B` | `ascent-architecture` | catalogue | `plugins/ascent-architecture/references/cloud-component-mapping.md` |
+| `DEL-A` | `ascent-delivery` | rule | `plugins/ascent-delivery/scripts/check-acceptance.sh` |
 | `OPS-S` | `ascent-ops` | rule | `plugins/ascent-ops/references/secure-config-rules.md` |
 | `OPS-Z` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-scripts.sh` |
 | `OPS-M` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-manuals.sh` |
@@ -146,7 +147,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | security testing (live, operator-run) | `ascent-security` | `ascent-security` | planned |
 | change delivery and the operator boundary | `ascent-delivery` | `ascent-delivery` | released |
 | smoke tests after a deploy | `ascent-delivery` | `ascent-delivery` | released |
-| user acceptance sign-off | `ascent-delivery` | `ascent-delivery` | planned |
+| user acceptance sign-off | `ascent-delivery` | `ascent-delivery` | released |
 | quality attributes and targets | `ascent-architecture` | `ascent-architecture` | released |
 | design principles | `ascent-architecture` | `ascent-architecture` | released |
 | deployment options and cost | `ascent-architecture` | `ascent-architecture` | released |

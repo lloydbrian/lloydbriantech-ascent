@@ -1,12 +1,12 @@
 # ASCENT capability map
 
-> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.19. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
+> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.20. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
 
 [At a glance](#at-a-glance) · [Plugins](#plugins) · [Parent skill](#parent-skill) · [Roadmap](#roadmap) · [Everything in one table](#everything-in-one-table)
 
 ## At a glance
 
-| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **51**<br>behavior-test suites | **904**<br>negative controls | **23**<br>decision records |
+| **6**<br>plugins released | **30**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **52**<br>behavior-test suites | **977**<br>negative controls | **24**<br>decision records |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 
 Every behavior-test suite runs on macOS and Linux. A negative control breaks one rule on purpose, and a named test must catch it.
@@ -25,17 +25,17 @@ Install only what your repository needs. Each plugin works alone; one you skip l
 - **Rules:** `SEC-D1`–`D10`, plus the security baselines
 - **Next:** 0.3.0, live operator-run security testing and a threat model
 
-### `ascent-delivery` 0.1.3 · ✅ Released v0.4.11
+### `ascent-delivery` 0.2.0 · ✅ Released v0.4.20
 
-> "Ship this change."
+> "Ship this change. Who accepted it?"
 
-The delivery loop: decide, build with a file audit, test with negative controls, gate, an independent review checked by a finding verifier, then an operator runbook. A hook stops Claude from any git write or deploy.
+The delivery loop: decide, build with a file audit, test with negative controls, gate, an independent review checked by a finding verifier, then an operator runbook. A person accepts each change on beta, by name and date, and prod stops until the acceptance record passes. A hook stops Claude from any git write or deploy listed in any contract.
 
 - **Skills:** `delivery-loop` · agent `finding-verifier` · hook `operator-boundary`
+- **Rules:** `DEL-A1`–`A3`, the acceptance record
 - **Review lenses:** seven; six use an ASCENT reviewer first, and Correctness uses `engineering:code-review`
-- **Next:** 0.2.0, a user acceptance sign-off record and the `delivery:` section of the contract
 
-### `ascent-architecture` 0.2.0 · ✅ Released v0.4.8
+### `ascent-architecture` 0.2.1 · ✅ Released v0.4.20
 
 > "Is this production-ready? What will it cost to run?"
 
@@ -45,7 +45,7 @@ Quality attributes scored against your targets, design principles with file evid
 - **Rules and catalogues:** `ARC-C`, `ARC-P`, `ARC-O`, `ARC-B`
 - **Next:** 0.3.0 candidates, more blueprints (Fargate, Terraform), `cfn-guard` rules, Azure and Google Cloud pricing
 
-### `ascent-ux` 0.3.0 · ✅ Released v0.4.15
+### `ascent-ux` 0.3.1 · ✅ Released v0.4.20
 
 > "Is this UI accessible? Do our flows work and keep the user's work?"
 
@@ -53,7 +53,6 @@ UX as four principles: functional, reliable, accessible, pleasant. Flows checked
 
 - **Skills:** `ux-review` · `flow-check` · `accessibility-audit` · `design-system-check` · `design-directions` · agent `ux-reviewer`
 - **Rules:** `UX-U1`–`U12`, `UX-H`, `UX-D`, `UX-F1`–`F7`, `UX-R1`–`R7`, `UX-P1`–`P4`
-- **Next:** 0.3.1, trial calibrations and the first Firefox and WebKit run on real repositories
 
 ### `ascent-ops` 0.3.0 · ✅ Released v0.4.12
 
@@ -83,9 +82,10 @@ Which test types exist and whether CI runs them, boundaries no test reaches, acc
 | When | What | Status |
 |---|---|---|
 | v0.1 – v0.4.1 | Phases 0–3: foundation, parent skill, template assets, embedded skills | ✅ Done |
-| v0.4.2 – v0.4.19 | Six plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, and this map | ✅ Done |
-| next releases | `ascent-ux` 0.3.1; live security testing and a threat model (`ascent-security` 0.3.0); acceptance sign-off (`ascent-delivery` 0.2.0); auditability for projects and a launch go/no-go conductor | Planned |
+| v0.4.2 – v0.4.20 | Six plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, and this map | ✅ Done |
+| next release | Live security testing and a threat model (`ascent-security` 0.3.0) | Planned |
 | plugin roadmap | `ascent-session`, `ascent-adr`, `ascent-docs` and `ascent-node-stack`, scoped when each starts | Planned |
+| after the plugins | Auditability for projects and a launch go/no-go conductor (`ascent-governance`) | Planned |
 | Phases 4–7 | Scaffolding scripts, eval harness, starter repository, first production project | Awaiting go-signal |
 
 Details and exit criteria: [ROADMAP.md](ROADMAP.md). Every change: [CHANGELOG.md](../../CHANGELOG.md).
@@ -95,9 +95,9 @@ Details and exit criteria: [ROADMAP.md](ROADMAP.md). Every change: [CHANGELOG.md
 | Component | Kind | Version | Status | Since |
 |---|---|---|---|---|
 | `ascent-security` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.2 · dependencies in v0.4.9 |
-| `ascent-delivery` | Plugin · 1 skill, 1 agent, 1 hook | 0.1.3 | ✅ Released | v0.4.3 |
-| `ascent-architecture` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.4 |
-| `ascent-ux` | Plugin · 5 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.5 · flows in v0.4.15 |
+| `ascent-delivery` | Plugin · 1 skill, 1 agent, 1 hook | 0.2.0 | ✅ Released | v0.4.3 · acceptance in v0.4.20 |
+| `ascent-architecture` | Plugin · 4 skills, 1 agent | 0.2.1 | ✅ Released | v0.4.4 |
+| `ascent-ux` | Plugin · 5 skills, 1 agent | 0.3.1 | ✅ Released | v0.4.5 · flows in v0.4.15 |
 | `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.6 · drills in v0.4.12 |
 | `ascent-quality` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.11 · evidence in v0.4.13 |
-| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.19 | ✅ Released | Phase 3, v0.4.0 |
+| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.20 | ✅ Released | Phase 3, v0.4.0 |

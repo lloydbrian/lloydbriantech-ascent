@@ -8,7 +8,7 @@
 # (mktemp and build-directory removal, heredoc bodies, here-strings, libraries,
 # test code), CRLF, the trial calibration (shared help, quoted text, preview by
 # default, checks by position, commands in variables, required_version, binary
-# files), the plugin's own scripts, and bad input.
+# files), the plugin's own scripts, a fresh scaffold, and bad input.
 #
 # Runs with the default awk and every other awk found (mawk, gawk, BWK awk).
 # Prints "test-check-ops-scripts: N/N PASS" last (make/test-plugins.sh T11 requires it).
@@ -55,6 +55,10 @@ expect_pass() {  # NAME WHY
 script() {
   printf '#!/usr/bin/env bash\n# Usage: %s [--help]\nset -euo pipefail\ncase "${1:-}" in -h|--help) echo usage; exit 0 ;; esac\n%b\n' "$2" "$3" > "$WORK/$1/scripts/$2"
 }
+
+# A fresh scaffold, rendered once from the template.
+SCAFFOLD="$WORK/scaffold"
+bash "$HERE/../../../make/render-template.sh" "$SCAFFOLD" >/dev/null 2>&1 || { echo "test-check-ops-scripts: cannot render $HERE/../../../skills/lloydbriantech-ascent/assets/template"; echo "test-check-ops-scripts: 0/1 PASS"; exit 1; }
 
 matrix() {
   run "$GOOD"
@@ -134,6 +138,16 @@ matrix() {
   # The plugin's own scripts pass.
   run "$PLUGIN/scripts"
   if [ "$RC" -eq 0 ]; then ok; else bad "plugin scripts should pass: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -3 | tr '\n' ';')"; fi
+
+  # A fresh scaffold passes (v0.4.20): nginx pinned to a release, the prod and dist images
+  # tagged with PROJECT_VERSION, and make/help.sh answers --help (OPS-Z3, OPS-Z8).
+  run "$SCAFFOLD"
+  if [ "$RC" -eq 0 ]; then ok; else bad "a fresh scaffold should pass: $(printf '%s\n' "$OUT" | grep '^FAIL' | head -3 | tr '\n' ';')"; fi
+  for k in OPS-Z3 OPS-Z8; do printf '%s\n' "$OUT" | grep -q "^PASS  $k " && ok || bad "scaffold: $k should pass: $(printf '%s\n' "$OUT" | grep " $k " | head -1)"; done
+  # dist runs the backend image prod builds (Z8 exempts prod, which has build:)
+  dimg=$(sed -n '/^  backend:/,/^  [a-z]/s/^    image: //p' "$SCAFFOLD/docker-compose.dist.yml")
+  pimg=$(sed -n '/^  backend:/,/^  [a-z]/s/^    image: //p' "$SCAFFOLD/docker-compose.prod.yml")
+  [ -n "$dimg" ] && [ "$dimg" = "$pimg" ] && ok || bad "scaffold: dist runs $dimg but prod builds $pimg"
 
   # Bad input and help.
   run "$WORK/does-not-exist"; [ "$RC" -eq 2 ] && ok || bad "missing path should exit 2, got $RC"

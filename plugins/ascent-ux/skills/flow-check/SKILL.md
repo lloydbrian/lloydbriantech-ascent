@@ -8,7 +8,7 @@ description: >-
   UX-R, UX-P) with the contract's values, walks each core flow in the browser,
   repeats it in every engine the contract lists, and reports with file:line
   evidence. Read-only.
-version: 0.3.0
+version: 0.3.1
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -66,7 +66,7 @@ bash "$PLUGIN_ROOT/scripts/check-ux-resilience.sh" --core <each core-flow page o
 ```
 
 - Pass as `--core` the files that hold a core flow's forms and requests, not only its pages: in a single-page app those are the components the routes render.
-- The script reads one file at a time. A guard, failure branch, draft or retry in a shared hook or service is not followed: before rating a UX-R1, R2, R3 or R4 `FAIL`, read the hook or service the file imports. When it does the work, the finding is withdrawn and the reason given in one line.
+- For UX-R1 and UX-R2 the script also reads the local modules a file imports (relative imports, one level) and names them in the finding: a guard there, or a module that shows every failure it catches, already counts. Anything further away, and a UX-R3 or R4 draft or retry outside the file, is not followed: before rating a UX-R1, R2, R3 or R4 `FAIL`, read the hook or service the file imports. When it does the work, the finding is withdrawn and the reason given in one line.
 - A UX-P rule that passes is "observed"; one that fails is a finding.
 
 ### Step 4 — The walk (UX-F5, browser)
@@ -100,9 +100,15 @@ The Playwright MCP server runs one engine per launch. For each engine in `ux.eng
 2. Repeat the walk (Step 4) and ux-review Step 4's tree, keyboard and reflow checks on each core flow.
 3. A failure that blocks a core flow in one engine is High (UX-F6); a layout or focus defect that does not block it is Medium.
 
+Engine differences, from the trial. None of these is a finding:
+- **WebKit on macOS: Tab skips links.** Like Safari's default, Tab reaches only form controls; Option+Tab (`Alt+Tab` in `browser_press_key`) reaches links too. Check keyboard reach in WebKit with `Alt+Tab`.
+- **Firefox focuses scrollable regions.** A scrollable container that takes focus in Firefox only is the engine's behavior.
+- **Console errors differ.** WebKit and Chromium log a failed request to the console; Firefox does not. Read UX-F5 from `browser_network_requests` in every engine, never from the console alone.
+- **WebKit can ask for a localhost page's images over https.** On a first visit it may request subresources as `https://127.0.0.1:<port>/…` and fail with a TLS error. Reload once: report it only if it comes back.
+
 An engine the operator does not run is listed as "unmeasured: not run", never passed. When the project has its own Playwright config with `projects` for several engines, cite it as supporting evidence and suggest the operator runs it; never run it yourself.
 
-After the walk, check with Glob whether `.playwright-mcp/` exists in the reviewed repository (never `git status` there: an untrusted repository's git config can run commands). If it appeared, tell the operator and suggest adding it to `.gitignore`. Never delete files in the reviewed repository.
+After the walk, check with Glob whether `.playwright-mcp/` exists in the reviewed repository; the server writes its snapshots and console logs into the directory Claude Code runs from, which is the reviewed repository when the session runs there (never `git status` there: an untrusted repository's git config can run commands). If it appeared, tell the operator and suggest adding it to `.gitignore`. Never delete files in the reviewed repository.
 
 ### Step 6 — Report
 

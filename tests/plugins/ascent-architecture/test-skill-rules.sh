@@ -18,7 +18,9 @@
 #       every copy identical)
 #   R10 both files search client code for secrets, High even when unpublished
 #   R11 both files recommend ascent-security when an item is referred to it
-#   R12 no skill or the agent calls a plugin that ships in this repository "planned"
+#   R12 no skill, the agent or the README calls a plugin that ships in this repository "planned"
+#   R13 both files route operations-only concerns to ascent-ops and recommend it when an
+#       item is referred to it (0.2.1)
 #
 # Prints "test-skill-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -118,9 +120,15 @@ has R11 "$AGENT" 'Recommended next names `ascent-security` whenever any item is 
 # R12 — a shipped plugin is never called planned
 for d in "$PLUGIN"/../ascent-*/; do
   p=$(basename "$d")
-  for f in "$PLUGIN"/skills/*/SKILL.md "$AGENT"; do
+  for f in "$PLUGIN"/skills/*/SKILL.md "$AGENT" "$PLUGIN/README.md"; do
     if grep -qE "\`$p\`( plugin)? \(planned\)" "$f"; then bad "R12 ${f#"$PLUGIN"/} calls \`$p\` planned, but it ships in plugins/"; else ok; fi
   done
 done
+
+# R13 — operations referrals reach Recommended next
+has R13 "$REVIEW" 'Operations-only concerns that match no row (runbook steps, script hygiene, configuration stores, manuals, drill records) go under Other observations marked `→ ascent-ops`.'
+has R13 "$REVIEW" 'Recommended next names `ascent-ops` whenever any item is marked `→ ascent-ops`.'
+has R13 "$AGENT" 'or `→ ascent-ops` when it is operations-only'
+has R13 "$AGENT" 'Recommended next names `ascent-ops` whenever any item is marked `→ ascent-ops`.'
 printf "test-skill-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

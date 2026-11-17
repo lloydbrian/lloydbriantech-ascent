@@ -2,18 +2,18 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.19 (the CI scope on macOS's bash 3.2), November 16, 2026, after v0.4.18 (CI runs what a change can affect); the last plugin release is v0.4.15 (`ascent-ux` 0.3.0: functional, reliable, accessible, pleasant). Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
+**Current state:** v0.4.20 (acceptance sign-off in `ascent-delivery` 0.2.0, `ascent-ux` 0.3.1, `ascent-architecture` 0.2.1 and a scaffold that passes its own operations checks), November 16, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
-Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in any repository. The order was decided on 2026-10-18 and confirmed on 2026-10-24. Each plugin clears the same bar before release: hardened source, behavior tests, negative controls, the plugin gate with its version check, a read-only trial on real repositories, and a release record.
+Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in any repository. The order was decided on 2026-10-18 and confirmed on 2026-10-24. On 2026-11-16 the operator set what follows v0.4.20: `ascent-security` 0.3.0 first, then the four plugins ranked 5 to 8, then auditability for projects and the governance conductor. Each plugin clears the same bar before release: hardened source, behavior tests, negative controls, the plugin gate with its version check, a read-only trial on real repositories, and a release record.
 
 | Rank | Plugin | Scope | Status |
 |---|---|---|---|
 | — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9; 0.3.0 ⏳ Planned |
-| — | `ascent-delivery` | The delivery loop and the operator-boundary hook | ✅ v0.4.3, 0.1.3 in v0.4.11 |
-| 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4; 0.2.0 in v0.4.8 |
-| 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions; 0.3.0 adds flow integrity and reliability under four principles (`UX-F`, `UX-R`, `UX-P`, ADR-022) | ✅ v0.4.5; 0.2.0 in v0.4.8; 0.3.0 in v0.4.15 |
+| — | `ascent-delivery` | The delivery loop and the operator-boundary hook; 0.2.0 adds a person's acceptance sign-off, checked before prod (`DEL-A1`–`A3`, ADR-024) | ✅ v0.4.3, 0.1.3 in v0.4.11, 0.2.0 in v0.4.20 |
+| 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4; 0.2.0 in v0.4.8; 0.2.1 in v0.4.20 |
+| 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions; 0.3.0 adds flow integrity and reliability under four principles (`UX-F`, `UX-R`, `UX-P`, ADR-022) | ✅ v0.4.5; 0.2.0 in v0.4.8; 0.3.0 in v0.4.15; 0.3.1 in v0.4.20 |
 | 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014, ADR-020) | ✅ v0.4.6; 0.2.0 in v0.4.8; 0.3.0 in v0.4.12 |
 | 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence (`QA-L`, `QA-M`, ADR-021) | ✅ v0.4.11; 0.2.0 in v0.4.13 |
 | 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
@@ -28,12 +28,12 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | Follow-up | Pillar | Why | Status |
 |---|---|---|---|
 | Restore and failover proof | Resilience | `ascent-ops` and `quality-attributes` read the date of the last restore test but do not prove a restore or a failover works. A drill runbook the operator runs, with the measured recovery time checked against the contract's `rto` and `rpo`, would make recovery evidence rather than documentation | ✅ `ascent-ops` 0.3.0, v0.4.12 ([ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md)) |
-| Auditability for projects | Compliance | Project-facing governance: a waiver ledger with expiry dates, dated review records, a required-plugin floor in the contract (a floor, never a ceiling) and a bash checker a project can run in its own CI. Closes the Partial rows "Decision traceability" and "Change audit trail" (ADR-015) | ⏳ Committed on 2026-10-27, to be scoped |
+| Auditability for projects | Compliance | Project-facing governance: a waiver ledger with expiry dates, dated review records, a required-plugin floor in the contract (a floor, never a ceiling) and a bash checker a project can run in its own CI. Closes the Partial rows "Decision traceability" and "Change audit trail" (ADR-015) | ⏳ Committed on 2026-10-27, to be scoped; after the four plugins (order of 2026-11-16) |
 | The governance conductor | Business value | `ascent-governance` (agent `governance-conductor`, skills `governance-review` and `launch-readiness`) reads the ownership registry and the auditability evidence for a go or no-go. Ships when launch readiness is scoped (ADR-015) | ⏳ Deferred; name and code `GOV` reserved |
 | Recommended next names missing plugins | Business value | Each plugin's "Recommended next" line also names an uninstalled plugin whose signals the repository shows, from [OWNERSHIP.md](OWNERSHIP.md#which-plugins-do-i-need) | ⏳ Committed on 2026-10-27 |
-| Navigational integrity and cross-browser | Business value | `ascent-ux` 0.3.0: broken links, dead ends and lost state across flows, and a cross-browser pass (ADR-014) | ✅ `ascent-ux` 0.3.0, v0.4.15 ([ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md)); Firefox and WebKit not yet trialled |
-| User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ⏳ Planned |
-| Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Planned |
+| Navigational integrity and cross-browser | Business value | `ascent-ux` 0.3.0: broken links, dead ends and lost state across flows, and a cross-browser pass (ADR-014) | ✅ `ascent-ux` 0.3.0, v0.4.15 ([ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md)); Firefox and WebKit trialled in v0.4.20 |
+| User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ✅ `ascent-delivery` 0.2.0, v0.4.20 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)) |
+| Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ⏳ Next (order of 2026-11-16) |
 
 Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, v0.4.17 puts its figures in the README banner, and v0.4.18 scopes CI to what a change can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)), fixed for macOS's bash 3.2 in v0.4.19.
 
@@ -255,6 +255,12 @@ A pull request runs the cheap checks (`make qa`, `make test-skills`, the plugin 
 **Status:** ✅ Complete (November 16, 2026)
 
 v0.4.18's scope script put a `case` statement inside `$( )`, which bash 3.2, macOS's `/bin/bash`, cannot parse, so the macOS gate failed on main and on every pull request. The script no longer does, and the scope self-test (T15) fails a case on any shell error.
+
+### v0.4.20: Acceptance sign-off, UX calibrations and a cleaner scaffold
+
+**Status:** ✅ Complete (November 16, 2026)
+
+`ascent-delivery` 0.2.0 adds a person's acceptance to the delivery loop ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)). Each change gets an acceptance record: Claude drafts the criteria and their evidence, and only a person fills in who accepted each one and when, after checking it on beta. `check-acceptance.sh` (`DEL-A1`–`A3`) checks the evidence at the definition of done and the whole record before prod, and any failure stops prod. The contract moves to the `delivery:` section of `.ascent/contract.yml`; `.delivery-loop.yml` keeps working, and the hook blocks the deploy commands of both. Runbook steps are labelled [C] (read-only) or [O] (operator). `ascent-ux` 0.3.1 closes the 0.2.0 and 0.3.0 trial candidates, `ascent-architecture` 0.2.1 points operations-only items to `ascent-ops`, and a fresh scaffold passes `OPS-Z3` and `OPS-Z8`.
 
 ---
 

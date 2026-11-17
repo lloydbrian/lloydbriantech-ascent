@@ -1,0 +1,95 @@
+# .ascent/contract.yml: the delivery: section (ascent-delivery). One project contract,
+# one section per ASCENT plugin (ADR-011, ADR-024). Where ASCENT-named files are not
+# allowed, use .claude/contract.yml instead. Commit it: it is the project's own
+# statement of how a change ships.
+#
+# The older .delivery-loop.yml, with these keys at its top level, still works. When
+# the project has both, the delivery-loop skill reads this section and says the other
+# file can go; the operator-boundary hook blocks the deploy commands of both, so
+# neither file can unblock what the other lists.
+#
+# The delivery-loop skill reads this section in Step 0. If it is missing, the skill
+# proposes one detected from package.json scripts, Makefile targets and CI config,
+# and asks the operator to confirm it once.
+#
+# Rules:
+#   - One command per value. Lists run in order.
+#   - "none" (or leaving a key out) means the project has no such step.
+#   - Never put a secret, token, account id, email address, phone number or hostname
+#     that identifies a private environment in this file. Commands read secrets from
+#     variables the operator declares (see the runbook template).
+#   - The hook matches a deploy entry by its command name (./path/script.sh
+#     becomes script.sh; `bash`/`sh`, `npx` and `python -m` are dropped) plus
+#     the entry's positional words, found anywhere among the command's own
+#     positional words, whatever flags surround them. Listing
+#     `./scripts/deploy.sh prod` also blocks `bash scripts/deploy.sh --yes prod`,
+#     but not `./scripts/deploy.sh --help`. `make deploy-beta` also blocks
+#     `make -j4 -C . build deploy-beta`. `npm run deploy:prod` also blocks
+#     `npm --silent run-script deploy:prod`.
+#   - For an entry with && or ; only the LAST command is the deploy rule:
+#     `npm run build && npx wrangler deploy` blocks `wrangler deploy`, not the
+#     build, and `cd dir && ./deploy.sh` blocks `deploy.sh`, not `cd`. Put the
+#     deploy itself last.
+#   - The hook understands simple YAML only: `key: value`, `key: [a, b]`, and
+#     `key:` followed by `- item` lines, each key indented under `delivery:`. Keep
+#     deploy lists in one of those forms.
+
+version: 1
+
+delivery:
+  # The single "am I done?" command. Must exit non-zero on any failure.
+  gate: make check
+
+  # A fast subset for iteration, usually the changed package's tests.
+  fast_gate: npm test --workspace <package>
+
+  # Real-browser test for anything a user touches, or none.
+  browser_test: npx playwright test
+
+  # Mutation or negative-control harness, or none. Must fail on a surviving mutant
+  # and on an anchor miss.
+  mutation: none
+
+  # Post-deploy smoke check. Read-only. Takes the stage as its last argument.
+  smoke: ./scripts/smoke.sh
+
+  # Deploy commands, in order. The operator runs these from the runbook; Claude
+  # never does (the hook blocks every entry). Mark any command that prompts.
+  deploy_beta:
+    - ./scripts/deploy.sh beta        # PROMPTS: see prompting_scripts
+  deploy_prod:
+    - ./scripts/deploy.sh prod        # PROMPTS: see prompting_scripts
+
+  # Proves the deployed artifact is the new commit (for example, compares the
+  # build stamp served at /version with `git rev-parse --short HEAD`). Runs in the
+  # same runbook step as the deploy.
+  build_stamp_check: ./scripts/check-stamp.sh
+
+  # Scripts that prompt, with the flag that makes them non-interactive. The runbook
+  # runs the dry run first, then the script with this flag. Never pipe a prompting
+  # script through a filter without the flag.
+  prompting_scripts:
+    - ./scripts/deploy.sh: --yes
+
+  # Docs that must reflect any behaviour change before the loop is done.
+  handoff_docs:
+    - docs/SESSION-HANDOFF.md
+    - docs/adr/
+
+  # Where runbooks and results docs are written.
+  runbook_dir: docs/runbooks/
+
+  # Append-only release log (one table row per prod release).
+  release_log: docs/RELEASES.md
+
+  # Acceptance records, one per change: <date>-<slug>.md (ADR-024). Claude drafts
+  # each criterion and its evidence; only a person fills in who accepted it and when.
+  acceptance_dir: docs/delivery/acceptance/
+
+  # The people who may accept a change, by the name or handle they sign with (a
+  # GitHub login is enough). Leave it empty and any person's name counts. When it
+  # lists people, check-acceptance.sh fails a record signed by anyone else.
+  acceptors: []
+  # acceptors:
+  #   - ana-lopez
+  #   - sam-lee

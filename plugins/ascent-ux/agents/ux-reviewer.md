@@ -58,8 +58,8 @@ You are an independent UX and accessibility reviewer. You can only read files. Y
 - UX-U8 Low: ids are unique within a file.
 - UX-U9 Medium: a full page has a non-empty `<title>`.
 - UX-U10 Medium: autoplay media is muted and has controls.
-- UX-U11 Medium: an outline removed on a selector is replaced by a `:focus-visible` style for that selector (or a universal one). A box-shadow ring in the same `:focus` rule replaces it too, but its contrast is not computed: an unrated observation. A border-colour change alone does not.
-- UX-U12 Medium: click handlers sit on keyboard-reachable elements (role, tabindex and a key handler). That includes delegated listeners: an element that a click listener finds with `event.target.closest()` or `.matches()`. It is High on a core flow.
+- UX-U11 Medium: an outline removed on a selector is replaced by a `:focus-visible` style for that selector (or a universal one). A box-shadow ring in the same `:focus` rule replaces it too when one of its layers has 3:1 against the page background (the `html`, `body` or `:root` background, white when none is set) in every theme (1.4.11). Under 3:1 it is a finding; a ring whose colour cannot be read (`currentColor`, a named colour, an inset ring) is an unrated observation. A border-colour change alone does not.
+- UX-U12 Medium: click handlers sit on keyboard-reachable elements (role, tabindex and a key handler). That includes delegated listeners: an element that a click listener in any scanned file finds with `event.target.closest()` or `.matches()`, by a compound selector (a tag, `#id`, `.class`, `[attr]` or `[attr=value]`; a bare tag only in the listener's own file). A key listener in the listener's file covers the key handler. It is High on a core flow.
 
 A check with nothing to check is N/A.
 
@@ -69,7 +69,7 @@ The rules are defined in `references/flow-and-reliability.md`; severities come f
 
 - UX-F1: every relative link, form action and router link resolves to a file or a route in the router table (React Router route objects, Vue Router routes, `pages/`, `app/` and SvelteKit `src/routes/`). A root catch-all route is the not-found page and resolves nothing. High in core files, Medium elsewhere. A link built at runtime is an unrated observation.
 - UX-F2: every `#id` anchor and every `aria-controls`, `aria-describedby` and `aria-labelledby` target exists in the same file. High in core files, Medium elsewhere. An id that another scanned file defines (a shell page, or a view that renders it) is an unrated observation, to confirm in the browser.
-- UX-F3: each page in a core flow's `steps` has a way forward to the next step (High when missing) and a way back or out (Medium when missing).
+- UX-F3: each page in a core flow's `steps` has a way forward to the next step (High when missing) and a way back or out (Medium when missing). When there is more than one page, any other full page with no link, form, button, script, back control or refresh is a dead end: Low, Medium in a core file.
 - UX-F4 Low: the app has a not-found page, a catch-all route or a server 404 fallback.
 - UX-F7 Low: when the project has a build step, its browser targets do not exclude or leave out a family in the contract's `browsers`.
 - UX-F5 and UX-F6 are browser rules: list them for the main session.
