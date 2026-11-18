@@ -53,6 +53,11 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 - PILLARS: security testing (live) and the threat model move from Gap to Partial
 - The README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and the banners for 0.4.22; the component figure is 32, the suite figure 56, the control figure 1065 (981 plus P917–P1000) and the decision figure 26
 
+### Fixed
+
+- Control P890 (v0.4.20) changed nothing under GNU sed, so on Linux it never removed the guard it tests: its `$` is now `[$]`. Every control's edit was checked under both BSD and GNU sed
+- The live-checks test fixture no longer looks up its host's name when it starts, which outlasted the test's wait on GitHub's macOS runners; the test waits up to 30 seconds and prints an early stop as a `FAIL` line the gate reports
+
 ### Notes
 
 - The scanner images are `zaproxy/zap-stable:2.17.0`, `projectdiscovery/nuclei:v3.11.1` and `hahwul/dalfox:v3.3.0`, tags checked on Docker Hub on 2026-11-17. The rater is tested on recorded reports, not on the scanners' own runs

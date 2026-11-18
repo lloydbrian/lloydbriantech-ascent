@@ -22,8 +22,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 RUN="$HERE/../../../plugins/ascent-security/scripts/run-live-checks.sh"
 CHECK="$HERE/../../../plugins/ascent-security/scripts/check-live-results.sh"
 APP="$HERE/fixtures/live/live-app.py"
-for f in "$RUN" "$CHECK" "$APP"; do [ -f "$f" ] || { echo "test-run-live-checks: missing $f"; echo "test-run-live-checks: 0/1 PASS"; exit 1; }; done
-for t in python3 curl; do command -v "$t" >/dev/null 2>&1 || { echo "test-run-live-checks: $t not found"; echo "test-run-live-checks: 0/1 PASS"; exit 1; }; done
+for f in "$RUN" "$CHECK" "$APP"; do [ -f "$f" ] || { echo "FAIL  test-run-live-checks: missing $f"; echo "test-run-live-checks: 0/1 PASS"; exit 1; }; done
+for t in python3 curl; do command -v "$t" >/dev/null 2>&1 || { echo "FAIL  test-run-live-checks: $t not found"; echo "test-run-live-checks: 0/1 PASS"; exit 1; }; done
 
 PASS=0; FAIL=0
 ok()  { PASS=$((PASS + 1)); }
@@ -33,8 +33,8 @@ lacks() { if printf '%s\n' "$2" | grep -qF -- "$3"; then bad "$1: must not conta
 row() { awk -F'\t' -v p="$2" -v m="$3" -v pa="$4" '$1 == p && $2 == m && $3 == pa { print $4 "\t" $5; exit }' "$1"; }
 start() {  # MODE: starts the fixture in this shell, so cleanup can stop it
   python3 -I "$APP" "$1" "$WORK/port-$1" >/dev/null 2>&1 & PIDS="$PIDS $!"
-  local i=0; while [ ! -s "$WORK/port-$1" ] && [ $i -lt 100 ]; do sleep 0.1; i=$((i + 1)); done
-  [ -s "$WORK/port-$1" ] || { echo "test-run-live-checks: the $1 fixture did not start"; echo "test-run-live-checks: 0/1 PASS"; exit 1; }
+  local i=0; while [ ! -s "$WORK/port-$1" ] && [ $i -lt 300 ]; do sleep 0.1; i=$((i + 1)); done
+  [ -s "$WORK/port-$1" ] || { echo "FAIL  test-run-live-checks: the $1 fixture did not start within 30 seconds"; echo "test-run-live-checks: 0/1 PASS"; exit 1; }
 }
 EPS=(--endpoint 'GET,DELETE /api/items/{id} required write' --endpoint 'POST /api/items required write' --endpoint 'POST /api/chat required ai' --endpoint 'GET /api/catalog none -')
 live() {  # MODE OUT [ARGS] — run against the MODE fixture, RC and OUT set
