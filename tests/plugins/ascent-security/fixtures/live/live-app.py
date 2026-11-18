@@ -15,6 +15,7 @@ Used only by tests/plugins/ascent-security/test-run-live-checks.sh, which stops 
 it also stops itself after 300 seconds, so a test that dies never leaves it running.
 """
 import os
+import socketserver
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -106,9 +107,17 @@ class Handler(BaseHTTPRequestHandler):
     do_DELETE = write
 
 
+class Server(HTTPServer):
+    # HTTPServer.server_bind looks up the host's name, which can take many
+    # seconds on some CI machines; the fixture never needs the name.
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+
+
 import threading
 threading.Timer(300, lambda: os._exit(0)).start()
-server = HTTPServer(("127.0.0.1", 0), Handler)
+server = Server(("127.0.0.1", 0), Handler)
 with open(PORTFILE + ".tmp", "w") as f:
     f.write(str(server.server_address[1]))
 os.rename(PORTFILE + ".tmp", PORTFILE)

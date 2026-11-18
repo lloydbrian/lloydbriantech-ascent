@@ -739,7 +739,7 @@ ACC="$DEL/scripts/check-acceptance.sh"
 plugin_case P887-accept-evidence-unchecked T11 "$ACC" 's/^    else if (bad != "") fail("A1"/    else if (0) fail("A1"/'
 plugin_case P888-accept-line-unchecked T11 "$ACC" 's/if (n < b) { WHY = /if (0) { WHY = /'
 plugin_case P889-accept-absolute-path T11 "$ACC" 's# || p ~ /^\\// || # || #'
-plugin_case P890-accept-climb-allowed T11 "$ACC" 's# || p ~ /(^|\\/)\\\.\\\.(\\/|$)/##'
+plugin_case P890-accept-climb-allowed T11 "$ACC" 's# || p ~ /(^|\\/)\\\.\\\.(\\/|[$])/##'
 plugin_case P891-accept-claude-signs T11 "$ACC" 's/(claude|assistant|copilot|chatgpt|gemini|llm|bot)/(nobody)/'
 plugin_case P892-accept-name-unchecked T11 "$ACC" 's/^    if (placeholder(lw)) fail("A2"/    if (0) fail("A2"/'
 plugin_case P893-accept-date-unchecked T11 "$ACC" 's/^    else if (!real_date(when)) fail("A2"/    else if (0) fail("A2"/'
