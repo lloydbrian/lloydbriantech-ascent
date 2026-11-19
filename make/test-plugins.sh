@@ -13,8 +13,10 @@
 #       table (arch-severity markers), the UX severity table (ux-severity markers),
 #       the operations severity table (ops-severity markers), the dependency
 #       severity table (dep-severity markers), the live security severity table
-#       (live-severity markers) and the quality severity table
-#       (qa-severity markers) is identical too
+#       (live-severity markers), the quality severity table (qa-severity
+#       markers), the decision severity table (dec-severity markers), the
+#       session severity table (ses-severity markers) and the documentation
+#       severity table (doc-severity markers) is identical too
 #   T6  relative links inside a plugin resolve (anchors and titles stripped) and
 #       never point at a template skill (ascent-*/SKILL.md)
 #   T7  skill frontmatter passes qa-skill-frontmatter; a failure lists each failing
@@ -46,6 +48,10 @@
 #   T15 the scope self-test (ADR-023): tests/meta/test-gate-scope.sh checks which
 #       slow checks make/gate-scope.sh runs for fixture changes, and the
 #       repository's list of negative controls it reads
+#   T16 the framework's own decision record (ADR-027): ascent-adr's check-adrs.sh
+#       passes on the ADR folder named by .ascent/contract.yml's decisions: section,
+#       with its acknowledged changes; DEC-S8 compares bodies only with full git
+#       history (CI's gate checks out with fetch-depth 0) and is N/A otherwise
 #
 # A behavior test fails when it prints a FAIL line, whatever its exit status: T11
 # fails a test that prints one and exits 0, which keeps fast mode and full mode in
@@ -87,7 +93,7 @@ PASS=0; FAIL=0
 ok()  { PASS=$((PASS + 1)); printf "PASS  test-plugins: %s\n" "$1"; }
 bad() { FAIL=$((FAIL + 1)); printf "FAIL  test-plugins: %s\n" "$1"; }
 
-SECTIONS=" T1 T2 T3 T4 T4b T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 "
+SECTIONS=" T1 T2 T3 T4 T4b T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 "
 ONLY=""
 for l in ${ASCENT_ONLY:-}; do
   case "$SECTIONS" in *" ${l%%.*} "*) ONLY="$ONLY ${l%%.*} " ;; *) echo "test-plugins: unknown ASCENT_ONLY label '$l' (sections:$SECTIONS)" >&2; exit 2 ;; esac
@@ -241,6 +247,9 @@ marked_table ops-severity operations
 marked_table dep-severity dependency
 marked_table live-severity live
 marked_table qa-severity quality
+marked_table dec-severity decision
+marked_table ses-severity session
+marked_table doc-severity documentation
 fi
 
 # T6 — links
@@ -498,6 +507,24 @@ else
   else
     bad "T15 scope self-test: rc $rc, $(grep '^FAIL' "$WORK/t15.out" | head -3 | cut -c1-120 | tr '\n' ';')"
   fi
+fi
+fi
+
+# T16 — the framework's own decision record (ADR-027)
+if run T16; then
+CON="$ROOT/.ascent/contract.yml"; CA="$ROOT/plugins/ascent-adr/scripts/check-adrs.sh"
+if [ ! -f "$CON" ] || [ ! -f "$CA" ]; then
+  bad "T16 decision record: .ascent/contract.yml or plugins/ascent-adr/scripts/check-adrs.sh not found"
+else
+  awk '/^decisions:/ { on = 1; next } on && /^[^ #]/ { on = 0 }
+    on && /^  (dir|index|style|maturity_target):/ { k = $1; sub(/:$/, "", k); v = $0; sub(/^[^:]*:[ \t]*/, "", v); sub(/[ \t]+#.*$/, "", v); gsub(/"/, "", v); print k "\t" v }
+    on && /^    - adr:/ { a = $3 } on && /^      commit:/ && a != "" { print "ack\t" a "=" $2; a = "" }' "$CON" > "$WORK/t16.args"
+  t16=(); while IFS="$(printf '\t')" read -r k v; do
+    case "$k" in dir|index|style|maturity) t16+=("--$k" "$v") ;; maturity_target) t16+=(--maturity "$v") ;; ack) t16+=(--acknowledge "$v") ;; esac
+  done < "$WORK/t16.args"
+  rc=0; (cd "$ROOT" && bash "$CA" ${t16[@]+"${t16[@]}"} .) </dev/null >"$WORK/t16.out" 2>&1 || rc=$?
+  if [ "$rc" -eq 0 ]; then ok "T16 decision record: $(tail -1 "$WORK/t16.out" | sed 's/^check-adrs: //; s/; it checks.*//')$(sed -n 's/^N\/A   DEC-S8 .*(\(.*\))$/ (DEC-S8 N\/A: \1)/p' "$WORK/t16.out")"
+  else bad "T16 decision record: rc $rc, $(grep -E '^FAIL|^check-adrs: ' "$WORK/t16.out" | head -4 | cut -c1-140 | tr '\n' ';')"; fi
 fi
 fi
 

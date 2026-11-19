@@ -1,12 +1,12 @@
 # ASCENT capability map
 
-> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.22. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
+> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.23. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
 
 [At a glance](#at-a-glance) · [Plugins](#plugins) · [Parent skill](#parent-skill) · [Roadmap](#roadmap) · [Everything in one table](#everything-in-one-table)
 
 ## At a glance
 
-| **6**<br>plugins released | **32**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **56**<br>behavior-test suites | **1065**<br>negative controls | **26**<br>decision records |
+| **9**<br>plugins released | **44**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **65**<br>behavior-test suites | **1306**<br>negative controls | **27**<br>decision records |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 
 Every behavior-test suite runs on macOS and Linux. A negative control breaks one rule on purpose, and a named test must catch it.
@@ -25,7 +25,7 @@ Install only what your repository needs. Each plugin works alone; one you skip l
 - **Rules:** `SEC-D1`–`D10`, `SEC-L1`–`L10`, `SEC-T1`–`T4`, plus the security baselines
 - **Next:** authenticated checks and a trial of the scanners against a real target, when a project needs them
 
-### `ascent-delivery` 0.2.0 · ✅ Released v0.4.20
+### `ascent-delivery` 0.2.1 · ✅ Released v0.4.23
 
 > "Ship this change. Who accepted it?"
 
@@ -33,7 +33,7 @@ The delivery loop: decide, build with a file audit, test with negative controls,
 
 - **Skills:** `delivery-loop` · agent `finding-verifier` · hook `operator-boundary`
 - **Rules:** `DEL-A1`–`A3`, the acceptance record
-- **Review lenses:** seven; six use an ASCENT reviewer first, and Correctness uses `engineering:code-review`
+- **Review lenses:** nine; eight use an ASCENT reviewer first (Decisions uses `decision-reviewer`, Documentation `docs-reviewer`, since v0.4.23), and Correctness uses `engineering:code-review`
 
 ### `ascent-architecture` 0.2.1 · ✅ Released v0.4.20
 
@@ -73,6 +73,34 @@ Which test types exist and whether CI runs them, boundaries no test reaches, acc
 - **Rules:** `QA-I1`–`I5`, `QA-T1`–`T4`, `QA-H1`–`H4`, `QA-L1`–`L5`, `QA-M1`–`M4`
 - **Next:** more languages, and Gatling and JMeter, when a trial needs them
 
+### `ascent-adr` 0.1.0 · ✅ Released v0.4.23
+
+> "Do our ADRs conform? Write an ADR for this. Does the code still follow our decisions?"
+
+ADRs written in the repository's own format (ASCENT, Nygard and adr-tools, MADR) with real alternatives and costs; the record checked for sections, numbering, the index, status, supersession both ways and dates, with accepted ADRs compared to the version git first accepted; and the code checked against the constraints accepted ADRs declare.
+
+- **Skills:** `adr-check` · `adr-write` · `decision-drift` · agent `decision-reviewer`
+- **Rules:** `DEC-S1`–`S8`, `DEC-C1`–`C3`
+- **Next:** constraints proposed from more ADR formats, when a trial needs them
+
+### `ascent-session` 0.1.0 · ✅ Released v0.4.23
+
+> "Where did we leave off? Capture the session. Write a handoff."
+
+Sessions resumed from the project's own records with every claim cited to its line; state and decisions captured before closing; a handoff for the next person; and the records checked: decisions dated and only ever appended, personal state kept out of git, the handoff current.
+
+- **Skills:** `session-resume` · `session-capture` · `handoff`
+- **Rules:** `SES-S1`–`S6`
+
+### `ascent-docs` 0.1.0 · ✅ Released v0.4.23
+
+> "Are our docs current? Do they still match the code? Onboard me."
+
+Documents reachable from the README and each persona's entry point within a click limit, links and anchors that resolve, stale markers and lagging documents dated by git, the paths, make targets, scripts, variables, version and runtimes documents name checked against the repository, new documents from stubs, and an onboarding walkthrough.
+
+- **Skills:** `docs-review` · `doc-drift` · `doc-stub` · `onboard` · agent `docs-reviewer`
+- **Rules:** `DOC-L1`–`L5`, `DOC-P1`–`P4`, `DOC-R1`–`R6`
+
 ## Parent skill
 
 `lloydbriantech-ascent` scaffolds, enhances or migrates a project to ASCENT standards. Every project gets 28 working `ascent-*` skills, from ADR writing and release readiness to standups and handoffs, and nine engineering roles: delivery lead, architect, UI/UX designer, developer, data engineer, AI engineer, tester, devops and cybersecurity. See [Scaffold a new project](../../README.md#scaffold-a-new-project).
@@ -82,8 +110,8 @@ Which test types exist and whether CI runs them, boundaries no test reaches, acc
 | When | What | Status |
 |---|---|---|
 | v0.1 – v0.4.1 | Phases 0–3: foundation, parent skill, template assets, embedded skills | ✅ Done |
-| v0.4.2 – v0.4.22 | Six plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, faster local verification, live security testing and a threat model, and this map | ✅ Done |
-| plugin roadmap | `ascent-session`, `ascent-adr`, `ascent-docs` and `ascent-node-stack`, scoped when each starts | Planned |
+| v0.4.2 – v0.4.23 | Nine plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, faster local verification, live security testing and a threat model, decision records, session continuity and documentation, and this map | ✅ Done |
+| plugin roadmap | `ascent-node-stack`, scoped when it starts | Planned |
 | after the plugins | Auditability for projects and a launch go/no-go conductor (`ascent-governance`) | Planned |
 | Phases 4–7 | Scaffolding scripts, eval harness, starter repository, first production project | Awaiting go-signal |
 
@@ -94,9 +122,12 @@ Details and exit criteria: [ROADMAP.md](ROADMAP.md). Every change: [CHANGELOG.md
 | Component | Kind | Version | Status | Since |
 |---|---|---|---|---|
 | `ascent-security` | Plugin · 6 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.2 · dependencies in v0.4.9 · live testing in v0.4.22 |
-| `ascent-delivery` | Plugin · 1 skill, 1 agent, 1 hook | 0.2.0 | ✅ Released | v0.4.3 · acceptance in v0.4.20 |
+| `ascent-delivery` | Plugin · 1 skill, 1 agent, 1 hook | 0.2.1 | ✅ Released | v0.4.3 · acceptance in v0.4.20 · lenses in v0.4.23 |
 | `ascent-architecture` | Plugin · 4 skills, 1 agent | 0.2.1 | ✅ Released | v0.4.4 |
 | `ascent-ux` | Plugin · 5 skills, 1 agent | 0.3.1 | ✅ Released | v0.4.5 · flows in v0.4.15 |
 | `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 | ✅ Released | v0.4.6 · drills in v0.4.12 |
 | `ascent-quality` | Plugin · 4 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.11 · evidence in v0.4.13 |
-| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.22 | ✅ Released | Phase 3, v0.4.0 |
+| `ascent-adr` | Plugin · 3 skills, 1 agent | 0.1.0 | ✅ Released | v0.4.23 |
+| `ascent-session` | Plugin · 3 skills | 0.1.0 | ✅ Released | v0.4.23 |
+| `ascent-docs` | Plugin · 4 skills, 1 agent | 0.1.0 | ✅ Released | v0.4.23 |
+| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.23 | ✅ Released | Phase 3, v0.4.0 |

@@ -1,0 +1,39 @@
+# .ascent/contract.yml: the session: section (ascent-session). One project contract,
+# one section per ASCENT plugin (ADR-011, ADR-027). Where ASCENT-named files are not
+# allowed, use .claude/contract.yml instead. Commit it: it is the project's own
+# statement of where its session records live.
+#
+# session-resume proposes this section from what the repository already has and asks
+# the operator to confirm it once (detect, don't ask). Every guessed value is marked
+# "# guess" until confirmed. Never put credentials, account ids, email addresses,
+# phone numbers or other personal data in this file.
+
+version: 1
+
+session:
+  # enterprise (default) | standard | prototype. At prototype every finding is a NOTE.
+  maturity_target: enterprise
+
+  # The working memory: the decisions and patterns the team keeps, git-tracked and
+  # append-only (check-session.sh --memory).
+  memory: docs/delivery/working-memory.md
+
+  # The session state: one person's current focus, active decisions, blockers and
+  # next actions. Never committed: it must be in .gitignore (check-session.sh --state).
+  state: docs/delivery/session-state.md
+
+  # The handoff for the next person (check-session.sh --handoff).
+  handoff: docs/delivery/HANDOFF.md
+
+  # Days a session state stays fresh before it is reported stale (--max-age).
+  state_max_age_days: 7
+
+  # true makes a missing handoff a finding, for projects that change hands
+  # (--require-handoff).
+  handoff_required: false
+
+  # A commit after which the working memory is checked as append-only (--since). Set
+  # it only after a person has read an earlier rewrite and accepted it, with the
+  # reason, for example:
+  #   memory_since: 3f1c2aa   # 2026-10-01 entries regrouped by topic; nothing dropped
+  memory_since: ""

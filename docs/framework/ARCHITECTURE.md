@@ -158,9 +158,12 @@ flowchart TB
     H --> UX["ascent-ux"]
     H --> OPS["ascent-ops"]
     H --> QA["ascent-quality"]
-    SEC & DEL & ARC & UX & OPS & QA --> M[".claude-plugin/marketplace.json"]
+    H --> ADR["ascent-adr"]
+    H --> SES["ascent-session"]
+    H --> DOC["ascent-docs"]
+    SEC & DEL & ARC & UX & OPS & QA & ADR & SES & DOC --> M[".claude-plugin/marketplace.json"]
     M -->|"/plugin install"| R["Any repository"]
-    G["make test-plugins<br/>make test-mutants"] -. gates .-> SEC & DEL & ARC & UX & OPS & QA
+    G["make test-plugins<br/>make test-mutants"] -. gates .-> SEC & DEL & ARC & UX & OPS & QA & ADR & SES & DOC
 ```
 
 | Plugin | Source | Decision |
@@ -171,10 +174,13 @@ flowchart TB
 | `ascent-ux` | Hand-written; the first plugin with dependencies (`design`, `frontend-design`, `playwright`); since 0.3.0, four principles and flow-integrity checks with `flow-check` | [ADR-012](DECISIONS/ADR-012-ux-plugin-design-directions-and-plugin-dependencies.md), [ADR-022](DECISIONS/ADR-022-ux-principles-flow-integrity-and-reliability.md) |
 | `ascent-ops` | Hand-written; operations manuals, the `/-/health` endpoint names, and recovery drills checked against the operator's records | [ADR-013](DECISIONS/ADR-013-ops-plugin-manuals-and-endpoint-names.md), [ADR-020](DECISIONS/ADR-020-recovery-drills-and-readiness-exercises.md) |
 | `ascent-quality` | Hand-written; test strategy, load tests and mutation evidence read statically, never run | [ADR-014](DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md), [ADR-019](DECISIONS/ADR-019-quality-plugin-rules.md), [ADR-021](DECISIONS/ADR-021-load-test-alignment-and-mutation-evidence.md) |
+| `ascent-adr` | Hand-written; decision records in the repository's own format, checked against git history, and the constraints accepted ADRs declare | [ADR-027](DECISIONS/ADR-027-decision-session-and-documentation-plugins.md) |
+| `ascent-session` | Hand-written; session resume, capture and handoff from the repository's records, no agent | [ADR-027](DECISIONS/ADR-027-decision-session-and-documentation-plugins.md) |
+| `ascent-docs` | Hand-written; documentation findability and drift, stubs and onboarding; implements `make doc-stub` | [ADR-027](DECISIONS/ADR-027-decision-session-and-documentation-plugins.md) |
 
 ### What the plugins share
 
-- **The project contract.** `.ascent/contract.yml` (or `.claude/contract.yml` where ASCENT-named files are not allowed) holds one section per plugin (`architecture:`, `ux:`, `ops:`, `quality:`, `security:`) with measurable targets and a maturity target: enterprise, standard or prototype. A review with no contract proposes one from what the repository declares (detect, don't ask) and rates against enterprise defaults until the operator confirms it.
+- **The project contract.** `.ascent/contract.yml` (or `.claude/contract.yml` where ASCENT-named files are not allowed) holds one section per plugin (`architecture:`, `ux:`, `ops:`, `quality:`, `security:`, `decisions:`, `session:`, `docs:`) with measurable targets and a maturity target: enterprise, standard or prototype. A review with no contract proposes one from what the repository declares (detect, don't ask) and rates against enterprise defaults until the operator confirms it.
 - **Severity tables.** Each review plugin rates findings only from its table. In architecture, ux, ops and quality the table is marked in the source so the gate can check that the skill's and the agent's copies are identical; the two `ascent-security` skills share one checked table, and its agent carries a summary; its `dependency-check` table is marked and copied into the agent. A concern that matches no row is listed as unrated.
 - **Read-only reviewer agents** (Read, Grep, Glob only) that the delivery loop uses as review lenses.
 - **The operator boundary.** Claude never runs git writes, `gh` writes, merges, tags, releases or deploys. While `ascent-delivery` is enabled, its `PreToolUse` hook blocks them; Claude writes a runbook instead.
@@ -183,7 +189,7 @@ flowchart TB
 
 ### The plugin gate
 
-`make test-plugins` runs T1–T15 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md), the README banner and its alt text from the repository, and checks that the banner names every released plugin. T14 is the self-test of the gate's fast mode, and T15 the self-test of the CI scope.
+`make test-plugins` runs T1–T16 on every plugin: generated skills match a fresh build (T1), no placeholders (T2), names and versions agree with the marketplace (T3), agents and skills pre-approve only read tools (T4, T4b), severity tables match (T5), links resolve (T6), frontmatter (T7), `claude plugin validate` (T8), agents cite steps that exist (T9), a version bump for every content change via `make/plugins.lock` (T10), behavior tests pass for every plugin with scripts or hooks (T11), manifests use only known keys (T12), and the ownership registry, [OWNERSHIP.md](OWNERSHIP.md), matches the repository (T13): one owner for every plugin, component, rule-id family, contract section, domain and review lens, and plugin-qualified rule ids ([ADR-015](DECISIONS/ADR-015-ownership-registry-and-gate.md)). `make/check-ownership.sh` runs T13 as T13.1–T13.11 (`make ownership` alone); T13.11 counts every version and figure in [CAPABILITY-MAP.md](CAPABILITY-MAP.md), the README banner and its alt text from the repository, and checks that the banner names every released plugin. T14 is the self-test of the gate's fast mode, T15 the self-test of the CI scope, and T16 runs `ascent-adr`'s `check-adrs.sh` on the framework's own ADRs with the `decisions:` section of this repository's `.ascent/contract.yml` ([ADR-027](DECISIONS/ADR-027-decision-session-and-documentation-plugins.md)).
 
 `make test-mutants` holds the negative controls: each one breaks a rule in a copy of the repository and requires a named gate check to fail. Controls run in groups, listed by `make test-mutants-groups`; `IDS=` runs named controls, and `--list` prints every control with its group, check and file. In fast mode, the default, a control runs only the check it names (`ASCENT_ONLY`), a run's baseline only its controls' checks, T11 stops at the first failing behavior test and that test at its first FAIL line, and controls run in parallel; a control fast mode does not kill reruns on the whole gate. Three guards keep the modes in agreement: T11 fails a test that prints a FAIL line and exits 0, `tests/meta/test-gate-sections.sh` proves each section gives the same results alone, and T14 tests fast mode itself. CI runs every control in full mode weekly ([ADR-018](DECISIONS/ADR-018-fast-negative-control-harness.md)).
 
@@ -215,8 +221,8 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 Lockstep across layers, with `FRAMEWORK_VERSION` in the `Makefile` as the reference; T13.11 fails when the `SKILL.md` version or the capability map disagrees with it:
 
-- Layer 1: git tag on the meta-repo (`v0.4.22`)
-- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.22`)
+- Layer 1: git tag on the meta-repo (`v0.4.23`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.23`)
 - Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4: `framework_version` field in `.ascent-meta.json`
 

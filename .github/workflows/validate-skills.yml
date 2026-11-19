@@ -10,7 +10,8 @@
 #       make qa            frontmatter (incl. trigger-first descriptions),
 #                          links, template placeholders
 #       make test-skills   renders the template, runs all 28 skill tests
-#       make test-plugins  plugin gate T1–T15: drift, names, versions, read-only
+#       make test-plugins  plugin gate T1–T16: drift, names, versions, read-only,
+#                          and the framework's own decision record (T16)
 #                          agents, links, behavior tests, ownership, fast-mode and
 #                          scope self-tests; 'claude plugin validate' runs locally,
 #                          SKIPs in CI. T11 runs the behavior tests of the plugins
@@ -197,6 +198,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0  # T16 compares accepted ADRs with the commits that accepted them (DEC-S8)
 
       - name: Validators
         run: make qa

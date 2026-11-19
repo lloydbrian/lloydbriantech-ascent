@@ -1,0 +1,54 @@
+# .ascent/contract.yml: the decisions: section (ascent-adr). One project contract,
+# one section per ASCENT plugin (ADR-011, ADR-027). Where ASCENT-named files are not
+# allowed, use .claude/contract.yml instead. Commit it: it is the project's own
+# statement of where its decisions live and what they constrain.
+#
+# adr-check proposes this section from what the repository already has and asks the
+# operator to confirm it once (detect, don't ask). Every guessed value is marked
+# "# guess" until confirmed. Never put credentials, account ids, email addresses,
+# phone numbers or other personal data in this file.
+
+version: 1
+
+decisions:
+  # enterprise (default) | standard | prototype. At prototype every finding is a NOTE.
+  maturity_target: enterprise
+
+  # The ADR folder, relative to the repository root (check-adrs.sh --dir). Leave it
+  # out and the checks use .adr-dir's folder, then docs/adr, docs/decisions, doc/adr,
+  # docs/architecture/decisions, docs/adrs, adr or decisions, whichever holds an ADR.
+  dir: docs/adr/
+
+  # The index file (--index). Leave it out and the checks use the folder's INDEX.md
+  # or index.md, else its README.md when it links to an ADR.
+  index: ""
+
+  # auto (default) | ascent | nygard | madr (--style): the format every ADR follows.
+  # auto takes the format most ADRs already use.
+  style: auto
+
+  # Known changes to accepted ADRs, made before these checks ran, that the team has
+  # reviewed and keeps (--acknowledge ADR-N=COMMIT). DEC-S8 compares the ADR with
+  # COMMIT instead of the version first accepted, so any later change still fails.
+  # Add one only after a person has read the change; never to silence a new one.
+  acknowledged_changes: []
+  #  - adr: ADR-009
+  #    commit: 0ac9d34
+  #    reason: a paragraph added in v0.4.3, before the rule was checked
+
+  # What accepted ADRs require of the code (check-decision-drift.sh). Each entry
+  # names its ADR and one of:
+  #   forbid: a POSIX extended regular expression no file may match, line by line;
+  #           under: limits it to these folders or files (optional)
+  #   require: a file or folder that must exist
+  # decision-drift proposes entries from the ADRs' Decision sections; a person
+  # confirms each before it is added. A constraint of an ADR that is no longer
+  # accepted is reported (DEC-C3) and not enforced.
+  constraints: []
+  #  - adr: ADR-007
+  #    forbid: '(require|from)[ (]+["'']mongodb'
+  #    under: [src/]
+  #    why: ADR-007 chose PostgreSQL as the only database
+  #  - adr: ADR-011
+  #    require: infra/cloudformation/
+  #    why: ADR-011 keeps all infrastructure in CloudFormation

@@ -13,6 +13,8 @@ Delivery-loop Step 4 runs one reviewer per lens, in parallel, against the diff a
 | UX and navigation | `ascent-ux:ux-reviewer` | [UX and navigation](#ux-and-navigation) |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | [Operational and deploy impact](#operational-and-deploy-impact) |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | [Tests](#tests) |
+| Decisions | `ascent-adr:decision-reviewer` | [Decisions](#decisions) |
+| Documentation | `ascent-docs:docs-reviewer` | [Documentation](#documentation) |
 
 The `ascent-*` providers are read-only agents from the ASCENT plugins; the others are skills. ASCENT's ownership registry (`docs/framework/OWNERSHIP.md` in the framework repository) owns this list, and its gate fails when this table drifts from it.
 
@@ -74,6 +76,14 @@ Give each fallback reviewer the diff, the acceptance criteria, its prompt, and t
 ### Tests
 
 > Lens: tests. Map each acceptance criterion to a test, and list the criteria without one. Check that each new rule has a negative control that makes a named test fail. Look for tests that cannot fail (asserting on their own fixture, no assertion, platform-skip branches that pass), tests that grep documentation instead of exercising behavior, and flaky timing or ordering assumptions.
+
+### Decisions
+
+> Lens: decisions. Check that a choice future contributors will ask about (a technology, a boundary, a data model, a dependency that is hard to remove) is recorded as an ADR in the repository's own format, with at least two real alternatives and its costs. Check that an ADR the change adds is complete and indexed, that a superseded ADR changed only in its status line with the replacement naming it, that no accepted ADR's body was rewritten, and that the code does not contradict an accepted ADR. Do not judge whether a decision is right; report doubts as observations.
+
+### Documentation
+
+> Lens: documentation. Search the documents for every path, make target, package script, environment variable and version the change renames or removes, and report each document that still names the old one. Check that a document the change adds is linked from the page its reader starts on, that its links and anchors resolve, and that the README's getting-started steps still work after the change. Operations manuals and runbooks belong to the operational lens.
 
 ## After the reviewers
 

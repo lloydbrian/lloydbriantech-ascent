@@ -1,0 +1,12 @@
+{
+  "name": "ascent-adr",
+  "version": "0.1.0",
+  "description": "Architecture decision records for any repository: write ADRs in the repository's own format (ASCENT, Nygard and adr-tools, MADR) with real alternatives and costs, check the record (sections, numbers, index, status, supersession both ways, dates, accepted ADRs unchanged since acceptance), check the code against the constraints accepted ADRs declare, plus a read-only decision-reviewer agent.",
+  "author": {
+    "name": "lloydbriantech"
+  },
+  "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["adr", "architecture-decision-records", "decisions", "madr", "adr-tools", "governance", "traceability", "ascent"]
+}
