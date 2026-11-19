@@ -1,0 +1,58 @@
+# .ascent/contract.yml: the docs: section (ascent-docs). One project contract, one
+# section per ASCENT plugin (ADR-011, ADR-027). Where ASCENT-named files are not
+# allowed, use .claude/contract.yml instead. Commit it: it is the project's own
+# statement of which documents it keeps and who reads them.
+#
+# docs-review proposes this section from what the repository already has and asks
+# the operator to confirm it once (detect, don't ask). Every guessed value is marked
+# "# guess" until confirmed. Never put credentials, account ids, email addresses,
+# phone numbers or other personal data in this file.
+
+version: 1
+
+docs:
+  # enterprise (default) | standard | prototype. At prototype every finding is a NOTE.
+  maturity_target: enterprise
+
+  # The documents checked: Markdown files and folders, relative to the repository
+  # root (check-docs.sh and check-doc-drift.sh --path). ADR folders (ascent-adr's)
+  # are never checked here.
+  paths: [README.md, CONTRIBUTING.md, docs/]
+
+  # Left out (--exclude): closed plans and records that keep old names on purpose,
+  # and the operations manuals, runbooks and drill records when ascent-ops keeps
+  # them somewhere other than its defaults (ops.manuals, ops.runbooks, ops.drills.dir).
+  exclude: []
+
+  # Who reads the documents, and the page each starts from (--persona NAME=PATH).
+  # Every document should be reachable from the README or one of these.
+  personas: []
+  #   - name: Developer
+  #     entry: docs/development/README.md
+  #   - name: Operator
+  #     entry: docs/operations/README.md
+
+  # How many links from the README or a persona entry point a document may be.
+  max_clicks: 3
+
+  # Days a TODO, TBD, FIXME, "coming soon" or doc-stub marker may stay, by git blame.
+  stale_marker_days: 90
+
+  # Days a document may lag behind a file it links to, by git log (DOC-L4).
+  lag_days: 180
+
+  # Where the project's version is (--version-file); empty: VERSION, package.json,
+  # pyproject.toml, then Cargo.toml.
+  version_file: ""
+
+  # Environment variables documents may name although the repository neither
+  # defines nor reads them: CI or platform variables (--ignore-env).
+  ignore_env: []
+
+  # Paths, make targets or package scripts documents may name although this
+  # repository does not have them: those of another project the documents describe
+  # (--ignore). Add one only after a person has confirmed it is not drift.
+  ignore: []
+
+  # Where doc-stub puts new documents (--dir).
+  dir: docs/

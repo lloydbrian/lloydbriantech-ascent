@@ -75,6 +75,8 @@ At the review step, the skill uses the first provider of each lens that is insta
 | UX and navigation | `ascent-ux:ux-reviewer` |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` |
+| Decisions | `ascent-adr:decision-reviewer` |
+| Documentation | `ascent-docs:docs-reviewer` |
 
 The list is owned by the framework's [ownership registry](../../docs/framework/OWNERSHIP.md).
 

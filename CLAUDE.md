@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent`, the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops and quality released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16; its figures in the README banner since v0.4.17; CI scoped to what a change can affect since v0.4.18; acceptance sign-off since v0.4.20; faster local verification since v0.4.21; live security testing and the threat model since v0.4.22). Phase 4 awaits its go-signal.
-**Version:** 0.4.22
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops, quality, adr, session and docs released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16; its figures in the README banner since v0.4.17; CI scoped to what a change can affect since v0.4.18; acceptance sign-off since v0.4.20; faster local verification since v0.4.21; live security testing and the threat model since v0.4.22; decision records, session continuity and documentation since v0.4.23). Phase 4 awaits its go-signal.
+**Version:** 0.4.23
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -72,7 +72,9 @@ lloydbriantech-ascent/
 ├── skills/
 │   └── lloydbriantech-ascent/         # Parent skill: SKILL.md, references/, assets/template/
 ├── plugins/                           # ascent-security (hybrid), ascent-delivery,
-│                                      # ascent-architecture, ascent-ux, ascent-ops, ascent-quality (hand-written)
+│                                      # ascent-architecture, ascent-ux, ascent-ops, ascent-quality,
+│                                      # ascent-adr, ascent-session, ascent-docs (hand-written)
+├── .ascent/contract.yml               # This repository's own contract (decisions: section, read by T16)
 ├── tests/plugins/                     # Plugin behavior tests and fixtures
 ├── tests/meta/                        # Tests for this repository's own gate scripts
 ├── tools/scratch/                     # Phase 2 smoke-test scaffold
@@ -178,14 +180,14 @@ The targets used most:
 | `make qa` | Frontmatter, internal links and template placeholders |
 | `make test-skills` | Render the template and run the 28 embedded-skill tests |
 | `make plugins` | Regenerate the generated plugin skills and refresh `make/plugins.lock` |
-| `make test-plugins` | The plugin gate, T1–T15, including each plugin's behavior tests, the ownership check, and the fast-mode and scope self-tests |
+| `make test-plugins` | The plugin gate, T1–T16, including each plugin's behavior tests, the ownership check, the fast-mode and scope self-tests, and the framework's own ADRs checked by `ascent-adr` (T16) |
 | `make gate-scope [BASE=<ref>]` | Which slow checks this branch needs, and why, from its changes against `origin/main` ([ADR-023](docs/framework/DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)) |
 | `make gate-changed [BASE=<ref>]` | Runs what CI runs for this branch: the cheap checks, then the slow checks its changes need |
 | `make ownership` | The ownership check (T13) alone: `docs/framework/OWNERSHIP.md` against the repository |
 | `make test-mutants [GROUP=<group>] [MODE=full] [JOBS=<n>] [TIMES=<file>] [CACHE=<dir>]` | Negative controls, in parallel (`JOBS`), in fast mode unless `MODE=full` ([ADR-018](docs/framework/DECISIONS/ADR-018-fast-negative-control-harness.md)), with a progress bar in a terminal and a summary at the end that shows where the time went; `TIMES` writes every control's time and `CACHE` reuses unchanged kills on local reruns, never in CI or the final run before a release ([ADR-025](docs/framework/DECISIONS/ADR-025-faster-local-verification.md)); `make test-mutants-groups` lists the groups CI runs in parallel |
 | `make test-harness` | The harness's slow self-tests: each gate section alone matches the full gate, and parallel runs report what serial runs report |
 
-Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase or plugin that will implement them (`doc-stub` lands with the `ascent-docs` plugin).
+Targets marked `[STUB lands in P<n>]` in `make help` are not implemented yet; the marker names the phase that will implement them. `make doc-stub TYPE=<type> TITLE="..."` runs `ascent-docs`' `doc-stub.sh`.
 
 ## What this repository is NOT
 

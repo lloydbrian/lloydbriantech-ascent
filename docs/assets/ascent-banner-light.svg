@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="356" viewBox="0 0 1280 356" role="img" aria-labelledby="t d">
   <title id="t">ASCENT</title>
-  <desc id="d">ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 32 components, 28 project skills, 56 test suites, 1065 negative controls, 26 ADRs.</desc>
+  <desc id="d">ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops, quality, adr, session and docs. 9 plugins, 44 components, 28 project skills, 65 test suites, 1306 negative controls, 27 ADRs.</desc>
   <rect width="1280" height="356" rx="16" fill="#F6F8FA"/>
   <g stroke="#E3E8EE" stroke-width="1">
     <path d="M0 80H1280M0 160H1280M0 240H1280M320 0V356M640 0V356M960 0V356"/>
@@ -10,6 +10,6 @@
   <text x="80" y="150" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="88" font-weight="800" letter-spacing="10" fill="#0D1B2A">ASCENT</text>
   <text x="84" y="196" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="28" fill="#3D4C5C">Disciplined delivery for Claude Code,</text>
   <text x="84" y="232" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="28" fill="#3D4C5C">from first commit to long after launch</text>
-  <text x="84" y="280" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="20" fill="#0B6E4F">security · delivery · architecture · ux · ops · quality</text>
-  <text x="84" y="314" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="20" fill="#0B6E4F">6 plugins · 32 components · 28 project skills · 56 test suites · 1065 negative controls · 26 ADRs</text>
+  <text x="84" y="280" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="20" fill="#0B6E4F">security · delivery · architecture · ux · ops · quality · adr · session · docs</text>
+  <text x="84" y="314" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="20" fill="#0B6E4F">9 plugins · 44 components · 28 project skills · 65 test suites · 1306 negative controls · 27 ADRs</text>
 </svg>

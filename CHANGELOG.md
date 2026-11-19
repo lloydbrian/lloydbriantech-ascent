@@ -12,7 +12,8 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Next, `ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24 and 2026-11-16)
+- Next, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24 and 2026-11-16)
+- Token trims that keep every description whole: browser-pass evidence gathering in `ascent-ux`, each checked before and after so no finding is lost, when the operator schedules them (ADR-027)
 - `ascent-security`: authenticated live checks, and a trial of the three scanner images against a real target, when a project needs them (ADR-026)
 - Tests: the `edit()` helpers of `test-check-drills.sh`, `test-check-ops-manuals.sh` and `test-check-iac-config.sh` do not fail a case when their awk edit fails, as `test-check-threat-model.sh` now does
 - Then auditability for projects (Compliance) and the `ascent-governance` conductor, deferred in ADR-015; "Recommended next" also names uninstalled plugins whose signals are present
@@ -25,6 +26,45 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.23] — 2026-11-18
+
+**Decision records, session continuity and documentation.** Three hand-written plugins that work in any repository ship in one release ([ADR-027](docs/framework/DECISIONS/ADR-027-decision-session-and-documentation-plugins.md)): `ascent-adr` keeps the decision record whole and the code true to it, `ascent-session` carries the work from one session, and one person, to the next, and `ascent-docs` keeps documentation findable and true to the repository. The delivery loop gains a lens for each review, and the framework now checks its own ADRs on every gate run.
+
+### Added
+
+- `ascent-adr` 0.1.0: skills `adr-check` (entry point, `dec-severity` table), `adr-write` and `decision-drift`, agent `decision-reviewer`
+- `scripts/check-adrs.sh`: `DEC-S1`–`S8` in the ASCENT, Nygard and adr-tools, and MADR formats: required sections, numbering, the index, status, supersession both ways, dates, and accepted ADRs compared with the version git first accepted (with `--acknowledge ADR-N=COMMIT` for a change a person has reviewed)
+- `scripts/check-decision-drift.sh`: `DEC-C1`–`C3`, the `forbid` and `require` constraints accepted ADRs declare in `decisions.constraints`
+- `ascent-session` 0.1.0: skills `session-resume` (entry point, `ses-severity` table), `session-capture` and `handoff`; `scripts/check-session.sh`, `SES-S1`–`S6`: the memory and its decisions dated and only ever appended (from git history), session state kept out of git, complete and fresh, and the handoff current
+- `ascent-docs` 0.1.0: skills `docs-review` (entry point, `doc-severity` table), `doc-drift`, `doc-stub` and `onboard`, agent `docs-reviewer`
+- `scripts/check-docs.sh`: `DOC-L1`–`L5` and `DOC-P1`–`P4`: links and GitHub anchors resolve, stale markers dated by `git blame`, documents older than what they link to, a README, persona entry points, every document reachable within the click limit
+- `scripts/check-doc-drift.sh`: `DOC-R1`–`R6`: the paths, make targets, package scripts, environment variables, version and runtimes documents name, against the repository
+- `scripts/doc-stub.sh`: a tutorial, how-to, reference, explanation or persona entry point from a stub with guidance in every section; never overwrites
+- `make doc-stub TYPE=... TITLE="..."` runs it (no longer a stub target)
+- `ascent-delivery` 0.2.1: the Decisions (`ascent-adr:decision-reviewer`) and Documentation (`ascent-docs:docs-reviewer`) lenses, with fallback prompts
+- This repository's `.ascent/contract.yml`, with a `decisions` section; gate check T16 runs `check-adrs.sh` on the framework's ADRs, and CI's gate job checks out the full history for DEC-S8
+- README: "What a run costs", token ranges for every kind of run, with their assumptions
+- Tests: `test-check-adrs.sh` (258), `test-check-decision-drift.sh` (99), `test-adr-rules.sh` (70), `test-check-session.sh` (180), `test-session-rules.sh` (56), `test-check-docs.sh` (201), `test-check-doc-drift.sh` (216), `test-doc-stub.sh` (83), `test-docs-rules.sh` (142); the script tests run on the default awk, mawk and gawk, against throwaway git repositories with set dates
+- Controls P1001–P1241 in groups `ascent-adr`, `ascent-session`, `ascent-docs` and `ascent-delivery-lenses`, each checked to change its file under BSD and GNU sed
+- ADR-027
+
+### Changed
+
+- Framework 0.4.22 → 0.4.23; `ascent-delivery` 0.2.0 → 0.2.1
+- The registry: three plugins, ten skills, two agents, families `DEC-S`, `DEC-C`, `SES-S`, `DOC-L`, `DOC-P` and `DOC-R`, sections `decisions`, `session` and `docs`, two domains and two lenses; only `ascent-node-stack` remains planned
+- The gate checks the `dec-severity`, `ses-severity` and `doc-severity` tables (T5)
+- PILLARS: decision traceability is checked in any repository, with negative controls; session continuity and documentation findability and accuracy are new rows
+- The README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and the banners for 0.4.23; the plugin figure is 9, the component figure 44, the suite figure 65, the control figure 1306 (1065 plus P1001–P1241) and the decision figure 27
+
+### Fixed
+
+- `docs/framework/DECISIONS/INDEX.md` lists ADR-026, which v0.4.22 left out; found by the new checker's first run on this repository
+- ADR-009's paragraph added in v0.4.3, after its release, is acknowledged in `.ascent/contract.yml` with the reason, so later changes to it fail
+- Calibrated on a read-only trial of three repositories, before release: `check-adrs.sh` reads a status and a date that share a line, a date in the status line, and finds ADR-NNN files kept in a shared folder such as `docs/` (without reporting the folder's other documents); a repository whose ADRs have Alternatives but no Cost implications is read as Nygard, not ASCENT. `check-doc-drift.sh` reads every `package.json` (workspaces) and no longer stops at a `}` inside a script, ends a make command at an aligned description, skips placeholder and example paths, and checks "Version:" lines in READMEs only; `ADR-NNN` files are left to `ascent-adr`, and a Commands or Development heading counts as getting started. Controls P1202–P1217
+- From the independent review, each finding checked by the finding verifier before it was fixed (14 confirmed, 1 settled by the repository's no-intervals rule): `doc-stub` refuses a path that leads out of the repository through a symlinked folder and a persona with no ASCII name; `make doc-stub` passes the title in single quotes; `SES-S3` compares each version of the working memory with the versions it was made from, so entries appended on parallel branches are not lost; "supersedes" claims an ADR only when a reference follows it; `check-decision-drift.sh` finds the ADR folder as `check-adrs.sh` does (`lib/adr-dir.sh`, shared), including folder names with spaces and ADRs at the root; the docs checks read non-ASCII file names, take git dates in a subfolder of a repository, skip indented code blocks, and use no regex intervals; `make -C`, `-f` and options with an argument, pre-release versions, "Node.js 20+" and `include $(wildcard ...)` are read correctly, and a GNUmakefile comes first. Controls P1218–P1241
 
 ---
 

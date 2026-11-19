@@ -1,14 +1,14 @@
 <h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ascent-banner-dark.svg">
-  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops and quality. 6 plugins, 32 components, 28 project skills, 56 test suites, 1065 negative controls, 26 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
+  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops, quality, adr, session and docs. 9 plugins, 44 components, 28 project skills, 65 test suites, 1306 negative controls, 27 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
 </picture>
 </h1>
 
 <p align="center">
   <a href="https://github.com/lloydbrian/lloydbriantech-ascent/actions/workflows/validate-skills.yml"><img alt="CI status (validate-skills workflow)" src="https://github.com/lloydbrian/lloydbriantech-ascent/actions/workflows/validate-skills.yml/badge.svg"></a>
   <a href="https://github.com/lloydbrian/lloydbriantech-ascent/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/lloydbrian/lloydbriantech-ascent?sort=semver&label=release"></a>
-  <a href="#plugins-for-any-repository"><img alt="Plugins: 6" src="https://img.shields.io/badge/plugins-6-0b6e4f"></a>
+  <a href="#plugins-for-any-repository"><img alt="Plugins: 9" src="https://img.shields.io/badge/plugins-9-0b6e4f"></a>
   <a href="LICENSE"><img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue"></a>
 </p>
 
@@ -50,15 +50,36 @@ Most frameworks stop at the scaffold. ASCENT is for **what comes after**: the ye
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
 | [`ascent-security`](plugins/ascent-security/README.md) | 0.3.0 | Trust and security, compliance | "any secrets committed?", "are our dependencies safe?", "is our beta hardened?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; a STRIDE threat model; live checks the operator runs against local or beta, with ZAP, nuclei and dalfox; plus a `security-auditor` agent |
-| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.2.0 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A person accepts each change on beta, and prod stops until the acceptance record passes. A hook blocks Claude from git writes and deploys |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.2.1 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A person accepts each change on beta, and prod stops until the acceptance record passes. A hook blocks Claude from git writes and deploys |
 | [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.1 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
 | [`ascent-ux`](plugins/ascent-ux/README.md) | 0.3.1 | Compliance, business value | "is this UI accessible?", "do our flows work and keep the user's work?" | Flows that complete and hold up (broken links, dead ends, double submits, lost drafts, a cross-browser pass), WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
 | [`ascent-ops`](plugins/ascent-ops/README.md) | 0.3.0 | Resilience, compliance, trust and security | "is this operable?", "can we restore?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, Maintenance and Troubleshooting manuals proven current, and recovery drills and readiness exercises proven by the operator's records, plus an operable-service blueprint |
 | [`ascent-quality`](plugins/ascent-quality/README.md) | 0.2.0 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence |
+| [`ascent-adr`](plugins/ascent-adr/README.md) | 0.1.0 | Compliance, business value | "do our ADRs conform?", "write an ADR for this" | ADRs written in the repository's own format (ASCENT, Nygard and adr-tools, MADR) with real alternatives and costs; a record checked for sections, numbers, index, status, supersession both ways, dates, and accepted ADRs never rewritten, from git history; and the code checked against the constraints accepted ADRs declare |
+| [`ascent-session`](plugins/ascent-session/README.md) | 0.1.0 | Business value, resilience | "where did we leave off?", "capture the session", "write a handoff" | Sessions resumed from the project's own records, every claim cited to its line; the session's state and decisions captured before closing; a handoff for the next person; and the records checked: decisions dated and only ever appended, personal state kept out of git, the handoff current |
+| [`ascent-docs`](plugins/ascent-docs/README.md) | 0.1.0 | Business value, compliance | "are our docs current?", "do the docs still match the code?", "onboard me" | Documents reachable from the README and each persona's entry point, links and anchors that resolve, stale markers and lagging documents dated by git, the paths, make targets, scripts, variables, version and runtimes documents name checked against the repository, new documents from stubs, and an onboarding walkthrough |
 
 Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions. Not sure which to install? [Which plugins do I need?](docs/framework/OWNERSHIP.md#which-plugins-do-i-need) maps what your repository contains to the plugin that checks it. Each plugin works on its own, and one you have not installed leaves its review unmeasured, never blocked.
 
 Every finding carries a plugin-qualified rule id, such as `OPS-S3` or `UX-D2`, so you can always tell which plugin raised it.
+
+### What a run costs
+
+Rough context-token ranges, so you know what to expect. They are estimated from file sizes (characters ÷ 4 for prose, ÷ 3.2 for code and tables, so expect ±25%), from script output measured on the test fixtures, and from modelled file reads. "Small" means about 30 source files and one core flow; "medium" means about 300 files, three flows and two browser engines. Your numbers depend mostly on how many files a review opens and on the browser pass.
+
+| | Small repo | Medium repo |
+|---|---|---|
+| **Installed, every session** (skill and agent descriptions) | all nine plugins ≈ 5.5K; a scaffolded project's 28 skills ≈ 2.5K, plus its CLAUDE.md ≈ 1K | same |
+| A focused check (`test-check`, `runbook-check`, `env-audit`, `doc-drift` …) | 5–9K | 10–23K |
+| An entry review (`architecture-review`, `ops-review`, `quality-review`, `security-audit`, `dependency-check`, `adr-check`, `docs-review`) | 9–17K | 16–37K |
+| Session records (`session-resume`, `session-capture`, `handoff`) | 3–6K | 5–12K |
+| A UI review with the Playwright browser pass (`ux-review`, `flow-check`, `accessibility-audit`) | 27–52K | 110–190K (up to ~250K) |
+| `design-directions` (six mocks, screenshots, a gallery) | 60–80K | 100–170K |
+| `delivery-loop`, on top of the change itself | 16–25K | 25–40K |
+| A reviewer agent (`*-reviewer`, `security-auditor`, `finding-verifier`) | 1–2.5K returned to you; it works in its own context | same |
+| Parent skill `lloydbriantech-ascent` | 8–9K for a conventions question | ~20K for a multi-role feature |
+
+The scripts print one line per rule or finding, usually under 1K tokens. The browser pass is the costly part: every page snapshot is 1–8K and every screenshot about 1K. To keep a UI review cheap, list fewer core flows and engines in the contract, or ask for the static checks only. Prefer the `*-reviewer` agents when you only need the verdict, since their reading stays out of your session. The descriptions are kept in full on purpose: they are what tells Claude, and you, when each skill applies (ADR-027).
 
 
 ## Quick start
@@ -70,7 +91,7 @@ In Claude Code (CLI, VS Code extension or desktop app):
 /plugin install ascent-architecture@lloydbriantech-ascent
 ```
 
-Install any of the six the same way. Then ask in plain language, for example "review the architecture" or "is this operable?". Start with the reviews; add `ascent-delivery` when you want Claude to take changes from decision to a runbook you run.
+Install any of the nine the same way. Then ask in plain language, for example "review the architecture" or "is this operable?". Start with the reviews; add `ascent-delivery` when you want Claude to take changes from decision to a runbook you run.
 
 > [!NOTE]
 > While `ascent-delivery` is enabled, its hook blocks Claude from committing, pushing, tagging, merging and deploying in every session. That is the point: you run those steps from the runbook Claude writes.
@@ -195,12 +216,13 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | | What | Status |
 |---|---|---|
-| **Now** | v0.4.22: `ascent-security` 0.3.0, live security testing the operator runs and a STRIDE threat model a person reviews (ADR-026). v0.4.21: faster local verification, with timings, the right test first, a cheaper rules test and a kill cache for local reruns (ADR-025). v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
-| **Next** | Four more plugins (`ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`) | Planned |
+| **Now** | v0.4.23: three new plugins, `ascent-adr` 0.1.0 for decision records, `ascent-session` 0.1.0 for session continuity and `ascent-docs` 0.1.0 for documentation that can be found and stays true, with Decisions and Documentation lenses in `ascent-delivery` 0.2.1; the gate checks the framework's own ADRs (ADR-027). v0.4.22: `ascent-security` 0.3.0, live security testing the operator runs and a STRIDE threat model a person reviews (ADR-026). v0.4.21: faster local verification, with timings, the right test first, a cheaper rules test and a kill cache for local reruns (ADR-025). v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
+| **Next** | `ascent-node-stack` | Planned |
 | **Later** | Auditability for projects and the `ascent-governance` conductor, then Phases 4–7 | Planned |
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.23 | 2026-11-18 | Three plugins (ADR-027): `ascent-adr` 0.1.0 writes ADRs in the repository's own format and checks the record, `DEC-S1`–`S8` with accepted bodies compared to git history, and declared constraints, `DEC-C1`–`C3`; `ascent-session` 0.1.0 resumes, captures and hands off sessions from the repository's records, `SES-S1`–`S6`; `ascent-docs` 0.1.0 reviews documentation, `DOC-L1`–`L5`, `DOC-P1`–`P4`, checks what documents name, `DOC-R1`–`R6`, writes stubs (and `make doc-stub`) and walks a newcomer in. `ascent-delivery` 0.2.1 adds the Decisions and Documentation lenses. Gate check T16 runs `check-adrs.sh` on the framework's own ADRs; "What a run costs" gives token ranges |
 | v0.4.22 | 2026-11-17 | `ascent-security` 0.3.0 (ADR-026): `security-test` writes the runbook for live checks the operator runs against local or beta (headers, TRACE and CONNECT, traversal, unauthenticated writes, oversized bodies, disclosure, a prompt-injection canary, an AI burst) and for ZAP, nuclei and dalfox in pinned containers, then rates the results (`SEC-L1`–`L10`); `threat-model` drafts a STRIDE model a person reviews (`SEC-T1`–`T4`) |
 | v0.4.21 | 2026-11-16 | Faster local verification (ADR-025): the controls' summary shows the checks and groups that took the time and `TIMES=<file>` writes every control's time; T11 runs first the tests that name the edited path; `test-ops-rules.sh` R13 in one awk pass, 2 seconds instead of 17; `CACHE=<dir>` reuses unchanged kills on local reruns, never in CI or the final run before a release |
 | v0.4.20 | 2026-11-16 | `ascent-delivery` 0.2.0: an acceptance record per change, whose evidence Claude drafts and only a person accepts, checked by `check-acceptance.sh` (`DEL-A1`–`A3`) before prod; the `delivery:` contract section, with the hook blocking the deploys of every contract; runbook steps labelled [C] or [O] (ADR-024). `ascent-ux` 0.3.1: delegated listeners across files, box-shadow ring contrast, dead-end pages, imported guards. `ascent-architecture` 0.2.1. A scaffold with pinned nginx, versioned images and `make/help.sh --help` |

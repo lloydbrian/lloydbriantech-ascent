@@ -8,7 +8,7 @@ description: >-
   finding verifier, fix and re-test, definition of done, an operator runbook,
   beta verification, a person's acceptance sign-off, prod and a release record.
   Claude never runs git writes or deploys: the operator does, from the runbook.
-version: 0.2.0
+version: 0.2.1
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -91,8 +91,10 @@ Then launch reviewers **in parallel**, one lens each, against the diff and the a
 | UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | fallback prompt |
+| Decisions | `ascent-adr:decision-reviewer` | fallback prompt |
+| Documentation | `ascent-docs:docs-reviewer` | fallback prompt |
 
-Skip a lens only when it cannot apply (no UI means no accessibility lens), and say so. A provider's output is passed through unedited, under a thin header naming the lens and the provider.
+Skip a lens only when it cannot apply (no UI means no accessibility lens; a change that records no decision and touches no ADR has no decisions lens; one that renames nothing a document names and edits no document has no documentation lens), and say so. A provider's output is passed through unedited, under a thin header naming the lens and the provider.
 
 Every finding needs `file:line` and a concrete failure scenario. Then give all findings to the **`finding-verifier` agent** (`ascent-delivery:finding-verifier`). It is read-only and returns CONFIRMED, REJECTED or UNCONFIRMED for each finding, with evidence.
 

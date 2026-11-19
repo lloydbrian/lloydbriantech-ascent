@@ -2,7 +2,7 @@
 
 The phase plan from v0.1-alpha to v1.0. Each phase has explicit exit criteria. No phase begins without the literal "Proceed with Phase N" signal; the framework dogfoods its own phase-delivery discipline.
 
-**Current state:** v0.4.22 (`ascent-security` 0.3.0: live security testing the operator runs and a STRIDE threat model), November 17, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
+**Current state:** v0.4.23 (`ascent-adr`, `ascent-session` and `ascent-docs` 0.1.0, and `ascent-delivery` 0.2.1 with the Decisions and Documentation lenses), November 18, 2026. Phase 4 awaits its go-signal. What ASCENT can do today, plugin by plugin: [CAPABILITY-MAP.md](CAPABILITY-MAP.md).
 
 ## Plugin roadmap
 
@@ -11,14 +11,14 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | Rank | Plugin | Scope | Status |
 |---|---|---|---|
 | — | `ascent-security` | `.env` discipline, credentials, container privilege, headers, dynamic code; 0.2.0 adds dependency checks and an offline vulnerability scan (`SEC-D1`–`D10`, ADR-014, ADR-016); 0.3.0 adds live security testing and the threat model (`SEC-L1`–`L10`, `SEC-T1`–`T4`, ADR-026) | ✅ v0.4.2, 0.1.1 in v0.4.3, 0.2.0 in v0.4.9, 0.3.0 in v0.4.22 |
-| — | `ascent-delivery` | The delivery loop and the operator-boundary hook; 0.2.0 adds a person's acceptance sign-off, checked before prod (`DEL-A1`–`A3`, ADR-024) | ✅ v0.4.3, 0.1.3 in v0.4.11, 0.2.0 in v0.4.20 |
+| — | `ascent-delivery` | The delivery loop and the operator-boundary hook; 0.2.0 adds a person's acceptance sign-off, checked before prod (`DEL-A1`–`A3`, ADR-024); 0.2.1 adds the Decisions and Documentation lenses (ADR-027) | ✅ v0.4.3, 0.1.3 in v0.4.11, 0.2.0 in v0.4.20, 0.2.1 in v0.4.23 |
 | 1 | `ascent-architecture` | Quality attributes, design principles, deployment options and cost | ✅ v0.4.4; 0.2.0 in v0.4.8; 0.2.1 in v0.4.20 |
 | 2 | `ascent-ux` | WCAG 2.2 evidence, design tokens, design directions; 0.3.0 adds flow integrity and reliability under four principles (`UX-F`, `UX-R`, `UX-P`, ADR-022) | ✅ v0.4.5; 0.2.0 in v0.4.8; 0.3.0 in v0.4.15; 0.3.1 in v0.4.20 |
 | 3 | `ascent-ops` | Secure IaC configuration, zero-touch runbooks, operations manuals; 0.3.0 adds recovery drills and readiness exercises (`OPS-R`, `OPS-X`, ADR-014, ADR-020) | ✅ v0.4.6; 0.2.0 in v0.4.8; 0.3.0 in v0.4.12 |
 | 4 | `ascent-quality` | Test strategy: test inventory, criterion-to-test traceability and test hygiene (`QA-I`, `QA-T`, `QA-H`, ADR-014, ADR-019); 0.2.0 adds load-test alignment and mutation evidence (`QA-L`, `QA-M`, ADR-021) | ✅ v0.4.11; 0.2.0 in v0.4.13 |
-| 5 | `ascent-session` | To be scoped when it starts | ⏳ Planned |
-| 6 | `ascent-adr` | To be scoped when it starts | ⏳ Planned |
-| 7 | `ascent-docs` | To be scoped when it starts | ⏳ Planned |
+| 5 | `ascent-session` | Session resume, capture and handoff from the repository's records; decisions dated and append-only, personal state out of git (`SES-S1`–`S6`, ADR-027) | ✅ v0.4.23 |
+| 6 | `ascent-adr` | ADRs in the repository's own format; the record checked against git history, and the constraints accepted ADRs declare (`DEC-S1`–`S8`, `DEC-C1`–`C3`, ADR-027) | ✅ v0.4.23 |
+| 7 | `ascent-docs` | Documentation findability, drift against the repository, stubs and onboarding (`DOC-L1`–`L5`, `DOC-P1`–`P4`, `DOC-R1`–`R6`, ADR-027) | ✅ v0.4.23 |
 | 8 | `ascent-node-stack` | To be scoped when it starts | ⏳ Planned |
 
 ### Committed follow-ups
@@ -273,6 +273,12 @@ Verifying v0.4.20 took two full runs of the negative controls, about 55 minutes 
 **Status:** ✅ Complete (November 17, 2026)
 
 `ascent-security` 0.3.0 adds two hand-written skills ([ADR-026](DECISIONS/ADR-026-live-security-testing-and-threat-model.md)). `security-test` writes the runbook for live checks the operator runs against a local or beta target, and for ZAP, nuclei and dalfox in pinned containers, then rates the committed results with `SEC-L1`–`L10`. `run-live-checks.sh` sends no credential and keeps no response body, refuses production unless the contract allows it, and inside Claude Code refuses anything but loopback; writes and model calls are opt-in. `threat-model` drafts `docs/security/THREAT-MODEL.md` with STRIDE, and `SEC-T1`–`T4` check that every endpoint is an entry point with threats, every threat is mitigated in a named file or accepted under an ADR, and a person reviewed it recently. The agent reads both. Controls P917–P1000 run in two new groups. A read-only trial on three repositories, with a live pass against a local copy of one, led to one calibration.
+
+### v0.4.23: Decision records, session continuity and documentation
+
+**Status:** ✅ Complete (November 18, 2026)
+
+Three hand-written plugins ship together ([ADR-027](DECISIONS/ADR-027-decision-session-and-documentation-plugins.md)). `ascent-adr` 0.1.0 writes ADRs in the format a repository already uses, checks the record (`DEC-S1`–`S8`), comparing accepted ADRs with the version git first accepted, and checks the code against the constraints accepted ADRs declare (`DEC-C1`–`C3`). `ascent-session` 0.1.0 resumes a session from the project's own records with every claim cited, captures state and decisions before closing, writes a handoff, and checks the records (`SES-S1`–`S6`). `ascent-docs` 0.1.0 checks that documents can be found and are kept (`DOC-L1`–`L5`, `DOC-P1`–`P4`), checks what documents name against the repository (`DOC-R1`–`R6`), writes stubs (`make doc-stub`) and walks a newcomer in. `ascent-delivery` 0.2.1 adds the Decisions and Documentation lenses. The framework checks its own ADRs on every gate run (T16), with this repository's first `.ascent/contract.yml`, and the README says what a run costs in tokens.
 
 ---
 

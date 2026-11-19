@@ -1,0 +1,12 @@
+{
+  "name": "ascent-session",
+  "version": "0.1.0",
+  "description": "Session continuity for any repository: resume a session from the project's own records with every claim cited to the line it came from, capture the session's state and its decisions before closing, write a handoff for the next person, and check the records (the working memory exists with dated entries in order, entries are only ever appended, from git history, the session state stays out of git, is complete and fresh, and the handoff is complete and current).",
+  "author": {
+    "name": "lloydbriantech"
+  },
+  "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["session", "continuity", "handoff", "working-memory", "onboarding", "context", "ascent"]
+}

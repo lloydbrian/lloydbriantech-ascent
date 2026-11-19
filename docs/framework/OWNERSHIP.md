@@ -6,7 +6,7 @@ Every plugin, component, rule-id family, contract section, domain and review len
 
 How to change it:
 - **Add the row first.** A new plugin, skill, agent, hook, rule family, contract section or lens starts with a row here, in the same pull request.
-- **Planned work is reserved.** A planned plugin, code or rule family gets a row before it is built, so no one else takes its name. Roadmap plugins that are not scoped yet (`ascent-session`, `ascent-adr`, `ascent-docs`, `ascent-node-stack`) get their rows when scoping starts.
+- **Planned work is reserved.** A planned plugin, code or rule family gets a row before it is built, so no one else takes its name. Roadmap plugins that are not scoped yet (`ascent-node-stack`) get their rows when scoping starts.
 - **Ownership decisions live in ADRs.** This page records them; T13 keeps them from drifting. T13 cannot tell whether an owner is the right one.
 
 Table format: one row per line, cells separated by `|`. A name is in backticks; `—` means none. Several names in one cell are separated by commas.
@@ -26,6 +26,9 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | HTML, JSX, Vue or Svelte templates, CSS, design tokens, router files, forms that submit through a script | `ascent-ux` | flows that complete, UI that keeps the user's work, WCAG 2.2 AA evidence, design tokens and contrast, design directions |
 | infrastructure as code, operator scripts, runbooks, Compose files, health endpoints, backups and drill records | `ascent-ops` | secure configuration, zero-touch scripts and runbooks, operations manuals, recovery drills and readiness exercises |
 | test files, a test runner configuration, CI workflows, acceptance criteria, load-test scripts, a mutation tool | `ascent-quality` | test types and whether CI runs them, boundaries no test reaches, criteria and core rules traced to tests, test hygiene, load tests against the targets, mutation evidence |
+| an ADR folder (`docs/adr`, `docs/decisions`, `.adr-dir`), or choices future contributors will ask about | `ascent-adr` | decisions written with their alternatives and costs, a record kept complete and linked, accepted decisions never rewritten, and code checked against the constraints they declare |
+| Markdown documentation (`README.md`, `CONTRIBUTING.md`, `docs/`), or a change that renames what documents name | `ascent-docs` | documents reachable from the README and persona entry points, links that resolve, stale markers and lag dated by git, names that still exist, new documents of the right kind for one reader |
+| a working memory, a session state or a handoff (`docs/delivery/`), or work that spans sessions or changes hands | `ascent-session` | sessions resumed from cited records, state and decisions captured before closing, a working memory only appended to, personal state kept out of git, a current handoff |
 <!-- ownership:signals:end -->
 
 ---
@@ -43,6 +46,9 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | `ascent-ux` | `UX` | released | hand-written | `ux` | `ux-severity` |
 | `ascent-ops` | `OPS` | released | hand-written | `ops` | `ops-severity` |
 | `ascent-quality` | `QA` | released | hand-written | `quality` | `qa-severity` |
+| `ascent-adr` | `DEC` | released | hand-written | `decisions` | `dec-severity` |
+| `ascent-session` | `SES` | released | hand-written | `session` | `ses-severity` |
+| `ascent-docs` | `DOC` | released | hand-written | `docs` | `doc-severity` |
 | `ascent-governance` | `GOV` | planned | hand-written | — | — |
 <!-- ownership:plugins:end -->
 
@@ -87,6 +93,18 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-quality` | skill | `test-check` |
 | `ascent-quality` | skill | `test-evidence` |
 | `ascent-quality` | agent | `quality-reviewer` |
+| `ascent-adr` | skill | `adr-check` |
+| `ascent-adr` | skill | `adr-write` |
+| `ascent-adr` | skill | `decision-drift` |
+| `ascent-adr` | agent | `decision-reviewer` |
+| `ascent-session` | skill | `session-resume` |
+| `ascent-session` | skill | `session-capture` |
+| `ascent-session` | skill | `handoff` |
+| `ascent-docs` | skill | `docs-review` |
+| `ascent-docs` | skill | `doc-drift` |
+| `ascent-docs` | skill | `doc-stub` |
+| `ascent-docs` | skill | `onboard` |
+| `ascent-docs` | agent | `docs-reviewer` |
 <!-- ownership:components:end -->
 
 ## Rule-id families
@@ -102,6 +120,11 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `ARC-P` | `ascent-architecture` | catalogue | `plugins/ascent-architecture/references/architecture-principles.md` |
 | `ARC-O` | `ascent-architecture` | catalogue | `plugins/ascent-architecture/skills/deployment-options/SKILL.md` |
 | `ARC-B` | `ascent-architecture` | catalogue | `plugins/ascent-architecture/references/cloud-component-mapping.md` |
+| `DEC-S` | `ascent-adr` | rule | `plugins/ascent-adr/scripts/check-adrs.sh` |
+| `DEC-C` | `ascent-adr` | rule | `plugins/ascent-adr/scripts/check-decision-drift.sh` |
+| `DOC-L` | `ascent-docs` | rule | `plugins/ascent-docs/scripts/check-docs.sh` |
+| `DOC-P` | `ascent-docs` | rule | `plugins/ascent-docs/scripts/check-docs.sh` |
+| `DOC-R` | `ascent-docs` | rule | `plugins/ascent-docs/scripts/check-doc-drift.sh` |
 | `DEL-A` | `ascent-delivery` | rule | `plugins/ascent-delivery/scripts/check-acceptance.sh` |
 | `OPS-S` | `ascent-ops` | rule | `plugins/ascent-ops/references/secure-config-rules.md` |
 | `OPS-Z` | `ascent-ops` | rule | `plugins/ascent-ops/scripts/check-ops-scripts.sh` |
@@ -116,6 +139,7 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `SEC-D` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-dependencies.sh` |
 | `SEC-L` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
 | `SEC-T` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
+| `SES-S` | `ascent-session` | rule | `plugins/ascent-session/scripts/check-session.sh` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
 | `UX-D` | `ascent-ux` | catalogue | `plugins/ascent-ux/skills/design-directions/SKILL.md` |
@@ -171,6 +195,9 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | regression and end-to-end tests | `ascent-delivery` | `ascent-quality` | released |
 | criterion-to-test traceability | `ascent-delivery` | `ascent-quality` | released |
 | mutation evidence | — | `ascent-quality` | released |
+| architecture decision records | `ascent-adr` | `ascent-adr` | released |
+| session continuity and handoff | `ascent-session` | `ascent-session` | released |
+| documentation findability and drift | `ascent-docs` | `ascent-docs` | released |
 | launch readiness | `ascent-governance` | `ascent-governance` | planned |
 | AI behavior evals | — | `ascent-ai-evals` | released |
 <!-- ownership:domains:end -->
@@ -189,4 +216,6 @@ The delivery loop (`ascent-delivery`, Step 4) runs one reviewer per lens. It use
 | UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | fallback prompt |
+| Decisions | `ascent-adr:decision-reviewer` | fallback prompt |
+| Documentation | `ascent-docs:docs-reviewer` | fallback prompt |
 <!-- ownership:lenses:end -->

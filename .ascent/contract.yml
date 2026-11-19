@@ -1,0 +1,21 @@
+# .ascent/contract.yml: this repository's own project contract. The framework is
+# its own first user (CLAUDE.md): the decisions: section is read by ascent-adr and
+# by the plugin gate's T16, which checks the framework's ADRs on every run
+# (ADR-027). Never put credentials or personal data in this file.
+
+version: 1
+
+decisions:
+  maturity_target: enterprise
+  dir: docs/framework/DECISIONS/
+  index: docs/framework/DECISIONS/INDEX.md
+  style: ascent
+
+  # Changes to accepted ADRs made before the decision record was checked, read and
+  # kept. DEC-S8 compares each with the commit named here, so a later change fails.
+  acknowledged_changes:
+    - adr: ADR-009
+      commit: 0ac9d34
+      reason: v0.4.3 (ascent-security 0.1.1) added a paragraph on the version gate to ADR-009 after its release in v0.4.2; the text is kept, and later changes go in a new ADR
+
+  constraints: []
