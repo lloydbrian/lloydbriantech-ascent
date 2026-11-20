@@ -1,0 +1,114 @@
+version: 1
+
+governance:
+  environments: [local]
+  floors:
+    local:
+      checks: [ascent-security/check-env, ascent-security/check-dependencies,
+               ascent-security/check-threat-model, ascent-ux/check-flow-integrity,
+               ascent-docs/check-docs, ascent-delivery/check-acceptance,
+               ascent-ops/check-drills, ascent-quality/check-test-evidence,
+               ascent-adr/check-adrs]
+
+architecture:
+  quality_targets:
+    rto: 4h
+    rpo: 15m
+    p95_latency_ms: 300
+    peak_rps: 50
+
+security:
+  maturity_target: standard
+  dependencies:
+    lockfile_required: no
+    licences_denied: [GPL-3.0, AGPL-3.0]
+    registries: [https://registry.example.test/npm/, https://pypi.example.test/simple/]
+  endpoints:
+    - path: /api/items/{id}
+      methods: [GET, DELETE]
+      auth: required
+      flags: [write]
+    - path: /api/catalog
+      methods: [GET]
+      auth: none
+  threat_model:
+    path: docs/sec/TM.md
+    review_max_age_days: 120
+  adr_dir: docs/decisions/
+  waivers:
+    - id: ADR-021
+      skips: lodash 4.17.15 in a build-time tool
+      review_by: 2027-03-31
+      advisories: [GHSA-35jh-r3h4-6jhm, CVE-2021-23337]
+    - id: ADR-022
+      skips: the admin pages
+      review_by: 2027-03-31
+      advisories: [CVE-2024-0001]
+
+ux:
+  core_flows:
+    - name: enter-score
+      pages: [app/public/score.html]
+      steps: [app/public/index.html, app/public/score.html, app/public/confirm.html]
+    - name: sign-in
+      pages: [app/public/login.html, app/public/reset.html]
+      steps: [app/public/login.html, app/public/index.html]
+  pages: ["app/public/**/*.html", "admin/*.html", "site/index.html"]
+  browsers: [last-2-evergreen, ios-safari-17]
+
+docs:
+  maturity_target: prototype
+  paths: [README.md, guide/]
+  exclude: [guide/old/]
+  personas:
+    - name: Developer
+      entry: guide/dev.md
+    - name: Operator
+      entry: guide/ops.md
+  max_clicks: 4
+  stale_marker_days: 45
+  lag_days: 200
+
+delivery:
+  acceptance_dir: records/acceptance/
+  acceptors: [ana-lopez, "Sam Roe"]
+
+ops:
+  maturity_target: enterprise
+  iac:
+    paths: [infra/, deploy/main.tf]
+  ready_path: /-/ready2
+  alerts:
+    - name: ready-failing
+      runbook: docs/ops/ready.md
+      page: true
+    - name: disk-full
+      runbook: docs/ops/disk.md
+  manuals:
+    maintenance: docs/ops/MO.md
+  drills:
+    dir: records/drills/
+    max_age_days: 60
+    paths:
+      - name: orders-db
+        kind: restore
+        runbook: docs/ops/restore.md
+  version_pinning: minor
+
+quality:
+  maturity_target: standard
+  mutation:
+    min_score: 70
+    max_age_days: 80
+    reports: [reports/mutation.json, reports/stryker.json]
+
+decisions:
+  maturity_target: standard
+  dir: docs/decisions/
+  index: docs/decisions/INDEX.md
+  style: madr
+  acknowledged_changes:
+    - adr: ADR-009
+      commit: 0ac9d34
+    - adr: ADR-011
+      commit: abc1234

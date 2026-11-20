@@ -10,7 +10,7 @@ description: >-
   runs the static checks and a Playwright browser pass with a walk of each core
   flow, and reports strong, moderate or weak with file:line and WCAG evidence.
   For a quick design-level critique, design:accessibility-review fits.
-version: 0.3.1
+version: 0.3.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -212,6 +212,8 @@ Browser pass (Step 4): <what ran, per flow and per engine, including the walk, o
 Manual checklist: <the keyboard and screen-reader items from manual-test-checklist.md still to do, with "record the date in ux.manual_tests">
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

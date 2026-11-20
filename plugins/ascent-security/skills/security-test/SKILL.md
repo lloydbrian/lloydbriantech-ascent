@@ -9,7 +9,7 @@ description: >-
   local or beta target (SEC-L1–L8), and the scanner commands in pinned
   containers, then rates the results and the reports (SEC-L9, SEC-L10).
   Never sends a request to anything but the test fixture on 127.0.0.1.
-version: 0.3.0
+version: 0.4.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -142,6 +142,8 @@ Other observations (unrated, not counted above):
 Script output: <check-threat-model and check-live-results output, verbatim>
 Recommended next: <the runbook, if not yet run; fixes; waiver ADRs; the threat-model skill when SEC-T fails>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

@@ -8,7 +8,7 @@ description: >-
   UX-R, UX-P) with the contract's values, walks each core flow in the browser,
   repeats it in every engine the contract lists, and reports with file:line
   evidence. Read-only.
-version: 0.3.1
+version: 0.3.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -126,6 +126,8 @@ Walk (Step 4): <per flow: step | reached by | network and console | way out>, or
 Engines (Step 5): <per engine: run | not run (unmeasured)>
 Recommended next: <accessibility-audit when the walk found keyboard or name failures; design:ux-copy for unclear error messages>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 A principle is **met** only when its contract keys are present, every rule in it has run (static and, where the rule is a browser rule, in the browser), and none failed. A rule left unmeasured makes the principle unmeasured; a failure makes it at risk.
 

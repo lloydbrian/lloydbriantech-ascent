@@ -29,6 +29,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | an ADR folder (`docs/adr`, `docs/decisions`, `.adr-dir`), or choices future contributors will ask about | `ascent-adr` | decisions written with their alternatives and costs, a record kept complete and linked, accepted decisions never rewritten, and code checked against the constraints they declare |
 | Markdown documentation (`README.md`, `CONTRIBUTING.md`, `docs/`), or a change that renames what documents name | `ascent-docs` | documents reachable from the README and persona entry points, links that resolve, stale markers and lag dated by git, names that still exist, new documents of the right kind for one reader |
 | a working memory, a session state or a handoff (`docs/delivery/`), or work that spans sessions or changes hands | `ascent-session` | sessions resumed from cited records, state and decisions captured before closing, a working memory only appended to, personal state kept out of git, a current handoff |
+| a `.ascent/contract.yml` with more than one section, waivers, a beta or production launch ahead, or CI that should hold a deploy until the evidence is current | `ascent-governance` | one answer per environment, "are we ready for local, beta or prod?", from the other plugins' checks, dated review records, waivers with expiry dates and a launch record a person signs |
 <!-- ownership:signals:end -->
 
 ---
@@ -49,7 +50,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | `ascent-adr` | `DEC` | released | hand-written | `decisions` | `dec-severity` |
 | `ascent-session` | `SES` | released | hand-written | `session` | `ses-severity` |
 | `ascent-docs` | `DOC` | released | hand-written | `docs` | `doc-severity` |
-| `ascent-governance` | `GOV` | planned | hand-written | — | — |
+| `ascent-governance` | `GOV` | released | hand-written | `governance` | `gov-severity` |
 <!-- ownership:plugins:end -->
 
 `ascent-delivery` reads the `delivery` section of `.ascent/contract.yml` since 0.2.0 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)). Its older contract, `.delivery-loop.yml`, still works, and the operator-boundary hook blocks the deploy commands of both. `ascent-delivery` rates no findings, so it has no severity marker: any `DEL-A` failure stops prod.
@@ -105,6 +106,10 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-docs` | skill | `doc-stub` |
 | `ascent-docs` | skill | `onboard` |
 | `ascent-docs` | agent | `docs-reviewer` |
+| `ascent-governance` | skill | `launch-readiness` |
+| `ascent-governance` | skill | `governance-review` |
+| `ascent-governance` | skill | `review-record` |
+| `ascent-governance` | agent | `governance-conductor` |
 <!-- ownership:components:end -->
 
 ## Rule-id families
@@ -137,9 +142,14 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `QA-L` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-evidence.sh` |
 | `QA-M` | `ascent-quality` | rule | `plugins/ascent-quality/scripts/check-test-evidence.sh` |
 | `SEC-D` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-dependencies.sh` |
+| `SEC-E` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-env.sh` |
 | `SEC-L` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
 | `SEC-T` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
 | `SES-S` | `ascent-session` | rule | `plugins/ascent-session/scripts/check-session.sh` |
+| `GOV-S` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
+| `GOV-L` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
+| `GOV-W` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
+| `GOV-R` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
 | `UX-D` | `ascent-ux` | catalogue | `plugins/ascent-ux/skills/design-directions/SKILL.md` |
@@ -198,7 +208,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | architecture decision records | `ascent-adr` | `ascent-adr` | released |
 | session continuity and handoff | `ascent-session` | `ascent-session` | released |
 | documentation findability and drift | `ascent-docs` | `ascent-docs` | released |
-| launch readiness | `ascent-governance` | `ascent-governance` | planned |
+| launch readiness | `ascent-governance` | `ascent-governance` | released |
 | AI behavior evals | — | `ascent-ai-evals` | released |
 <!-- ownership:domains:end -->
 

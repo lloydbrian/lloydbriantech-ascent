@@ -1,0 +1,105 @@
+# adapters.tsv — how check-audit.sh runs each check a floor can list.
+#
+# The other plugins' checkers take options; they do not read the contract. Each
+# row turns one contract key into one option (or input) of one checker, as that
+# checker's own skill documents it. tests/plugins/ascent-governance/test-adapters.sh
+# fails when a row names an option the checker's usage line does not have.
+#
+# Columns, tab-separated; "-" is an empty cell:
+#   check    <plugin>/<script>
+#   option   the option, or "-" for an input given by position
+#   kind     scalar  the option and the key's value, when the key is set
+#            list    the option once for each value the key pattern matches
+#            csv     the option once, with the matching values joined by commas
+#            fmt     the option once for each entry of a list of maps, built from
+#                    the template in the last column: {k} a field; {k,} a list
+#                    field joined by commas; {k,-} the same, "-" when empty;
+#                    {k?TEXT} TEXT when the field is true. An entry with a field
+#                    missing is left out and reported (GOV-S2).
+#            const   the option, with the last column as its value
+#            today   the option and the date of the run
+#            nogit   the option, when check-audit.sh itself runs with --no-git
+#            files   the option once for each of the files named in the last
+#                    column that exists at the repository root
+#            pos     an input: the key's value, else the last column
+#            posdir  inputs: the folder of each glob the key pattern matches.
+#                    It has no default: when the contract does not give the
+#                    key, the check is unmeasured (GOV-L2), because nothing
+#                    says what to read
+#            each    the checker runs once for each dated record
+#                    (YYYY-MM-DD-<name>.md) in the folder the key names, else in
+#                    the last column; only records since the last signed launch
+#   key      the contract key; "[*]" stands for every item of a list
+#   last     a default, a template or a list of file names, by kind
+#
+# check	option	kind	key	last
+ascent-security/check-env	--no-git	nogit	-	-
+ascent-security/check-env	-	pos	-	.
+
+ascent-security/check-dependencies	--maturity	scalar	security.maturity_target	-
+ascent-security/check-dependencies	--pinning	scalar	ops.version_pinning	-
+ascent-security/check-dependencies	--lockfile-required	scalar	security.dependencies.lockfile_required	-
+ascent-security/check-dependencies	--registry	list	security.dependencies.registries[*]	-
+ascent-security/check-dependencies	--deny	csv	security.dependencies.licences_denied[*]	-
+ascent-security/check-dependencies	--waived	csv	security.waivers[*].advisories[*]	-
+ascent-security/check-dependencies	--today	today	-	-
+ascent-security/check-dependencies	-	pos	-	.
+
+ascent-security/check-threat-model	--adr-dir	scalar	security.adr_dir	-
+ascent-security/check-threat-model	--max-age	scalar	security.threat_model.review_max_age_days	-
+ascent-security/check-threat-model	--maturity	scalar	security.maturity_target	-
+ascent-security/check-threat-model	--endpoint	fmt	security.endpoints	{methods,} {path} {auth} {flags,-}
+ascent-security/check-threat-model	--today	today	-	-
+ascent-security/check-threat-model	-	pos	security.threat_model.path	docs/security/THREAT-MODEL.md
+
+ascent-ux/check-flow-integrity	--core	list	ux.core_flows[*].pages[*]	-
+ascent-ux/check-flow-integrity	--flow	fmt	ux.core_flows	{name}={steps,}
+ascent-ux/check-flow-integrity	--browsers	csv	ux.browsers[*]	-
+ascent-ux/check-flow-integrity	-	posdir	ux.pages[*]	-
+
+ascent-docs/check-docs	--path	list	docs.paths[*]	-
+ascent-docs/check-docs	--exclude	list	docs.exclude[*]	-
+ascent-docs/check-docs	--persona	fmt	docs.personas	{name}={entry}
+ascent-docs/check-docs	--max-clicks	scalar	docs.max_clicks	-
+ascent-docs/check-docs	--marker-days	scalar	docs.stale_marker_days	-
+ascent-docs/check-docs	--lag-days	scalar	docs.lag_days	-
+ascent-docs/check-docs	--maturity	scalar	docs.maturity_target	-
+ascent-docs/check-docs	--today	today	-	-
+ascent-docs/check-docs	--no-git	nogit	-	-
+ascent-docs/check-docs	-	pos	-	.
+
+ascent-delivery/check-acceptance	--root	const	-	.
+ascent-delivery/check-acceptance	--acceptor	list	delivery.acceptors[*]	-
+ascent-delivery/check-acceptance	-	each	delivery.acceptance_dir	docs/delivery/acceptance/
+
+ascent-ops/check-drills	--repo	const	-	.
+ascent-ops/check-drills	--maturity	scalar	ops.maturity_target	-
+ascent-ops/check-drills	--max-age	scalar	ops.drills.max_age_days	-
+ascent-ops/check-drills	--rto	scalar	architecture.quality_targets.rto	-
+ascent-ops/check-drills	--rpo	scalar	architecture.quality_targets.rpo	-
+ascent-ops/check-drills	--ready-path	scalar	ops.ready_path	-
+ascent-ops/check-drills	--manual	scalar	ops.manuals.maintenance	-
+ascent-ops/check-drills	--path	fmt	ops.drills.paths	{name}:{kind}:{runbook}
+ascent-ops/check-drills	--alert	fmt	ops.alerts	{name}:{runbook}{page?:page}
+ascent-ops/check-drills	--iac	list	ops.iac.paths[*]	-
+ascent-ops/check-drills	--iac	files	-	compose.yaml compose.yml docker-compose.yaml docker-compose.yml
+ascent-ops/check-drills	--today	today	-	-
+ascent-ops/check-drills	-	pos	ops.drills.dir	docs/operations/drills/
+
+ascent-quality/check-test-evidence	--p95	scalar	architecture.quality_targets.p95_latency_ms	-
+ascent-quality/check-test-evidence	--rps	scalar	architecture.quality_targets.peak_rps	-
+ascent-quality/check-test-evidence	--min-score	scalar	quality.mutation.min_score	-
+ascent-quality/check-test-evidence	--max-age	scalar	quality.mutation.max_age_days	-
+ascent-quality/check-test-evidence	--report	list	quality.mutation.reports[*]	-
+ascent-quality/check-test-evidence	--maturity	scalar	quality.maturity_target	-
+ascent-quality/check-test-evidence	--today	today	-	-
+ascent-quality/check-test-evidence	-	pos	-	.
+
+ascent-adr/check-adrs	--dir	scalar	decisions.dir	-
+ascent-adr/check-adrs	--style	scalar	decisions.style	-
+ascent-adr/check-adrs	--maturity	scalar	decisions.maturity_target	-
+ascent-adr/check-adrs	--index	scalar	decisions.index	-
+ascent-adr/check-adrs	--acknowledge	fmt	decisions.acknowledged_changes	{adr}={commit}
+ascent-adr/check-adrs	--today	today	-	-
+ascent-adr/check-adrs	--no-git	nogit	-	-
+ascent-adr/check-adrs	-	pos	-	.

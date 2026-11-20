@@ -1,14 +1,14 @@
 <h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ascent-banner-dark.svg">
-  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops, quality, adr, session and docs. 9 plugins, 44 components, 28 project skills, 65 test suites, 1306 negative controls, 27 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
+  <img alt="ASCENT: disciplined delivery for Claude Code, from first commit to long after launch. Plugins: security, delivery, architecture, ux, ops, quality, adr, session, docs and governance. 10 plugins, 48 components, 28 project skills, 74 test suites, 1732 negative controls, 28 ADRs." src="docs/assets/ascent-banner-light.svg" width="100%">
 </picture>
 </h1>
 
 <p align="center">
   <a href="https://github.com/lloydbrian/lloydbriantech-ascent/actions/workflows/validate-skills.yml"><img alt="CI status (validate-skills workflow)" src="https://github.com/lloydbrian/lloydbriantech-ascent/actions/workflows/validate-skills.yml/badge.svg"></a>
   <a href="https://github.com/lloydbrian/lloydbriantech-ascent/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/lloydbrian/lloydbriantech-ascent?sort=semver&label=release"></a>
-  <a href="#plugins-for-any-repository"><img alt="Plugins: 9" src="https://img.shields.io/badge/plugins-9-0b6e4f"></a>
+  <a href="#plugins-for-any-repository"><img alt="Plugins: 10" src="https://img.shields.io/badge/plugins-10-0b6e4f"></a>
   <a href="LICENSE"><img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue"></a>
 </p>
 
@@ -29,7 +29,7 @@ You can use it in two ways:
 | Aspect | **Plugins** | **Parent skill** |
 |---|---|---|
 | For | Any repository, ASCENT or not | Starting, enhancing or migrating a project |
-| You get | Five review plugins, read-only by default, and the delivery loop | A scaffolded project with 28 embedded `ascent-*` skills |
+| You get | Review plugins, read-only by default, the delivery loop, and a launch-readiness check | A scaffolded project with 28 embedded `ascent-*` skills |
 | Install | Two commands in Claude Code | `make install` from this repository |
 
 ## Why ASCENT
@@ -39,7 +39,7 @@ Most frameworks stop at the scaffold. ASCENT is for **what comes after**: the ye
 | Pillar | What the checks cover |
 |---|---|
 | **Business value** | Flows that work, quality attributes against measurable targets, tests that cover what matters, a delivery loop that ships |
-| **Compliance** | WCAG 2.2 AA evidence, a dated accessibility law map, ADRs for every decision and waiver, operations that pass an audit |
+| **Compliance** | WCAG 2.2 AA evidence, a dated accessibility law map, ADRs for every decision and waiver, waivers with review dates, dated review records and launch records a person signs, operations that pass an audit |
 | **Trust and security** | Secrets, credentials, hardened containers, supply chain and vulnerability scans, and a hard line: Claude never commits or deploys |
 | **Resilience** | Runbooks someone else can run, restore and failover proven by drill records, load tests held to latency and throughput targets |
 
@@ -49,17 +49,18 @@ Most frameworks stop at the scaffold. ASCENT is for **what comes after**: the ye
 
 | Plugin | Version | Pillars | Ask Claude | What it does |
 |---|---|---|---|---|
-| [`ascent-security`](plugins/ascent-security/README.md) | 0.3.0 | Trust and security, compliance | "any secrets committed?", "are our dependencies safe?", "is our beta hardened?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; a STRIDE threat model; live checks the operator runs against local or beta, with ZAP, nuclei and dalfox; plus a `security-auditor` agent |
-| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.2.1 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A person accepts each change on beta, and prod stops until the acceptance record passes. A hook blocks Claude from git writes and deploys |
-| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.1 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
-| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.3.1 | Compliance, business value | "is this UI accessible?", "do our flows work and keep the user's work?" | Flows that complete and hold up (broken links, dead ends, double submits, lost drafts, a cross-browser pass), WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
-| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.3.0 | Resilience, compliance, trust and security | "is this operable?", "can we restore?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, Maintenance and Troubleshooting manuals proven current, and recovery drills and readiness exercises proven by the operator's records, plus an operable-service blueprint |
-| [`ascent-quality`](plugins/ascent-quality/README.md) | 0.2.0 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence |
-| [`ascent-adr`](plugins/ascent-adr/README.md) | 0.1.0 | Compliance, business value | "do our ADRs conform?", "write an ADR for this" | ADRs written in the repository's own format (ASCENT, Nygard and adr-tools, MADR) with real alternatives and costs; a record checked for sections, numbers, index, status, supersession both ways, dates, and accepted ADRs never rewritten, from git history; and the code checked against the constraints accepted ADRs declare |
+| [`ascent-security`](plugins/ascent-security/README.md) | 0.4.0 | Trust and security, compliance | "any secrets committed?", "are our dependencies safe?", "is our beta hardened?" | `.env` discipline, hardcoded credentials, container privilege, nginx headers, production URLs and dynamic code execution; lockfiles, pinning, sources, licences and an offline vulnerability scan of dependencies and local images; a STRIDE threat model; live checks the operator runs against local or beta, with ZAP, nuclei and dalfox; `check-env.sh`, which a project runs in CI to keep `.env` files out of git and out of images; plus a `security-auditor` agent |
+| [`ascent-delivery`](plugins/ascent-delivery/README.md) | 0.2.2 | Business value, trust and security, resilience | "ship this change" | The delivery loop: decide, build with a file audit, test with negative controls, gate, independent review checked by a `finding-verifier`, and an operator runbook. A person accepts each change on beta, and prod stops until the acceptance record passes and, where the contract has a `governance` section, until the launch evidence is not a NO-GO. A hook blocks Claude from git writes and deploys |
+| [`ascent-architecture`](plugins/ascent-architecture/README.md) | 0.2.2 | Business value, resilience | "is this production-ready?" | Quality attributes against measurable targets, design principles, deployment options with dated cost estimates, and a CloudFormation static-site blueprint |
+| [`ascent-ux`](plugins/ascent-ux/README.md) | 0.3.2 | Compliance, business value | "is this UI accessible?", "do our flows work and keep the user's work?" | Flows that complete and hold up (broken links, dead ends, double submits, lost drafts, a cross-browser pass), WCAG 2.2 AA evidence from static checks and a Playwright browser pass, exact design-token contrast, and five accessible design directions shown as mocks |
+| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.3.1 | Resilience, compliance, trust and security | "is this operable?", "can we restore?" | Secure-by-design IaC configuration, zero-touch scripts and runbooks, Maintenance and Troubleshooting manuals proven current, and recovery drills and readiness exercises proven by the operator's records, plus an operable-service blueprint |
+| [`ascent-quality`](plugins/ascent-quality/README.md) | 0.2.1 | Business value, resilience | "are we testing the right things?" | Which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence |
+| [`ascent-adr`](plugins/ascent-adr/README.md) | 0.1.1 | Compliance, business value | "do our ADRs conform?", "write an ADR for this" | ADRs written in the repository's own format (ASCENT, Nygard and adr-tools, MADR) with real alternatives and costs; a record checked for sections, numbers, index, status, supersession both ways, dates, and accepted ADRs never rewritten, from git history; and the code checked against the constraints accepted ADRs declare |
 | [`ascent-session`](plugins/ascent-session/README.md) | 0.1.0 | Business value, resilience | "where did we leave off?", "capture the session", "write a handoff" | Sessions resumed from the project's own records, every claim cited to its line; the session's state and decisions captured before closing; a handoff for the next person; and the records checked: decisions dated and only ever appended, personal state kept out of git, the handoff current |
-| [`ascent-docs`](plugins/ascent-docs/README.md) | 0.1.0 | Business value, compliance | "are our docs current?", "do the docs still match the code?", "onboard me" | Documents reachable from the README and each persona's entry point, links and anchors that resolve, stale markers and lagging documents dated by git, the paths, make targets, scripts, variables, version and runtimes documents name checked against the repository, new documents from stubs, and an onboarding walkthrough |
+| [`ascent-docs`](plugins/ascent-docs/README.md) | 0.1.1 | Business value, compliance | "are our docs current?", "do the docs still match the code?", "onboard me" | Documents reachable from the README and each persona's entry point, links and anchors that resolve, stale markers and lagging documents dated by git, the paths, make targets, scripts, variables, version and runtimes documents name checked against the repository, new documents from stubs, and an onboarding walkthrough |
+| [`ascent-governance`](plugins/ascent-governance/README.md) | 0.1.0 | Business value, compliance | "are we ready for prod?", "which reviews are due?", "draft the launch record" | Launch readiness for one environment at a time (local, beta, prod, or your own ladder): GO, NO-GO or GO WITH CONDITIONS, every reason cited. The other plugins' checks run fresh, each review that needs judgement leaves a dated record with a maximum age, every waiver is listed with its ADR and review date, and the answer is a launch record that Claude drafts and only a person signs. `check-audit.sh` runs in your CI at no token cost, with a job summary and a one-file HTML page; plus a read-only `governance-conductor` agent |
 
-Every review plugin has a read-only reviewer agent for delivery-loop reviews and second opinions. Not sure which to install? [Which plugins do I need?](docs/framework/OWNERSHIP.md#which-plugins-do-i-need) maps what your repository contains to the plugin that checks it. Each plugin works on its own, and one you have not installed leaves its review unmeasured, never blocked.
+Every review plugin but `ascent-session` has a read-only reviewer agent for delivery-loop reviews and second opinions. Not sure which to install? [Which plugins do I need?](docs/framework/OWNERSHIP.md#which-plugins-do-i-need) maps what your repository contains to the plugin that checks it. Each plugin works on its own, and one you have not installed leaves its review unmeasured, never blocked.
 
 Every finding carries a plugin-qualified rule id, such as `OPS-S3` or `UX-D2`, so you can always tell which plugin raised it.
 
@@ -69,17 +70,18 @@ Rough context-token ranges, so you know what to expect. They are estimated from 
 
 | | Small repo | Medium repo |
 |---|---|---|
-| **Installed, every session** (skill and agent descriptions) | all nine plugins ≈ 5.5K; a scaffolded project's 28 skills ≈ 2.5K, plus its CLAUDE.md ≈ 1K | same |
+| **Installed, every session** (skill and agent descriptions) | all ten plugins ≈ 6.2K; a scaffolded project's 28 skills ≈ 2.5K, plus its CLAUDE.md ≈ 1K | same |
 | A focused check (`test-check`, `runbook-check`, `env-audit`, `doc-drift` …) | 5–9K | 10–23K |
 | An entry review (`architecture-review`, `ops-review`, `quality-review`, `security-audit`, `dependency-check`, `adr-check`, `docs-review`) | 9–17K | 16–37K |
 | Session records (`session-resume`, `session-capture`, `handoff`) | 3–6K | 5–12K |
+| A launch-readiness check with every review current (`launch-readiness`, `governance-review`) | 6–10K | 8–14K |
 | A UI review with the Playwright browser pass (`ux-review`, `flow-check`, `accessibility-audit`) | 27–52K | 110–190K (up to ~250K) |
 | `design-directions` (six mocks, screenshots, a gallery) | 60–80K | 100–170K |
 | `delivery-loop`, on top of the change itself | 16–25K | 25–40K |
 | A reviewer agent (`*-reviewer`, `security-auditor`, `finding-verifier`) | 1–2.5K returned to you; it works in its own context | same |
 | Parent skill `lloydbriantech-ascent` | 8–9K for a conventions question | ~20K for a multi-role feature |
 
-The scripts print one line per rule or finding, usually under 1K tokens. The browser pass is the costly part: every page snapshot is 1–8K and every screenshot about 1K. To keep a UI review cheap, list fewer core flows and engines in the contract, or ask for the static checks only. Prefer the `*-reviewer` agents when you only need the verdict, since their reading stays out of your session. The descriptions are kept in full on purpose: they are what tells Claude, and you, when each skill applies (ADR-027).
+The scripts print one line per rule or finding, usually under 1K tokens. A launch-readiness check runs the other plugins' scripts, which cost no tokens, and reads their one-line results; each review that is due adds that review's own cost, and `check-audit.sh` in CI costs none. The browser pass is the costly part: every page snapshot is 1–8K and every screenshot about 1K. To keep a UI review cheap, list fewer core flows and engines in the contract, or ask for the static checks only. Prefer the `*-reviewer` agents when you only need the verdict, since their reading stays out of your session. The descriptions are kept in full on purpose: they are what tells Claude, and you, when each skill applies (ADR-027).
 
 
 ## Quick start
@@ -91,7 +93,7 @@ In Claude Code (CLI, VS Code extension or desktop app):
 /plugin install ascent-architecture@lloydbriantech-ascent
 ```
 
-Install any of the nine the same way. Then ask in plain language, for example "review the architecture" or "is this operable?". Start with the reviews; add `ascent-delivery` when you want Claude to take changes from decision to a runbook you run.
+Install any of the ten the same way. Then ask in plain language, for example "review the architecture" or "is this operable?". Start with the reviews; add `ascent-delivery` when you want Claude to take changes from decision to a runbook you run.
 
 > [!NOTE]
 > While `ascent-delivery` is enabled, its hook blocks Claude from committing, pushing, tagging, merging and deploying in every session. That is the point: you run those steps from the runbook Claude writes.
@@ -121,7 +123,7 @@ The plugins follow four patterns proven in the embedded skills ([patterns.md](sk
 | Detect, don't ask | A skill proposes its configuration from what the repository declares, then asks once to confirm | the contract proposal in the architecture, ux and ops reviews |
 | Enumerate / summarize | One skill lists findings; a sibling rates the overall stance | `security-audit` and `sec-posture` |
 
-A fifth, **conductor**, is a candidate: the delivery loop orchestrates reviewers and the verifier without doing their work.
+A fifth, **conductor**, is a candidate with two uses: the delivery loop orchestrates reviewers and the verifier, and `ascent-governance` runs the other plugins' checkers and reads their review records, without doing their work.
 
 ## Scaffold a new project
 
@@ -197,7 +199,7 @@ Every plugin makes the same promises:
 - **Read-only by default.** Reviews never edit your files. Skills that write, such as `ops-manuals` or `design-directions`, write only the files they name and never commit.
 - **Evidence or it is not a finding.** Every finding cites `path/to/file:line`, or the paths searched when something is absent, plus a failure scenario and a fix.
 - **Ratings from a table.** Each review plugin rates findings only from its severity table. For architecture, ux, ops, quality and dependency checks the gate checks that the skill's and the agent's copies match; the two other `ascent-security` rating skills share one table.
-- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins, and the delivery loop's commands and acceptors (`ascent-delivery`, which still reads an older `.delivery-loop.yml`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
+- **Your targets, not an ideal.** The project contract, `.ascent/contract.yml`, holds measurable targets for the architecture, ux, ops, quality and security plugins, the delivery loop's commands and acceptors (`ascent-delivery`, which still reads an older `.delivery-loop.yml`), and what each launch needs (`ascent-governance`). With no contract, those plugins propose one from what the repository declares and rates against enterprise defaults until you confirm it.
 - **You own every write.** Claude never commits, pushes, tags, merges or deploys. It writes a numbered runbook and you run it; `ascent-delivery`'s hook enforces this.
 - **No personal data.** Secret values, account ids and contact details never appear in a report.
 
@@ -216,12 +218,13 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 | | What | Status |
 |---|---|---|
-| **Now** | v0.4.23: three new plugins, `ascent-adr` 0.1.0 for decision records, `ascent-session` 0.1.0 for session continuity and `ascent-docs` 0.1.0 for documentation that can be found and stays true, with Decisions and Documentation lenses in `ascent-delivery` 0.2.1; the gate checks the framework's own ADRs (ADR-027). v0.4.22: `ascent-security` 0.3.0, live security testing the operator runs and a STRIDE threat model a person reviews (ADR-026). v0.4.21: faster local verification, with timings, the right test first, a cheaper rules test and a kill cache for local reruns (ADR-025). v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
-| **Next** | `ascent-node-stack` | Planned |
-| **Later** | Auditability for projects and the `ascent-governance` conductor, then Phases 4–7 | Planned |
+| **Now** | v0.4.24: `ascent-governance` 0.1.0, launch readiness for one environment at a time from fresh checks, dated review records, waivers with review dates and a launch record only a person signs; `check-env.sh` in `ascent-security` 0.4.0; "Recommended next" names the plugins a repository needs and the session lacks; the gate checks the framework's own release evidence (ADR-028). v0.4.23: three new plugins, `ascent-adr` 0.1.0 for decision records, `ascent-session` 0.1.0 for session continuity and `ascent-docs` 0.1.0 for documentation that can be found and stays true, with Decisions and Documentation lenses in `ascent-delivery` 0.2.1; the gate checks the framework's own ADRs (ADR-027). v0.4.22: `ascent-security` 0.3.0, live security testing the operator runs and a STRIDE threat model a person reviews (ADR-026). v0.4.21: faster local verification, with timings, the right test first, a cheaper rules test and a kill cache for local reruns (ADR-025). v0.4.20: `ascent-delivery` 0.2.0, a person's acceptance of each change, checked before prod (ADR-024); `ascent-ux` 0.3.1; a fresh scaffold that passes its own operations checks. CI runs what a change can affect (ADR-023), and the headline figures are checked like the [capability map](docs/framework/CAPABILITY-MAP.md) | ✅ Released |
+| **Next** | Phase 4, scripted scaffolding, on its go-signal; then Phases 5–7 | Awaiting go-signal |
+| **Later** | `ascent-node-stack`, last on the plugin roadmap, scoped when it starts | Planned |
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.24 | 2026-11-20 | `ascent-governance` 0.1.0 (ADR-028): `launch-readiness` answers "are we ready for this environment?" with GO, NO-GO or GO WITH CONDITIONS; `check-audit.sh` runs each floor's checks fresh through one adapter table, reads the review log, every waiver and the launch record (`GOV-S1`–`S2`, `GOV-L1`–`L5`, `GOV-W1`–`W4`, `GOV-R1`–`R4`), and writes the record, a CI job summary and a one-file HTML page; `governance-review`, `review-record` and the `governance-conductor` agent. `ascent-security` 0.4.0 adds `check-env.sh` (`SEC-E1`–`E3`). `ascent-delivery` 0.2.2 checks the launch evidence before prod. "Recommended next" names missing plugins, from a generated copy of the registry. Gate check T17 asks the launch question of the framework itself |
 | v0.4.23 | 2026-11-18 | Three plugins (ADR-027): `ascent-adr` 0.1.0 writes ADRs in the repository's own format and checks the record, `DEC-S1`–`S8` with accepted bodies compared to git history, and declared constraints, `DEC-C1`–`C3`; `ascent-session` 0.1.0 resumes, captures and hands off sessions from the repository's records, `SES-S1`–`S6`; `ascent-docs` 0.1.0 reviews documentation, `DOC-L1`–`L5`, `DOC-P1`–`P4`, checks what documents name, `DOC-R1`–`R6`, writes stubs (and `make doc-stub`) and walks a newcomer in. `ascent-delivery` 0.2.1 adds the Decisions and Documentation lenses. Gate check T16 runs `check-adrs.sh` on the framework's own ADRs; "What a run costs" gives token ranges |
 | v0.4.22 | 2026-11-17 | `ascent-security` 0.3.0 (ADR-026): `security-test` writes the runbook for live checks the operator runs against local or beta (headers, TRACE and CONNECT, traversal, unauthenticated writes, oversized bodies, disclosure, a prompt-injection canary, an AI burst) and for ZAP, nuclei and dalfox in pinned containers, then rates the results (`SEC-L1`–`L10`); `threat-model` drafts a STRIDE model a person reviews (`SEC-T1`–`T4`) |
 | v0.4.21 | 2026-11-16 | Faster local verification (ADR-025): the controls' summary shows the checks and groups that took the time and `TIMES=<file>` writes every control's time; T11 runs first the tests that name the edited path; `test-ops-rules.sh` R13 in one awk pass, 2 seconds instead of 17; `CACHE=<dir>` reuses unchanged kills on local reruns, never in CI or the final run before a release |
@@ -230,13 +233,13 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 | v0.4.18 | 2026-11-15 | CI runs what a change can affect: the cheap checks always, and only the behavior tests, harness self-tests and negative controls the changed paths can affect, with every control that edits a changed file; smaller baselines, T13.0 in parallel, superseded runs cancelled, `make gate-changed` locally (ADR-023) |
 | v0.4.17 | 2026-11-15 | The headline figures move into the banner, and the ownership check (T13.11) counts them in both banner files and the image description; the banner names all six plugins, `quality` included |
 | v0.4.16 | 2026-11-15 | The [capability map](docs/framework/CAPABILITY-MAP.md), with an ownership check (T13.11) that every version and count in it and in this README matches the repository |
-| v0.4.15 | 2026-11-13 | `ascent-ux` 0.3.0: functional, reliable, accessible, pleasant. Flow integrity (`UX-F1`–`F7`) and reliability as experienced (`UX-R1`–`R7`, `UX-P1`–`P4`), the `flow-check` skill with a browser walk of each core flow and an engine loop, and `ux-review` rebuilt on four principles (ADR-022) |
 
 <details>
-<summary><strong>Earlier releases (v0.1.0-alpha to v0.4.14)</strong></summary>
+<summary><strong>Earlier releases (v0.1.0-alpha to v0.4.15)</strong></summary>
 
 | Release | Date | Highlights |
 |---|---|---|
+| v0.4.15 | 2026-11-13 | `ascent-ux` 0.3.0: functional, reliable, accessible, pleasant. Flow integrity (`UX-F1`–`F7`) and reliability as experienced (`UX-R1`–`R7`, `UX-P1`–`P4`), the `flow-check` skill with a browser walk of each core flow and an engine loop, and `ux-review` rebuilt on four principles (ADR-022) |
 | v0.4.14 | 2026-11-12 | Negative controls: a repository copy that fails (a full disk on a CI runner) is reported as `COPY FAIL`, counted apart and failing the run, instead of being misread as a surviving control |
 | v0.4.13 | 2026-11-01 | `ascent-quality` 0.2.0: k6, Artillery and Locust load tests checked against the `p95_latency_ms` and `peak_rps` targets, `QA-L1`–`L5`; mutation tool, break threshold, CI run and a current score in the repository, `QA-M1`–`M4` (ADR-021) |
 | v0.4.12 | 2026-11-01 | `ascent-ops` 0.3.0: recovery drills and readiness exercises, `OPS-R1`–`R8` and `OPS-X1`–`X3`, checked against records the operator commits (ADR-020); `OPS-S8` classifies on the repository-relative path |
@@ -259,7 +262,7 @@ ASCENT is pre-1.0 and changes quickly; every change is recorded in the [CHANGELO
 
 </details>
 
-**Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality ✅ · session · adr · docs · node-stack.
+**Plugin roadmap:** architecture ✅ · ux ✅ · ops ✅ · quality ✅ · session ✅ · adr ✅ · docs ✅ · governance ✅ · node-stack, last.
 **Phases:** Phase 4, scripted scaffolding, waits for its go-signal; then the eval harness (5), the template repository (6) and a first production project (7, v1.0). Details and exit criteria: [ROADMAP.md](docs/framework/ROADMAP.md).
 
 Every plugin, skill, rule family and next step: **[the capability map](docs/framework/CAPABILITY-MAP.md)**.

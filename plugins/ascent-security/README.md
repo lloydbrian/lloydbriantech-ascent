@@ -38,6 +38,18 @@ To turn the plugin on for everyone working in a repository, add it to that repos
 - Findings cite `file:line` and the rule name, never the matched value or line. Detection is pattern-based: it misses some secrets (under 4 characters, split across lines or binary) and can flag test fixtures, so confirm each finding.
 - Fixes are given as advice in text. The skills and the agent never rotate keys, deploy or run git; the operator acts on findings.
 
+## Where `.env` files are
+
+`scripts/check-env.sh` is a bash check a project can run in its own CI, at no token cost, and the check `ascent-governance` runs first for every launch. It reads file names, `.dockerignore`, `git ls-files` and `git check-ignore`; it never opens a `.env` file, so it cannot print a value.
+
+| Rule | Severity | What it checks |
+|---|---|---|
+| `SEC-E1` | High | no `.env` file is tracked by git (committed or staged) |
+| `SEC-E2` | High | every `.env` file that exists is ignored by git |
+| `SEC-E3` | Medium | every `.dockerignore` excludes `.env`, and a repository with a Dockerfile has a `.dockerignore` |
+
+A `.env` file is any file named `.env` or `.env.<name>`, in any folder; `.env.example`, `.env.sample` and `.env.template` are not. It checks where the files are, not what is in them or what the history holds: `env-audit` reads those.
+
 ## Dependency checks
 
 `dependency-check` applies ten rules, `SEC-D1`–`SEC-D10` ([dependency-rules.md](references/dependency-rules.md)), against the `security:` section of `.ascent/contract.yml` ([contract-template.yml](references/contract-template.yml)):

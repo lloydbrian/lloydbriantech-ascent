@@ -8,7 +8,7 @@ description: >-
   dry-run drills (OPS-R1–R8, OPS-X1–X3) against the rto and rpo targets and
   the contract, and writes the drill runbooks the operator runs. Never runs a
   drill and never writes a drill record.
-version: 0.3.0
+version: 0.3.1
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
@@ -86,6 +86,8 @@ For the operator: run each due drill from its runbook, then commit <ops.drills.d
   with the field table from references/drill-records.md and the redacted output as evidence.
 Recommended next: <ops-manuals when OPS-R7 fails; ascent-security when any item is marked → ascent-security>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

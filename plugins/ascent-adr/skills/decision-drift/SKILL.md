@@ -9,7 +9,7 @@ description: >-
   person confirms them checks the code against them (DEC-C1–C3) with
   file:line evidence. Read-only: it never edits the contract or the code;
   constraints are added by the operator.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

@@ -377,7 +377,10 @@ if [ -n "$CACHE" ] && [ "$LIST" = 0 ]; then
     printf '%s\n' "$BASH_VERSION" "$(uname -s)"; ls -lL "$(command -v awk)"; } | sha)
   for d in "$REPO_ROOT"/plugins/*/; do
     p=$(basename "$d")
-    { echo "$COMMON"; tree_sha "plugins/$p" "tests/plugins/$p"; } | sha > "$WORK/digest/$p"
+    # ascent-governance's tests run every plugin's checkers and read this repository's contract
+    case "$p" in ascent-governance) more="plugins .ascent" ;; *) more="plugins/$p" ;; esac
+    # shellcheck disable=SC2086
+    { echo "$COMMON"; tree_sha $more "tests/plugins/$p"; } | sha > "$WORK/digest/$p"
   done
 fi
 cache_key() {  # KIND ID LABEL PATH [SED [rebuild]] — the control's key, or nothing when it may not use the cache
@@ -504,6 +507,9 @@ plugin_case P267-deps-prototype-rates-ignores T11 "$CDA" 's/if (MATURITY == "pro
 plugin_case P268-deps-nsprc-unread T11 "$CDA" 's/if (FN ~ \/(^|\\\/)\\.nsprc\$\/ \&\& n >= 1)/if (0)/'
 plugin_case P269-json-array-index-stuck T11 "$SDEP/lib/json.awk" 's/if (JST\[JSP\] == "a") JIX\[JSP\]++; else JEK\[JSP\] = 1/if (JST[JSP] == "a") JIX[JSP] += 0; else JEK[JSP] = 1/'
 plugin_case P270-deps-reads-tests T11 "$CDS" 's/ -o -name tests -o -name test -o -name __tests__/ -o -name __tests__/'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1588-next-sentence-missing-security T11 plugins/ascent-security/skills/threat-model/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
+plugin_case P1592-next-sentence-twice T11 plugins/ascent-security/skills/dependency-check/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/p'
 mutant_group ascent-security-scan
 VSS="$SDEP/run-vuln-scan.sh"
 NVA="$SDEP/lib/normalise-vulns.awk"
@@ -529,7 +535,7 @@ plugin_case P288-scan-eosl-ignored T11 "$NVA" 's/if (jseg(p, 3) == "EOSL" \&\& v
 plugin_case P289-dep-table-drift T5 plugins/ascent-security/agents/security-auditor.md 's/^| A licence the contract denies (SEC-D6) | High |$/| A licence the contract denies (SEC-D6) | Medium |/'
 plugin_case P290-agent-cites-missing-dep-step T9 plugins/ascent-security/agents/security-auditor.md 's/(SEC-D7–D9, dependency-check Step 3)/(SEC-D7–D9, dependency-check Step 7)/'
 plugin_case P291-dep-skill-wide-tools T4b "$DCK" 's/^allowed-tools: Read, Grep, Glob, Bash(git ls-files:\*), Bash(git log:\*)$/allowed-tools: Read, Grep, Glob, Bash/'
-plugin_case P292-dep-skill-version-drift T3 "$DCK" 's/^version: 0\.3\.0$/version: 0.2.9/'
+plugin_case P292-dep-skill-version-drift T3 "$DCK" 's/^version: 0\.4\.0$/version: 0.3.9/'
 plugin_case P293-dep-skill-changed-no-bump T10 "$DCK" '$a\
 A line added without bumping the plugin version.'
 plugin_case P294-scan-test-emptied T11 tests/plugins/ascent-security/test-run-vuln-scan.sh '1,$d'
@@ -701,11 +707,39 @@ plugin_case P991-tm-outside-paths-found T11 "$CTS" 's/case "\$p" in \/\*|\*\.\.\
 plugin_case P992-live-table-drift T5 "$AGENT" 's/^| An open threat (SEC-T3) | Medium |$/| An open threat (SEC-T3) | Low |/'
 plugin_case P993-agent-cites-missing-live-step T9 "$AGENT" 's/(security-test Step 4)/(security-test Step 8)/'
 plugin_case P994-live-skill-wide-tools T4b "$STK" 's/^allowed-tools: Read, Grep, Glob, Bash(git ls-files:\*), Bash(git log:\*)$/allowed-tools: Read, Grep, Glob, Bash/'
-plugin_case P995-threat-skill-version-drift T3 "$TMK" 's/^version: 0\.3\.0$/version: 0.2.9/'
+plugin_case P995-threat-skill-version-drift T3 "$TMK" 's/^version: 0\.4\.0$/version: 0.3.9/'
 plugin_case P996-threat-skill-unregistered T13.3 docs/framework/OWNERSHIP.md '/^| `ascent-security` | skill | `threat-model` |$/d'
 plugin_case P997-live-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `SEC-L` | /d'
 plugin_case P998-live-skill-runs-scanners T11 "$STK" 's/Claude never runs `run-live-checks.sh`, ZAP, nuclei or dalfox against a target/Claude runs the checks/'
 plugin_case P999-live-image-unpinned T11 "$STK" 's/zap-stable:2\.17\.0 zap-baseline/zap-stable:latest zap-baseline/'
+mutant_group ascent-security-env
+CEV=plugins/ascent-security/scripts/check-env.sh
+plugin_case P1296-env-e1-tracked-ok T11 "$CEV" 's/n=\$((n + 1)); fail SEC-E1 High "\$f"/: SEC-E1 High "$f"/'
+plugin_case P1297-env-e1-root-only T11 "$CEV" 's/  done < <(git ls-files -z -- \. 2>\/dev\/null)/  done < <(git ls-files -z -- .env 2>\/dev\/null)/'
+plugin_case P1298-env-e1-staged-missed T11 "$CEV" 's/  done < <(git ls-files -z -- \. 2>\/dev\/null)/  done < <(git ls-tree -r -z --name-only HEAD -- . 2>\/dev\/null)/'
+plugin_case P1299-env-e1-not-high T11 "$CEV" 's/fail SEC-E1 High "\$f"/fail SEC-E1 Medium "$f"/'
+plugin_case P1300-env-example-flagged T11 "$CEV" 's/^  case "\$b" in \*\.example|\*\.sample|.*) return 1 ;; esac$/  :/'
+plugin_case P1301-env-any-dotenv-prefix T11 "$CEV" 's/^  case "\$b" in \.env|\.env\.\*) ;; \*) return 1 ;; esac$/  case "$b" in .env*) ;; *) return 1 ;; esac/'
+plugin_case P1302-env-e2-unignored-ok T11 "$CEV" 's/^    git check-ignore -q -- "\$f" 2>\/dev\/null \&\& continue$/    continue/'
+plugin_case P1303-env-e2-root-only T11 "$CEV" "s/| sed 's|^\\\\.\\/||' | sort > \"\\\$T\\/envs\"/| sed 's|^\\\\.\\/||' | awk '!\\/\\\\\\/\\/' | sort > \"\$T\\/envs\"/"
+plugin_case P1304-env-e2-dependency-folders-searched T11 "$CEV" 's/^find \. \\( -name \.git -o -name node_modules -o /find . \\( -name .git -o /'
+plugin_case P1305-env-e2-tracked-reported-twice T11 "$CEV" 's/^    \[ -n "\$(git ls-files -- "\$f" 2>\/dev\/null)" \] \&\& continue  /    :  /'
+plugin_case P1306-env-e2-not-high T11 "$CEV" 's/fail SEC-E2 High "\$f"/fail SEC-E2 Low "$f"/'
+plugin_case P1307-env-e3-not-excluded-ok T11 "$CEV" 's/^  excludes_env "\$f" \&\& continue$/  continue/'
+plugin_case P1308-env-e3-reinclude-ignored T11 "$CEV" 's/^    neg=0; case "\$line" in '"'"'!'"'"'\*) neg=1; line="\${line#!}" ;; esac$/    neg=0; case "$line" in '"'"'!'"'"'*) continue ;; esac/'
+plugin_case P1309-env-e3-anchored-patterns-missed T11 "$CEV" 's/^    pat="\${line#\/}"; pat="\${pat#\\\*\\\*\/}"; /    pat="$line"; /'
+plugin_case P1310-env-e3-padding-kept T11 "$CEV" '/^    line="\${line#"\${line%%\[!\[:space:\]\]\*}"}"; /d'
+plugin_case P1311-env-e3-nested-dockerignore-missed T11 "$CEV" 's/^  case "\${f##\*\/}" in \*\.dockerignore) ;; \*) continue ;; esac/  case "$f" in *\/*) continue ;; *.dockerignore) ;; *) continue ;; esac/'
+plugin_case P1312-env-e3-dockerfile-alone-ok T11 "$CEV" 's/^  if \[ -n "\$first" \]; then n=\$((n + 1)); fail SEC-E3 Medium/  if false; then n=$((n + 1)); fail SEC-E3 Medium/'
+plugin_case P1313-env-e3-not-medium T11 "$CEV" 's/fail SEC-E3 Medium "\$f"/fail SEC-E3 High "$f"/'
+plugin_case P1314-env-no-git-still-reads-git T11 "$CEV" 's/^if \[ "\$NOGIT" -eq 1 \]; then WHY="--no-git"$/if false; then WHY="--no-git"/'
+plugin_case P1315-env-outside-repo-passes T11 "$CEV" 's/^elif ! git rev-parse --is-inside-work-tree >\/dev\/null 2>\&1; then WHY=/elif false; then WHY=/'
+plugin_case P1316-env-failures-exit-0 T11 "$CEV" 's/^\[ "\$NFAIL" -eq 0 \]$/true/'
+plugin_case P1317-env-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `SEC-E` | /d'
+plugin_case P1613-env-e3-one-line-hint-dropped T11 "$CEV" 's/NF > 1 { for (i = 1; i <= NF; i++)/NF > 99 { for (i = 1; i <= NF; i++)/'
+plugin_case P1666-env-path-read-by-line T11 "$CEV" 's/git ls-files -z -- \. 2/git ls-files -- . 2/'
+plugin_case P1667-env-named-ignore-not-read T11 "$CEV" 's/in \*\.dockerignore) ;; \*) continue ;; esac/in .dockerignore) ;; *) continue ;; esac/'
+
 mutant_group ascent-delivery
 DEL=plugins/ascent-delivery
 HOOK="$DEL/hooks/operator-boundary.sh"
@@ -764,6 +798,15 @@ ops:\
 # and SIGPIPE ended the gate before T11 printed (seen as P246, P255, P265 surviving).
 plugin_case P358-t11-long-failure-output T11 tests/plugins/ascent-delivery/test-delivery-rules.sh '1a\
 for i in $(seq 1 3000); do echo "FAIL  line $i: padding so a failing behavior test prints more than a pipe holds"; done; exit 1'
+# launch evidence before prod (ADR-028)
+DLOOP=plugins/ascent-delivery/skills/delivery-loop/SKILL.md
+plugin_case P1600-launch-evidence-without-a-governance-section T11 "$DLOOP" 's/^- \*\*Launch evidence\.\*\* When the contract has a `governance` section, the prod runbook/- **Launch evidence.** The prod runbook/'
+plugin_case P1601-launch-evidence-never-stops-prod T11 "$DLOOP" 's/labelled C; its \*\*Stop if\*\* is `NO-GO`, or any exit other than 0 (the script exits 2, with no verdict, when it cannot read what it was given)\./labelled C./'
+plugin_case P1602-launch-evidence-missing-plugin-blocks T11 "$DLOOP" 's/When `ascent-governance` isn.t available, say so and skip it/When `ascent-governance` is missing, stop/'
+plugin_case P1603-launch-evidence-not-a-stop-condition T11 "$DLOOP" '/^- the launch evidence check prints `NO-GO`, or exits with anything but 0 (Step 7);$/d'
+plugin_case P1663-launch-evidence-exit-2-not-a-stop T11 "$DLOOP" 's/is `NO-GO`, or any exit other than 0 (the script exits 2, with no verdict, when it cannot read what it was given)\./is `NO-GO`./'
+plugin_case P1604-launch-evidence-for-beta T11 "$DLOOP" 's/`check-audit\.sh --env prod \.` (with/`check-audit.sh --env beta .` (with/'
+plugin_case P1605-launch-evidence-script-path-wrong T11 "$DLOOP" 's|`\$PLUGIN_ROOT/\.\./ascent-governance/scripts/check-audit\.sh`|`$PLUGIN_ROOT/../ascent-audit/scripts/check-audit.sh`|'
 mutant_group ascent-architecture
 ARC=plugins/ascent-architecture
 ARC_AGENT="$ARC/agents/architecture-reviewer.md"
@@ -811,6 +854,8 @@ plugin_case P872-review-drops-ops-referral T11 "$REVIEW" 's/ Recommended next na
 plugin_case P873-agent-drops-ops-referral T11 "$ARC_AGENT" 's/ Recommended next names `ascent-ops` whenever any item is marked `→ ascent-ops`\.//'
 plugin_case P874-agent-ops-concerns-unmarked T11 "$ARC_AGENT" 's/, or `→ ascent-ops` when it is operations-only ([^)]*)//'
 plugin_case P875-readme-calls-ux-planned T11 "$ARC/README.md" 's/accessibility and UX are `ascent-ux`;/accessibility and UX are `ascent-ux` (planned);/'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1583-next-sentence-missing-architecture T11 plugins/ascent-architecture/skills/architecture-review/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
 mutant_group ascent-ux
 UX=plugins/ascent-ux
 UXW="$UX/scripts/check-web-accessibility.sh"
@@ -938,6 +983,9 @@ plugin_case P785-flowcheck-note-rated T11 "$UXK" 's/is unrated: list it under Ot
 plugin_case P786-flowcheck-f5-5xx-only T11 "$UXK" 's/A same-origin 4xx or 5xx, or an uncaught error, is a UX-F5 finding/A same-origin 5xx is a UX-F5 finding/'
 plugin_case P787-flowcheck-f6-layout-low T11 "$UXK" 's/a layout or focus defect that does not block it is Medium\./a layout or focus defect that does not block it is Low./'
 plugin_case P788-flowcheck-r5-noted T11 "$UXK" 's/The view state comes back from the URL, or it is a confirmed UX-R5 finding\./The view state is noted./'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1589-next-sentence-missing-ux T11 plugins/ascent-ux/skills/flow-check/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
+plugin_case P1591-next-sentence-without-its-link T11 plugins/ascent-ux/skills/ux-review/SKILL.md 's| The file is \[plugin-signals\.md\](\.\./\.\./references/plugin-signals\.md)\.$||'
 # ascent-ux 0.3.0 flow integrity (UX-F1–F4, F7; ADR-022): its own group so the ux
 # jobs stay inside the CI timeout.
 mutant_group ascent-ux-flows
@@ -1206,6 +1254,10 @@ plugin_case P186-manuals-fm-comment-kept-in-bash T11 "$OPS/scripts/check-ops-man
 # R13 in one awk pass (ADR-025): a row that names an id outright, and a range that names one
 plugin_case P915-r13-named-severity-drift T11 "$OPR" 's/reads it without -s or prints it (OPS-Z5) | High |/reads it without -s or prints it (OPS-Z5) | Medium |/'
 plugin_case P916-r13-range-shortened T11 "$OPR" 's/(OPS-M1–M4, OPS-M6, OPS-M7)/(OPS-M1, OPS-M6, OPS-M7)/'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1586-next-sentence-missing-ops T11 plugins/ascent-ops/skills/ops-review/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
+plugin_case P1590-next-sentence-reworded T11 plugins/ascent-ops/skills/recovery-drill/SKILL.md 's/whose signal this repository shows and whose skills are not available in this session, with its reason\./that might help./'
+plugin_case P1594-signals-copy-not-generated T11 plugins/ascent-ops/references/plugin-signals.md '1d'
 mutant_group ascent-ops-calibration
 plugin_case P187-scripts-help-helper-ignored T11 "$OPZ" 's/\[Hh\]elp\[A-Za-z0-9_\]\* +/[Hh]elpNEVER[A-Za-z0-9_]* +/'
 plugin_case P188-scripts-apply-not-a-dry-run T11 "$OPZ" 's/|--apply|(^|\[^A-Za-z_\])APPLY=|--preview|PREVIEW\//\//'
@@ -1383,6 +1435,9 @@ plugin_case P444-inventory-cites-missing-step T11 "$QAN" 's/Use the `quality-rev
 plugin_case P445-strategy-names-unchecked-rule T11 "$QAS/references/test-strategy.md" 's/^| QA-H4 retries |/| QA-H9 retries |/'
 plugin_case P446-inventory-values-unquoted T11 "$QAN" 's/\*\*Quote every contract value\.\*\*/Quote values./'
 plugin_case P447-review-git-log-writes T11 "$QAR" 's/, never with `--output`, `--ext-diff` or `--textconv`//'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1587-next-sentence-missing-quality T11 plugins/ascent-quality/skills/quality-review/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
+plugin_case_rm P1593-signals-copy-missing T11 plugins/ascent-quality/references/plugin-signals.md
 mutant_group ascent-quality-load
 QEA="$QAS/scripts/lib/check-test-evidence.awk"
 QES="$QAS/scripts/check-test-evidence.sh"
@@ -1551,7 +1606,7 @@ plugin_case P1052-drift-exit-zero T11 "$CDD" 's/^\[ "\$NFAIL" -eq 0 \]$/true/'
 plugin_case P1053-dec-table-drift T5 "$DRV" 's/(DEC-S5) | Medium |$/(DEC-S5) | Low |/'
 plugin_case P1054-dec-agent-cites-missing-step T9 "$DRV" 's/(adr-check Step 2, by reading)/(adr-check Step 9, by reading)/'
 plugin_case P1055-adr-write-wide-tools T4b "$ADW" 's/^allowed-tools: Read, Grep, Glob, Bash(git ls-files:\*), Bash(git log:\*)$/allowed-tools: Read, Grep, Glob, Write/'
-plugin_case P1056-adr-skill-version-drift T3 "$ADK" 's/^version: 0\.1\.0$/version: 0.0.9/'
+plugin_case P1056-adr-skill-version-drift T3 "$ADK" 's/^version: 0\.1\.1$/version: 0.1.0/'
 plugin_case P1057-adr-skill-unregistered T13.3 docs/framework/OWNERSHIP.md '/^| `ascent-adr` | skill | `decision-drift` |$/d'
 plugin_case P1058-dec-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `DEC-C` | /d'
 plugin_case P1059-dec-rule-severity-drift T11 "$ADRP/references/decision-rules.md" 's/^| DEC-S7 | Low |/| DEC-S7 | Medium |/'
@@ -1576,6 +1631,8 @@ plugin_case P1221-adr-folder-space-cut T11 "$ADS" 's/{ sub(\/^ \*\[0-9\]+ \/, ""
 plugin_case P1222-drift-first-existing-folder T11 "$CDD" 's/^\. "\$LIB\/adr-dir\.sh"; adr_dir$/. "$LIB\/adr-dir.sh"; DIR=${DIR:-docs\/adr}/'
 plugin_case P1223-drift-shared-folder-excluded T11 "$CDD" 's/^if \[ "\$SHARED" = 1 \]; then XD=/if false; then XD=/'
 plugin_case_rm P1066-adr-tests-removed T11 tests/plugins/ascent-adr
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1582-next-sentence-missing-adr T11 plugins/ascent-adr/skills/adr-check/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
 mutant_group ascent-session
 SESP=plugins/ascent-session
 CSA="$SESP/scripts/lib/check-session.awk"
@@ -1713,7 +1770,7 @@ plugin_case P1176-make-doc-stub-unwired T11 make/docs.mk 's|plugins/ascent-docs/
 plugin_case P1177-doc-table-drift T5 "$DRA" 's/(DOC-R4) | Low |$/(DOC-R4) | Medium |/'
 plugin_case P1178-doc-agent-cites-missing-step T9 "$DRA" 's/(doc-drift Step 1, by reading)/(doc-drift Step 7, by reading)/'
 plugin_case P1179-doc-skill-wide-tools T4b "$DSK" 's/^allowed-tools: Read, Grep, Glob, Bash(git ls-files:\*), Bash(git log:\*)$/allowed-tools: Read, Grep, Glob, Bash/'
-plugin_case P1180-doc-skill-version-drift T3 "$ONB" 's/^version: 0\.1\.0$/version: 0.0.9/'
+plugin_case P1180-doc-skill-version-drift T3 "$ONB" 's/^version: 0\.1\.1$/version: 0.1.0/'
 plugin_case P1181-doc-agent-unregistered T13.3 docs/framework/OWNERSHIP.md '/^| `ascent-docs` | agent | `docs-reviewer` |$/d'
 plugin_case P1182-doc-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `DOC-R` | /d'
 plugin_case P1183-doc-rule-severity-drift T11 "$DOCP/references/docs-rules.md" 's/^| DOC-L1 | Medium |/| DOC-L1 | Low |/'
@@ -1759,6 +1816,423 @@ plugin_case_rm P1193-doc-tests-removed T11 tests/plugins/ascent-docs
 plugin_case P1199-own-adr-unindexed T16 docs/framework/DECISIONS/INDEX.md '/ADR-026-live-security-testing-and-threat-model.md/d'
 plugin_case P1200-own-adr-status-dropped T16 docs/framework/DECISIONS/ADR-027-decision-session-and-documentation-plugins.md '/^\*\*Status:\*\*/d'
 plugin_case P1201-own-contract-wrong-dir T16 .ascent/contract.yml 's|^  dir: docs/framework/DECISIONS/$|  dir: docs/adr/|'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1584-next-sentence-missing-docs T11 plugins/ascent-docs/skills/docs-review/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
+plugin_case P1595-signals-copy-without-its-table T11 plugins/ascent-docs/references/plugin-signals.md '/^| /d'
+mutant_group ascent-governance
+GOVP=plugins/ascent-governance
+GCA="$GOVP/scripts/lib/contract.awk"
+GCS="$GOVP/scripts/check-audit.sh"
+GRA="$GOVP/scripts/lib/render.awk"
+GAD="$GOVP/scripts/lib/adapters.tsv"
+plugin_case P1242-contract-tab-indent-read T11 "$GCA" 's/ fail("a tab is used for indentation; use spaces")/ sub(\/\\t\/, "  ", raw)/'
+plugin_case P1243-contract-comment-kept T11 "$GCA" 's/    else if (c == "#" \&\& prev ~ \/\[ \\t\]\/) break/    else if (0) break/'
+plugin_case P1244-contract-hash-in-word-cut T11 "$GCA" 's/    else if (c == "#" \&\& prev ~ \/\[ \\t\]\/) break/    else if (c == "#") break/'
+plugin_case P1245-contract-hash-in-quotes-cut T11 "$GCA" 's/    if (q != "") { if (c == q) q = "" }$/    if (0) { }/'
+plugin_case P1246-contract-quotes-kept T11 "$GCA" 's/ a == z) s = substr(s, 2, length(s) - 2)/ a == z) s = s/'
+plugin_case P1247-contract-inline-list-one-value T11 "$GCA" 's/^  if (v ~ \/^\\\[\.\*\\\]\$\/) {$/  if (0) {/'
+plugin_case P1248-contract-inline-map-one-value T11 "$GCA" 's/^  if (v ~ \/^\\{\.\*\\}\$\/) {$/  if (0) {/'
+plugin_case P1249-contract-null-a-value T11 "$GCA" 's/if (v == "" || v == "~" || v == "null") return/if (v == "") return/'
+plugin_case P1250-contract-list-split-lines-lost T11 "$GCA" 's/^  if ((v ~ .*) { open = full; openv = v; openline = NR; closer = .*; return }$/  if (0) { }/'
+plugin_case P1251-contract-crlf-kept T11 "$GCA" 's/^  sub(\/\\r\$\/, "")$/  sub(\/\\f$\/, "")/'
+plugin_case P1252-contract-item-index-stuck T11 "$GCA" 's/(CNT\[parent\] + 0) "\]"; CNT\[parent\]++/(CNT[parent] + 0) "]"/'
+plugin_case P1253-contract-map-item-keys-flat T11 "$GCA" 's/      depth++; IND\[depth\] = ind; PATH\[depth\] = item; KIND\[depth\] = "item"$/      depth = depth/'
+plugin_case P1254-contract-sibling-under-last-key T11 "$GCA" 's/  while (depth > 0 \&\& IND\[depth\] >= ind) depth--/  while (depth > 0 \&\& IND[depth] > ind) depth--/'
+plugin_case P1255-contract-block-scalar-read T11 "$GCA" 's/  if (v ~ \/^\[|>\]\[+-\]?\$\/) { skip = ind; return }/  if (0) { }/'
+plugin_case P1256-contract-list-at-key-indent-lost T11 "$GCA" 's/ || (IND\[depth\] == ind \&\& KIND\[depth\] != "key"))) depth--/ || IND[depth] == ind)) depth--/'
+plugin_case P1257-contract-colon-in-value-split T11 "$GCA" 's/^  k = match(s, \/:(\[ \\t\]|\$)\/)$/  k = match(s, \/:[^:]*$\/)/'
+plugin_case P1258-gov-s1-floor-off-ladder-ok T11 "$GCS" 's/\*) S1=1; item setup GOV-S1 fail High "\$CNAME" "governance.floors has a floor for/*) : "governance.floors has a floor for/'
+plugin_case P1259-gov-s1-any-age T11 "$GCS" "s/grep -Eq '^\\[1-9\\]\\[0-9\\]\\*\\$'; then printf 'review/grep -Eq '.'; then printf 'review/"
+plugin_case P1260-gov-s1-zero-age T11 "$GCS" "s/grep -Eq '^\\[1-9\\]\\[0-9\\]\\*\\$'; then printf 'review/grep -Eq '^[0-9][0-9]*\$'; then printf 'review/"
+plugin_case P1261-gov-s1-any-check-name T11 "$GCS" "s/grep -Eq '^\\[a-z0-9\\]\\[a-z0-9-\\]\\*\\/\\[a-z0-9\\]\\[a-z0-9-\\]\\*\\$'; then printf 'check/grep -Eq '.'; then printf 'check/"
+plugin_case P1262-gov-s1-unreadable-as-absent T11 "$GCS" 's/^if \[ -n "\$UNREADABLE" \]; then$/if false; then/'
+plugin_case P1263-gov-s1-not-high T11 "$GCS" 's/item setup GOV-S1 fail High "\$CNAME" "governance.floors.\$e.reviews/item setup GOV-S1 fail Low "$CNAME" "governance.floors.$e.reviews/'
+plugin_case P1264-gov-s2-no-adapter-runs T11 "$GCS" 's/^  return \$found$/  return 0/'
+plugin_case P1265-gov-s2-usage-is-failure T11 "$GCS" 's/^    1) item check GOV-L1 fail High/    1|2) item check GOV-L1 fail High/'
+plugin_case P1266-gov-l1-failure-passes T11 "$GCS" 's/^    1) item check GOV-L1 fail High "\$c" "\$c failed: /    1) item check GOV-L1 pass - "$c" "$c failed: /'
+plugin_case P1267-gov-l1-not-high T11 "$GCS" 's/^    1) item check GOV-L1 fail High/    1) item check GOV-L1 fail Medium/'
+plugin_case P1268-gov-l1-findings-not-cited T11 "$GCS" "s/^  awk '\/^FAIL \/ { sub(/  awk '\/^NEVER \/ { sub(/"
+plugin_case P1269-gov-l2-missing-plugin-fails T11 "$GCS" 's/item check GOV-L2 unmeasured Low "\$c" "\$c is unmeasured: \$plugin is not available here"/item check GOV-L1 fail High "$c" "$c is unmeasured: $plugin is not available here"/'
+plugin_case P1270-gov-plugins-dir-not-exclusive T11 "$GCS" 's/ \[ -f "\$p" \] \&\& { printf '"'"'%s'"'"' "\$p"; return 0; }; return 1; fi$/ [ -f "$p" ] \&\& { printf '"'"'%s'"'"' "$p"; return 0; }; fi/'
+plugin_case P1271-gov-verdict-unmeasured-is-go T11 "$GRA" 's/(cond + unmeasured > 0 ? /(cond > 0 ? /'
+plugin_case P1272-gov-verdict-high-exits-0 T11 "$GCS" 's/ \&\& \$4 == "High" { f = 1 } END { exit !f }/ \&\& $4 == "Never" { f = 1 } END { exit !f }/'
+plugin_case P1273-gov-verdict-medium-exits-1 T11 "$GCS" 's/(\$3 == "fail" || \$3 == "due") \&\& \$4 == "High" { f = 1 }/($3 == "fail" || $3 == "due") { f = 1 }/'
+plugin_case P1274-gov-verdict-medium-is-nogo T11 "$GRA" 's/{ if (\$4 == "High") high++; else cond++ }/{ high++ }/'
+plugin_case P1275-gov-rung-inherits-nothing T11 "$GCS" 's/^RUNGS=""; for e in \$LADDER; do RUNGS="\$RUNGS\$e "; \[ "\$e" = "\$ENVNAME" \] \&\& break; done/RUNGS="$ENVNAME "/'
+plugin_case P1276-gov-rung-takes-higher-floors T11 "$GCS" 's/RUNGS="\$RUNGS\$e "; \[ "\$e" = "\$ENVNAME" \] \&\& break; done/RUNGS="$RUNGS$e "; done/'
+plugin_case P1277-gov-skip-ignored T11 "$GCS" 's/^  case "\$SKIP" in \*" \$c "\*)/  case "$SKIP" in *" never "*)/'
+plugin_case P1278-gov-gate-failure-passes T11 "$GCS" 's/^    else item check GOV-L1 fail High "\$c" "\$c failed: \$cmd exited \$rc"; fi/    else item check GOV-L1 pass - "$c" "$c failed: $cmd exited $rc"; fi/'
+plugin_case P1279-gov-gate-absent-fails T11 "$GCS" 's/item check GOV-L2 unmeasured Low "\$c" "\$c is unmeasured: the contract has no delivery.gate"/item check GOV-L1 fail High "$c" "$c is unmeasured: the contract has no delivery.gate"/'
+plugin_case P1280-gov-gate-not-run T11 "$GCS" 's/^    ASCENT_GOVERNANCE_GATE=1 sh -c "\$cmd" > "\$T\/run.out" 2>\&1 <\/dev\/null || rc=\$?/    : "$cmd"/'
+plugin_case P1281-gov-defaults-ux-without-ui T11 "$GCS" "s/^    ascent-ux\\/\\*|ux-review) has_file /    ascent-ux\\/*|ux-review) true || has_file /"
+plugin_case P1282-gov-defaults-ops-without-iac T11 "$GCS" 's/^    ascent-ops\/\*|ops-review|architecture-review) chas architecture\. || /    ascent-ops\/*|ops-review|architecture-review) true || /'
+plugin_case P1283-gov-defaults-ui-not-seen T11 "$GCS" "s/^    ascent-ux\\/\\*|ux-review) has_file /    ascent-ux\\/*|ux-review) false \\&\\& has_file /"
+plugin_case P1284-gov-maturity-last-wins T11 "$GCS" 's/\[ "\$r" -gt 0 \] \&\& \[ "\$r" -lt "\$best" \] \&\& {/[ "$r" -gt 0 ] \&\& {/'
+plugin_case P1285-gov-maturity-own-target-ignored T11 "$GCS" 's/^MATURITY=\$(cget governance.maturity_target); /MATURITY=""; /'
+plugin_case P1286-gov-prototype-full-floor T11 "$GCS" 's/^    \[ "\$MATURITY" = prototype \] \&\& continue$/    :/'
+plugin_case P1287-gov-no-contract-not-prototype T11 "$GCS" 's/^  MATURITY=prototype$/  MATURITY=enterprise/'
+plugin_case P1288-gov-default-env-not-first T11 "$GCS" 's/^\[ -n "\$ENVNAME" \] || ENVNAME="\${LADDER%% \*}"/[ -n "$ENVNAME" ] || ENVNAME=prod/'
+plugin_case P1289-gov-unknown-env-accepted T11 "$GCS" 's/^\[ "\$ONLADDER" -eq 1 \] || bad "unknown environment /true || bad "unknown environment /'
+plugin_case P1290-gov-two-rung-ladder-no-beta-floor T11 "$GCS" 's/^      \[ "\$NRUNGS" -le 2 \] \&\& default_tier B "\$e" >> "\$T\/floor.tsv"$/      :/'
+plugin_case P1291-gov-floors-without-ladder-order T11 "$GCS" 's/^    case " \$RUNGS" in \*" \$e "\*) ;; \*) continue ;; esac$/    :/'
+plugin_case P1292-gov-impossible-date-accepted T11 "$GCS" 's/  exit !(m >= 1 \&\& m <= 12 \&\& d >= 1 \&\& d <= n) }/  exit !(m >= 1 \&\& m <= 12 \&\& d >= 1 \&\& d <= 31) }/'
+plugin_case P1293-gov-missing-contract-file-ignored T11 "$GCS" 's/^  \[ -f "\$CONTRACT" \] || bad "--contract \$CONTRACT not found"$/  [ -f "$CONTRACT" ] || CONTRACT=""/'
+plugin_case P1294-gov-adapter-row-dropped T11 "$GAD" '/^ascent-docs\/check-docs	/d'
+plugin_case P1318-gov-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `GOV-S` | /d'
+plugin_case_rm P1295-gov-tests-removed T11 tests/plugins/ascent-governance
+# T17: this repository's own release evidence (ADR-028)
+plugin_case P1606-own-floor-check-has-no-adapter T17 .ascent/contract.yml 's|checks: \[ascent-adr/check-adrs\]|checks: [ascent-adr/check-adr]|'
+plugin_case P1607-own-adr-status-dropped-at-release T17 docs/framework/DECISIONS/ADR-027-decision-session-and-documentation-plugins.md '/^\*\*Status:\*\*/d'
+plugin_case P1608-own-floor-for-an-unknown-environment T17 .ascent/contract.yml 's/^    release:$/    staging:/'
+plugin_case_rm P1609-own-release-checker-unavailable T17 plugins/ascent-adr/scripts/check-adrs.sh
+# v0.4.24 review: the section's shape, the ladder, exit codes, what a checker left out
+plugin_case P1614-gov-section-shape-unchecked T11 "$GCS" 's/    if (why != "") printf "%s\\t%s %s\\n", \$3, k, why }/    if (0) printf "%s\\t%s %s\\n", $3, k, why }/'
+plugin_case P1615-gov-sign-off-any-word T11 "$GCS" 's/{ if (v != "true" \&\& v != "false") why = /{ if (0) why = /'
+plugin_case P1616-gov-maturity-any-word T11 "$GCS" 's/{ if (v != "prototype" \&\& v != "standard" \&\& v != "enterprise") why = /{ if (0) why = /'
+plugin_case P1617-gov-records-outside-repo T11 "$GCS" 's/k == "governance.launch_dir") { if (v ~/k == "governance.launch_dir") { if (0 \&\& v ~/'
+plugin_case P1618-gov-scalar-where-a-list-is T11 "$GCS" 's/) why = "is " q v q "; it is a list/) x = "is " q v q "; it is a list/'
+plugin_case P1619-gov-reviews-not-a-map T11 "$GCS" 's/) why = "is not a map of each review/) x = "is not a map of each review/'
+plugin_case P1620-gov-env-name-unchecked T11 "$GCS" 's/^if \[ -n "\$BADENV" \]; then$/if false; then/'
+plugin_case P1621-gov-env-two-names-accepted T11 "$GCS" 's/^ONLADDER=0; for e in \$LADDER; do .*$/ONLADDER=0; case " $LADDER" in *" $ENVNAME "*) ONLADDER=1 ;; esac/'
+plugin_case P1622-gov-one-rung-local-only T11 "$GCS" 's/\[ "\$NRUNGS" -le 2 \] \&\& default_tier B/[ "$NRUNGS" -eq 2 ] \&\& default_tier B/'
+plugin_case P1623-gov-crash-is-a-usage-error T11 "$GCS" 's/^    2) item check GOV-S2 fail Medium "\$c" "\$c could not be run/    *) item check GOV-S2 fail Medium "$c" "$c could not be run/'
+plugin_case P1624-gov-nothing-checked-passes T11 "$GCS" 's/^       if \[ -n "\$na" \] \&\& ! grep -q .*; then item check GOV-L2/       if false; then item check GOV-L2/'
+plugin_case P1625-gov-left-out-rules-not-named T11 "$GCS" 's/^       elif \[ -n "\$na" \]; then item check GOV-L1 pass/       elif false; then item check GOV-L1 pass/'
+plugin_case P1626-gov-gate-runs-inside-itself T11 "$GCS" 's/^    \[ -z "\${ASCENT_GOVERNANCE_GATE:-}" \] || {/    true || {/'
+plugin_case P1627-gov-gate-not-marked T11 "$GCS" 's/    ASCENT_GOVERNANCE_GATE=1 sh -c "\$cmd"/    sh -c "$cmd"/'
+plugin_case P1628-gov-cache-version-as-text T11 "$GCS" 's/sort -t\. -k1,1n -k2,2n -k3,3n/sort/'
+plugin_case P1629-contract-bom-in-first-key T11 "$GCA" 's/^  if (NR == 1 \&\& index(\$0, /  if (0 \&\& index($0, /'
+plugin_case P1630-contract-map-never-continued T11 "$GCA" 's/closer = (v ~ \/^\\\[\/) ? "\]" : "}"/closer = "]"/'
+plugin_case P1631-contract-nested-map-is-text T11 "$GCA" 's/if (k > 1) value(path "\." unquote/if (k > 1) emit(path "." unquote/'
+plugin_case P1632-contract-map-in-list-is-text T11 "$GCA" 's/for (i = 1; i <= n; i++) value(path "\[" (i - 1) "\]", P\[i\])/for (i = 1; i <= n; i++) emit(path "[" (i - 1) "]", P[i])/'
+
+mutant_group ascent-governance-adapters
+GAA="$GOVP/scripts/lib/adapt.awk"
+plugin_case P1319-adapt-env-no-git-dropped T11 "$GAD" '/^ascent-security\/check-env[[:space:]]--no-git[[:space:]]/d'
+plugin_case P1320-adapt-deps-waived-dropped T11 "$GAD" '/^ascent-security\/check-dependencies[[:space:]]--waived[[:space:]]/d'
+plugin_case P1321-adapt-deps-pinning-other-key T11 "$GAD" 's/ops\.version_pinning/security.dependencies.pinning/'
+plugin_case P1322-adapt-threat-endpoints-dropped T11 "$GAD" '/^ascent-security\/check-threat-model[[:space:]]--endpoint[[:space:]]/d'
+plugin_case P1323-adapt-threat-model-path-fixed T11 "$GAD" 's/security\.threat_model\.path/-/'
+plugin_case P1324-adapt-ux-flows-dropped T11 "$GAD" '/^ascent-ux\/check-flow-integrity[[:space:]]--flow[[:space:]]/d'
+plugin_case P1325-adapt-docs-personas-dropped T11 "$GAD" '/^ascent-docs\/check-docs[[:space:]]--persona[[:space:]]/d'
+plugin_case P1326-adapt-docs-option-renamed T11 "$GAD" 's/--marker-days/--stale-days/'
+plugin_case P1327-adapt-acceptance-acceptors-dropped T11 "$GAD" '/^ascent-delivery\/check-acceptance[[:space:]]--acceptor[[:space:]]/d'
+plugin_case P1328-adapt-drills-alerts-dropped T11 "$GAD" '/^ascent-ops\/check-drills[[:space:]]--alert[[:space:]]/d'
+plugin_case P1329-adapt-drills-rto-from-ops T11 "$GAD" 's/architecture\.quality_targets\.rto/ops.rto/'
+plugin_case P1330-adapt-evidence-reports-dropped T11 "$GAD" '/^ascent-quality\/check-test-evidence[[:space:]]--report[[:space:]]/d'
+plugin_case P1331-adapt-adrs-acknowledge-dropped T11 "$GAD" '/^ascent-adr\/check-adrs[[:space:]]--acknowledge[[:space:]]/d'
+plugin_case P1332-adapt-adrs-acknowledge-colon T11 "$GAD" 's/{adr}={commit}/{adr}:{commit}/'
+T11_FORCE=ascent-governance plugin_case P1333-adapt-checker-option-renamed T11 plugins/ascent-docs/scripts/check-docs.sh 's/^\(# Usage: .*\)\[--marker-days N\]/\1[--stale-days N]/'
+plugin_case P1334-adapt-empty-scalar-given T11 "$GAA" 's/if (kind == "scalar") { v = field(key); if (v != "") {/if (kind == "scalar") { v = field(key); if (1) {/'
+plugin_case P1335-adapt-nested-list-first-index-only T11 "$GAA" 's/^function star(k) { gsub(/function star(k) { sub(/'
+plugin_case P1336-adapt-csv-joined-by-space T11 "$GAA" 's/s = s (i > 1 ? "," : "") V\[i\]/s = s (i > 1 ? " " : "") V[i]/'
+plugin_case P1337-adapt-empty-list-field-no-dash T11 "$GAA" 's/out = out (v == "" ? "-" : v)/out = out v/'
+plugin_case P1338-adapt-flag-text-always T11 "$GAA" 's/if (v == "true" || v == "yes") out = out substr(tok, q + 1)/out = out substr(tok, q + 1)/'
+plugin_case P1339-adapt-missing-field-not-reported T11 "$GAA" 's/if (MISSING != "") print "E\\t" item/if (0) print "E\\t" item/'
+plugin_case P1340-adapt-missing-list-field-accepted T11 "$GAA" 's/if (v == "" \&\& MISSING == "") MISSING = k$/if (0) MISSING = k/'
+plugin_case P1341-adapt-first-entry-only T11 "$GAA" 's/^    for (m = 0; ; m++) {$/    for (m = 0; m < 1; m++) {/'
+plugin_case P1342-adapt-const-value-dropped T11 "$GAA" 's/{ print "F\\t" opt; if (last != "") print "F\\t" last }/{ print "F\\t" opt }/'
+plugin_case P1343-adapt-no-git-always T11 "$GAA" 's/if (nogit == 1) print "F\\t" opt/print "F\\t" opt/'
+plugin_case P1344-adapt-no-git-never T11 "$GAA" 's/if (nogit == 1) print "F\\t" opt/if (nogit == 2) print "F\\t" opt/'
+plugin_case P1345-adapt-input-dash-as-option T11 "$GAA" 's/^function pos(v) { if (substr(v, 1, 1) == "-") v = "\.\/" v; /function pos(v) { /'
+plugin_case P1346-adapt-input-default-lost T11 "$GAA" 's/pos(v == "" ? last : v) }$/pos(v) }/'
+plugin_case P1347-adapt-glob-given-whole T11 "$GAA" 's/      if (match(v, \/\[\*?\\\[\]\/)) {/      if (0) {/'
+plugin_case P1348-adapt-glob-folder-partial-name T11 "$GAA" 's/sub(\/\[^\\\/\]\*\$\/, "", v); //'
+plugin_case P1349-adapt-glob-folders-repeated T11 "$GAA" 's/if (!(v in DONE)) { DONE\[v\] = 1; pos(v); k++ }/{ pos(v); k++ }/'
+plugin_case P1350-adapt-pages-unset-not-said T11 "$GAA" 's/^    if (k == 0) { sub/    if (0) { sub/'
+plugin_case P1351-adapt-records-folder-fixed T11 "$GAA" 's/print "D\\t" (v == "" ? last : v) }/print "D\\t" last }/'
+plugin_case P1352-adapt-today-not-the-runs T11 "$GCS" 's/-v today="\$TODAY" -v nogit=/-v today="$(date +%Y-%m-%d)" -v nogit=/'
+plugin_case P1353-adapt-absent-files-given T11 "$GCS" 's/X) for f in \$b; do \[ -f "\$f" \] \&\& ARGS+=/X) for f in $b; do ARGS+=/'
+plugin_case P1354-adapt-inputs-not-given T11 "$GCS" 's/^  bash "\$path" \${ARGS\[@\]+"\${ARGS\[@\]}"} \${INPUTS\[@\]+"\${INPUTS\[@\]}"} > /  bash "$path" ${ARGS[@]+"${ARGS[@]}"} > /'
+plugin_case P1355-each-records-before-launch-run T11 "$GCS" 's/\[ -n "\$since" \] \&\& \[ "\${b:0:10}" \\< "\$since" \] \&\& continue/:/'
+plugin_case P1356-each-same-day-record-skipped T11 "$GCS" 's/\[ "\${b:0:10}" \\< "\$since" \] \&\& continue/[ ! "${b:0:10}" \\> "$since" ] \&\& continue/'
+plugin_case P1357-each-any-environments-launch T11 "$GCS" 's/^for f in "\$LAUNCH_DIR"\/\[0-9\].*-"\$ENVNAME"\.md; do$/for f in "$LAUNCH_DIR"\/*.md; do/'
+plugin_case P1358-each-unsigned-launch-counts T11 "$GCS" 's/^  \[ "\$s" != - \] \&\& { \[ "\$v" = GO \]/  { [ "$v" = GO ]/'
+plugin_case P1359-each-nogo-launch-counts T11 "$GCS" 's/ \&\& { \[ "\$v" = GO \] || \[ "\$v" = "GO WITH CONDITIONS" \]; } \&\& realdate/ \&\& realdate/'
+plugin_case P1360-each-future-launch-counts T11 "$GCS" 's/ \&\& realdate "\$d" \&\& \[ ! "\$d" \\> "\$TODAY" \] \&\& SIGNED_ON=/ \&\& realdate "$d" \&\& SIGNED_ON=/'
+plugin_case P1361-each-unreal-launch-date-counts T11 "$GCS" 's/ \&\& realdate "\$d" \&\& \[ ! "\$d" \\> "\$TODAY" \] \&\& SIGNED_ON=/ \&\& [ ! "$d" \\> "$TODAY" ] \&\& SIGNED_ON=/'
+plugin_case P1362-each-older-launch-wins T11 "$GCS" 's/if signed "\$f" \&\& \[ "\$SIGNED_ON" \\> "\$best" \]; then best=/if signed "$f" \&\& [ -z "$best" ]; then best=/'
+plugin_case P1363-each-no-records-fails T11 "$GCS" 's/^  if \[ "\$all" -eq 0 \]; then item check GOV-L2 unmeasured Low /  if [ "$all" -eq 0 ]; then item check GOV-L1 fail High /'
+plugin_case P1364-each-none-since-unmeasured T11 "$GCS" 's/^  elif \[ "\$n" -eq 0 \]; then item check GOV-L1 na - /  elif [ "$n" -eq 0 ]; then item check GOV-L2 unmeasured Low /'
+plugin_case P1365-each-record-failure-lost T11 "$GCS" 's/^      1) \[ -n "\$failed" \] || failed="\$f: \$(fails_of "\$T\/run.out")" ;;$/      1) : ;;/'
+plugin_case P1366-each-usage-error-a-failure T11 "$GCS" 's/^      2) \[ -n "\$unread" \] || unread="\$f: /      2) [ -n "$failed" ] || failed="$f: /'
+plugin_case P1367-each-undated-files-run T11 "$GCS" 's/^  for f in "\$EACH_DIR"\/\[0-9\]\[0-9\]\[0-9\]\[0-9\]-\[0-9\]\[0-9\]-\[0-9\]\[0-9\]-\*\.md; do$/  for f in "$EACH_DIR"\/*.md; do/'
+plugin_case P1368-gov-l1-first-findings-cited T11 "$GCS" 's/R\[n\] = (\$2 == "High" ? 1 : (\$2 == "Medium" ? 2 : 3)) }/R[n] = 1 }/'
+plugin_case P1369-gov-l1-more-findings-not-counted T11 "$GCS" 's/if (n > 3) printf " (and %d more)", n - 3 }/}/'
+plugin_case P1610-adapt-pages-unset-is-an-error T11 "$GAA" 's/print "U\\t" key }/print "E\\t" key }/'
+plugin_case P1611-gov-pages-unset-still-run T11 "$GCS" 's/^      U) UNSET="\$a" ;;$/      U) : ;;/'
+plugin_case P1612-each-usage-error-drops-with-failure T11 "$GCS" 's/^      2) \[ -n "\$unread" \] || unread=/      2) [ -n "$failed$unread" ] || unread=/'
+plugin_case P1633-each-failure-hidden-by-usage-error T11 "$GCS" 's/^    \[ -z "\$failed" \] || item check GOV-L1/    [ -n "$unread" ] || item check GOV-L1/'
+plugin_case P1634-each-crash-is-a-usage-error T11 "$GCS" 's/^      \*) \[ -n "\$failed" \] || failed="\$f: its checker exited/      *) [ -n "$unread" ] || unread="$f: its checker exited/'
+mutant_group ascent-governance-waivers
+GAU="$GOVP/scripts/lib/audit.awk"
+plugin_case P1370-w1-expired-waiver-in-force T11 "$GAU" 's/      if (left < 0) { state = "expired"; /      if (left < -99999) { state = "expired"; /'
+plugin_case P1371-w1-due-today-expired T11 "$GAU" 's/      if (left < 0) { state = "expired"; /      if (left <= 0) { state = "expired"; /'
+plugin_case P1372-w1-not-high T11 "$GAU" 's/fail(1, "High", src, name " expired "/fail(1, "Medium", src, name " expired "/'
+plugin_case P1373-w2-day-14-missed T11 "$GAU" 's/        if (left <= 14) fail(2, /        if (left < 14) fail(2, /'
+plugin_case P1374-w2-day-15-flagged T11 "$GAU" 's/        if (left <= 14) fail(2, /        if (left <= 15) fail(2, /'
+plugin_case P1375-w2-never-due T11 "$GAU" 's/        if (left <= 14) fail(2, /        if (0) fail(2, /'
+plugin_case P1376-w3-undated-not-named T11 "$GAU" 's/    if (rb == "") fail(3, /    if (0) fail(3, /'
+plugin_case P1377-w3-unreal-date-counted T11 "$GAU" 's/    else if (!realdate(rb)) { EXPIRED\[w\] = 1; fail(3, /    else if (0) { EXPIRED[w] = 1; fail(3, /'
+plugin_case P1378-w3-any-day-of-month T11 "$GAU" 's/  return m >= 1 \&\& m <= 12 \&\& d >= 1 \&\& d <= n$/  return m >= 1 \&\& m <= 12 \&\& d >= 1 \&\& d <= 31/'
+plugin_case P1379-w3-no-leap-years T11 "$GAU" 's/((y % 4 == 0 \&\& y % 100 != 0) || y % 400 == 0 ? 29 : 28)/(28)/'
+plugin_case P1380-w3-days-left-off-by-one T11 "$GAU" 's/      left = days(rb) - days(today)$/      left = days(rb) - days(today) - 1/'
+plugin_case P1381-w4-any-id T11 "$GAU" 's/    else if (id !~ \/^ADR-\[0-9\]+\$\/) fail(4, /    else if (0) fail(4, /'
+plugin_case P1382-w4-missing-id-not-named T11 "$GAU" 's/    if (id == "") fail(4, /    if (0) fail(4, /'
+plugin_case P1383-w4-missing-adr-not-named T11 "$GAU" 's/      if (!((dir, num) in ADR)) fail(4, /      if (0) fail(4, /'
+plugin_case P1384-w4-unaccepted-adr-ok T11 "$GAU" 's/      else if (ADR\[dir, num\] != 1) fail(4, /      else if (0) fail(4, /'
+plugin_case P1385-w4-not-medium T11 "$GAU" 's/fail(4, "Medium", ADRFILE\[dir, num\]/fail(4, "High", ADRFILE[dir, num]/'
+plugin_case P1386-w4-section-folder-ignored T11 "$GAU" 's/^    dir = ((sec "\.adr_dir") in C \&\& C\[sec "\.adr_dir"\] != "") ? C\[sec "\.adr_dir"\] : fallback$/    dir = fallback/'
+plugin_case P1387-w4-no-folder-fails T11 "$GAU" 's/    else if (dir == "") NOADR++/    else if (0) NOADR++/'
+plugin_case P1388-w4-leading-zeros-differ T11 "$GAU" 's/      num = substr(id, 5) + 0$/      num = substr(id, 5)/'
+plugin_case P1389-waivers-one-section-only T11 "$GAU" 's/  if (\$1 ~ \/^\[A-Za-z_-\]+\\\.waivers\\\[\[0-9\]+\\\]\/) {/  if ($1 ~ \/^security\\.waivers\\[[0-9]+\\]\/) {/'
+plugin_case P1390-waivers-first-only T11 "$GAU" 's/^  for (i = 1; i <= NW; i++) {$/  for (i = 1; i <= 1; i++) {/'
+plugin_case P1391-waivers-fields-as-waivers T11 "$GAU" 's/    if (!(w in SEEN)) { SEEN\[w\] = 1; NW++; /    if (1) { SEEN[w] = 1; NW++; /'
+plugin_case P1392-ack-not-listed T11 "$GAU" 's/^  for (i = 1; i <= NA; i++) {$/  for (i = 1; i <= 0; i++) {/'
+plugin_case P1393-ack-read-as-waiver T11 "$GAU" 's/  } else if (\$1 ~ \/^decisions\\\.acknowledged_changes\\\[\[0-9\]+\\\]\\\.\/) {/  } else if (0) {/'
+plugin_case P1394-adr-status-heading-unread T11 "$GCS" 's/if (l == "") pend = 1; else judge(l) } }/if (l == "") done = 1; else judge(l) } }/'
+plugin_case P1395-adr-accepted-anywhere-in-status T11 "$GCS" 's/acc = (v ~ \/^accepted\/) ? 1 : 0; done = 1 }/acc = (v ~ \/accepted\/) ? 1 : 0; done = 1 }/'
+plugin_case P1396-adr-numbered-files-unread T11 "$GCS" 's/ else if (b !~ \/^\[0-9\]\/) exit$/ else exit/'
+plugin_case P1397-adr-default-folders-unread T11 "$GCS" 's/; \[ -n "\$ADR_FALLBACK" \] || ADR_FALLBACK=\$(adr_dir || true)$//'
+plugin_case P1398-waiver-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `GOV-W` | /d'
+plugin_case P1643-waiver-no-skips-passes T11 "$GAU" 's/^    if (skips == "") fail(4,/    if (0) fail(4,/'
+
+mutant_group ascent-governance-reviews
+GLR="$GOVP/scripts/lib/log-rows.awk"
+plugin_case P1399-r1-launch-not-high T11 "$GAU" 's/  sev = launch ? "High" : "Medium"; st = "due"/  sev = "Medium"; st = "due"/'
+plugin_case P1400-r1-always-high T11 "$GAU" 's/  sev = launch ? "High" : "Medium"; st = "due"/  sev = "High"; st = "due"/'
+plugin_case P1401-r1-day-31-current T11 "$GAU" 's/    else if (age > max) rfail(1, /    else if (age > max + 1) rfail(1, /'
+plugin_case P1402-r1-day-30-due T11 "$GAU" 's/    else if (age > max) rfail(1, /    else if (age >= max) rfail(1, /'
+plugin_case P1403-r1-missing-row-not-named T11 "$GAU" 's/^    if (!(name in NEWEST)) {$/    if (0) {/'
+plugin_case P1404-r1-oldest-row-wins T11 "$GAU" 's/  if (!(name in NEWEST) || d >= RDATE\[name\]) {/  if (!(name in NEWEST) || d <= RDATE[name]) {/'
+plugin_case P1405-r1-first-row-of-a-day-wins T11 "$GAU" 's/  if (!(name in NEWEST) || d >= RDATE\[name\]) {/  if (!(name in NEWEST) || d > RDATE[name]) {/'
+plugin_case P1406-r1-last-row-in-file-wins T11 "$GAU" 's/  if (!(name in NEWEST) || d >= RDATE\[name\]) {/  if (1) {/'
+plugin_case P1407-r1-lowest-rung-age-wins T11 "$GAU" 's/  else if (\$3 + 0 < MAXAGE\[\$2\]) MAXAGE\[\$2\] = \$3 + 0/  else if (0) MAXAGE[$2] = $3 + 0/'
+plugin_case P1408-r1-highest-rung-age-wins T11 "$GAU" 's/  else if (\$3 + 0 < MAXAGE\[\$2\]) MAXAGE\[\$2\] = \$3 + 0/  else if (1) MAXAGE[$2] = $3 + 0/'
+plugin_case P1409-r2-open-high-ignored T11 "$GAU" 's/    else if (r != "") rfail(2, "fail", "High", /    else if (0) rfail(2, "fail", "High", /'
+plugin_case P1410-r2-open-high-not-high T11 "$GAU" 's/    else if (r != "") rfail(2, "fail", "High", /    else if (r != "") rfail(2, "fail", "Medium", /'
+plugin_case P1411-r2-waivers-unread T11 "$GAU" 's/      if (waived(T\[k\])) covered = /      if (0) covered = /'
+plugin_case P1412-r2-expired-waiver-covers T11 "$GAU" '/^    if (EXPIRED\[w\]) continue$/d'
+plugin_case P1413-r2-waiver-matches-part-of-an-id T11 "$GAU" 's/      if (a !~ \/\[A-Za-z0-9_-\]\/ \&\& b !~ \/\[A-Za-z0-9_-\]\/) return 1/      if (1) return 1/'
+plugin_case P1414-r2-waiver-left-edge-unchecked T11 "$GAU" 's/      if (a !~ \/\[A-Za-z0-9_-\]\/ \&\& b !~ /      if (b !~ /'
+plugin_case P1415-r2-waiver-right-edge-unchecked T11 "$GAU" 's/ \&\& b !~ \/\[A-Za-z0-9_-\]\/) return 1/) return 1/'
+plugin_case P1416-r2-weak-rating-ok T11 "$GAU" 's/    else if (RRATING\[name\] == "weak") rfail(2, "fail", "Medium", /    else if (0) rfail(2, "fail", "Medium", /'
+plugin_case P1417-r2-weak-rating-high T11 "$GAU" 's/    else if (RRATING\[name\] == "weak") rfail(2, "fail", "Medium", /    else if (RRATING[name] == "weak") rfail(2, "fail", "High", /'
+plugin_case P1418-r2-high-count-without-rules-ok T11 "$GAU" 's/    if (RHIGH\[name\] > 0 \&\& named == 0) rfail(2, /    if (0) rfail(2, /'
+plugin_case P1419-r2-commas-not-split T11 "$GAU" 's/open = ROPEN\[name\]; gsub(\/\[,;\]\/, " ", open); /open = ROPEN[name]; /'
+plugin_case P1420-r2-dash-read-as-rule T11 "$GAU" '/^      if (T\[k\] == "-") continue$/d'
+plugin_case P1421-r3-future-row-counts T11 "$GAU" 's/  else if (d > today) why = /  else if (0) why = /'
+plugin_case P1422-r3-unreal-date-counts T11 "$GAU" 's/  else if (!realdate(d)) why = /  else if (0) why = /'
+plugin_case P1423-r3-any-rating T11 "$GAU" 's/  else if (rating != "strong" \&\& rating != "moderate" \&\& rating != "weak") why = /  else if (0) why = /'
+plugin_case P1424-r3-any-commit T11 "$GAU" 's/  else if (commit !~ \/^\[0-9A-Fa-f\]+\$\/ || length(commit) < 7 || length(commit) > 40) why = /  else if (0) why = /'
+plugin_case P1425-r3-five-digit-commit T11 "$GAU" 's/ || length(commit) < 7 || / || length(commit) < 5 || /'
+plugin_case P1426-r3-full-commit-refused T11 "$GAU" 's/ || length(commit) > 40) why = / || length(commit) > 39) why = /'
+plugin_case P1427-r3-counts-unchecked T11 "$GAU" 's/  else if (\$8 !~ \/^\[0-9\]+\$\/ || \$9 !~ /  else if (0 \&\& \$9 !~ /'
+plugin_case P1428-r3-cell-count-unchecked T11 "$GAU" 's/  if (\$3 + 0 != 9) why = /  if (0) why = /'
+plugin_case P1429-r3-unnamed-review-counts T11 "$GAU" 's/  else if (name == "") why = /  else if (0) why = /'
+plugin_case P1430-r3-unreadable-row-is-current T11 "$GAU" 's/BADDATE\[NBAD\] = realdate(d) ? d : ""; next }/BADDATE[NBAD] = realdate(d) ? d : "" }/'
+plugin_case P1431-r3-not-medium T11 "$GAU" 's/rfail(3, "fail", "Medium", BADSRC\[i\], /rfail(3, "fail", "High", BADSRC[i], /'
+plugin_case P1432-r3-no-table-silent T11 "$GAU" 's/  if (haslog \&\& !TABLE) rfail(3, /  if (0) rfail(3, /'
+plugin_case P1433-r3-no-log-passes T11 "$GAU" 's/  if (!haslog) row("setup", "GOV-R3", "na", /  if (0) row("setup", "GOV-R3", "na", /'
+plugin_case P1434-reviews-read-off-the-floor T11 "$GAU" 's/  if (NREV > 0) reviews()/  if (1) reviews()/'
+plugin_case P1435-log-first-table-read T11 "$GLR" 's/  if (n == 9 \&\& tolower(c\[1\]) == "date" /  if (n >= 2 || tolower(c[1]) == "date" /'
+plugin_case P1436-log-row-cells-not-counted T11 "$GLR" 's/printf "R\\t%d\\t%d", FNR, n$/printf "R\\t%d\\t%d", FNR, 9/'
+plugin_case P1437-log-rule-row-read T11 "$GLR" '/^  if (rule) next$/d'
+plugin_case P1438-log-header-case T11 "$GLR" 's/tolower(c\[1\]) == "date"/c[1] == "Date"/'
+plugin_case P1439-log-crlf-unread T11 "$GLR" 's/  line = \$0; sub(\/\\r\$\/, "", line)/  line = $0/'
+plugin_case P1440-log-cells-untrimmed T11 "$GLR" '/^  for (i = 1; i <= n; i++) c\[i\] = trim(c\[i\])$/d'
+plugin_case P1441-r4-lost-rows-ignored T11 "$GCS" 's/^    if \[ -s "\$T\/lost1" \]; then$/    if false; then/'
+plugin_case P1442-r4-not-medium T11 "$GCS" 's/item review GOV-R4 fail Medium "\$REVIEW_LOG" "a row of/item review GOV-R4 fail High "$REVIEW_LOG" "a row of/'
+plugin_case P1443-r4-history-unread T11 "$GCS" 's/^      for p in \$ps; do$/      for p in; do/'
+plugin_case P1444-r4-working-copy-unread T11 "$GCS" 's/^    if git cat-file -e "HEAD:\.\/\$REVIEW_LOG" 2>\/dev\/null; then  # the working copy/    if false; then  # the working copy/'
+plugin_case P1445-r4-shallow-clone-read T11 "$GCS" 's/  elif \[ "\$(git rev-parse --is-shallow-repository 2>\/dev\/null)" = true \]; then R4NA=/  elif false; then R4NA=/'
+plugin_case P1446-r4-untracked-log-read T11 "$GCS" 's/  elif ! git ls-files --error-unmatch -- "\$REVIEW_LOG" >\/dev\/null 2>\&1; then R4NA=/  elif false; then R4NA=/'
+plugin_case P1447-r4-no-git-ignored T11 "$GCS" 's/  elif \[ "\$NOGIT" -eq 1 \]; then R4NA="--no-git given"/  elif false; then R4NA="--no-git given"/'
+plugin_case P1448-r4-outside-git-unnamed T11 "$GCS" 's/  elif ! command -v git >\/dev\/null 2>\&1 || ! git rev-parse --is-inside-work-tree >\/dev\/null 2>\&1; then R4NA="not a git repository"/  elif false; then R4NA="not a git repository"/'
+plugin_case P1449-r4-checked-off-the-floor T11 "$GCS" 's/^if grep -q "^review\$TAB" "\$T\/floor.tsv"; then$/if true; then/'
+plugin_case P1450-review-log-path-ignored T11 "$GCS" 's/^REVIEW_LOG=\$(cget governance.review_log); /REVIEW_LOG=""; /'
+plugin_case P1451-launch-flag-ignored T11 "$GCS" 's/    --launch) LAUNCH=1; shift ;;/    --launch) LAUNCH=0; shift ;;/'
+plugin_case P1452-review-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `GOV-R` | /d'
+# v0.4.24 review: a newer row that cannot be read, rows after a gap, a rule for each High finding
+plugin_case P1635-rev-unread-newer-row-ignored T11 "$GAU" 's/^    if (u) rfail(1, st, sev,/    if (0) rfail(1, st, sev,/'
+plugin_case P1636-rev-unread-row-above-counts T11 "$GAU" 's/ \&\& BADLN\[i\] + 0 > NEWEST\[name\] + 0//'
+plugin_case P1637-rev-unread-older-row-counts T11 "$GAU" 's/ \&\& (BADDATE\[i\] == "" || BADDATE\[i\] >= RDATE\[name\])//'
+plugin_case P1638-rev-fewer-rules-than-highs-passes T11 "$GAU" 's/^    else if (RHIGH\[name\] > named) rfail/    else if (0) rfail/'
+plugin_case P1639-logrows-table-ends-at-a-gap T11 "$GLR" 's/^  if (line !~ \/^ \*\\|\/) next$/  if (line !~ \/^ *\\|\/) { if (found) exit; next }/'
+plugin_case P1640-logrows-tab-ends-a-cell T11 "$GLR" '/^  gsub(\/\\t\/, " ", line)/d'
+plugin_case P1641-logrows-second-header-is-a-row T11 "$GLR" '/^  if (head) next$/d'
+plugin_case P1642-waiver-unreal-date-still-covers T11 "$GAU" 's/else if (!realdate(rb)) { EXPIRED\[w\] = 1; fail(3/else if (!realdate(rb)) { fail(3/'
+
+mutant_group ascent-governance-launch
+plugin_case P1453-record-overwrites T11 "$GCS" 's/^  \[ ! -e "\$RECORD" \] || bad /  true || bad /'
+plugin_case P1454-record-of-a-changed-working-copy T11 "$GCS" 's/^  if \[ -s "\$T\/dirty" \]; then$/  if false; then/'
+plugin_case P1455-record-untracked-files-unseen T11 "$GCS" 's/; git -c core.quotepath=off ls-files --others --exclude-standard -- \. 2>\/dev\/null; } | not_records/; } | not_records/'
+plugin_case P1456-record-tracked-changes-unseen T11 "$GCS" 's/^  { git -c core.quotepath=off diff --no-renames --name-only --relative HEAD -- \. 2>\/dev\/null; git /  { git /'
+plugin_case P1457-record-any-file-name T11 "$GCS" 's/^  \[ -n "\$RECORD" \] || bad "--record \$RECORD_ARG: /  true || bad "--record $RECORD_ARG: /'
+plugin_case P1458-record-without-git T11 "$GCS" 's/^  in_git || bad "--record needs git/  true || bad "--record needs git/'
+plugin_case P1459-record-does-not-ask-the-launch-question T11 "$GCS" 's/    --record) need \$#; RECORD="\$2"; LAUNCH=1; shift 2 ;;/    --record) need $#; RECORD="$2"; shift 2 ;;/'
+plugin_case P1460-records-review-log-counts-as-a-change T11 "$GCS" "s/ \\&\\& \\\$0 != log_'; }/'; }/"
+plugin_case P1461-records-launch-folder-counts-as-a-change T11 "$GCS" "s/'NF \\&\\& index(\\\$0, ld) != 1 \\&\\& /'NF \\&\\& /"
+plugin_case P1462-records-lookalike-folder-exempt T11 "$GCS" 's/^not_records() { awk -v ld="\$LAUNCH_DIR\/" /not_records() { awk -v ld="$LAUNCH_DIR" /'
+plugin_case P1463-record-signed-by-the-script T11 "$GRA" 's/      printf "\*\*Signed:\*\*\\n\\n\*\*Date:\*\*\\n"/      printf "**Signed:** Claude\\n\\n**Date:**\\n"/'
+plugin_case P1464-record-dated-by-the-script T11 "$GRA" 's/      printf "\*\*Signed:\*\*\\n\\n\*\*Date:\*\*\\n"/      printf "**Signed:**\\n\\n**Date:** %s\\n", date/'
+plugin_case P1465-record-without-summary-place T11 "$GRA" '/^    if (sign) printf "## In plain words/d'
+plugin_case P1466-record-without-commit T11 "$GCS" 's/ -v env="\$ENVNAME" -v date="\$TODAY" -v commit="\$2" \\$/ -v env="$ENVNAME" -v date="$TODAY" -v commit="" \\/'
+plugin_case P1467-record-pipe-unescaped T11 "$GRA" 's/out = out ((c == "\\\\" || c == "|" || c == "<" || /out = out ((c == "\\\\" || c == "<" || /'
+plugin_case P1468-record-tag-unescaped T11 "$GRA" 's/ || c == "|" || c == "<" || c == "\[" / || c == "|" || c == "[" /'
+plugin_case P1469-record-conditions-in-file-order T11 "$GRA" 's/      rank = (SEV\[i\] == "High") ? 1 : (SEV\[i\] == "Medium" ? 2 : 3)/      rank = 1/'
+plugin_case P1470-record-unmeasured-not-a-condition T11 "$GRA" 's/      if (ST\[i\] != "fail" \&\& ST\[i\] != "due" \&\& ST\[i\] != "unmeasured") continue/      if (ST[i] != "fail" \&\& ST[i] != "due") continue/'
+plugin_case P1471-record-due-review-not-a-condition T11 "$GRA" 's/      if (ST\[i\] != "fail" \&\& ST\[i\] != "due" \&\& ST\[i\] != "unmeasured") continue/      if (ST[i] != "fail" \&\& ST[i] != "unmeasured") continue/'
+plugin_case P1472-record-reviews-not-evidence T11 "$GRA" 's/      if (KIND\[i\] == "check" || KIND\[i\] == "review" || /      if (KIND[i] == "check" || /'
+plugin_case P1473-record-expired-waiver-shows-days T11 "$GRA" 's/(LEFT\[i\] ~ \/^-\[0-9\]\/ ? "expired" : LEFT\[i\])/LEFT[i]/'
+plugin_case P1474-record-acknowledged-changes-read-as-none T11 "$GRA" 's/^    if (!k \&\& !a) printf "None\.\\n"/    if (!k) printf "None.\\n"/'
+plugin_case P1475-record-acknowledged-changes-left-out T11 "$GRA" 's/^    for (i = 1; i <= n; i++) if (KIND\[i\] == "ack") {$/    for (i = 1; i <= 0; i++) if (KIND[i] == "ack") {/'
+plugin_case P1476-l3-off T11 "$GCS" 's/^if grep -q "^signoff\$TAB" "\$T\/floor.tsv"; then$/if false; then/'
+plugin_case P1477-l3-no-record-not-high T11 "$GCS" 's/      item launch GOV-L3 fail High "\$LAUNCH_DIR" "no launch record/      item launch GOV-L3 fail Medium "$LAUNCH_DIR" "no launch record/'
+plugin_case P1478-l3-not-high T11 "$GCS" 's/then item launch GOV-L3 fail High "\$NEWEST" "the newest launch record/then item launch GOV-L3 fail Medium "$NEWEST" "the newest launch record/'
+plugin_case P1479-l3-unsigned-record-counts T11 "$GCS" 's/      elif \[ "\$ls" = - \]; then why=/      elif false; then why=/'
+plugin_case P1480-l3-undated-message T11 "$GCS" 's/      elif \[ "\$ld" = - \]; then why=/      elif false; then why=/'
+plugin_case P1481-l3-unreal-date-counts T11 "$GCS" 's/      elif ! realdate "\$ld"; then why=/      elif false; then why=/'
+plugin_case P1482-l3-future-date-counts T11 "$GCS" 's/      elif \[ "\$ld" \\> "\$TODAY" \]; then why=/      elif false; then why=/'
+plugin_case P1483-l3-nogo-message T11 "$GCS" 's/      elif \[ "\$lv" = NO-GO \]; then why=/      elif false; then why=/'
+plugin_case P1484-l3-any-verdict-counts T11 "$GCS" 's/      elif \[ "\$lv" != GO \] \&\& \[ "\$lv" != "GO WITH CONDITIONS" \]; then why=/      elif [ "$lv" = NO-GO ]; then why=/'
+plugin_case P1485-l3-no-verdict-message T11 "$GCS" 's/      if \[ "\$lv" = - \]; then why=/      if false; then why=/'
+plugin_case P1486-l3-oldest-record-wins T11 "$GCS" 's/^    NEWEST=\$(tail -1 "\$T\/records")$/    NEWEST=$(head -1 "$T\/records")/'
+plugin_case P1487-l3-other-environments-record T11 "$GCS" 's/^for f in "\$LAUNCH_DIR"\/\[0-9\]\(.*\)-"\$ENVNAME"\.md; do$/for f in "$LAUNCH_DIR"\/[0-9]\1-*"$ENVNAME".md; do/'
+plugin_case P1488-l3-launch-question-checks-the-signature T11 "$GCS" 's/^  if \[ "\$LAUNCH" -eq 1 \]; then$/  if false; then/'
+plugin_case P1489-l4-off T11 "$GCS" "s/        elif clist governance.approvers | awk -v s=\"\\\$ls\" 'tolower(\\\$0) == tolower(s) { f = 1 } END { exit !f }'; then /        elif true; then /"
+plugin_case P1490-l4-case-matters T11 "$GCS" "s/awk -v s=\"\\\$ls\" 'tolower(\\\$0) == tolower(s) { f = 1 }/awk -v s=\"\$ls\" '\$0 == s { f = 1 }/"
+plugin_case P1491-l4-part-of-a-name T11 "$GCS" "s/awk -v s=\"\\\$ls\" 'tolower(\\\$0) == tolower(s) { f = 1 }/awk -v s=\"\$ls\" 'index(tolower(\$0), tolower(s)) { f = 1 }/"
+plugin_case P1492-l4-not-high T11 "$GCS" 's/        else item launch GOV-L4 fail High /        else item launch GOV-L4 fail Medium /'
+plugin_case P1493-l4-empty-list-refuses T11 "$GCS" 's/        if \[ -z "\$(clist governance.approvers)" \]; then item launch GOV-L4 na /        if false; then item launch GOV-L4 na /'
+plugin_case P1494-l5-off T11 "$GCS" 's/^          if \[ -s "\$T\/changed" \]; then$/          if false; then/'
+plugin_case P1495-l5-not-high T11 "$GCS" 's/            item launch GOV-L5 fail High "\$NEWEST" "\$nc path(s) changed/            item launch GOV-L5 fail Medium "$NEWEST" "$nc path(s) changed/'
+plugin_case P1496-l5-record-without-commit-message T11 "$GCS" 's/        elif \[ -z "\$lc" \]; then item launch GOV-L5 fail High /        elif false; then item launch GOV-L5 fail High /'
+plugin_case P1497-l5-unknown-commit-passes T11 "$GCS" 's/        elif ! git cat-file -e "\$lc^{commit}" 2>\/dev\/null; then$/        elif false; then/'
+plugin_case P1498-l5-shallow-clone-unexplained T11 "$GCS" 's/          if \[ "\$(git rev-parse --is-shallow-repository 2>\/dev\/null)" = true \]; then item launch GOV-L5 fail High /          if false; then item launch GOV-L5 fail High /'
+plugin_case P1499-l5-outside-git-unexplained T11 "$GCS" 's/        elif ! in_git; then item launch GOV-L5 fail High /        elif false; then item launch GOV-L5 fail High /'
+plugin_case P1500-l5-no-git-fails T11 "$GCS" 's/        if \[ "\$NOGIT" -eq 1 \]; then item launch GOV-L5 na /        if false; then item launch GOV-L5 na /'
+plugin_case P1501-r4-signed-launch-does-not-reset T11 "$GCS" 's/^    \[ -z "\$SIGNED_COMMIT" \] || { RANGE=/    true || { RANGE=/'
+plugin_case P1502-r4-unsigned-record-resets T11 "$GCS" 's/^  if signed "\$f"; then SIGNED_REC="\$f"; fi$/  if true; then SIGNED_REC="$f"; fi/'
+# v0.4.24 review: who signed, which files are records, renames, the record's path
+plugin_case P1644-sign-blank-line-is-a-name T11 "$GCS" 's/(named ? s : "-")/s/'
+plugin_case P1645-sign-other-alphabet-refused T11 "$GCS" 's/if (c ~ \/\[A-Za-z\]\/ || c > "~") named = 1/if (c ~ \/[A-Za-z]\/) named = 1/'
+plugin_case P1646-record-dated-after-today-read T11 "$GCS" 's/is dated after today (\$TODAY)"; continue; fi$/is dated after today ($TODAY)"; fi/'
+plugin_case P1647-record-unreal-name-read T11 "$GCS" 's/its name is not a real date"; continue; fi$/its name is not a real date"; fi/'
+plugin_case P1648-l5-move-hides-a-change T11 "$GCS" 's/diff --no-renames --name-only --relative "\$lc" HEAD/diff --name-only --relative "$lc" HEAD/'
+plugin_case P1649-record-move-hides-a-change T11 "$GCS" 's/diff --no-renames --name-only --relative HEAD/diff --name-only --relative HEAD/'
+plugin_case P1650-record-path-read-as-typed T11 "$GCS" 's/^  rp=\$(lexical "\$RECORD") /  rp="$RECORD" /'
+plugin_case P1651-record-path-from-the-repo T11 "$GCS" '/^\[ -z "\$RECORD" \] || RECORD=\$(abspath "\$RECORD")$/d'
+plugin_case P1652-l3-message-names-no-file T11 "$GCS" 's/--record \$LAUNCH_DIR\/\$TODAY-\$ENVNAME\.md, then a person signs it/--record, then a person signs it/'
+
+mutant_group ascent-governance-views
+GMH="$GOVP/scripts/lib/md-html.awk"
+plugin_case P1503-html-tag-not-escaped T11 "$GMH" '/^    else if (c == "<") out = out "&lt;"$/d'
+plugin_case P1504-html-ampersand-not-escaped T11 "$GMH" 's/^    if (c == "&") out = out /    if (0) out = out /'
+plugin_case P1505-html-quote-not-escaped T11 "$GMH" '/^    else if (c == "\\"") out = out "&quot;"$/d'
+plugin_case P1506-html-closing-bracket-not-escaped T11 "$GMH" '/^    else if (c == ">") out = out "&gt;"$/d'
+plugin_case P1507-html-record-escapes-shown T11 "$GMH" 's/^    if (c == "\\\\" && i < n && index(/    if (0 \&\& index(/'
+plugin_case P1508-html-escaped-pipe-splits-a-cell T11 "$GMH" '/^    if (c == "\\\\" && i < n) { cur = cur c substr(line, i + 1, 1); i++; continue }$/d'
+plugin_case P1509-html-title-not-escaped T11 "$GMH" 's/  printf "<title>%s<\/title>\\n", html(title)/  printf "<title>%s<\/title>\\n", title/'
+plugin_case P1510-html-comment-line-shown T11 "$GMH" '/^\/^<!--\.\*-->\[ \\t\]\*\$\/ { next }$/d'
+plugin_case P1511-html-with-a-script T11 "$GMH" 's/^  print "<\/style>"$/  print "<\/style><script><\/script>"/'
+plugin_case P1512-html-fetches-a-stylesheet T11 "$GMH" 's/^  print "<style>"$/  print "<link rel=\\"stylesheet\\" href=\\"https:\/\/fonts.example\/x.css\\"><style>"/'
+plugin_case P1513-html-no-dark-theme T11 "$GMH" '/prefers-color-scheme: dark/d'
+plugin_case P1514-html-no-print-style T11 "$GMH" 's/^  print "@media print { /  print "@media screen { /'
+plugin_case P1515-html-no-viewport T11 "$GMH" '/name=\\"viewport\\"/d'
+plugin_case P1516-html-tables-do-not-scroll T11 "$GMH" '/^  print "\.wrap { overflow-x: auto; }"$/d'
+plugin_case P1517-html-table-left-open T11 "$GMH" 's/  if (table) { printf "<\/tbody>\\n<\/table>\\n<\/div>\\n"; table = 0 }/  if (table) { table = 0 }/'
+plugin_case P1518-html-list-left-open T11 "$GMH" 's/  if (list != "") { printf "<\/%s>\\n", list; list = "" }/  if (list != "") { list = "" }/'
+plugin_case P1519-html-nogo-shown-as-go T11 "$GMH" 's/cls = (para ~ \/NO-GO\/) ? /cls = (0) ? /'
+plugin_case P1520-html-bold-not-read T11 "$GMH" 's/^function inline(s) { return pairs(pairs(html(s), "\*\*", "strong"), "`", "code") }$/function inline(s) { return pairs(html(s), "`", "code") }/'
+plugin_case P1521-html-code-not-read T11 "$GMH" 's/^function inline(s) { return pairs(pairs(html(s), "\*\*", "strong"), "`", "code") }$/function inline(s) { return pairs(html(s), "**", "strong") }/'
+plugin_case P1522-html-lone-mark-opens-a-tag T11 "$GMH" 's/^    if (q <= 1) break$/    if (q < 0) break/'
+plugin_case P1523-html-rule-row-shown T11 "$GMH" '/^  if (rule) next$/d'
+plugin_case P1524-html-page-not-marked T11 "$GMH" '/^  print "<!-- generated by ascent-governance check-audit.sh/d'
+plugin_case P1525-html-launch-folder-by-name T11 "$GCS" 's/^  case "\$hp" in "\$lp"\/\*) bad /  case "$hp" in "$lp"\/NEVER\/*) bad /'
+plugin_case P1526-html-launch-folder-through-a-link T11 "$GCS" 's/^    if \[ "\$hd" -ef "\$LAUNCH_DIR" \]; then bad "\$inld"; fi$/    :/'
+plugin_case P1527-html-over-another-file T11 "$GCS" 's/^  if \[ -e "\$HTML" \] \&\& ! sed -n .2p. "\$HTML" 2>\/dev\/null | grep -qF -- "\$MARK"; then bad /  if false; then bad /'
+plugin_case P1528-html-from-any-file T11 "$GCS" "s/^    head -1 \"\\\$FROM\" | grep -q '^# Launch record: ' || bad /    true || bad /"
+plugin_case P1529-html-from-runs-the-checks T11 "$GCS" '/^    exit 0$/d'
+plugin_case P1530-from-without-html T11 "$GCS" 's/^\[ -z "\$FROM" \] || \[ -n "\$HTML" \] || bad /true || bad /'
+plugin_case P1531-html-folder-not-made T11 "$GCS" 's/^  mkdir -p "\$(dirname "\$HTML")" || bad /  true || bad /'
+plugin_case P1532-html-run-as-a-record T11 "$GCS" 's/^if \[ -n "\$HTML" \]; then markdown 0 /if [ -n "$HTML" ]; then markdown 1 /'
+plugin_case P1533-summary-written-when-unset T11 "$GCS" 's/^if \[ -n "\${GITHUB_STEP_SUMMARY:-}" \]; then$/if true; then/'
+plugin_case P1534-summary-overwrites-the-job-s T11 "$GCS" 's/echo; } >> "\$GITHUB_STEP_SUMMARY"; }/echo; } > "$GITHUB_STEP_SUMMARY"; }/'
+plugin_case P1535-summary-as-a-record T11 "$GCS" 's/^  { { markdown 0 "\$NOW_COMMIT"; echo; }/  { { markdown 1 "$NOW_COMMIT"; echo; }/'
+plugin_case P1536-summary-failure-fails-the-run T11 "$GCS" 's/; } 2>\/dev\/null || echo "check-audit: could not write the job summary to \$GITHUB_STEP_SUMMARY" >\&2$/; } 2>\/dev\/null/'
+plugin_case P1537-summary-titled-as-a-record T11 "$GRA" 's/(sign ? "Launch record" : "Launch readiness")/"Launch record"/'
+# v0.4.24 review: where the page is written, and what a contract value can forge
+plugin_case P1653-html-through-a-link T11 "$GCS" '/^  \[ ! -L "\$HTML" \] || bad /d'
+plugin_case P1654-html-new-folder-under-a-link T11 "$GCS" 's/^  hd=\$(dirname "\$HTML"); while .*$/  hd=$(dirname "$HTML")/'
+plugin_case P1655-html-launch-folder-other-case T11 "$GCS" 's/^  hp=\$(lexical "\$HTML" | tr .A-Z. .a-z.); lp=\$(lexical "\$LAUNCH_DIR" | tr .A-Z. .a-z.)$/  hp=$(lexical "$HTML"); lp=$(lexical "$LAUNCH_DIR")/'
+plugin_case P1656-html-mark-anywhere-in-file T11 "$GCS" 's/! sed -n .2p. "\$HTML" 2>\/dev\/null | grep -qF -- "\$MARK"/! grep -qF -- "$MARK" "$HTML" 2>\/dev\/null/'
+plugin_case P1657-html-path-from-the-repo T11 "$GCS" '/^\[ -z "\$HTML" \] || HTML=\$(abspath "\$HTML")$/d'
+plugin_case P1658-from-path-from-the-repo T11 "$GCS" '/^\[ -z "\$FROM" \] || FROM=\$(abspath "\$FROM")$/d'
+plugin_case P1659-render-backslash-forges-a-cell T11 "$GRA" 's/(c == "\\\\" || c == "|" || /(c == "|" || /'
+plugin_case P1660-render-link-and-bold-not-escaped T11 "$GRA" 's/ || c == "\[" || c == "\*" || c == "`")/)/'
+plugin_case P1661-page-escaped-star-is-bold T11 "$GMH" '/if (c == "\*") { out = out "&#42;"; continue }/d'
+plugin_case P1662-page-escaped-bracket-keeps-backslash T11 "$GMH" 's/index("\\\\|<\[\*`", substr(s, i + 1, 1)) > 0/index("|<", substr(s, i + 1, 1)) > 0/'
+
+mutant_group ascent-governance-rules
+GLS="$GOVP/skills/launch-readiness/SKILL.md"
+GRS="$GOVP/skills/governance-review/SKILL.md"
+GRC="$GOVP/skills/review-record/SKILL.md"
+GAG="$GOVP/agents/governance-conductor.md"
+GRU="$GOVP/references/governance-rules.md"
+GRM="$GOVP/README.md"
+plugin_case P1538-gov-rule-dropped-from-reference T11 "$GRU" '/^| GOV-W2 | Low |/d'
+plugin_case P1539-gov-rule-severity-drift T11 "$GRU" 's/^| GOV-R3 | Medium |/| GOV-R3 | Low |/'
+plugin_case P1540-gov-header-severity-drift T11 "$GCS" 's/^#   GOV-W2  Low     no waiver/#   GOV-W2  Medium  no waiver/'
+plugin_case P1541-gov-table-severity-drift T11 "$GLS" 's/(GOV-L4) | High |$/(GOV-L4) | Medium |/'
+plugin_case P1542-gov-table-row-dropped T11 "$GLS" '/(GOV-R4) | Medium |$/d'
+plugin_case P1543-gov-table-drift T5 "$GAG" 's/(GOV-W2) | Low |$/(GOV-W2) | Medium |/'
+plugin_case P1544-gov-table-differs-in-the-agent T11 "$GAG" 's/(GOV-S2) | Medium |$/(GOV-S2) | Low |/'
+plugin_case P1545-gov-verdict-softened T11 "$GLS" 's/NO-GO: any High\. GO WITH CONDITIONS/NO-GO: more than one High. GO WITH CONDITIONS/'
+plugin_case P1546-gov-unrated-findings-rated T11 "$GLS" '/^- \*\*Rate only with the severity table below\.\*\*/d'
+plugin_case P1547-gov-agent-gets-a-shell T11 "$GAG" 's/^tools: Read, Grep, Glob$/tools: Read, Grep, Glob, Bash/'
+plugin_case P1548-gov-agent-may-edit T11 "$GAG" 's/^- Read-only: never edit, never propose to run a command yourself\.$/- Edit the review log when a row is wrong./'
+plugin_case P1549-gov-agent-says-go T11 "$GAG" 's/Never say GO: a GO needs/Say GO when nothing blocks: a GO needs/'
+plugin_case P1550-gov-agent-may-sign T11 "$GAG" '/^- Never sign, and never suggest a name or a date for/d'
+plugin_case P1551-gov-agent-hides-what-it-did-not-assess T11 "$GAG" '/^Not assessed: GOV-L1, GOV-L2 and GOV-S2/d'
+plugin_case P1552-gov-skill-signs T11 "$GLS" 's/^- \*\*Claude never signs\.\*\* Never write anything after/- **Claude signs when asked.** Write the name after/'
+plugin_case P1553-gov-skill-fills-the-signature T11 "$GLS" 's/ Change nothing else in the file\.$/ Then fill in Signed: from git config./'
+plugin_case P1554-gov-skill-commits-the-record T11 "$GLS" 's/, and never commit a record\./, then commit the record./'
+plugin_case P1555-gov-skill-removes-a-draft T11 "$GLS" 's/the operator removes it; never remove it yourself\./remove it and write a new one./'
+plugin_case P1556-gov-skill-edits-the-evidence T11 "$GLS" 's/ Never edit the verdict, the evidence table, the waivers or the conditions of a record: the script wrote them\.$//'
+plugin_case P1557-gov-skill-writes-without-approval T11 "$GLS" 's/^- \*\*Write only these, and only after approval:\*\*/- **Write these:**/'
+plugin_case P1558-gov-skill-unknown-option T11 "$GLS" "s/--env '<environment>' --launch \\.\$/--env '<environment>' --launch --strict ./"
+plugin_case P1559-gov-skill-script-missing T11 "$GLS" "s|scripts/check-audit.sh\" --env '<environment>' --launch|scripts/check-launch.sh\" --env '<environment>' --launch|"
+plugin_case P1560-gov-skill-unknown-contract-key T11 "$GLS" 's/`governance\.environments`, `floors`,/`governance.environments`, `governance.signers`, `floors`,/'
+plugin_case P1561-gov-skill-cites-a-missing-step T11 "$GLS" 's/review-record Step 2 to Step 4 do/review-record Step 2 to Step 9 do/'
+plugin_case P1562-gov-skill-claims-goodness T11 "$GLS" 's/^It checks that the evidence exists and is current, not that the system is good\.$/A GO means the system is good./'
+plugin_case P1563-gov-review-writes-the-log T11 "$GRS" 's/^- \*\*Read-only\.\*\* Never write the review log, a launch record or the contract here, and never run a review/- Append what is missing to the review log, and run a review/'
+plugin_case P1564-gov-review-writes-the-contract T11 "$GRS" 's/The proposal is text for the operator; never write it\./Write the proposal to the contract./'
+plugin_case P1565-gov-review-asks-the-launch-question T11 "$GRS" "s/check-audit.sh\" --env '<environment>' \\.\$/check-audit.sh\" --env '<environment>' --launch ./"
+plugin_case P1566-gov-review-no-recommended-next T11 "$GRS" '/^Recommended next: </d'
+plugin_case P1567-gov-record-changes-rows T11 "$GRC" 's/^- \*\*Never change or remove a row\.\*\*/- **Correct a row in place.**/'
+plugin_case P1568-gov-record-guesses-the-rating T11 "$GRC" 's/^- \*\*Refuse without a rating and a commit\.\*\*/- **Guess the rating when it is missing.**/'
+plugin_case P1569-gov-record-commits T11 "$GRC" 's/ Any other path is a failure of this skill\. Never commit\.$/ Commit the row./'
+plugin_case P1570-gov-record-writes-before-approval T11 "$GRC" 's/^### Step 3 .* After confirmation only$/### Step 3 - Write the row/'
+plugin_case P1571-gov-record-drops-a-high-finding T11 "$GRC" 's/never leave out an open High finding/leave out findings the operator calls minor/'
+plugin_case P1572-gov-record-gets-a-shell T11 "$GRC" 's/^allowed-tools: Read, Grep, Glob, Bash(git ls-files:\*), Bash(git log:\*)$/allowed-tools: Read, Grep, Glob, Bash/'
+plugin_case P1573-gov-reference-anyone-writes-the-log T11 "$GRU" 's/Only `launch-readiness` and `review-record` write it/Any skill may write it/'
+plugin_case P1574-gov-reference-review-skill-renamed T11 "$GRU" 's/^  | `ux-review` | `ascent-ux:ux-review` |/  | `ux-review` | `ascent-ux:ux-audit` |/'
+plugin_case P1575-gov-reference-default-review-dropped T11 "$GRU" '/^  | `quality-review` | `ascent-quality:quality-review` |/d'
+plugin_case P1576-gov-readme-follows-a-branch T11 "$GRM" 's/--branch v0\.4\.24 https/--branch main https/'
+plugin_case P1577-gov-readme-shallow-checkout T11 "$GRM" '/^          fetch-depth: 0 /d'
+plugin_case P1578-gov-readme-script-signs T11 "$GRM" 's/No skill, agent or script here writes after `Signed:` or `Date:`\./The skill fills in `Signed:` when asked./'
+plugin_case P1579-gov-readme-rule-family-missing T11 "$GRM" 's/GOV-W1–W4 and GOV-R1–R4; /GOV-W1–W4; /'
+plugin_case P1580-gov-description-not-use-when T11 "$GAG" 's/^  Use when an independent, read-only view/  An independent, read-only view/'
+plugin_case P1581-gov-record-script-fills-the-signature T11 "$GRA" 's/printf "\*\*Signed:\*\*\\n\\n\*\*Date:\*\*\\n"/printf "**Signed:** the operator\\n\\n**Date:**\\n"/'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1585-next-sentence-missing-governance T11 plugins/ascent-governance/skills/launch-readiness/SKILL.md '/^Also name any plugin in `references\/plugin-signals\.md`/d'
+plugin_case P1596-signals-copy-stale T1 plugins/ascent-governance/references/plugin-signals.md 's/never blocked/never stopped/'
+plugin_case P1597-registry-copy-stale T1 plugins/ascent-governance/references/registry.md 's/^# Ownership registry$/# Ownership registry, edited/'
+plugin_case_rm P1599-registry-copy-missing T1 plugins/ascent-governance/references/registry.md
+plugin_case P1664-launch-nogo-record-written-anyway T11 "$GLS" '/^When Step 3.s answer is NO-GO, do not write the record/d'
+plugin_case P1665-record-one-id-for-many-findings T11 "$GRC" 's/, one id for each finding, separated by spaces/, separated by spaces/'
+
 mutant_group ascent-delivery-lenses
 DLS2=plugins/ascent-delivery/skills/delivery-loop
 plugin_case P1194-lens-decisions-dropped T13.8 "$DLS2/SKILL.md" '/^| Decisions | /d'
@@ -1775,7 +2249,7 @@ plugin_case_rm P205-registry-removed T13.1 "$OWN"
 plugin_case P206-registry-end-marker-dropped T13.1 "$OWN" '/^<!-- ownership:lenses:end -->$/d'
 plugin_case P207-registry-row-short T13.1 "$OWN" 's/^| `OPS-R` | `ascent-ops` | rule | `plugins\/ascent-ops\/scripts\/check-drills.sh` |$/| `OPS-R` | `ascent-ops` | rule |/'
 plugin_case P208-plugin-row-dropped T13.2 "$OWN" '/^| `ascent-ops` | `OPS` | released /d'
-plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-governance` | `GOV` | planned |/| `ascent-governance` | `GOV` | released |/'
+plugin_case P209-planned-marked-released T13.2 "$OWN" 's/^| `ascent-governance` | `GOV` | released |/| `ascent-node-stack` | `GOV` | released |/'
 plugin_case P210-marketplace-entry-renamed T13.2 .claude-plugin/marketplace.json 's/"name": "ascent-ops",/"name": "ascent-operations",/'
 plugin_case P211-signal-row-dropped T13.2 "$OWN" '/^| HTML, JSX, Vue or Svelte templates/d'
 plugin_case P212-skill-unregistered T13.3 "$OWN" '/^| `ascent-ops` | skill | `ops-manuals` |$/d'
@@ -1793,35 +2267,37 @@ plugin_case P220-contract-extra-section T13.5 plugins/ascent-ux/references/contr
 quality:\
   maturity_target: enterprise'
 plugin_case P221-contract-section-claimed-twice T13.5 "$OWN" 's/^| `ascent-quality` | `QA` | released | hand-written | `quality` |/| `ascent-quality` | `QA` | released | hand-written | `ux` |/'
-plugin_case P222-marker-names-planned T13.6 plugins/ascent-ops/references/runbook-standard.md 's/(→ ascent-security)/(→ ascent-governance)/'
+plugin_case P222-marker-names-planned T13.6 plugins/ascent-ops/references/runbook-standard.md 's/(→ ascent-security)/(→ ascent-node-stack)/'
 plugin_case P223-domain-duplicated T13.7 "$OWN" 's/^| design principles |/| design tokens and contrast |/'
 plugin_case P224-domain-owner-unknown T13.7 "$OWN" 's/^| mutation evidence | — | `ascent-quality` |/| mutation evidence | — | `ascent-qualty` |/'
 plugin_case P225-lens-dropped-in-skill T13.8 "$DLS/SKILL.md" '/^| Architecture and cost | /d'
 plugin_case P226-lens-order-in-reference T13.8 "$DLS/references/review-lenses.md" 's/`ascent-ux:ux-reviewer`, `design:accessibility-review`/`design:accessibility-review`, `ascent-ux:ux-reviewer`/'
 plugin_case P227-lens-dropped-in-readme T13.8 plugins/ascent-delivery/README.md '/^| UX and navigation | /d'
 plugin_case P228-lens-provider-unregistered T13.8 "$OWN" 's/^| `ascent-architecture` | agent | `architecture-reviewer` |$/| `ascent-architecture` | agent | `architecture-critic` |/'
-plugin_case P229-readme-version-stale T13.9 README.md 's#^| \[`ascent-ops`\](plugins/ascent-ops/README.md) | 0.3.0 |#| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.2.0 |#'
+plugin_case P229-readme-version-stale T13.9 README.md 's#^| \[`ascent-ops`\](plugins/ascent-ops/README.md) | 0.3.1 |#| [`ascent-ops`](plugins/ascent-ops/README.md) | 0.3.0 |#'
 plugin_case P230-pillars-unknown-plugin T13.9 docs/framework/PILLARS.md 's/^\(| Change safety | `ascent-ops` (`runbook-check`)\); `ascent-delivery` |/\1; `ascent-delivry` |/'
 plugin_case P231-pillars-unknown-component T13.9 docs/framework/PILLARS.md 's/| Change safety | `ascent-ops` (`runbook-check`)/| Change safety | `ascent-ops` (`runbook-checks`)/'
 plugin_case P232-rule-cell-unqualified T13.10 plugins/ascent-ops/references/secure-config-rules.md 's/^| OPS-S1 | High |/| S1 | High |/'
 plugin_case P233-script-header-unqualified T13.10 plugins/ascent-architecture/scripts/check-cfn-static-site.sh 's/^#   ARC-C8  High /#   C8  High /'
 plugin_case P234-prefix-unregistered T13.10 plugins/ascent-ux/references/contract-template.yml 's/^  direction: UX-D1 /  direction: UX-Q1 /'
-plugin_case P791-map-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 |/| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.2.0 |/'
+plugin_case P791-map-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.1 |/| `ascent-ops` | Plugin · 5 skills, 1 agent | 0.3.0 |/'
 plugin_case P792-map-skill-count-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^| `ascent-ux` | Plugin · 5 skills, 1 agent |/| `ascent-ux` | Plugin · 4 skills, 1 agent |/'
-plugin_case P793-map-heading-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^### `ascent-quality` 0.2.0 ·/### `ascent-quality` 0.1.0 ·/'
+plugin_case P793-map-heading-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/^### `ascent-quality` 0.2.1 ·/### `ascent-quality` 0.2.0 ·/'
 plugin_case P794-map-parent-version-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/ 28 embedded skills | [0-9.]* |/ 28 embedded skills | 0.0.1 |/'
 plugin_case P795-readme-controls-stale T13.11 README.md 's/, [0-9][0-9,]* negative controls,/, 1 negative controls,/'
 plugin_case P796-map-adrs-stale T13.11 docs/framework/CAPABILITY-MAP.md 's/\*\*[0-9]*\*\*<br>decision records/**1**<br>decision records/'
-plugin_case P797-readme-badge-stale T13.11 README.md 's#badge/plugins-9-#badge/plugins-8-#'
+plugin_case P797-readme-badge-stale T13.11 README.md 's#badge/plugins-10-#badge/plugins-9-#'
 plugin_case P798-skill-version-stale T13.11 skills/lloydbriantech-ascent/SKILL.md 's/^version: [0-9.]*$/version: 0.0.1/'
 plugin_case_rm P799-map-removed T13.11 docs/framework/CAPABILITY-MAP.md
 plugin_case P804-banner-light-figure-stale T13.11 docs/assets/ascent-banner-light.svg 's/>[0-9]* plugins · />5 plugins · /'
 plugin_case P805-banner-dark-figure-stale T13.11 docs/assets/ascent-banner-dark.svg 's/ · [0-9][0-9,]* negative controls · / · 1 negative controls · /'
 plugin_case P806-banner-description-stale T13.11 docs/assets/ascent-banner-light.svg 's/, [0-9]* ADRs\.</, 1 ADRs.</'
-plugin_case P807-banner-quality-dropped T13.11 docs/assets/ascent-banner-dark.svg 's/ · session · docs</ · session</'
+plugin_case P807-banner-quality-dropped T13.11 docs/assets/ascent-banner-dark.svg 's/ · docs · governance</ · docs</'
 plugin_case P808-banner-figures-line-removed T13.11 docs/assets/ascent-banner-light.svg '/>[0-9]* plugins · /d'
 plugin_case_rm P809-banner-removed T13.11 docs/assets/ascent-banner-dark.svg
 plugin_case P235-checker-stops-early T13 "$CHKO" 's/^# T13.6 — cross-plugin markers$/exit 0/'
+# the missing-plugin sentence and the generated copies of the registry (ADR-028)
+plugin_case P1598-registry-source-not-rebuilt T1 docs/framework/OWNERSHIP.md 's/^| any repository with git | /| any repository under git | /'
 # The ownership checker's own code (ADR-023 moved these out of ownership: they
 # depend on the checker and its fixture tests only, so a plugin or registry change
 # need not run them). Judged on T13.0, so the baseline runs T13.0.

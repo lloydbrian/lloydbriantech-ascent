@@ -10,8 +10,9 @@
 #       make qa            frontmatter (incl. trigger-first descriptions),
 #                          links, template placeholders
 #       make test-skills   renders the template, runs all 28 skill tests
-#       make test-plugins  plugin gate T1–T16: drift, names, versions, read-only,
-#                          and the framework's own decision record (T16)
+#       make test-plugins  plugin gate T1–T17: drift, names, versions, read-only,
+#                          the framework's own decision record (T16) and release
+#                          evidence (T17),
 #                          agents, links, behavior tests, ownership, fast-mode and
 #                          scope self-tests; 'claude plugin validate' runs locally,
 #                          SKIPs in CI. T11 runs the behavior tests of the plugins

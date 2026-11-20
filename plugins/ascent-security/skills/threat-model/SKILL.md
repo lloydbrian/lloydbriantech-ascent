@@ -9,7 +9,7 @@ description: >-
   threats to each, with a mitigation in code or an accepted ADR, and checks
   it (SEC-T1–T4). Writes only that file, with surgical edits; a person
   reviews and dates it.
-version: 0.3.0
+version: 0.4.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -87,6 +87,8 @@ Other observations (unrated, not counted above):
 Script output: <check-threat-model output, verbatim>
 Recommended next: <a person reviews and dates the model; fixes for open threats; ADRs for accepted ones; security-test for the live checks>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

@@ -1,6 +1,6 @@
 {
   "name": "ascent-docs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Documentation that can be found and stays true, for any repository: a rated documentation review (links and anchors, stale markers and documents older than what they describe, dated by git, the README, persona entry points and how many links away each document is), drift checks for what documents name that the repository no longer has (paths, make targets, package scripts, environment variables, the version, pinned runtimes), new documents from stubs with guidance in every section (tutorial, how-to, reference, explanation, persona entry point), a read-only onboarding walkthrough, plus a read-only docs-reviewer agent.",
   "author": {
     "name": "lloydbriantech"

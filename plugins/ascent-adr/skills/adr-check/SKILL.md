@@ -10,7 +10,7 @@ description: >-
   since acceptance, from git history) and the declared constraints (DEC-C1–C3,
   with decision-drift), and rates the decision record strong, moderate or
   weak with file:line evidence. Read-only.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -94,5 +94,7 @@ N/A: <rule — why>
 Other observations (unrated)
 Recommended next: <adr-write to supersede or complete an ADR; decision-drift to declare constraints>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 The checks prove that decisions are recorded and kept, not that they are right: end the report with that sentence.

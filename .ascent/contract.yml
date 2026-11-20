@@ -1,7 +1,9 @@
 # .ascent/contract.yml: this repository's own project contract. The framework is
 # its own first user (CLAUDE.md): the decisions: section is read by ascent-adr and
 # by the plugin gate's T16, which checks the framework's ADRs on every run
-# (ADR-027). Never put credentials or personal data in this file.
+# (ADR-027); the governance: section is read by ascent-governance and by T17,
+# which asks "are we ready for a release?" on every run (ADR-028). Never put
+# credentials or personal data in this file.
 
 version: 1
 
@@ -19,3 +21,12 @@ decisions:
       reason: v0.4.3 (ascent-security 0.1.1) added a paragraph on the version gate to ADR-009 after its release in v0.4.2; the text is kept, and later changes go in a new ADR
 
   constraints: []
+
+# The framework's ladder: a working copy (local), then a tagged release. A
+# release needs the decision record to pass; the rest of the release bar (the
+# gate, the negative controls, the trial) is the operator's runbook.
+governance:
+  environments: [local, release]
+  floors:
+    release:
+      checks: [ascent-adr/check-adrs]
