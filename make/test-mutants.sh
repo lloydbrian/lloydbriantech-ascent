@@ -1867,6 +1867,9 @@ plugin_case P1280-gov-gate-not-run T11 "$GCS" 's/^    ASCENT_GOVERNANCE_GATE=1 s
 plugin_case P1281-gov-defaults-ux-without-ui T11 "$GCS" "s/^    ascent-ux\\/\\*|ux-review) has_file /    ascent-ux\\/*|ux-review) true || has_file /"
 plugin_case P1282-gov-defaults-ops-without-iac T11 "$GCS" 's/^    ascent-ops\/\*|ops-review|architecture-review) chas architecture\. || /    ascent-ops\/*|ops-review|architecture-review) true || /'
 plugin_case P1283-gov-defaults-ui-not-seen T11 "$GCS" "s/^    ascent-ux\\/\\*|ux-review) has_file /    ascent-ux\\/*|ux-review) false \\&\\& has_file /"
+# The maturity, the ladder and its environments, this repository's own evidence and the
+# section's shape: split from ascent-governance so each macOS job keeps inside 25 minutes
+mutant_group ascent-governance-ladder
 plugin_case P1284-gov-maturity-last-wins T11 "$GCS" 's/\[ "\$r" -gt 0 \] \&\& \[ "\$r" -lt "\$best" \] \&\& {/[ "$r" -gt 0 ] \&\& {/'
 plugin_case P1285-gov-maturity-own-target-ignored T11 "$GCS" 's/^MATURITY=\$(cget governance.maturity_target); /MATURITY=""; /'
 plugin_case P1286-gov-prototype-full-floor T11 "$GCS" 's/^    \[ "\$MATURITY" = prototype \] \&\& continue$/    :/'
@@ -1997,7 +2000,7 @@ plugin_case P1397-adr-default-folders-unread T11 "$GCS" 's/; \[ -n "\$ADR_FALLBA
 plugin_case P1398-waiver-family-unregistered T13.10 docs/framework/OWNERSHIP.md '/^| `GOV-W` | /d'
 plugin_case P1643-waiver-no-skips-passes T11 "$GAU" 's/^    if (skips == "") fail(4,/    if (0) fail(4,/'
 
-mutant_group ascent-governance-reviews
+mutant_group ascent-governance-reviews-1
 GLR="$GOVP/scripts/lib/log-rows.awk"
 plugin_case P1399-r1-launch-not-high T11 "$GAU" 's/  sev = launch ? "High" : "Medium"; st = "due"/  sev = "Medium"; st = "due"/'
 plugin_case P1400-r1-always-high T11 "$GAU" 's/  sev = launch ? "High" : "Medium"; st = "due"/  sev = "High"; st = "due"/'
@@ -2037,6 +2040,7 @@ plugin_case P1433-r3-no-log-passes T11 "$GAU" 's/  if (!haslog) row("setup", "GO
 plugin_case P1434-reviews-read-off-the-floor T11 "$GAU" 's/  if (NREV > 0) reviews()/  if (1) reviews()/'
 plugin_case P1435-log-first-table-read T11 "$GLR" 's/  if (n == 9 \&\& tolower(c\[1\]) == "date" /  if (n >= 2 || tolower(c[1]) == "date" /'
 plugin_case P1436-log-row-cells-not-counted T11 "$GLR" 's/printf "R\\t%d\\t%d", FNR, n$/printf "R\\t%d\\t%d", FNR, 9/'
+mutant_group ascent-governance-reviews-2
 plugin_case P1437-log-rule-row-read T11 "$GLR" '/^  if (rule) next$/d'
 plugin_case P1438-log-header-case T11 "$GLR" 's/tolower(c\[1\]) == "date"/c[1] == "Date"/'
 plugin_case P1439-log-crlf-unread T11 "$GLR" 's/  line = \$0; sub(\/\\r\$\/, "", line)/  line = $0/'
@@ -2048,6 +2052,7 @@ plugin_case P1444-r4-working-copy-unread T11 "$GCS" 's/^    if git cat-file -e "
 plugin_case P1445-r4-shallow-clone-read T11 "$GCS" 's/  elif \[ "\$(git rev-parse --is-shallow-repository 2>\/dev\/null)" = true \]; then R4NA=/  elif false; then R4NA=/'
 plugin_case P1446-r4-untracked-log-read T11 "$GCS" 's/  elif ! git ls-files --error-unmatch -- "\$REVIEW_LOG" >\/dev\/null 2>\&1; then R4NA=/  elif false; then R4NA=/'
 plugin_case P1447-r4-no-git-ignored T11 "$GCS" 's/  elif \[ "\$NOGIT" -eq 1 \]; then R4NA="--no-git given"/  elif false; then R4NA="--no-git given"/'
+mutant_group ascent-governance-reviews-3
 plugin_case P1448-r4-outside-git-unnamed T11 "$GCS" 's/  elif ! command -v git >\/dev\/null 2>\&1 || ! git rev-parse --is-inside-work-tree >\/dev\/null 2>\&1; then R4NA="not a git repository"/  elif false; then R4NA="not a git repository"/'
 plugin_case P1449-r4-checked-off-the-floor T11 "$GCS" 's/^if grep -q "^review\$TAB" "\$T\/floor.tsv"; then$/if true; then/'
 plugin_case P1450-review-log-path-ignored T11 "$GCS" 's/^REVIEW_LOG=\$(cget governance.review_log); /REVIEW_LOG=""; /'
@@ -2063,7 +2068,7 @@ plugin_case P1640-logrows-tab-ends-a-cell T11 "$GLR" '/^  gsub(\/\\t\/, " ", lin
 plugin_case P1641-logrows-second-header-is-a-row T11 "$GLR" '/^  if (head) next$/d'
 plugin_case P1642-waiver-unreal-date-still-covers T11 "$GAU" 's/else if (!realdate(rb)) { EXPIRED\[w\] = 1; fail(3/else if (!realdate(rb)) { fail(3/'
 
-mutant_group ascent-governance-launch
+mutant_group ascent-governance-launch-1
 plugin_case P1453-record-overwrites T11 "$GCS" 's/^  \[ ! -e "\$RECORD" \] || bad /  true || bad /'
 plugin_case P1454-record-of-a-changed-working-copy T11 "$GCS" 's/^  if \[ -s "\$T\/dirty" \]; then$/  if false; then/'
 plugin_case P1455-record-untracked-files-unseen T11 "$GCS" 's/; git -c core.quotepath=off ls-files --others --exclude-standard -- \. 2>\/dev\/null; } | not_records/; } | not_records/'
@@ -2074,6 +2079,7 @@ plugin_case P1459-record-does-not-ask-the-launch-question T11 "$GCS" 's/    --re
 plugin_case P1460-records-review-log-counts-as-a-change T11 "$GCS" "s/ \\&\\& \\\$0 != log_'; }/'; }/"
 plugin_case P1461-records-launch-folder-counts-as-a-change T11 "$GCS" "s/'NF \\&\\& index(\\\$0, ld) != 1 \\&\\& /'NF \\&\\& /"
 plugin_case P1462-records-lookalike-folder-exempt T11 "$GCS" 's/^not_records() { awk -v ld="\$LAUNCH_DIR\/" /not_records() { awk -v ld="$LAUNCH_DIR" /'
+mutant_group ascent-governance-launch-2
 plugin_case P1463-record-signed-by-the-script T11 "$GRA" 's/      printf "\*\*Signed:\*\*\\n\\n\*\*Date:\*\*\\n"/      printf "**Signed:** Claude\\n\\n**Date:**\\n"/'
 plugin_case P1464-record-dated-by-the-script T11 "$GRA" 's/      printf "\*\*Signed:\*\*\\n\\n\*\*Date:\*\*\\n"/      printf "**Signed:**\\n\\n**Date:** %s\\n", date/'
 plugin_case P1465-record-without-summary-place T11 "$GRA" '/^    if (sign) printf "## In plain words/d'
@@ -2095,6 +2101,7 @@ plugin_case P1480-l3-undated-message T11 "$GCS" 's/      elif \[ "\$ld" = - \]; 
 plugin_case P1481-l3-unreal-date-counts T11 "$GCS" 's/      elif ! realdate "\$ld"; then why=/      elif false; then why=/'
 plugin_case P1482-l3-future-date-counts T11 "$GCS" 's/      elif \[ "\$ld" \\> "\$TODAY" \]; then why=/      elif false; then why=/'
 plugin_case P1483-l3-nogo-message T11 "$GCS" 's/      elif \[ "\$lv" = NO-GO \]; then why=/      elif false; then why=/'
+mutant_group ascent-governance-launch-3
 plugin_case P1484-l3-any-verdict-counts T11 "$GCS" 's/      elif \[ "\$lv" != GO \] \&\& \[ "\$lv" != "GO WITH CONDITIONS" \]; then why=/      elif [ "$lv" = NO-GO ]; then why=/'
 plugin_case P1485-l3-no-verdict-message T11 "$GCS" 's/      if \[ "\$lv" = - \]; then why=/      if false; then why=/'
 plugin_case P1486-l3-oldest-record-wins T11 "$GCS" 's/^    NEWEST=\$(tail -1 "\$T\/records")$/    NEWEST=$(head -1 "$T\/records")/'
@@ -2110,6 +2117,7 @@ plugin_case P1495-l5-not-high T11 "$GCS" 's/            item launch GOV-L5 fail 
 plugin_case P1496-l5-record-without-commit-message T11 "$GCS" 's/        elif \[ -z "\$lc" \]; then item launch GOV-L5 fail High /        elif false; then item launch GOV-L5 fail High /'
 plugin_case P1497-l5-unknown-commit-passes T11 "$GCS" 's/        elif ! git cat-file -e "\$lc^{commit}" 2>\/dev\/null; then$/        elif false; then/'
 plugin_case P1498-l5-shallow-clone-unexplained T11 "$GCS" 's/          if \[ "\$(git rev-parse --is-shallow-repository 2>\/dev\/null)" = true \]; then item launch GOV-L5 fail High /          if false; then item launch GOV-L5 fail High /'
+mutant_group ascent-governance-launch-4
 plugin_case P1499-l5-outside-git-unexplained T11 "$GCS" 's/        elif ! in_git; then item launch GOV-L5 fail High /        elif false; then item launch GOV-L5 fail High /'
 plugin_case P1500-l5-no-git-fails T11 "$GCS" 's/        if \[ "\$NOGIT" -eq 1 \]; then item launch GOV-L5 na /        if false; then item launch GOV-L5 na /'
 plugin_case P1501-r4-signed-launch-does-not-reset T11 "$GCS" 's/^    \[ -z "\$SIGNED_COMMIT" \] || { RANGE=/    true || { RANGE=/'
@@ -2125,7 +2133,7 @@ plugin_case P1650-record-path-read-as-typed T11 "$GCS" 's/^  rp=\$(lexical "\$RE
 plugin_case P1651-record-path-from-the-repo T11 "$GCS" '/^\[ -z "\$RECORD" \] || RECORD=\$(abspath "\$RECORD")$/d'
 plugin_case P1652-l3-message-names-no-file T11 "$GCS" 's/--record \$LAUNCH_DIR\/\$TODAY-\$ENVNAME\.md, then a person signs it/--record, then a person signs it/'
 
-mutant_group ascent-governance-views
+mutant_group ascent-governance-views-1
 GMH="$GOVP/scripts/lib/md-html.awk"
 plugin_case P1503-html-tag-not-escaped T11 "$GMH" '/^    else if (c == "<") out = out "&lt;"$/d'
 plugin_case P1504-html-ampersand-not-escaped T11 "$GMH" 's/^    if (c == "&") out = out /    if (0) out = out /'
@@ -2159,6 +2167,7 @@ plugin_case P1531-html-folder-not-made T11 "$GCS" 's/^  mkdir -p "\$(dirname "\$
 plugin_case P1532-html-run-as-a-record T11 "$GCS" 's/^if \[ -n "\$HTML" \]; then markdown 0 /if [ -n "$HTML" ]; then markdown 1 /'
 plugin_case P1533-summary-written-when-unset T11 "$GCS" 's/^if \[ -n "\${GITHUB_STEP_SUMMARY:-}" \]; then$/if true; then/'
 plugin_case P1534-summary-overwrites-the-job-s T11 "$GCS" 's/echo; } >> "\$GITHUB_STEP_SUMMARY"; }/echo; } > "$GITHUB_STEP_SUMMARY"; }/'
+mutant_group ascent-governance-views-2
 plugin_case P1535-summary-as-a-record T11 "$GCS" 's/^  { { markdown 0 "\$NOW_COMMIT"; echo; }/  { { markdown 1 "$NOW_COMMIT"; echo; }/'
 plugin_case P1536-summary-failure-fails-the-run T11 "$GCS" 's/; } 2>\/dev\/null || echo "check-audit: could not write the job summary to \$GITHUB_STEP_SUMMARY" >\&2$/; } 2>\/dev\/null/'
 plugin_case P1537-summary-titled-as-a-record T11 "$GRA" 's/(sign ? "Launch record" : "Launch readiness")/"Launch record"/'
