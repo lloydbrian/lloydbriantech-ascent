@@ -45,7 +45,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 - "Recommended next" in every hand-written skill that has the line also names the plugins whose signal the repository shows and whose skills the session lacks, from `references/plugin-signals.md`, which `make plugins` generates from the registry; `ascent-governance` also carries the whole registry as `references/registry.md`
 - This repository's contract gains a `governance` section (ladder `local`, `release`); gate check T17 runs `check-audit.sh --env release` on the framework itself
 - Tests: `test-check-audit.sh` (167), `test-contract-reader.sh` (66), `test-adapters.sh` (253), `test-waivers.sh` (91), `test-review-log.sh` (137), `test-launch-records.sh` (156), `test-views.sh` (212), `test-governance-rules.sh` (164), `test-check-env.sh` (75); the script tests run on the default awk, mawk and gawk, against throwaway git repositories with set dates
-- Controls P1242–P1667, most of them in the new groups `ascent-security-env`, `ascent-governance`, `ascent-governance-adapters`, `ascent-governance-waivers`, `ascent-governance-reviews`, `ascent-governance-launch`, `ascent-governance-views` and `ascent-governance-rules`, each checked to change its file under BSD and GNU sed
+- Controls P1242–P1667, most of them in the new groups `ascent-security-env`, `ascent-governance`, `ascent-governance-ladder`, `ascent-governance-adapters`, `ascent-governance-waivers`, `ascent-governance-reviews-1` to `-3`, `ascent-governance-launch-1` to `-4`, `ascent-governance-views-1` and `-2` and `ascent-governance-rules` (the slow areas split so that each CI job on macOS keeps inside 25 minutes), each checked to change its file under BSD and GNU sed
 - ADR-028
 
 ### Changed
@@ -56,6 +56,7 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 - The registry: one plugin, three skills, one agent, families `GOV-S`, `GOV-L`, `GOV-W`, `GOV-R` and `SEC-E`, the `governance` section, and the launch-readiness domain released
 - The roadmap: auditability, the governance conductor and "Recommended next" are done; `ascent-node-stack` moves to last
 - PILLARS: launch readiness, waivers and review records are new rows; the change audit trail is checked for acceptance and launch records; decision traceability stays partial
+- CI: the harness self-test job may run 75 minutes, up from 45: on macOS its parallel-run test reruns the whole gate, which the governance tests lengthen, and went past 45 minutes on this release's pull request
 - The README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and the banners for 0.4.24; the plugin figure is 10, the component figure 48, the suite figure 74, the control figure 1732 (1306 plus P1242–P1667) and the decision figure 28
 
 ### Fixed

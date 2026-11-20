@@ -101,4 +101,4 @@ A project that writes its own `floors` gets exactly those, at any maturity.
 - `test-views.sh`: the job summary and the HTML page: self-contained, escaped, never in the launch folder
 - `test-governance-rules.sh`: the skills and the agent against the script, the severity table, the contract keys, and bash 3.2
 
-`make test-mutants GROUP=ascent-governance` and the groups `ascent-governance-adapters`, `-waivers`, `-reviews`, `-launch`, `-views` and `-rules` add negative controls that must each make a named check fail.
+`make test-mutants GROUP=ascent-governance` and the groups `ascent-governance-ladder`, `-adapters`, `-waivers`, `-reviews-1` to `-reviews-3`, `-launch-1` to `-launch-4`, `-views-1`, `-views-2` and `-rules` add negative controls that must each make a named check fail. The slow areas are split so that each CI job on macOS keeps inside 25 minutes.

@@ -222,14 +222,16 @@ jobs:
     # The harness's slow self-tests (ADR-018): fast mode runs one gate section at
     # a time, which is sound only while the sections are independent, and runs
     # controls in parallel, which must report exactly what a serial run reports.
-    # Together they take about 15 minutes locally, so they run as separate jobs;
-    # macOS runners are slower and have 3 cores, hence 45 minutes. They run when
+    # Together they take about 15 minutes locally, so they run as separate jobs.
+    # macOS runners are slower and have 3 cores: the parallel-run test took 30 to
+    # 35 minutes there until v0.4.24, whose governance tests lengthen the whole
+    # gate that three of its controls rerun, and went past 45; hence 75. They run when
     # the harness or the gate changes, on main and weekly: the scope names them.
     name: Harness self-test (${{ matrix.os }}, ${{ matrix.test }})
     needs: scope
     if: needs.scope.outputs.harness != '[]'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
