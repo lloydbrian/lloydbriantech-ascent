@@ -8,7 +8,7 @@ description: >-
   configuration stores, scripts, runbooks, manuals and health endpoints,
   checks six lenses, runs the IaC, script, manual and drill checks, and
   reports strong, moderate or weak with file:line evidence. Read-only.
-version: 0.3.0
+version: 0.3.1
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
@@ -188,6 +188,8 @@ Mechanical checks (Step 3): <the four scripts' output, verbatim>
 Health endpoints (Step 4): <per endpoint: path, route, probes, or "not applicable: <reason>">
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

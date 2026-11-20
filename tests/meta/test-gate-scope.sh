@@ -193,12 +193,13 @@ if grep -q '^  plugins/alpha/scripts/a.sh  *plugin alpha: T11 for alpha' "$WORK/
 else bad "--explain does not give the path's rule and what runs: $(head -3 "$WORK/err" | tr '\n' ';')"; fi
 
 # The repository's own behavior tests: ascent-ops reads the observability
-# contract and the template, and ascent-architecture reads every plugin's directory
+# contract and the template; ascent-architecture reads every plugin's directory, and
+# ascent-governance runs every plugin's checkers through its adapter table
 SCOPE_TESTS="" ; paths skills/lloydbriantech-ascent/references/observability-contract.md
 expect real-reader-ops t11=ascent-ops
 paths skills/lloydbriantech-ascent/assets/template/backend/routes/health.js
 expect real-reader-template t11=ascent-ops "targets=[$(g core)]"
-paths plugins/gamma/x.sh; expect real-reader-every-plugin "t11=ascent-architecture gamma" "targets=[$(g ownership)]"
+paths plugins/gamma/x.sh; expect real-reader-every-plugin "t11=ascent-architecture ascent-governance gamma" "targets=[$(g ownership)]"
 unset SCOPE_TESTS
 
 # The repository's own controls

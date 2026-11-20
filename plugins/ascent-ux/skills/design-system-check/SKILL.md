@@ -7,7 +7,7 @@ description: >-
   bypass it, checks theming through tokens and reduced motion, computes WCAG
   contrast for every token pair in every theme, and checks component states.
   Read-only.
-version: 0.3.1
+version: 0.3.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -89,6 +89,8 @@ Theming and motion (Step 4): <one line each>
 States (Step 5): <component | states present | missing>
 Recommended next: <design-directions when there is no token source or the operator wants a new look>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

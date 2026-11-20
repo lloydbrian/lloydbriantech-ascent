@@ -8,7 +8,7 @@ description: >-
   dynamic code execution (eval, new Function). Not
   for an overall rating (use sec-posture) or full .env discipline (use
   env-audit).
-version: 0.3.0
+version: 0.4.0
 allowed-tools:
   - Read
   - Grep

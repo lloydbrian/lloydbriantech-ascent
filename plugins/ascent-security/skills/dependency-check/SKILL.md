@@ -10,7 +10,7 @@ description: >-
   (SEC-D7–D9), and checks scanner ignore entries for waivers (SEC-D10).
   Read-only; anything that uses the network runs only after the operator
   agrees.
-version: 0.3.0
+version: 0.4.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -120,6 +120,8 @@ Other observations (unrated, not counted above):
 Script output: <check-dependencies and run-vuln-scan output, verbatim>
 Recommended next: <runbook items for the operator: database refresh, upgrades, waiver ADRs>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

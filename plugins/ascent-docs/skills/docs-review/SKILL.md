@@ -11,7 +11,7 @@ description: >-
   that the repository no longer has (DOC-R1–R6, with doc-drift); reads the
   newest documents for what scripts cannot judge; and rates the
   documentation strong, moderate or weak with file:line evidence. Read-only.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -94,5 +94,7 @@ Notes: <recent stale markers, from the NOTE lines>
 Other observations (unrated)
 Recommended next: <doc-drift to fix what documents name; doc-stub for a missing page; onboard to walk a persona's path; ascent-adr or ascent-ops for their files>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 The checks prove that documents can be found and name what exists, not that they are right: end the report with that sentence.

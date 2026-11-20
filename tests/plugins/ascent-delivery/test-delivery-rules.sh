@@ -98,5 +98,15 @@ EOF_STEPS
 # D8 — the template's table is the one the check reads
 has D8 "$ACCEPT" '| # | Criterion | Evidence | Accepted by | Accepted on |'
 
+# D9 — launch evidence before prod (ADR-028): only with a governance section, labelled C,
+# NO-GO stops prod, and a missing plugin is said and skipped
+has D9 "$SKILL" '- **Launch evidence.** When the contract has a `governance` section, the prod runbook'"'"'s second step runs'
+has D9 "$SKILL" 'check-audit.sh --env prod .`'
+has D9 "$SKILL" 'labelled C; its **Stop if** is `NO-GO`, or any exit other than 0 (the script exits 2, with no verdict, when it cannot read what it was given).'
+has D9 "$SKILL" 'When `ascent-governance` isn'"'"'t available, say so and skip it'
+has D9 "$SKILL" '$PLUGIN_ROOT/../ascent-governance/scripts/check-audit.sh'
+has D9 "$SKILL" '- the launch evidence check prints `NO-GO`, or exits with anything but 0 (Step 7);'
+if [ -f "$PLUGIN/../ascent-governance/scripts/check-audit.sh" ]; then ok; else bad "D9 the path the skill names for check-audit.sh does not exist in a checkout"; fi
+
 printf "test-delivery-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

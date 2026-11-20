@@ -29,6 +29,52 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.24] — 2026-11-20
+
+**Launch readiness and auditability.** A new plugin, `ascent-governance`, answers one question for one environment at a time, "are we ready to go live here?", with GO, NO-GO or GO WITH CONDITIONS, and cites every reason ([ADR-028](docs/framework/DECISIONS/ADR-028-auditability-and-the-governance-conductor.md)). The other plugins' checks run fresh at no token cost, each review that needs judgement leaves a dated record, every waiver is listed with its ADR and its review date, and the answer is a launch record that Claude drafts and only a person signs. The same check runs in a project's own CI, and on every gate run of this repository.
+
+### Added
+
+- `ascent-governance` 0.1.0: skills `launch-readiness` (entry point, `gov-severity` table), `governance-review` and `review-record`, agent `governance-conductor`
+- `scripts/check-audit.sh`: an environment's floor from the contract's new `governance` section, each floor inheriting the ones below it; `GOV-S1`–`S2` (the section can be read and run), `GOV-L1`–`L5` (every check on the floor passes and is measured; the launch record is signed by a person, by a listed approver, for the code as it is), `GOV-W1`–`W4` (every waiver has an accepted ADR and a review date that has not passed) and `GOV-R1`–`R4` (each review has a record within its maximum age, with no open High finding, in a log that is only added to)
+- `scripts/lib/adapters.tsv`: how each of nine checkers in seven plugins is run from the contract; a behavior test holds every option against the checker's own usage line
+- Three views of one result: `--record` writes the launch record (never over an existing one, and only when the working copy is the commit it names), `$GITHUB_STEP_SUMMARY` gets the same result in CI, and `--html` writes one page with no script and nothing fetched (`--html --from <record>` for a signed record)
+- Default floors when the contract has no `governance` section: by maturity target, and only for the plugins whose signal the repository shows; a plugin that is not available is unmeasured, never a NO-GO
+- `ascent-security` 0.4.0: `scripts/check-env.sh`, `SEC-E1`–`E3`: no `.env` file tracked by git, every `.env` file ignored, every `.dockerignore` excludes it; it reads file names only, never a value
+- `ascent-delivery` 0.2.2: with a `governance` section in the contract, the prod runbook's second step runs `check-audit.sh --env prod` and stops on NO-GO
+- "Recommended next" in every hand-written skill that has the line also names the plugins whose signal the repository shows and whose skills the session lacks, from `references/plugin-signals.md`, which `make plugins` generates from the registry; `ascent-governance` also carries the whole registry as `references/registry.md`
+- This repository's contract gains a `governance` section (ladder `local`, `release`); gate check T17 runs `check-audit.sh --env release` on the framework itself
+- Tests: `test-check-audit.sh` (167), `test-contract-reader.sh` (66), `test-adapters.sh` (253), `test-waivers.sh` (91), `test-review-log.sh` (137), `test-launch-records.sh` (156), `test-views.sh` (212), `test-governance-rules.sh` (164), `test-check-env.sh` (75); the script tests run on the default awk, mawk and gawk, against throwaway git repositories with set dates
+- Controls P1242–P1667, most of them in the new groups `ascent-security-env`, `ascent-governance`, `ascent-governance-adapters`, `ascent-governance-waivers`, `ascent-governance-reviews`, `ascent-governance-launch`, `ascent-governance-views` and `ascent-governance-rules`, each checked to change its file under BSD and GNU sed
+- ADR-028
+
+### Changed
+
+- Framework 0.4.23 → 0.4.24; `ascent-security` 0.3.0 → 0.4.0, `ascent-delivery` 0.2.1 → 0.2.2, `ascent-architecture` 0.2.1 → 0.2.2, `ascent-ux` 0.3.1 → 0.3.2, `ascent-ops` 0.3.0 → 0.3.1, `ascent-quality` 0.2.0 → 0.2.1, `ascent-adr` 0.1.0 → 0.1.1, `ascent-docs` 0.1.0 → 0.1.1; `ascent-session` stays 0.1.0
+- Gate check T1 compares every file `make plugins` writes with a fresh build, so a stale copy of the registry fails; a change to `docs/framework/OWNERSHIP.md` now comes with `make plugins` and a version bump of the plugins whose copies changed
+- The gate checks the `gov-severity` table (T5) and has seventeen sections
+- The registry: one plugin, three skills, one agent, families `GOV-S`, `GOV-L`, `GOV-W`, `GOV-R` and `SEC-E`, the `governance` section, and the launch-readiness domain released
+- The roadmap: auditability, the governance conductor and "Recommended next" are done; `ascent-node-stack` moves to last
+- PILLARS: launch readiness, waivers and review records are new rows; the change audit trail is checked for acceptance and launch records; decision traceability stays partial
+- The README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and the banners for 0.4.24; the plugin figure is 10, the component figure 48, the suite figure 74, the control figure 1732 (1306 plus P1242–P1667) and the decision figure 28
+
+### Fixed
+
+- Calibrated on a read-only trial of three repositories, before release: with no `ux.pages` in the contract, `ascent-ux/check-flow-integrity` is unmeasured and says which key to set, where it had read every HTML file in the repository, generated coverage reports included; `SEC-E3` cites the line of a `.dockerignore` that holds several patterns, which Docker reads as one pattern that excludes nothing
+- The scope self-test expects `ascent-governance`'s behavior tests to run when any plugin's files change, because they run every plugin's checkers
+- From the independent review, before release, each finding checked by the finding verifier before it was fixed, each fix with a test that failed first and a negative control:
+  - `GOV-S1` fails a `governance` section with a key this version does not read or a value of the wrong kind. `sign_off: yes`, a misspelled `sign_off`, `reviews` written as a list, or `checks` and `approvers` written as one word had been read as "no sign-off, no reviews, no checks", and the answer could be GO. The contract reader continues an inline map over several lines, reads a map inside a map, and drops a byte-order mark
+  - A checker that stops without finishing (any exit but 0, 1 or 2) is a failed check (`GOV-L1`), not a broken adapter; an acceptance record that cannot be read no longer hides another record that fails; a checker whose every line is `N/A` is unmeasured, and one that left rules out says which
+  - The review log: a row that cannot be read and is newer than a review's newest readable row makes that review due; a row below a blank line or a note is read, where it had been dropped; a High count above the number of rule ids named is a High finding; a tab inside a cell no longer cuts the cell
+  - Waivers: one whose `review_by` is not a date covers nothing; one that does not say what it skips is a Medium finding (`GOV-W4`)
+  - Launch records: a signature needs a letter, so a line of underscores is not one; a record file dated after today, or on no real day, is not read; a file moved into the launch folder is a change to the file it was (`GOV-L5`, `--record`); `--record` accepts a doubled slash, and the `GOV-L3` message names the file to write
+  - The page: never written through a link, into a new folder under a link to the launch folder, into the launch folder under another spelling, or over a file that only quotes the script's mark; a backslash, a link or bold in a contract value is shown as text in the record, the job summary and the page
+  - `--env` is one whole name of the ladder, and an environment's name is letters, digits, `-` and `_`; a ladder of one rung carries every tier; `governance.launch_dir` and `review_log` are paths inside the repository; the contract's gate is not run inside itself; in the plugin cache the highest version is found by number; `--record`, `--html` and `--from` are read from where the command is run
+  - `SEC-E1` reads paths that git prints in quotes (a space, a letter outside ASCII) as they are; `SEC-E3` reads `Dockerfile.dockerignore` as an ignore file
+  - `delivery-loop` stops the prod runbook on `NO-GO` or on any exit other than 0; `launch-readiness` writes no record of a NO-GO unless the operator asks for one; `review-record` names one rule id for each open High finding
+
+---
+
 ## [0.4.23] — 2026-11-18
 
 **Decision records, session continuity and documentation.** Three hand-written plugins that work in any repository ship in one release ([ADR-027](docs/framework/DECISIONS/ADR-027-decision-session-and-documentation-plugins.md)): `ascent-adr` keeps the decision record whole and the code true to it, `ascent-session` carries the work from one session, and one person, to the next, and `ascent-docs` keeps documentation findable and true to the repository. The delivery loop gains a lens for each review, and the framework now checks its own ADRs on every gate run.

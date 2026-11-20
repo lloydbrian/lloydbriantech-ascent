@@ -1,0 +1,70 @@
+# .ascent/contract.yml: the governance: section (ascent-governance). One project
+# contract, one section per ASCENT plugin (ADR-011, ADR-028). Where ASCENT-named
+# files are not allowed, use .claude/contract.yml instead. Commit it: it is the
+# project's own statement of what each launch needs.
+#
+# launch-readiness proposes this section from what the repository already has and
+# asks the operator to confirm it once (detect, don't ask). Every guessed value is
+# marked "# guess" until confirmed. Never put credentials, account ids, email
+# addresses, phone numbers or other personal data in this file.
+#
+# Nothing here blocks anything by itself. check-audit.sh reports; a project chooses
+# to make it a gate by running it in its own CI (see the plugin's README).
+
+version: 1
+
+governance:
+  # enterprise | standard | prototype. Used only when floors: below is absent, to
+  # pick the default floors. At prototype only the local floor applies.
+  maturity_target: standard
+
+  # The ladder, lowest first. "Are we ready for <env>?" is asked per environment.
+  # Any names work; a project with no beta lists [local, prod].
+  environments: [local, beta, prod]
+
+  # What each environment needs. An environment inherits everything below it on
+  # the ladder, so list only what it adds. A floor is a floor, never a ceiling:
+  # any other plugin, check or review stays usable.
+  floors:
+    local:                                # the operator or owner uses it
+      # checks: bash checkers, run fresh every time at no token cost, named
+      # <plugin>/<script>. delivery/gate runs this contract's delivery.gate command.
+      checks: [ascent-security/check-env, delivery/gate]
+
+    beta:                                 # other people use it
+      checks: [ascent-security/check-dependencies, ascent-security/check-threat-model,
+               ascent-ux/check-flow-integrity, ascent-docs/check-docs]
+      # reviews: reviews that need Claude's reading, each with the most days its
+      # newest record in the review log may be old. The name is the skill that
+      # gives the rating.
+      reviews: { sec-posture: 30, ux-review: 60 }
+
+    prod:                                 # real users, real stakes
+      checks: [ascent-delivery/check-acceptance, ascent-ops/check-drills,
+               ascent-quality/check-test-evidence, ascent-adr/check-adrs]
+      reviews: { architecture-review: 90, ops-review: 90, quality-review: 90 }
+      # A person signs the launch record before this environment is ready.
+      sign_off: true
+
+  # The people who may sign a launch record, by the name or handle they sign with
+  # (a GitHub login is enough). Leave it empty and any person's name counts.
+  approvers: []
+  # approvers:
+  #   - ana-lopez
+
+  # The review log: one dated row per review, append-only. Only ascent-governance
+  # writes it (launch-readiness, review-record).
+  review_log: docs/governance/review-log.md
+
+  # Launch records, one per launch: <date>-<env>.md. Claude drafts each one; only a
+  # person fills in who signed it and when.
+  launch_dir: docs/governance/launches/
+
+  # Waivers that belong to no other section. Every section's waivers are read, and
+  # each needs an accepted ADR, what it skips and a review_by date. A waiver past
+  # its date is a finding again.
+  waivers: []
+  # waivers:
+  #   - id: ADR-031
+  #     skips: SEC-L4 on the legacy export endpoint, until it is retired
+  #     review_by: 2027-03-31

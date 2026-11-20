@@ -7,7 +7,7 @@ description: >-
   design principles, deployment and cost against the project contract, rates
   findings by severity, and recommends deeper skills only where a surface
   check flags a concern. Read-only.
-version: 0.2.1
+version: 0.2.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -170,6 +170,8 @@ Mechanical checks (Step 4): <script output, verbatim, or "not applicable: <why>"
 Cost (Step 4): <total, as_of date, budget, or "no usage profile" (+ illustrative estimate if offered)>
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security, ascent-ops when any item is marked → ascent-ops>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

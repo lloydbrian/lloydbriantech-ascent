@@ -10,7 +10,7 @@ description: >-
   traces each mismatch to the commit that changed the name, and proposes the
   exact edit for each; applies only the edits a person approves, to
   documents only, and never commits.
-version: 0.1.0
+version: 0.1.1
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

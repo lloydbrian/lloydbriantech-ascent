@@ -8,7 +8,7 @@ description: >-
   finding verifier, fix and re-test, definition of done, an operator runbook,
   beta verification, a person's acceptance sign-off, prod and a release record.
   Claude never runs git writes or deploys: the operator does, from the runbook.
-version: 0.2.1
+version: 0.2.2
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -147,6 +147,7 @@ bash "$PLUGIN_ROOT/scripts/check-acceptance.sh" --root . --acceptor '<each accep
 ```
 
   Any `FAIL` (DEL-A1 evidence, DEL-A2 a person's name and date, DEL-A3 a listed acceptor) stops prod. The prod runbook's first step runs the same check, labelled C, and its **Stop if** is any `FAIL`.
+- **Launch evidence.** When the contract has a `governance` section, the prod runbook's second step runs `ascent-governance`'s `check-audit.sh --env prod .` (with the contract's own name for production when its ladder has another), labelled C; its **Stop if** is `NO-GO`, or any exit other than 0 (the script exits 2, with no verdict, when it cannot read what it was given). The script is beside this plugin: `$PLUGIN_ROOT/../ascent-governance/scripts/check-audit.sh` in a checkout, or the newest version under `ascent-governance/` beside this plugin's folder in the plugin cache. When `ascent-governance` isn't available, say so and skip it: the launch evidence is then unmeasured, never passed.
 - Prod comes only after beta is fully verified and the record passes, and gets its own runbook. Take a snapshot before migrations, and verify prod the same way.
 - Append one line to the `release_log`:
 
@@ -173,6 +174,7 @@ Stop and hand control to the operator, with a recommendation, when:
 - the verifier marks a Critical or High finding UNCONFIRMED (Step 4);
 - any definition-of-done item lacks evidence (Step 5);
 - the acceptance record fails `check-acceptance.sh`: with `--draft` in Step 5, in full before prod (Step 7);
+- the launch evidence check prints `NO-GO`, or exits with anything but 0 (Step 7);
 - the operator's pasted output shows the wrong stage, an old build stamp or a failed smoke check (Step 7).
 
 ## What this skill does not do

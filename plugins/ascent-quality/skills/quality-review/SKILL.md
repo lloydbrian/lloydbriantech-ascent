@@ -8,7 +8,7 @@ description: >-
   (inventory, traceability, hygiene, load, mutation), runs the inventory, test
   and evidence checks, and reports strong, moderate or weak with file:line
   evidence. Read-only.
-version: 0.2.0
+version: 0.2.1
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
@@ -166,6 +166,8 @@ O<n>  <file>:<line>  <concern>  [→ ascent-ux | → ascent-ops | → ascent-del
 Mechanical checks (Step 3): <the three scripts' output, verbatim>
 Recommended next: <only the deeper skills whose surface checks flagged something, with the reason; ascent-security when any item is marked → ascent-security>
 ```
+
+Also name any plugin in `references/plugin-signals.md` whose signal this repository shows and whose skills are not available in this session, with its reason. The file is [plugin-signals.md](../../references/plugin-signals.md).
 
 ## What this skill does not do
 

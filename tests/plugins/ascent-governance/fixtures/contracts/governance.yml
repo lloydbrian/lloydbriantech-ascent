@@ -1,0 +1,20 @@
+version: 1
+
+governance:
+  environments: [local, beta, prod]     # the ladder, lowest first
+  floors:
+    local:
+      checks: [ascent-security/check-env]
+    beta:
+      checks: [ascent-security/check-dependencies, ascent-security/check-threat-model,
+               ascent-ux/check-flow-integrity, ascent-docs/check-docs]
+      reviews: { sec-posture: 30, ux-review: 60 }
+    prod:
+      checks: [ascent-delivery/check-acceptance, ascent-ops/check-drills,
+               ascent-quality/check-test-evidence, ascent-adr/check-adrs]
+      reviews: { architecture-review: 90, ops-review: 90, quality-review: 90 }
+      sign_off: true
+  approvers: []
+  review_log: docs/governance/review-log.md
+  launch_dir: docs/governance/launches/
+  waivers: []

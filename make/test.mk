@@ -25,7 +25,7 @@ test-mutants-groups:  ## TEST: List the negative-control groups as JSON (one CI 
 test-harness:  ## TEST: The harness's slow self-tests — gate sections run alone, parallel runs report as serial ones (ADR-018)
 	@bash tests/meta/test-gate-sections.sh && bash tests/meta/test-mutants-harness.sh
 
-test-plugins:  ## TEST: Plugin gate T1–T15 — drift, names, versions, read-only agents, links, behavior tests, ownership, fast-mode and scope self-tests
+test-plugins:  ## TEST: Plugin gate T1–T17 — drift, names, versions, read-only agents, links, behavior tests, ownership, fast-mode and scope self-tests, own ADRs and release evidence
 	@bash make/test-plugins.sh
 
 gate-scope:  ## TEST: Show which slow checks this branch needs, and why, from its changes against origin/main (BASE=<ref>; ADR-023)
