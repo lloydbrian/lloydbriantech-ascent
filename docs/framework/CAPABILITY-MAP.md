@@ -1,12 +1,12 @@
 # ASCENT capability map
 
-> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.24. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
+> What ASCENT can do today, what each plugin checks, and what comes next. Counts from the repository at v0.4.25. The ownership gate (`make ownership`, T13.11) checks every version and count on this page, and the figures in the README banner, against the repository.
 
 [At a glance](#at-a-glance) · [Plugins](#plugins) · [Parent skill](#parent-skill) · [Roadmap](#roadmap) · [Everything in one table](#everything-in-one-table)
 
 ## At a glance
 
-| **10**<br>plugins released | **48**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **74**<br>behavior-test suites | **1732**<br>negative controls | **28**<br>decision records |
+| **10**<br>plugins released | **48**<br>plugin skills, agents and hooks | **28**<br>skills in every scaffolded project | **74**<br>behavior-test suites | **1762**<br>negative controls | **29**<br>decision records |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 
 Every behavior-test suite runs on macOS and Linux. A negative control breaks one rule on purpose, and a named test must catch it.
@@ -101,11 +101,11 @@ Documents reachable from the README and each persona's entry point within a clic
 - **Skills:** `docs-review` · `doc-drift` · `doc-stub` · `onboard` · agent `docs-reviewer`
 - **Rules:** `DOC-L1`–`L5`, `DOC-P1`–`P4`, `DOC-R1`–`R6`
 
-### `ascent-governance` 0.1.0 · ✅ Released v0.4.24
+### `ascent-governance` 0.2.0 · ✅ Released v0.4.25
 
 > "Are we ready for prod? Which reviews are due? Draft the launch record."
 
-One answer for one environment at a time (local, beta, prod, or your own ladder): GO, NO-GO or GO WITH CONDITIONS, with every reason cited. The other plugins' checks run fresh at no token cost; each review that needs judgement leaves a dated record with a maximum age; every waiver is listed with its ADR and its review date; and the answer is a launch record that Claude drafts and only a person signs. The same result is a CI job summary and a one-file HTML page. It checks that the evidence exists and is current, not that the system is good.
+One answer for one environment at a time (local, beta, prod, or your own ladder): GO, NO-GO or GO WITH CONDITIONS, with every reason cited. The other plugins' checks run fresh at no token cost; each review that needs judgement leaves a dated record with a maximum age; every waiver is listed with its ADR and its review date; and the answer is a launch record that Claude drafts and only a person signs. The same result is a CI job summary and a one-file HTML page. A check that fails with only Medium or Low findings is a condition the builder can address, not a NO-GO. It checks that the evidence exists and is current, not that the system is good.
 
 - **Skills:** `launch-readiness` · `governance-review` · `review-record` · agent `governance-conductor`
 - **Rules:** `GOV-S1`–`S2`, `GOV-L1`–`L5`, `GOV-W1`–`W4`, `GOV-R1`–`R4`
@@ -120,7 +120,7 @@ One answer for one environment at a time (local, beta, prod, or your own ladder)
 | When | What | Status |
 |---|---|---|
 | v0.1 – v0.4.1 | Phases 0–3: foundation, parent skill, template assets, embedded skills | ✅ Done |
-| v0.4.2 – v0.4.24 | Ten plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, faster local verification, live security testing and a threat model, decision records, session continuity and documentation, launch readiness and auditability, and this map | ✅ Done |
+| v0.4.2 – v0.4.25 | Ten plugins, an ownership registry, a hardened gate, CI that runs what a change can affect, acceptance sign-off, faster local verification and faster negative controls, live security testing and a threat model, decision records, session continuity and documentation, launch readiness and auditability, and this map | ✅ Done |
 | Phases 4–7 | Scaffolding scripts, eval harness, starter repository, first production project | Awaiting go-signal |
 | plugin roadmap | `ascent-node-stack`, last, scoped when it starts | Planned |
 
@@ -139,5 +139,5 @@ Details and exit criteria: [ROADMAP.md](ROADMAP.md). Every change: [CHANGELOG.md
 | `ascent-adr` | Plugin · 3 skills, 1 agent | 0.1.1 | ✅ Released | v0.4.23 |
 | `ascent-session` | Plugin · 3 skills | 0.1.0 | ✅ Released | v0.4.23 |
 | `ascent-docs` | Plugin · 4 skills, 1 agent | 0.1.1 | ✅ Released | v0.4.23 |
-| `ascent-governance` | Plugin · 3 skills, 1 agent | 0.1.0 | ✅ Released | v0.4.24 |
-| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.24 | ✅ Released | Phase 3, v0.4.0 |
+| `ascent-governance` | Plugin · 3 skills, 1 agent | 0.2.0 | ✅ Released | v0.4.24 · conditions for Medium and Low failures in v0.4.25 |
+| `lloydbriantech-ascent` | Parent skill · 9 roles, 28 embedded skills | 0.4.25 | ✅ Released | Phase 3, v0.4.0 |

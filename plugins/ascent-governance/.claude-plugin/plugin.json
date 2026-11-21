@@ -1,6 +1,6 @@
 {
   "name": "ascent-governance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Launch readiness and auditability for any repository: answers \"are we ready for local, beta or prod?\" with GO, NO-GO or GO WITH CONDITIONS and a cited reason for each, from the other plugins' checkers run fresh, dated review records with a maximum age, every waiver with its expiry date, and a launch record Claude drafts and only a person signs; a bash checker (check-audit.sh) a project can run in its own CI at no token cost, with a CI job summary and a one-file HTML copy; plus a read-only governance-conductor agent.",
   "author": {
     "name": "lloydbriantech"
