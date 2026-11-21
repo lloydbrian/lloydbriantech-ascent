@@ -57,12 +57,12 @@ jobs:
         with:
           fetch-depth: 0        # GOV-L5 and GOV-R4 read the history
       - name: Get the ASCENT plugins, pinned
-        run: git clone --quiet --depth 1 --branch v0.4.24 https://github.com/lloydbrian/lloydbriantech-ascent "$RUNNER_TEMP/ascent"
+        run: git clone --quiet --depth 1 --branch v0.4.25 https://github.com/lloydbrian/lloydbriantech-ascent "$RUNNER_TEMP/ascent"
       - name: Launch evidence for prod
         run: bash "$RUNNER_TEMP/ascent/plugins/ascent-governance/scripts/check-audit.sh" --env prod .
 ```
 
-The job fails only on what it can check itself: a failing check, an expired waiver, an open High finding of a recorded review, or a prod floor with no signed launch record for the code as it is. A review that is due is reported in the summary and the job stays green; `launch-readiness` is where it becomes a NO-GO. To hold a deploy until the launch is signed, make the deploy job `needs: launch-evidence`. Nothing is held unless the project chooses that.
+The job fails only on what it can check itself: a check that fails with a High finding or stops without finishing, an expired waiver, an open High finding of a recorded review, or a prod floor with no signed launch record for the code as it is. A review that is due is reported in the summary and the job stays green; `launch-readiness` is where it becomes a NO-GO. A check that fails with only Medium or Low findings is listed in the summary as a condition, and the job stays green. To hold a deploy until the launch is signed, make the deploy job `needs: launch-evidence`. Nothing is held unless the project chooses that.
 
 ## Boundaries
 

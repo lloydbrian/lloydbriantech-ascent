@@ -29,6 +29,37 @@ See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadma
 
 ---
 
+## [0.4.25] — 2026-11-20
+
+**Faster negative controls, and conditions for Medium and Low check failures.** v0.4.24's governance controls were more than half of CI's macOS control time, mostly because the test that caught a control often ran last, and two baselines ran the same suite ([ADR-029](docs/framework/DECISIONS/ADR-029-learned-order-one-baseline-and-gov-l1-severity.md)). Fast mode now runs first the test that caught each control last time. The order cannot change a verdict, only how soon it is known. `ascent-governance` 0.2.0 rates a failing check by its checker's most severe finding, so a check that fails with only Medium or Low findings gives GO WITH CONDITIONS, and a High finding, or a checker that stops without finishing, still gives NO-GO.
+
+### Added
+
+- `make/mutant-order.tsv`, generated: for each T11 control, the behavior test that caught it in fast mode; `make mutant-order FROM=<times file>` (`make/mutant-order.sh`) merges a times file into it, keeps every other row and drops the rows of controls that no longer exist, and refuses a times file without the `caught by` column, leaving the file as it was; the file is readable by everyone, and a missing or damaged order file only costs time
+- `make/test-plugins.sh` reads `ASCENT_T11_LEAD=<test>`: in fast mode that test runs first, ahead of the path and file-name tiers; normal mode ignores it. The harness sets it for each control from the order file, and the summary adds an `order` line: how many T11 controls were led by their catching test, and how many stale rows were ignored
+- `make test-mutants TIMES=<file>` gains a seventh column, `caught by`
+- `make/test-mutants.sh --baselines` prints the baselines a run would launch, and stops
+- `MUTANT_FULL=<sections>` scopes the full-mode rerun of a control in the harness group: P359, P360, P362 and P373, the survivors and disagreements the self-test needs, no longer rerun the whole gate. The harness refuses it with exit 2 when it comes from the environment or when any line outside the harness group sets it, so a real control's full-mode rerun is always the whole gate
+- Tests: `test-gate-fast.sh` G15–G20 (32 → 64: the lead, a lead that passes, the catching test, merge, count and write, the baselines, the refusal in each form); `test-mutants-harness.sh`: the times file's seventh column, which baselines a T11-only and a mixed run launch, P835 through the fast-mode baseline, and seven order cases, among them a lead that names a passing test, which gives the same verdict, and an order file that cannot be read, which the harness reports as a copy failure instead of stopping; `test-check-audit.sh` (167 → 192), `test-adapters.sh` (253 → 261) and `test-governance-rules.sh` (164 → 167) for GOV-L1's severity
+- Controls P1668–P1697: the lead ignored, put last, honoured in normal mode or ending T11 when it passes; the catching test read wrongly; merge, count and write; the baselines; the refusal and its forms; GOV-L1 always High, from the first finding, an unknown severity or no FAIL line read as Low, only the first acceptance record, an unknown severity cited last, stderr ignored; the severity tables and the README
+- ADR-029
+
+### Changed
+
+- Framework 0.4.24 → 0.4.25; `ascent-governance` 0.1.0 → 0.2.0; the other plugins stay as they are
+- `GOV-L1` takes the most severe finding the checker printed, on stdout or stderr: High when any is High, when it printed none, or when a severity is not High, Medium or Low; otherwise Medium or Low. It cites the most severe first, a finding of no known severity with the High ones. A checker run once per record (`check-acceptance`) takes the most severe finding across every failing record. A Medium or Low GOV-L1 gives GO WITH CONDITIONS at every environment, and a project's CI job stays green and lists it; the severity table in `launch-readiness` and `governance-conductor` has three GOV-L1 rows
+- In fast mode one baseline per group runs the behavior tests: `P00-fast-baseline`; `P00-baseline` runs the run's other checks, and is not launched when T11 is the only one. Full mode keeps its single whole-gate baseline. P835 fails through the fast-mode baseline
+- P1265–P1267, P1365, P1368 and P1634 move to GOV-L1's new code, with the same ids and intent; P1576's anchor no longer names a release, so it never needs moving again
+- This repository's own T17 stays strict: any GOV failure fails it, except a waiver due soon
+- The README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and the banners for 0.4.25; the control figure is 1762 (1732 plus P1668–P1697) and the decision figure 29
+
+### Notes
+
+- Measured locally on `ascent-governance-views-1`, three controls at a time, with both baselines still in: control time 1,197 s → 351 s and wall time 8:29 → 3:51 once the order was learned, every control killed both times
+- The governance groups and the weekly full-mode run stay as they are: merged groups would run far past the weekly job's limit
+
+---
+
 ## [0.4.24] — 2026-11-20
 
 **Launch readiness and auditability.** A new plugin, `ascent-governance`, answers one question for one environment at a time, "are we ready to go live here?", with GO, NO-GO or GO WITH CONDITIONS, and cites every reason ([ADR-028](docs/framework/DECISIONS/ADR-028-auditability-and-the-governance-conductor.md)). The other plugins' checks run fresh at no token cost, each review that needs judgement leaves a dated record, every waiver is listed with its ADR and its review date, and the answer is a launch record that Claude drafts and only a person signs. The same check runs in a project's own CI, and on every gate run of this repository.

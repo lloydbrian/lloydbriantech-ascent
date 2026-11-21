@@ -12,7 +12,9 @@
 #   R6  nothing tells Claude to sign: every line that names "Signed:" says who does
 #   R7  only launch-readiness and review-record write the review log; governance-
 #       review and the agent write nothing; nothing commits
-#   R8  the README's CI example pins a release tag and fetches the full history
+#   R8  the README's CI example pins a release tag and fetches the full history,
+#       and fails the job only on a check that fails with a High finding or stops
+#       without finishing (ADR-029)
 #   R9  every governance.<key> a skill names is a key of the contract template, and
 #       every template key is used
 #   R10 every "<skill> Step N" a skill cites names a skill and a "### Step N"
@@ -75,6 +77,8 @@ done < "$WORK/ids"
   grep -Eo '[^r]fail\([0-9], "(High|Medium|Low)"' "$AWKF" | sed -E 's/.*fail\(([0-9]), "([A-Za-z]+)"/GOV-W\1 \2/'
   grep -Eo 'rfail\([0-9], "fail", "(High|Medium|Low)"' "$AWKF" | sed -E 's/rfail\(([0-9]), "fail", "([A-Za-z]+)"/GOV-R\1 \2/'
   grep -q 'sev = launch ? "High" : "Medium"' "$AWKF" && printf 'GOV-R1 High\nGOV-R1 Medium\n'
+  # GOV-L1 takes the most severe finding of the check that failed (ADR-029)
+  grep -q 'item check GOV-L1 fail "\$(sev_of ' "$SCRIPT" && printf 'GOV-L1 High\nGOV-L1 Medium\nGOV-L1 Low\n'
 } | LC_ALL=C sort -u > "$WORK/code"
 [ "$(wc -l < "$WORK/code" | tr -d ' ')" -ge 17 ] || bad "R2 fewer than 17 rule and severity pairs found in the code: $(tr '\n' ';' < "$WORK/code")"
 while read -r id sev; do
@@ -156,6 +160,7 @@ has R7 "$RULES" 'Only `launch-readiness` and `review-record` write it'
 if grep -Eq -- '--branch v[0-9]+\.[0-9]+\.[0-9]+ https://github.com/lloydbrian/lloydbriantech-ascent' "$README"; then ok; else bad "R8 the README's CI example does not pin a release tag"; fi
 has R8 "$README" 'fetch-depth: 0'
 has R8 "$README" 'Pin a release tag; never a branch.'
+has R8 "$README" 'a check that fails with a High finding or stops without finishing'
 if grep -Eq -- '--branch (main|master)|@main' "$README"; then bad "R8 the README's CI example follows a branch"; else ok; fi
 
 # R9 — contract keys

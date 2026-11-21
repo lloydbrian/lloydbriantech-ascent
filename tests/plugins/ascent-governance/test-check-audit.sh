@@ -39,6 +39,52 @@ matrix() {
   chk l1-worst-first --env beta; expect_only l1-worst-first GOV-L1 High
   has l1-worst-first 'failed: DOC-L5 High docs/b.md:4 high one; DOC-L2 Medium docs/a.md:3 medium one; DOC-P3 Low README.md:1 low one (and 2 more)'
 
+  # GOV-L1 follows the checker's findings (ADR-029): a check that fails with only
+  # Medium or Low findings is Medium or Low, as its most severe finding is, and the
+  # verdict is GO WITH CONDITIONS; a finding of no known severity, or none, is High
+  l1_out() {  # NAME LINES — check-docs exits 1 and prints LINES (a printf format)
+    stubs; mk "$1"; stub_rc ascent-docs/check-docs 1; printf "$2" > "$WORK/ctl/ascent-docs__check-docs.out"
+  }
+  l1_out l1-medium 'FAIL  DOC-L2  Medium docs/a.md:3  medium one\nFAIL  DOC-P3  Low    README.md:1  low one\n'
+  chk l1-medium --env beta; expect_only l1-medium GOV-L1 Medium; has l1-medium 'check-audit: beta: GO WITH CONDITIONS, '
+  has l1-medium 'failed: DOC-L2 Medium docs/a.md:3 medium one; DOC-P3 Low README.md:1 low one'
+  l1_out l1-low 'FAIL  DOC-P3  Low    README.md:1  low one\nFAIL  DOC-P4  Low    README.md:2  low two\n'
+  chk l1-low --env beta; expect_only l1-low GOV-L1 Low; has l1-low 'check-audit: beta: GO WITH CONDITIONS, '
+  l1_out l1-low-then-medium 'FAIL  DOC-P3  Low    README.md:1  low one\nFAIL  DOC-L2  Medium docs/a.md:3  medium one\n'
+  chk l1-low-then-medium --env beta; expect_only l1-low-then-medium GOV-L1 Medium
+  l1_out l1-no-severity 'FAIL  DOC-L2  docs/a.md:3  no column\n'
+  chk l1-no-severity --env beta; expect_only l1-no-severity GOV-L1 High; has l1-no-severity 'check-audit: beta: NO-GO, '
+  l1_out l1-lowercase 'FAIL  DOC-L2  medium docs/a.md:3  lowercase\n'
+  chk l1-lowercase --env beta; expect_only l1-lowercase GOV-L1 High
+  # a finding of no known severity is cited first, as High, so the message matches GOV-L1
+  l1_out l1-unknown-cited 'FAIL  DOC-P3  Low    README.md:1  low one\nFAIL  DOC-P4  Low    README.md:2  low two\nFAIL  DOC-P1  Low    README.md:3  low three\nFAIL  DOC-L2  medium docs/a.md:3  odd one\n'
+  chk l1-unknown-cited --env beta; expect_only l1-unknown-cited GOV-L1 High; has l1-unknown-cited 'failed: DOC-L2 medium docs/a.md:3 odd one; DOC-P3 Low'
+  l1_out l1-crlf 'FAIL  DOC-L2  Medium docs/a.md:3  a CRLF line\r\n'
+  chk l1-crlf --env beta; expect_only l1-crlf GOV-L1 Medium
+  l1_out l1-crlf-at-severity 'FAIL  DOC-L2  Medium\r\n'
+  chk l1-crlf-at-severity --env beta; expect_only l1-crlf-at-severity GOV-L1 High
+  l1_out l1-no-fail-line 'PASS  DOC-L1  fine\n'
+  chk l1-no-fail-line --env beta; expect_only l1-no-fail-line GOV-L1 High; has l1-no-fail-line 'check-audit: beta: NO-GO, '
+  # a checker that dies under set -e exits 1 with an error on stderr and no FAIL line
+  stubs; mk l1-stderr-only
+  printf '#!/usr/bin/env bash\necho "check-docs.sh: line 9: DIR: unbound variable" >&2\nexit 1\n' > "$WORK/stubs/ascent-docs/scripts/check-docs.sh"
+  chk l1-stderr-only --env beta; expect_only l1-stderr-only GOV-L1 High; has l1-stderr-only 'check-audit: beta: NO-GO, '
+  # well-formed FAIL lines are read wherever the checker prints them: stderr too
+  stubs; mk l1-stderr-findings
+  printf '#!/usr/bin/env bash\necho "FAIL  DOC-L2  Medium docs/a.md:3  on stderr" >&2\nexit 1\n' > "$WORK/stubs/ascent-docs/scripts/check-docs.sh"
+  chk l1-stderr-findings --env beta; expect_only l1-stderr-findings GOV-L1 Medium; has l1-stderr-findings 'failed: DOC-L2 Medium docs/a.md:3 on stderr'
+  # the same rule at every rung, prod included, and in CI the job stays green
+  stubs; mk l1-local; stub_rc ascent-security/check-env 1
+  printf 'FAIL  SEC-E3  Medium .dockerignore:2  a pattern that matches nothing\n' > "$WORK/ctl/ascent-security__check-env.out"
+  chk l1-local --env local; expect_only l1-local GOV-L1 Medium; has l1-local 'check-audit: local: GO WITH CONDITIONS, '
+  stubs; mk l1-prod; stub_rc ascent-ops/check-drills 1
+  printf 'FAIL  OPS-R5  Low    docs/ops/drills/2026-10-01-restore.md:1  the record names no runbook\n' > "$WORK/ctl/ascent-ops__check-drills.out"
+  chk l1-prod --env prod; expect_only l1-prod GOV-L1 Low; has l1-prod 'check-audit: prod: GO WITH CONDITIONS, '
+  l1_out l1-ci 'FAIL  DOC-L2  Medium docs/a.md:3  medium one\n'; rm -f "$WORK/sum-l1.md"
+  STEP_SUMMARY="$WORK/sum-l1.md" chk l1-ci --env beta; expect_only l1-ci GOV-L1 Medium
+  if grep -q 'GOV-L1' "$WORK/sum-l1.md" 2>/dev/null && grep -q 'GO WITH CONDITIONS' "$WORK/sum-l1.md"; then ok
+  else bad "l1-ci: the job summary lacks the GOV-L1 line or GO WITH CONDITIONS: $(head -3 "$WORK/sum-l1.md" 2>/dev/null | tr '\n' ';')"; fi
+
   # GOV-L2: a plugin that is not available is unmeasured, never NO-GO
   stubs; mk l2; mkdir -p "$WORK/empty"; PLUGINS_DIR="$WORK/empty" chk l2 --env beta; expect_rc l2 0
   has l2 'GO WITH CONDITIONS'; has l2 'unmeasured'; lacks l2 'NO-GO'; lacks l2 'FAIL  GOV-L1'

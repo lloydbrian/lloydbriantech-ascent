@@ -19,7 +19,7 @@ Since v0.4.2, ASCENT also ships its checks as Claude Code plugins that work in a
 | 5 | `ascent-session` | Session resume, capture and handoff from the repository's records; decisions dated and append-only, personal state out of git (`SES-S1`–`S6`, ADR-027) | ✅ v0.4.23 |
 | 6 | `ascent-adr` | ADRs in the repository's own format; the record checked against git history, and the constraints accepted ADRs declare (`DEC-S1`–`S8`, `DEC-C1`–`C3`, ADR-027) | ✅ v0.4.23 |
 | 7 | `ascent-docs` | Documentation findability, drift against the repository, stubs and onboarding (`DOC-L1`–`L5`, `DOC-P1`–`P4`, `DOC-R1`–`R6`, ADR-027) | ✅ v0.4.23 |
-| — | `ascent-governance` | Launch readiness for one environment at a time: floors of fresh checks and dated reviews, every waiver in one view, a launch record only a person signs, and a checker for a project's own CI (`GOV-S1`–`S2`, `GOV-L1`–`L5`, `GOV-W1`–`W4`, `GOV-R1`–`R4`, ADR-028) | ✅ v0.4.24 |
+| — | `ascent-governance` | Launch readiness for one environment at a time: floors of fresh checks and dated reviews, every waiver in one view, a launch record only a person signs, and a checker for a project's own CI (`GOV-S1`–`S2`, `GOV-L1`–`L5`, `GOV-W1`–`W4`, `GOV-R1`–`R4`, ADR-028); 0.2.0 gives a check that fails with only Medium or Low findings a condition, not a NO-GO (ADR-029) | ✅ v0.4.24; 0.2.0 in v0.4.25 |
 | 8 | `ascent-node-stack` | To be scoped when it starts; last, by the operator's order of 2026-11-19 | ⏳ Planned |
 
 ### Committed follow-ups
@@ -36,7 +36,7 @@ These close gaps listed in [PILLARS.md](PILLARS.md). Each is scoped, with an ADR
 | User acceptance sign-off | Business value | `ascent-delivery` 0.2.0 records who accepted each criterion and when (ADR-014) | ✅ `ascent-delivery` 0.2.0, v0.4.20 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)) |
 | Live security testing | Trust and security | `ascent-security` 0.3.0: operator-run checks against a running application (headers, verb tampering, path traversal, unauthenticated writes, request size limits, information disclosure, a prompt-injection canary), ZAP, dalfox and nuclei, an endpoint list in the contract, and the threat model. Claude reads the redacted results (ADR-016) | ✅ `ascent-security` 0.3.0, v0.4.22 ([ADR-026](DECISIONS/ADR-026-live-security-testing-and-threat-model.md)) |
 
-Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, v0.4.17 puts its figures in the README banner, and v0.4.18 scopes CI to what a change can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)), fixed for macOS's bash 3.2 in v0.4.19.
+Framework tooling ships between plugins when it is needed: v0.4.10 makes the negative controls faster before `ascent-quality` adds its own ([ADR-017](DECISIONS/ADR-017-faster-negative-controls.md)), v0.4.14 reports a failed repository copy apart, v0.4.16 adds the checked capability map, v0.4.17 puts its figures in the README banner, v0.4.18 scopes CI to what a change can affect ([ADR-023](DECISIONS/ADR-023-ci-runs-what-a-change-can-affect.md)), fixed for macOS's bash 3.2 in v0.4.19, and v0.4.25 runs first the test that caught each control last time ([ADR-029](DECISIONS/ADR-029-learned-order-one-baseline-and-gov-l1-severity.md)).
 
 Plugin releases are patch versions of the framework (v0.4.x) and do not need a phase signal. The phases below still do.
 
@@ -286,6 +286,12 @@ Three hand-written plugins ship together ([ADR-027](DECISIONS/ADR-027-decision-s
 **Status:** ✅ Complete (November 20, 2026)
 
 `ascent-governance` 0.1.0 answers one question for one environment at a time, "are we ready to go live here?", with GO, NO-GO or GO WITH CONDITIONS ([ADR-028](DECISIONS/ADR-028-auditability-and-the-governance-conductor.md)). The environments are a ladder in the contract's new `governance` section, each with a floor: scripted checks, which `check-audit.sh` runs fresh through one adapter table, and reviews that need judgement, each with a maximum age and a dated row in a review log that only this plugin writes (`GOV-L1`–`L2`, `GOV-R1`–`R4`). Every waiver in the contract is read in one view, with its ADR and review date (`GOV-W1`–`W4`). The answer is a launch record the script writes, Claude summarises in plain words and only a person signs (`GOV-L3`–`L5`), with the same result as a CI job summary and a one-file HTML page. `ascent-security` 0.4.0 adds `check-env.sh` (`SEC-E1`–`E3`) for the local floor, `ascent-delivery` 0.2.2 checks the launch evidence before prod, and every hand-written skill's "Recommended next" line names the plugins a repository needs and the session lacks. The framework asks its own release question on every gate run (T17). `ascent-node-stack` moves to last.
+
+### v0.4.25: Faster negative controls, and conditions for Medium and Low check failures
+
+**Status:** ✅ Complete (November 20, 2026)
+
+v0.4.24's governance controls were more than half of CI's macOS control time, and its pull request needed the governance groups split to keep each job inside its limit ([ADR-029](DECISIONS/ADR-029-learned-order-one-baseline-and-gov-l1-severity.md)). Fast mode now runs first the test that caught each control last time, from the generated `make/mutant-order.tsv`, which `make mutant-order FROM=<times file>` refreshes after each release's full run. The order cannot change a verdict, only how soon it is known: one governance group's control time fell from 1,197 to 351 seconds. One baseline per group runs the behavior tests, where two did, and the harness self-test scopes the full-mode reruns of its own four by-design survivors. The 14 governance groups and the weekly full-mode run stay as they are. `ascent-governance` 0.2.0 rates a failing check on the floor by its checker's most severe finding: only Medium or Low findings give GO WITH CONDITIONS at every environment, and a High finding, or a checker that stops without finishing, still gives NO-GO.
 
 ---
 

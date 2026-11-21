@@ -63,7 +63,7 @@ matrix() {
   # --record writes the record, unsigned
   repo record-written; h=$(head_of record-written); rec record-written; expect_rc record-written 0
   has record-written "wrote $REC"; has record-written 'awaiting signature'; lacks record-written 'GOV-L3'
-  for s in '# Launch record: record-written, prod' "2026-12-02 · commit $h · maturity prototype (no maturity_target in .ascent/contract.yml) · ascent-governance 0.1.0" \
+  for s in '# Launch record: record-written, prod' "2026-12-02 · commit $h · maturity prototype (no maturity_target in .ascent/contract.yml) · ascent-governance 0.2.0" \
            '**Verdict:** GO' '## In plain words' '<!-- summary: written by launch-readiness -->' '## Evidence' '| What | Kind | Result | Source |' \
            '| ascent-docs/check-docs passes | check | pass | ascent-docs/check-docs |' '## Waivers in force' '## Conditions' '## Sign-off'; do file_has record-written "$REC" "$s"; done
   file_line record-written "$REC" '**Signed:**'; file_line record-written "$REC" '**Date:**'; file_line record-written "$REC" '**Verdict:** GO'

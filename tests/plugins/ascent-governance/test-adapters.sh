@@ -184,6 +184,21 @@ matrix() {
     chk acc-mixed; expect_rc "acc-mixed ($order)" 1; has "acc-mixed ($order)" 'FAIL  GOV-L1  High   ascent-delivery/check-acceptance'; has "acc-mixed ($order)" 'FAIL  GOV-S2  Medium ascent-delivery/check-acceptance'
   done
   full acc-crash; echo 134 > "$WORK/ctl/ascent-delivery__check-acceptance.rc.2026-11-20-scores.md"; chk acc-crash; expect_only acc-crash GOV-L1 High; has acc-crash 'exited 134'
+  # the most severe finding across every record is GOV-L1's severity, and the message
+  # cites the first record that has it (ADR-029); a record whose checker stops is High
+  acc_sev() {  # NAME RC-A LINES-A RC-B LINES-B — record A (2026-11-20) and B (2026-11-28)
+    local k=ascent-delivery__check-acceptance ra=2026-11-20-scores.md rb=2026-11-28-new.md
+    full "$1"; record "$1" "records/acceptance/$rb"
+    echo "$2" > "$WORK/ctl/$k.rc.$ra"; printf "$3" > "$WORK/ctl/$k.out.$ra"
+    echo "$4" > "$WORK/ctl/$k.rc.$rb"; printf "$5" > "$WORK/ctl/$k.out.$rb"
+    chk "$1"
+  }
+  acc_sev acc-low-medium 1 'FAIL  DEL-A3  Low    a.md:5  low one\n' 1 'FAIL  DEL-A2  Medium b.md:5  medium one\n'
+  expect_only acc-low-medium GOV-L1 Medium; has acc-low-medium '2026-11-28-new.md: DEL-A2 Medium b.md:5 medium one'; lacks acc-low-medium 'low one'
+  acc_sev acc-medium-low 1 'FAIL  DEL-A2  Medium a.md:5  medium one\n' 1 'FAIL  DEL-A3  Low    b.md:5  low one\n'
+  expect_only acc-medium-low GOV-L1 Medium; has acc-medium-low '2026-11-20-scores.md: DEL-A2 Medium a.md:5 medium one'; lacks acc-medium-low 'low one'
+  acc_sev acc-low-crash 1 'FAIL  DEL-A3  Low    a.md:5  low one\n' 139 ''
+  expect_only acc-low-crash GOV-L1 High; has acc-low-crash 'exited 139'
 
   # --- the good fixture through the real checkers: no usage error -----------
   mk real; realfiles real
