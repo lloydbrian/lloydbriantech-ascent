@@ -79,7 +79,7 @@ A signed record holds while nothing but launch records and the review log change
 |---|---|---|---|
 | GOV-S1 | High | the governance section says what its author thinks: every key is one this version reads, with the kind of value it expects (a misspelled `sign_off`, or `sign_off: yes`, fails instead of dropping the sign-off), every floor is for an environment on the ladder, every check is `<plugin>/<script>`, every review age is a whole number above 0 | `check-audit.sh` |
 | GOV-S2 | Medium | every check on the floor could be run: it has an adapter, and its checker accepted the contract's values | `check-audit.sh` |
-| GOV-L1 | High | every check on the floor passes; a checker that stops without finishing has not passed | `check-audit.sh` |
+| GOV-L1 | High | every check on the floor passes; a checker that stops without finishing has not passed. A check that fails with only Medium or Low findings is Medium or Low, as its most severe finding is (ADR-029) | `check-audit.sh` |
 | GOV-L2 | Low | every check on the floor is measured: its plugin is available, the contract gives the input it needs, and it had something it could check | `check-audit.sh` |
 | GOV-L3 | High | on a rung with sign-off, or above one, the newest launch record of the environment is signed by a person, dated, and not a NO-GO | `check-audit.sh` |
 | GOV-L4 | High | the signer is in `governance.approvers`, when that list is not empty | `check-audit.sh` |

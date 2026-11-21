@@ -1,7 +1,7 @@
 # TEST — skill tests, the plugin gate, negative controls, harness self-tests and ownership
 # (`make test`, the eval scenarios, lands in Phase 5)
 
-.PHONY: test test-skills test-mutants test-mutants-groups test-harness test-plugins gate-scope gate-changed ownership plugins
+.PHONY: test test-skills test-mutants test-mutants-groups mutant-order test-harness test-plugins gate-scope gate-changed ownership plugins
 
 test:  ## TEST: Run eval scenarios against the skill [STUB lands in P5.0]
 	@printf "[STUB] make test lands in Phase 5 (v0.6.0)\n"
@@ -12,7 +12,7 @@ test-skills:  ## TEST: Render the template and run all 28 embedded-skill tests
 	bash make/render-template.sh "$$WORK/project" && \
 	$(MAKE) --no-print-directory -C "$$WORK/project" -f make/test.mk test-skills
 
-# MODE, JOBS, IDS, TIMES, CACHE and BASE count only when given on the command line: an exported
+# MODE, JOBS, IDS, TIMES, CACHE, FROM and BASE count only when given on the command line: an exported
 # one in the operator's shell must not change what runs.
 mutant_arg = $(if $(filter command line,$(origin $(1))),$($(1)))
 
@@ -21,6 +21,9 @@ test-mutants:  ## TEST: Negative controls — every named mutant must be killed 
 
 test-mutants-groups:  ## TEST: List the negative-control groups as JSON (one CI job per group)
 	@bash make/test-mutants.sh --groups-json
+
+mutant-order:  ## TEST: Put each T11 control's catching test first next time — merge a times file into make/mutant-order.tsv (FROM=<times file>; ADR-029)
+	@bash make/mutant-order.sh write "$(call mutant_arg,FROM)"
 
 test-harness:  ## TEST: The harness's slow self-tests — gate sections run alone, parallel runs report as serial ones (ADR-018)
 	@bash tests/meta/test-gate-sections.sh && bash tests/meta/test-mutants-harness.sh

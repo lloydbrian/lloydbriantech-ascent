@@ -13,7 +13,7 @@ description: >-
   with a plain-words summary for a person to sign (GOV-L3–L5). It checks that
   the evidence exists and is current, not that the system is good. Claude
   never signs.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -44,13 +44,14 @@ Shared sources:
 | Finding | Severity |
 |---|---|
 | A governance section with a key this version does not read, a value of the wrong kind, or an environment, a check or a review age that cannot be read (GOV-S1) | High |
-| A check on the floor fails (GOV-L1) | High |
+| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing (GOV-L1) | High |
 | A rung with sign-off whose newest launch record is missing, unsigned, undated or NO-GO (GOV-L3) | High |
 | A launch record signed by someone who is not in the contract's approvers (GOV-L4) | High |
 | Something other than launch records and the review log changed since the commit the signed record names (GOV-L5) | High |
 | A waiver past its review date (GOV-W1) | High |
 | A review whose newest record has an open High finding that no waiver covers (GOV-R2) | High |
 | A review on the floor that is due when the launch question is asked (GOV-R1 with --launch) | High |
+| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |
 | A review on the floor that is due, outside the launch question (GOV-R1) | Medium |
 | A review whose newest record is rated weak (GOV-R2) | Medium |
 | A check that could not be run: no adapter, or its checker refused the contract's values (GOV-S2) | Medium |
@@ -58,6 +59,7 @@ Shared sources:
 | A waiver that does not say what it skips, or whose id is not an accepted ADR (GOV-W4) | Medium |
 | A row of the review log that cannot be read (GOV-R3) | Medium |
 | A row of the review log removed or changed after it was recorded (GOV-R4) | Medium |
+| A check on the floor fails with only Low findings (GOV-L1) | Low |
 | A check whose plugin is not available here, whose input the contract does not give, or that had nothing it could check: unmeasured (GOV-L2) | Low |
 | A waiver due for review within 14 days (GOV-W2) | Low |
 <!-- gov-severity:end -->
@@ -76,7 +78,7 @@ Read `.ascent/contract.yml` (or `.claude/contract.yml`): `governance.environment
 bash "$PLUGIN_ROOT/scripts/check-audit.sh" --env '<environment>' --launch .
 ```
 
-Exit 0 is GO or GO WITH CONDITIONS, exit 1 is NO-GO, exit 2 is bad input: fix the arguments, never rate it. Read every line. For a GOV-L1 failure, the line names the checker and its most severe findings; the plugin that owns it (registry.md) has the skill that explains and fixes them. A GOV-L2 line means a plugin is not installed: say which, and that its check is unmeasured, never failed.
+Exit 0 is GO or GO WITH CONDITIONS, exit 1 is NO-GO, exit 2 is bad input: fix the arguments, never rate it. Read every line. For a GOV-L1 failure, the line names the checker and its most severe findings, and its severity is the most severe of them: High is a NO-GO, Medium or Low a condition the builder can address before the launch; the plugin that owns it (registry.md) has the skill that explains and fixes them. A GOV-L2 line means a plugin is not installed: say which, and that its check is unmeasured, never failed.
 
 ### Step 2 — Bring the reviews up to date
 
@@ -100,7 +102,7 @@ bash "$PLUGIN_ROOT/scripts/check-audit.sh" --env '<environment>' --record '<gove
 
 When Step 3's answer is NO-GO, do not write the record unless the operator asks for the refusal on record: there is one record per environment per day, so a NO-GO record written now is in the way of the answer after the fix, until the operator removes it.
 
-The script writes the record, unsigned: the commit, the verdict, the evidence table, the waivers in force and the conditions. It never overwrites one. If today's record exists and is an unsigned draft the operator no longer wants, the operator removes it; never remove it yourself.
+The script writes the record, unsigned: the commit, the verdict, the evidence table, the waivers in force and the conditions. The conditions include every check that failed with only Medium or Low findings, so the person who signs sees each one. It never overwrites one. If today's record exists and is an unsigned draft the operator no longer wants, the operator removes it; never remove it yourself.
 
 ### Step 5 — Write the plain-words summary
 

@@ -23,13 +23,14 @@ You are an independent reader of a project's launch evidence. You can only read 
 | Finding | Severity |
 |---|---|
 | A governance section with a key this version does not read, a value of the wrong kind, or an environment, a check or a review age that cannot be read (GOV-S1) | High |
-| A check on the floor fails (GOV-L1) | High |
+| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing (GOV-L1) | High |
 | A rung with sign-off whose newest launch record is missing, unsigned, undated or NO-GO (GOV-L3) | High |
 | A launch record signed by someone who is not in the contract's approvers (GOV-L4) | High |
 | Something other than launch records and the review log changed since the commit the signed record names (GOV-L5) | High |
 | A waiver past its review date (GOV-W1) | High |
 | A review whose newest record has an open High finding that no waiver covers (GOV-R2) | High |
 | A review on the floor that is due when the launch question is asked (GOV-R1 with --launch) | High |
+| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |
 | A review on the floor that is due, outside the launch question (GOV-R1) | Medium |
 | A review whose newest record is rated weak (GOV-R2) | Medium |
 | A check that could not be run: no adapter, or its checker refused the contract's values (GOV-S2) | Medium |
@@ -37,6 +38,7 @@ You are an independent reader of a project's launch evidence. You can only read 
 | A waiver that does not say what it skips, or whose id is not an accepted ADR (GOV-W4) | Medium |
 | A row of the review log that cannot be read (GOV-R3) | Medium |
 | A row of the review log removed or changed after it was recorded (GOV-R4) | Medium |
+| A check on the floor fails with only Low findings (GOV-L1) | Low |
 | A check whose plugin is not available here, whose input the contract does not give, or that had nothing it could check: unmeasured (GOV-L2) | Low |
 | A waiver due for review within 14 days (GOV-W2) | Low |
 <!-- gov-severity:end -->

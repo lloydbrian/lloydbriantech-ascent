@@ -15,9 +15,15 @@
 # a kill nor a survivor, and fail the run, with tar's message kept out of the
 # result's status line. Naming controls (ASCENT_MUTANT_IDS) must run exactly those
 # and a baseline of only their checks; an id the group does not have must stop
-# the run; --list must list exactly the controls a run launches. The times file
+# the run; --list must list exactly the controls a run launches, and a T11
+# control's run must launch one test-suite baseline, the fast-mode one (ADR-029),
+# with P00-baseline only for the other checks. The times file
 # and the kill cache (ADR-025) are checked last: one row per control, and a cache
-# that reuses only kills whose inputs have not changed.
+# that reuses only kills whose inputs have not changed. The learned order (ADR-029)
+# is checked on a copy: the times file names the test that caught a T11 control,
+# the order file's row for a control reaches the gate as its lead, a lead that
+# passes or does not exist changes only the time, and the summary counts the rows
+# used and the stale ones.
 #
 # Uses set -u only: every case runs and reports, and the summary decides.
 #
@@ -72,12 +78,13 @@ last=$(tr '\r' '\n' < "$WORK/err-4" | tr -d '\033' | sed 's/^\[K//' | sed -n 's/
 if [ -n "$n" ] && [ "$last" = "$n/$n" ]; then ok; else bad "the progress bar did not end at $n/$n 100% (last: '$last')"; fi
 if ! grep -q "$(printf '\r')" "$WORK/run-4" && [ ! -s "$WORK/err-1" ]; then ok; else bad "the progress bar reached stdout, or showed with ASCENT_MUTANT_PROGRESS=0"; fi
 check_summary "$WORK/run-4" PASS
-# The times file (ADR-025): a header and one row per control the run launched,
-# baselines included, slowest first; the summary's per-check totals add up to it
+# The times file (ADR-025, ADR-029): a header and one row per control the run
+# launched, baselines included, slowest first, seven columns; the summary's
+# per-check totals add up to it
 n=$(sed -n 's/^test-mutants: \([0-9]*\) mutants .*/\1/p' "$WORK/run-4")
-if [ -f "$WORK/times-4" ] && [ "$(sed -n 1p "$WORK/times-4")" = "$(printf 'seconds\tstatus\tid\tgroup\tcheck\tcached')" ] \
+if [ -f "$WORK/times-4" ] && [ "$(sed -n 1p "$WORK/times-4")" = "$(printf 'seconds\tstatus\tid\tgroup\tcheck\tcached\tcaught by')" ] \
   && [ "$(($(wc -l < "$WORK/times-4") - 1))" = "$n" ] \
-  && sed 1d "$WORK/times-4" | awk -F'\t' 'NF != 6 || $1 !~ /^[0-9]+$/ || (NR > 1 && $1 > p) { e = 1 } { p = $1 } END { exit e }'; then ok
+  && sed 1d "$WORK/times-4" | awk -F'\t' 'NF != 7 || $1 !~ /^[0-9]+$/ || (NR > 1 && $1 > p) { e = 1 } { p = $1 } END { exit e }'; then ok
 else bad "the times file is missing, not one row per control ($n), or not slowest first: $(head -3 "$WORK/times-4" 2>/dev/null | tr '\t\n' ' ;')"; fi
 want=$(sed 1d "$WORK/times-4" 2>/dev/null | awk -F'\t' '{ t[$5] += $1; n[$5]++ } END { for (k in t) printf "%s %d:%02d (%d)\n", k, int(t[k] / 60), t[k] % 60, n[k] }' | LC_ALL=C sort)
 got=$(sed -n 's/^ by check //p' "$WORK/run-4" | awk '{ n = split($0, a, / (·|\|) /); for (i = 1; i <= n; i++) print a[i] }' | LC_ALL=C sort)
@@ -152,6 +159,26 @@ if [ "$rc" -eq 0 ] && [ "$got" = "P00-baseline P359-harness-survivor P373-harnes
 else bad "ASCENT_MUTANT_IDS did not run exactly the named controls (rc $rc): $got"; fi
 if grep -q '^  control      P00-baseline .*(fast mode: T5 T13; T11: none)$' "$WORK/ids"; then ok
 else bad "the baseline of two named controls did not run only their checks: $(grep 'P00-baseline' "$WORK/ids")"; fi
+# One test-suite baseline (ADR-029): a T11 control alone launches only the fast-mode
+# baseline; with a T5 control, P00-baseline runs T5 alone, and its note says T11 is
+# in the fast-mode baseline
+rc=0
+ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="P361-harness-anchor-miss" ASCENT_MUTANT_JOBS=4 ASCENT_MUTANT_PROGRESS=0 \
+  bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/t11only" 2>&1 || rc=$?
+got=$(results "$WORK/t11only" | awk '/^  [A-Za-z]/ { print ($1 == "ANCHOR" ? $3 : $2) }' | tr '\n' ' ')
+if [ "$rc" -eq 0 ] && [ "$got" = "P00-fast-baseline P361-harness-anchor-miss " ]; then ok
+else bad "a T11 control alone did not launch only the fast-mode baseline (rc $rc): $got"; fi
+rc=0
+ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="P359-harness-survivor P361-harness-anchor-miss" ASCENT_MUTANT_JOBS=4 ASCENT_MUTANT_PROGRESS=0 \
+  bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/mixed" 2>&1 || rc=$?
+got=$(results "$WORK/mixed" | awk '/^  [A-Za-z]/ { print ($1 == "ANCHOR" ? $3 : $2) }' | tr '\n' ' ')
+if [ "$rc" -eq 0 ] && [ "$got" = "P00-baseline P00-fast-baseline P359-harness-survivor P361-harness-anchor-miss " ] \
+  && grep -q '^  control      P00-baseline .*(fast mode: T5; T11: in P00-fast-baseline)$' "$WORK/mixed"; then ok
+else bad "a T5 and a T11 control did not launch both baselines, P00-baseline without T11 (rc $rc): $got $(grep 'P00-baseline' "$WORK/mixed")"; fi
+# the whole group's serial run confirms P835: a broken behavior test fails the
+# fast-mode baseline, the one that runs the behavior tests
+if grep -q '^  confirmed    P835-harness-baseline-t11 ' "$WORK/run-1"; then ok
+else bad "P835 was not confirmed through the fast-mode baseline: $(grep 'P835' "$WORK/run-1" | head -1)"; fi
 rc=0
 ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="P359-harness-survivor P000-not-a-control" bash "$ROOT/make/test-mutants.sh" </dev/null >"$WORK/badid" 2>&1 || rc=$?
 if [ "$rc" -eq 2 ] && grep -q "unknown control id 'P000-not-a-control'" "$WORK/badid" && ! grep -q '^  ' "$WORK/badid"; then ok
@@ -179,6 +206,55 @@ for f in plugins/ascent-architecture/README.md tests/plugins/ascent-architecture
 done
 if ASCENT_MUTANT_MODE=full ASCENT_MUTANT_CACHE="$WORK/cache" bash "$WORK/crepo/make/test-mutants.sh" --list 2>&1 >/dev/null | grep -q 'ASCENT_MUTANT_CACHE is ignored in full mode'; then ok
 else bad "full mode did not say it ignores the cache"; fi
+
+# The learned order (ADR-029), on a copy, with P32, a T11 control that
+# test-estimate-cost catches: the times file's seventh column names the test that
+# caught it, the order file's row for it reaches the gate as its lead, and the
+# summary's order line counts the rows used and the stale ones. A lead that passes,
+# one that does not exist and a missing order file change only the time.
+mkdir "$WORK/orepo"
+(cd "$ROOT" && tar --exclude ./.git --exclude ./tmp -cf - .) | (cd "$WORK/orepo" && tar -xf -)
+OID=P32-estimate-ignores-free-tier; ORD="$WORK/orepo/make/mutant-order.tsv"
+orun() {  # NAME [TEST|none [MODE]] — P32 led by TEST (no row without one; none: no order file), the file chmod MODE; prints "rc status/caught by"
+  local rc=0
+  if [ "${2:-}" = none ]; then rm -f "$ORD"; else { echo '# the order file'; [ -z "${2:-}" ] || printf '%s\t%s\n' "$OID" "$2"; } > "$ORD"; fi
+  [ -z "${3:-}" ] || chmod "$3" "$ORD"
+  ASCENT_MUTANT_GROUP=ascent-architecture ASCENT_MUTANT_IDS=$OID ASCENT_MUTANT_PROGRESS=0 ASCENT_MUTANT_TIMES="$WORK/otimes-$1" \
+    bash "$WORK/orepo/make/test-mutants.sh" </dev/null >"$WORK/order-$1" 2>&1 || rc=$?
+  [ -z "${3:-}" ] || chmod 644 "$ORD"
+  echo "$rc $(awk -F'\t' -v id=$OID '$3 == id { print $2 "/" $7 }' "$WORK/otimes-$1" 2>/dev/null)"
+}
+oline() { sed -n 's/^ order    //p' "$WORK/order-$1"; }  # NAME — the summary's order line
+OLINE='T11 controls led by the test that caught them;'
+r=$(orun plain)
+if [ "$r" = "0 killed/test-estimate-cost" ] && [ "$(oline plain)" = "0 of 1 $OLINE 0 stale rows ignored" ]; then ok
+else bad "the times file did not name the test that caught P32, or the order line is wrong: $r; $(oline plain)"; fi
+r=$(orun passing test-check-cfn)
+if [ "$r" = "0 killed/test-estimate-cost" ] && [ "$(oline passing)" = "1 of 1 $OLINE 0 stale rows ignored" ]; then ok
+else bad "a lead that passes changed the verdict or the catching test: $r; $(oline passing)"; fi
+r=$(orun stale test-not-a-test)
+if [ "$r" = "0 killed/test-estimate-cost" ] && [ "$(oline stale)" = "0 of 1 $OLINE 1 stale rows ignored" ]; then ok
+else bad "a lead that does not exist was not ignored and counted as stale: $r; $(oline stale)"; fi
+r=$(orun none none)
+if [ "$r" = "0 killed/test-estimate-cost" ] && [ "$(oline none)" = "0 of 1 $OLINE 0 stale rows ignored" ]; then ok
+else bad "a missing order file failed the run or changed the verdict: $r; $(oline none)"; fi
+# An order file that cannot be read does not stop the harness: the copy of the
+# repository cannot read it either, so the control is a COPY FAIL, counted apart
+# (as root the file is read, and the control is killed as before)
+r=$(orun unreadable test-estimate-cost 000)
+want="1 COPY FAIL/"; [ "$(id -u)" != 0 ] || want="0 killed/test-estimate-cost"
+if [ "$r" = "$want" ] && grep -q '^test-mutants: 2 mutants' "$WORK/order-unreadable"; then ok
+else bad "an order file that cannot be read stopped the harness or was not reported as a copy failure: $r; $(tail -3 "$WORK/order-unreadable" | tr '\n' ';')"; fi
+# Two tests catch P32 once test-skill-rules also checks the free tier: without a
+# row the gate's own order finds test-estimate-cost first; with a row naming
+# test-skill-rules, the lead reaches the gate and runs first
+T="$WORK/orepo/tests/plugins/ascent-architecture/test-skill-rules.sh"
+{ sed -n 1p "$T"; echo 'grep -qF "f = fr[k] + 0" "$(dirname "$0")/../../../plugins/ascent-architecture/scripts/estimate-cost.sh" || { echo "FAIL  R0 the free tier is gone"; exit 1; }'; sed 1d "$T"; } > "$T.new" && mv "$T.new" "$T"
+r=$(orun first)
+if [ "$r" = "0 killed/test-estimate-cost" ]; then ok; else bad "without a row the first catching test was not recorded: $r"; fi
+r=$(orun second test-skill-rules)
+if [ "$r" = "0 killed/test-skill-rules" ] && [ "$(oline second)" = "1 of 1 $OLINE 0 stale rows ignored" ]; then ok
+else bad "the order file's lead did not reach the gate: $r; $(oline second)"; fi
 
 printf "test-mutants-harness: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

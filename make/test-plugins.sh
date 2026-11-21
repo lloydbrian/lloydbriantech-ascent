@@ -43,9 +43,11 @@
 #       repository (ADR-015): T13.1-T13.11 from make/check-ownership.sh, one
 #       result each, and T13.0 runs that checker's own fixture tests
 #       (tests/meta/test-check-ownership.sh)
-#   T14 the fast-mode self-test (ADR-018): tests/meta/test-gate-fast.sh runs this
-#       gate on fixture plugins and checks that fast mode stops where it should;
-#       each failing case reports as its own result, T14.G<n>
+#   T14 the fast-mode self-test (ADR-018, ADR-029): tests/meta/test-gate-fast.sh runs
+#       this gate on fixture plugins and checks that fast mode stops where it should
+#       and runs the lead test first, then checks make/mutant-order.sh, the baselines a
+#       run launches and the refusal of MUTANT_FULL outside the harness group; each
+#       failing case reports as its own result, T14.G<n>
 #   T15 the scope self-test (ADR-023): tests/meta/test-gate-scope.sh checks which
 #       slow checks make/gate-scope.sh runs for fixture changes, and the
 #       repository's list of negative controls it reads
@@ -80,6 +82,9 @@
 #        its first failing test; ASCENT_T11_FIRST=<path> runs first the tests that
 #        name that path (relative to the plugin, as skills/x/SKILL.md), then those
 #        that name its file name. make test-mutants sets both in fast mode (ADR-025).
+#        ASCENT_T11_LEAD=<test> runs that test (test-x, the file name without .sh)
+#        ahead of them in fast mode: make test-mutants sets it to the test that
+#        caught the control last time, from make/mutant-order.tsv (ADR-029).
 #        ASCENT_T14_SELFTEST=0 skips T14. make test-mutants sets it, except for the
 #        controls that edit fast mode itself.
 # Portable: GNU/Linux and BSD/macOS, bash 3.2+.
@@ -404,6 +409,13 @@ for p in $PLUGINS; do
     NEXT=$(for t in $TESTS; do grep -qF "$F1" "$t" || { grep -qF "$F2" "$t" && echo "$t"; }; done || true)
     REST=$(for t in $TESTS; do grep -qF "$F1" "$t" || grep -qF "$F2" "$t" || echo "$t"; done || true)
     TESTS="$FIRST $NEXT $REST"
+  fi
+  if [ "$FAST" = 1 ] && [ -n "${ASCENT_T11_LEAD:-}" ]; then
+    # The test that caught this control last time runs first (ADR-029): any failing
+    # test fails T11, so it changes how soon the verdict is known, never the verdict
+    L=$(for t in $TESTS; do [ "$(basename "$t" .sh)" = "$ASCENT_T11_LEAD" ] && echo "$t"; done || true)
+    O=$(for t in $TESTS; do [ "$(basename "$t" .sh)" = "$ASCENT_T11_LEAD" ] || echo "$t"; done || true)
+    TESTS="$L $O"
   fi
   NTESTS=0; NCASES=0
   for t in $TESTS; do

@@ -32,8 +32,15 @@
 # ASCENT_MUTANT_PROGRESS=0 turns it off and =1 forces it. Every run ends with a
 # summary block above the totals line: the three slowest controls, and the three
 # checks and groups that took the most time. ASCENT_MUTANT_TIMES=<file> also writes
-# every timed control, slowest first: seconds, status, id, group, check, cached (ADR-025);
+# every timed control, slowest first: seconds, status, id, group, check, cached (ADR-025)
+# and caught by, the behavior test that caught a T11 control in fast mode (ADR-029);
 # the baselines are in group and check "baseline".
+#
+# The learned order (ADR-029): in fast mode, the gate of a T11 control runs first
+# the test make/mutant-order.tsv names for it (ASCENT_T11_LEAD), the one that caught
+# it last time; make mutant-order FROM=<times file> updates the file from a run. It
+# orders tests and never changes a verdict: a missing or stale row costs time only,
+# and the summary's order line counts the controls a row led and the stale rows.
 #
 # ASCENT_MUTANT_CACHE=<dir> reuses kills on local reruns (ADR-025): a T11 control
 # of one plugin that was killed before is reported "killed … (cached)" without
@@ -58,11 +65,26 @@ trap 'rm -rf "$WORK"' EXIT
 trap 'trap "" INT TERM; kill -TERM 0 2>/dev/null; exit 130' INT TERM
 
 GROUPS_ALL="core $(awk '/^mutant_group [a-z0-9-]+$/ { print $2 }' "$0" | tr '\n' ' ' | sed 's/ $//')"
+# MUTANT_FULL=<labels> scopes a control's full-mode rerun to those sections: only the
+# harness group's own controls may set it (ADR-029), so a real control's full-mode
+# rerun is always the whole gate. A value from the environment, and any line that
+# sets it outside the harness group (a prefix, a line of its own, an export), stop the run
+if [ -n "${MUTANT_FULL:-}" ]; then
+  echo "test-mutants: MUTANT_FULL is set in the environment; only the harness group's own controls may set it" >&2; exit 2
+fi
+BADFULL=$(awk '/^mutant_group [a-z0-9-]+$/ { g = $2; next }
+  g != "harness" && /^[ \t]*(export[ \t]+)?([A-Z0-9_]+=[^ \t]*[ \t]+)*MUTANT_FULL=/ {
+    id = "line " NR; for (i = 1; i <= NF; i++) if ($i ~ /^P[0-9]+-/) { id = $i; break }
+    print id " in group " (g == "" ? "core" : g); exit }' "$0")
+if [ -n "$BADFULL" ]; then
+  echo "test-mutants: MUTANT_FULL is only for the harness group's own controls; $BADFULL sets it" >&2; exit 2
+fi
 if [ "${1:-}" = --groups-json ]; then
   printf '%s\n' "$GROUPS_ALL" | awk '{ s = "["; for (i = 1; i <= NF; i++) s = s (i > 1 ? "," : "") "\"" $i "\""; print s "]" }'
   exit 0
 fi
 LIST=0; [ "${1:-}" = --list ] && LIST=1
+BASELINES=0; [ "${1:-}" = --baselines ] && BASELINES=1   # print the baselines the run would launch, and stop
 GROUP="${ASCENT_MUTANT_GROUP:-all}"
 case " all $GROUPS_ALL " in *" $GROUP "*) ;; *) echo "test-mutants: unknown group '$GROUP' (groups: all $GROUPS_ALL)" >&2; exit 2 ;; esac
 MODE="${ASCENT_MUTANT_MODE:-fast}"
@@ -105,7 +127,7 @@ T0=$SECONDS
 note_core() { printf -- '-\t%s\t%s\n' "$1" "$2" >> "$WORK/done-core"; }  # STATUS ID
 clock() { printf '%d:%02d' $(($1 / 60)) $(($1 % 60)); }  # SECONDS -> m:ss
 
-if in_group && [ "$LIST" = 0 ] && [ -z "$IDS" ]; then
+if in_group && [ "$LIST" = 0 ] && [ "$BASELINES" = 0 ] && [ -z "$IDS" ]; then
 
 bash "$REPO_ROOT/make/render-template.sh" "$WORK/base" >/dev/null
 
@@ -195,6 +217,9 @@ fi
 # not a verdict: tar's messages go to DIR.copy-err, never into the control's result,
 # and the control is reported as COPY FAIL, counted apart, and fails the run.
 # MUTANT_FAULT=copy-fail makes every copy fail: only the harness group sets it.
+# MUTANT_FULL=<labels>, joined by commas, makes a control's full-mode run check only
+# those sections (ASCENT_ONLY) instead of the whole gate: only the harness group's
+# own controls may set it, and the harness refuses it anywhere else (ADR-029).
 plugin_copy() {  # DIR — fresh copy of the repository without .git; fails if the copy fails
   rm -rf "$1" "$1.copy-err"; mkdir -p "$1"
   if [ "${MUTANT_FAULT:-}" = copy-fail ]; then echo "tar: Write error (MUTANT_FAULT=copy-fail)" > "$1.copy-err"; return 1; fi
@@ -215,22 +240,26 @@ copy_failed() {  # ID DIR — if DIR's copy failed, print COPY FAIL with tar's f
 # A baseline (base) runs what the run's controls are judged by, from the BASE_
 # settings below: in fast mode only their checks and their plugins' behavior
 # tests, in full mode the whole gate; T13.0 and T14 when a control needs them.
-plugin_gate() {  # DIR [fast LABEL EDITED-FILE | base] — run test-plugins on a copy; output in DIR.out
-  local only="" t11fast=0 first="" t11=${T11_ONLY:-} t13=${T13_SELFTEST:-0} t14=${T14_SELFTEST:-0}
+plugin_gate() {  # DIR [fast LABEL EDITED-FILE [LEAD] | base] — run test-plugins on a copy; output in DIR.out
+  local only="" t11fast=0 first="" lead="" t11=${T11_ONLY:-} t13=${T13_SELFTEST:-0} t14=${T14_SELFTEST:-0}
   if [ "${2:-}" = fast ]; then
     # MUTANT_FAULT=fast-pass makes fast mode pass everything: only the harness
     # group sets it, to prove that a disagreement between the modes is reported
     if [ "${MUTANT_FAULT:-}" = fast-pass ]; then : > "$1.out"; return 0; fi
     # the edited path relative to its plugin, so T11 runs the tests that name it first
-    only=$3; t11fast=1
+    only=$3; t11fast=1; lead=${5:-}
     case "$4" in plugins/*/*) first=${4#plugins/*/} ;; tests/plugins/*/*) first=${4#tests/plugins/*/} ;; *) first=$(basename "$4") ;; esac
   elif [ "${2:-}" = base ]; then
     only=$BASE_ONLY; t11=$BASE_T11; t13=$BASE_T13; t14=$BASE_T14
+  else
+    # the full-mode run: the whole gate, or the sections a harness-group control
+    # names in MUTANT_FULL (comma-separated; refused in every other group)
+    only=${MUTANT_FULL:-}; only=${only//,/ }
   fi
   # One awk and one shard for T13.0's fixture tests: the controls already run in parallel
   ASCENT_SKIP_CLAUDE_CLI=1 ASCENT_HOOK_TEST_ONE_AWK=1 ASCENT_TEST_JOBS=1 ASCENT_T11_ONLY="$t11" \
     ASCENT_T13_SELFTEST="$t13" ASCENT_T14_SELFTEST="$t14" \
-    ASCENT_ONLY="$only" ASCENT_T11_FAST="$t11fast" ASCENT_T11_FIRST="$first" \
+    ASCENT_ONLY="$only" ASCENT_T11_FAST="$t11fast" ASCENT_T11_FIRST="$first" ASCENT_T11_LEAD="$lead" \
     bash "$1/make/test-plugins.sh" "$1" </dev/null >"$1.out" 2>&1
 }
 # fails OUT — its FAIL lines, each with up to 5 of the indented reason lines the
@@ -262,15 +291,15 @@ seq=0; next=1; T1=$SECONDS; BARRED=0
 # The number of controls this run launches, counted from the declarations in this
 # file so the bar knows its end; the run fails if it launched a different number.
 # A control's id is the first P<n>- word of its line and its label the word after;
-# the fast-mode T11 baseline runs only when a control is judged by T11.
-PLANNED=$(awk -v g="$GROUP" -v mode="$MODE" -v ids=" $IDS " '
+# the baselines are added below, from the decision that launches them.
+PLANNED=$(awk -v g="$GROUP" -v ids=" $IDS " '
   /^mutant_group [a-z0-9-]+$/ { cur = $2; next }
   cur == "" || (g != "all" && g != cur) { next }
   /^([A-Z0-9_]+=[^ ]* )*(plugin_case|plugin_case_rm|expect_case) / {
     id = ""; for (i = 1; i < NF; i++) if ($i ~ /^P[0-9]+-/) { id = $i; label = $(i + 1); break }
     if (ids != "  " && index(ids, " " id " ") == 0) next
-    n++; if (label == "T11") t11 = 1 }
-  END { if (g != "core") n += 1 + (mode == "fast" && t11); print n + 0 }' "$0")
+    n++ }
+  END { print n + 0 }' "$0")
 unbar() { if [ "$BARRED" = 1 ]; then printf '\r\033[K' >&2; BARRED=0; fi; }
 bar() {  # [final] — redraw the progress bar on stderr
   [ "$PROGRESS" = 1 ] && [ "$seq" -gt 0 ] || return 0
@@ -292,10 +321,13 @@ bar() {  # [final] — redraw the progress bar on stderr
   BARRED=1
 }
 # record SECONDS RESULT GROUP CHECK — the line for $WORK/done: the result's status
-# and id sit at fixed columns of its first line ("  %-12s %-28s")
+# and id sit at fixed columns of its first line ("  %-12s %-28s"); a kill adds the
+# test that caught it, from $WORK/caught/<id> (ADR-029)
 record() {
-  awk -v t="$1" -v g="$3" -v c="$4" 'NR == 1 { st = substr($0, 3, 12); sub(/ +$/, "", st); id = substr($0, 16); sub(/ .*/, "", id); print t "\t" st "\t" id "\t" g "\t" c "\t" (/ \(cached\)$/ ? "cached" : "") }
-    END { if (NR == 0) print t "\t?\t?\t" g "\t" c }' "$2"
+  awk -v t="$1" -v g="$3" -v c="$4" -v cdir="$WORK/caught" 'NR == 1 { st = substr($0, 3, 12); sub(/ +$/, "", st); id = substr($0, 16); sub(/ .*/, "", id)
+      by = ""; if (st == "killed" && (getline by < (cdir "/" id)) <= 0) by = ""
+      print t "\t" st "\t" id "\t" g "\t" c "\t" (/ \(cached\)$/ ? "cached" : "") "\t" by }
+    END { if (NR == 0) print t "\t?\t?\t" g "\t" c "\t\t" }' "$2"
 }
 flush() {
   while [ -f "$WORK/r/$next" ]; do unbar; cat "$WORK/r/$next"; next=$((next + 1)); done
@@ -317,9 +349,11 @@ launch() {  # COMMAND ARGS... — run one control in the background, at most $JO
 }
 # The baseline runs alongside the controls, on its own copy: a control's verdict
 # counts only if the baseline passes, and a failed baseline fails the run. In fast
-# mode a second baseline runs every behavior test unmutated the way fast mode runs
-# them (own process group and TMPDIR, stopped at a FAIL line): a test that failed
-# only there would otherwise turn every T11 control into a kill.
+# mode the fast-mode baseline is the one that runs the behavior tests (ADR-029),
+# unmutated and the way fast mode runs them (own process group and TMPDIR, stopped
+# at a FAIL line): a test that failed only there would otherwise turn every T11
+# control into a kill, and one that failed only in normal mode shows as MODES
+# DIFFER when a survivor reruns in full mode.
 plugin_fast_baseline() {  # ID COPY
   if copy_failed "$1" "$2"; then return 1; fi
   T11_ONLY=$BASE_T11
@@ -333,8 +367,9 @@ plugin_fast_baseline() {  # ID COPY
 # What the baselines run comes from the run's own controls (--list): the checks
 # they are judged by, the plugins whose behavior tests their T11 controls run,
 # and T13.0 and T14 when a control needs them (ADR-023). Full mode runs the whole
-# gate. Before v0.4.18 every group's baseline ran the whole gate.
-BASE_ONLY=""; BASE_T11=""; BASE_T13=0; BASE_T14=0; BASE_NOTE=""
+# gate. Before v0.4.18 every group's baseline ran the whole gate. In fast mode T11
+# runs in P00-fast-baseline alone, so P00-baseline runs the other checks (ADR-029).
+BASE_ONLY=""; BASE_T11=""; BASE_T13=0; BASE_T14=0; BASE_NOTE=""; HAS_T11=0
 if [ "$LIST" = 0 ] && { [ "$GROUP" != core ] || [ -n "$IDS" ]; }; then
   if ! bash "$0" --list > "$WORK/manifest" 2> "$WORK/manifest.err"; then
     echo "test-mutants: listing the controls failed: $(head -3 "$WORK/manifest.err" | tr '\n' ';')"; exit 2
@@ -346,20 +381,55 @@ if [ "$LIST" = 0 ] && { [ "$GROUP" != core ] || [ -n "$IDS" ]; }; then
   [ -s "$WORK/manifest" ] || { echo "test-mutants: group '$GROUP' has no plugin controls to run" >&2; exit 2; }
   BASE_T13=$(awk -F'\t' '$7 == 1 { f = 1 } END { print f + 0 }' "$WORK/manifest")
   BASE_T14=$(awk -F'\t' '$8 == 1 { f = 1 } END { print f + 0 }' "$WORK/manifest")
+  HAS_T11=$(awk -F'\t' '$3 == "T11" { f = 1 } END { print f + 0 }' "$WORK/manifest")
   if [ "$MODE" = fast ]; then
-    BASE_ONLY=$(awk -F'\t' '{ s = $3; sub(/\..*/, "", s); if (!(s in seen)) { seen[s] = 1; o = o (o == "" ? "" : " ") s } } END { print o }' "$WORK/manifest")
+    BASE_ONLY=$(awk -F'\t' '{ s = $3; sub(/\..*/, "", s); if (s != "T11" && !(s in seen)) { seen[s] = 1; o = o (o == "" ? "" : " ") s } } END { print o }' "$WORK/manifest")
     BASE_T11=$(awk -F'\t' '$3 == "T11" { n++; if ($6 == "all") all = 1; else if ($6 != "none" && !($6 in seen)) { seen[$6] = 1; o = o (o == "" ? "" : " ") $6 } }
       END { print (n == 0 ? "none" : all ? "" : (o == "" ? "none" : o)) }' "$WORK/manifest")
-    BASE_NOTE=" (fast mode: $BASE_ONLY; T11: ${BASE_T11:-all})"
+    if [ "$HAS_T11" = 1 ]; then BASE_NOTE=" (fast mode: $BASE_ONLY; T11: in P00-fast-baseline)"
+    else BASE_NOTE=" (fast mode: $BASE_ONLY; T11: ${BASE_T11:-all})"; fi
   fi
 fi
+# Which baselines the run launches, decided once (ADR-029): --baselines prints the
+# decision without running anything, and PLANNED counts it. P00-baseline is not
+# launched when T11 is the run's only check in fast mode: an empty ASCENT_ONLY would
+# run the whole gate. Full mode runs one baseline, the whole gate.
+LAUNCH_BASE=0; LAUNCH_FAST=0
 if [ "$LIST" = 0 ] && [ "$GROUP" != core ]; then
-plugin_copy "$WORK/p-baseline" || true   # a failed copy is reported by the baseline
-launch plugin_baseline P00-baseline "$WORK/p-baseline"
-if [ "$MODE" = fast ] && awk -F'\t' '$3 == "T11" { f = 1 } END { exit !f }' "$WORK/manifest"; then
+  if [ "$MODE" = full ] || [ -n "$BASE_ONLY" ]; then LAUNCH_BASE=1; fi
+  if [ "$MODE" = fast ] && [ "$HAS_T11" = 1 ]; then LAUNCH_FAST=1; fi
+fi
+PLANNED=$((PLANNED + LAUNCH_BASE + LAUNCH_FAST))
+if [ "$BASELINES" = 1 ]; then
+  [ "$LAUNCH_BASE" = 0 ] || printf 'P00-baseline\t%s\t%s\n' "${BASE_ONLY:-all}" "${BASE_T11:-all}"
+  [ "$LAUNCH_FAST" = 0 ] || printf 'P00-fast-baseline\tT11\t%s\n' "${BASE_T11:-all}"
+  exit 0
+fi
+# The learned order (ADR-029), read once: $WORK/lead/<id> holds the test the order
+# file names for each T11 control of the run (the first row of an id wins), so a
+# control finds its lead without a process of its own. The summary's order line
+# counts the controls a row leads and the stale rows (make/mutant-order.sh count).
+mkdir -p "$WORK/lead" "$WORK/caught"
+ORDER_FILE="$REPO_ROOT/make/mutant-order.tsv"; ORDER_LINE=""
+if [ "$MODE" = fast ] && [ "$LIST" = 0 ] && [ -f "$WORK/manifest" ]; then
+  if [ -f "$ORDER_FILE" ]; then
+    awk -F'\t' -v d="$WORK/lead" -v m="$WORK/manifest" '{ sub(/\r$/, "") }
+      FILENAME == m { if ($3 == "T11") want[$2] = 1; next }
+      /^#/ || NF != 2 || $2 !~ /^[A-Za-z0-9_-]+$/ || !($1 in want) || ($1 in done) { next }
+      { done[$1] = 1; f = d "/" $1; print $2 > f; close(f) }' "$WORK/manifest" "$ORDER_FILE" || true
+  fi
+  read -r o_led o_t11 o_stale <<< "$(bash "$REPO_ROOT/make/mutant-order.sh" count "$ORDER_FILE" "$WORK/manifest" "$REPO_ROOT" \
+    $([ "$GROUP" = all ] && [ -z "$IDS" ] && echo all) 2>/dev/null || true)"
+  [ "${o_t11:-0}" = 0 ] || ORDER_LINE="$o_led of $o_t11 T11 controls led by the test that caught them; $o_stale stale rows ignored"
+fi
+lead_of() { LEAD=""; [ ! -f "$WORK/lead/$1" ] || read -r LEAD < "$WORK/lead/$1" || true; }  # ID — sets LEAD
+if [ "$LAUNCH_BASE" = 1 ]; then
+  plugin_copy "$WORK/p-baseline" || true   # a failed copy is reported by the baseline
+  launch plugin_baseline P00-baseline "$WORK/p-baseline"
+fi
+if [ "$LAUNCH_FAST" = 1 ]; then
   plugin_copy "$WORK/p-fast-baseline" || true
   launch plugin_fast_baseline P00-fast-baseline "$WORK/p-fast-baseline"
-fi
 fi
 
 # The cache's digests (ADR-025), once per run: one per plugin, over every file a
@@ -418,7 +488,10 @@ control_run() {
 }
 plugin_verdict() {  # ID EXPECT-LABEL COPY EDITED-PATH — run the gate and classify the result
   if [ "$MODE" = fast ]; then
-    if ! plugin_gate "$3" fast "$2" "$4" && grep -q "^FAIL  test-plugins: $2 " "$3.out"; then
+    lead_of "$1"
+    if ! plugin_gate "$3" fast "$2" "$4" "$LEAD" && grep -q "^FAIL  test-plugins: $2 " "$3.out"; then
+      # the test that caught it, for the times file and make mutant-order (ADR-029)
+      [ "$2" != T11 ] || bash "$REPO_ROOT/make/mutant-order.sh" caught "$3.out" > "$WORK/caught/$1" 2>/dev/null || true
       printf "  killed       %-28s by test-plugins %s\n" "$1" "$2"; return
     fi
     mv "$3.out" "$3.fast"
@@ -1848,10 +1921,18 @@ plugin_case P1261-gov-s1-any-check-name T11 "$GCS" "s/grep -Eq '^\\[a-z0-9\\]\\[
 plugin_case P1262-gov-s1-unreadable-as-absent T11 "$GCS" 's/^if \[ -n "\$UNREADABLE" \]; then$/if false; then/'
 plugin_case P1263-gov-s1-not-high T11 "$GCS" 's/item setup GOV-S1 fail High "\$CNAME" "governance.floors.\$e.reviews/item setup GOV-S1 fail Low "$CNAME" "governance.floors.$e.reviews/'
 plugin_case P1264-gov-s2-no-adapter-runs T11 "$GCS" 's/^  return \$found$/  return 0/'
-plugin_case P1265-gov-s2-usage-is-failure T11 "$GCS" 's/^    1) item check GOV-L1 fail High/    1|2) item check GOV-L1 fail High/'
-plugin_case P1266-gov-l1-failure-passes T11 "$GCS" 's/^    1) item check GOV-L1 fail High "\$c" "\$c failed: /    1) item check GOV-L1 pass - "$c" "$c failed: /'
-plugin_case P1267-gov-l1-not-high T11 "$GCS" 's/^    1) item check GOV-L1 fail High/    1) item check GOV-L1 fail Medium/'
+plugin_case P1265-gov-s2-usage-is-failure T11 "$GCS" 's/^    1) item check GOV-L1 fail "/    1|2) item check GOV-L1 fail "/'
+plugin_case P1266-gov-l1-failure-passes T11 "$GCS" 's/^    1) item check GOV-L1 fail "\$(sev_of "\$T\/run.out")" "\$c" "\$c failed: /    1) item check GOV-L1 pass - "$c" "$c failed: /'
+plugin_case P1267-gov-l1-not-high T11 "$GCS" 's/^    1) item check GOV-L1 fail "\$(sev_of "\$T\/run.out")"/    1) item check GOV-L1 fail Low/'
 plugin_case P1268-gov-l1-findings-not-cited T11 "$GCS" "s/^  awk '\/^FAIL \/ { sub(/  awk '\/^NEVER \/ { sub(/"
+# GOV-L1 takes the most severe finding of the check that failed (ADR-029)
+plugin_case P1682-gov-l1-always-high T11 "$GCS" 's/^    1) item check GOV-L1 fail "\$(sev_of "\$T\/run.out")"/    1) item check GOV-L1 fail High/'
+plugin_case P1683-gov-l1-first-finding T11 "$GCS" 's/^  awk '\''\/^FAIL \/ { n++; if (\$3 == "High")/  awk '\''\/^FAIL \/ \&\& !n { n++; if ($3 == "High")/'
+plugin_case P1684-gov-l1-unknown-severity-low T11 "$GCS" 's/ else if (\$3 != "Low") h = 1 }$/ }/'
+plugin_case P1685-gov-l1-no-finding-low T11 "$GCS" 's/END { print (h || n == 0 ? "High"/END { print (h ? "High"/'
+plugin_case P1686-gov-l1-first-record-only T11 "$GCS" 's/; if worse "\$sev" "\$fsev"; then failed=/; if [ -z "$fsev" ]; then failed=/'
+plugin_case P1694-gov-l1-unknown-cited-last T11 "$GCS" 's/R\[n\] = (\$2 == "Medium" ? 2 : (\$2 == "Low" ? 3 : 1)) }/R[n] = ($2 == "High" ? 1 : ($2 == "Medium" ? 2 : 3)) }/'
+plugin_case P1695-gov-l1-stderr-ignored T11 "$GCS" 's/^  bash "\$path" \(.*\) > "\$T\/run.out" 2>&1 </  bash "$path" \1 > "$T\/run.out" 2>\/dev\/null </'
 plugin_case P1269-gov-l2-missing-plugin-fails T11 "$GCS" 's/item check GOV-L2 unmeasured Low "\$c" "\$c is unmeasured: \$plugin is not available here"/item check GOV-L1 fail High "$c" "$c is unmeasured: $plugin is not available here"/'
 plugin_case P1270-gov-plugins-dir-not-exclusive T11 "$GCS" 's/ \[ -f "\$p" \] \&\& { printf '"'"'%s'"'"' "\$p"; return 0; }; return 1; fi$/ [ -f "$p" ] \&\& { printf '"'"'%s'"'"' "$p"; return 0; }; fi/'
 plugin_case P1271-gov-verdict-unmeasured-is-go T11 "$GRA" 's/(cond + unmeasured > 0 ? /(cond > 0 ? /'
@@ -1957,16 +2038,16 @@ plugin_case P1361-each-unreal-launch-date-counts T11 "$GCS" 's/ \&\& realdate "\
 plugin_case P1362-each-older-launch-wins T11 "$GCS" 's/if signed "\$f" \&\& \[ "\$SIGNED_ON" \\> "\$best" \]; then best=/if signed "$f" \&\& [ -z "$best" ]; then best=/'
 plugin_case P1363-each-no-records-fails T11 "$GCS" 's/^  if \[ "\$all" -eq 0 \]; then item check GOV-L2 unmeasured Low /  if [ "$all" -eq 0 ]; then item check GOV-L1 fail High /'
 plugin_case P1364-each-none-since-unmeasured T11 "$GCS" 's/^  elif \[ "\$n" -eq 0 \]; then item check GOV-L1 na - /  elif [ "$n" -eq 0 ]; then item check GOV-L2 unmeasured Low /'
-plugin_case P1365-each-record-failure-lost T11 "$GCS" 's/^      1) \[ -n "\$failed" \] || failed="\$f: \$(fails_of "\$T\/run.out")" ;;$/      1) : ;;/'
+plugin_case P1365-each-record-failure-lost T11 "$GCS" 's/^      1) sev=\$(sev_of "\$T\/run.out"); if worse .* ;;$/      1) : ;;/'
 plugin_case P1366-each-usage-error-a-failure T11 "$GCS" 's/^      2) \[ -n "\$unread" \] || unread="\$f: /      2) [ -n "$failed" ] || failed="$f: /'
 plugin_case P1367-each-undated-files-run T11 "$GCS" 's/^  for f in "\$EACH_DIR"\/\[0-9\]\[0-9\]\[0-9\]\[0-9\]-\[0-9\]\[0-9\]-\[0-9\]\[0-9\]-\*\.md; do$/  for f in "$EACH_DIR"\/*.md; do/'
-plugin_case P1368-gov-l1-first-findings-cited T11 "$GCS" 's/R\[n\] = (\$2 == "High" ? 1 : (\$2 == "Medium" ? 2 : 3)) }/R[n] = 1 }/'
+plugin_case P1368-gov-l1-first-findings-cited T11 "$GCS" 's/R\[n\] = (\$2 == "Medium" ? 2 : (\$2 == "Low" ? 3 : 1)) }/R[n] = 1 }/'
 plugin_case P1369-gov-l1-more-findings-not-counted T11 "$GCS" 's/if (n > 3) printf " (and %d more)", n - 3 }/}/'
 plugin_case P1610-adapt-pages-unset-is-an-error T11 "$GAA" 's/print "U\\t" key }/print "E\\t" key }/'
 plugin_case P1611-gov-pages-unset-still-run T11 "$GCS" 's/^      U) UNSET="\$a" ;;$/      U) : ;;/'
 plugin_case P1612-each-usage-error-drops-with-failure T11 "$GCS" 's/^      2) \[ -n "\$unread" \] || unread=/      2) [ -n "$failed$unread" ] || unread=/'
 plugin_case P1633-each-failure-hidden-by-usage-error T11 "$GCS" 's/^    \[ -z "\$failed" \] || item check GOV-L1/    [ -n "$unread" ] || item check GOV-L1/'
-plugin_case P1634-each-crash-is-a-usage-error T11 "$GCS" 's/^      \*) \[ -n "\$failed" \] || failed="\$f: its checker exited/      *) [ -n "$unread" ] || unread="$f: its checker exited/'
+plugin_case P1634-each-crash-is-a-usage-error T11 "$GCS" 's/^      \*) if worse High "\$fsev"; then failed="\$f: its checker exited \$rc without finishing"; fsev=High; fi ;;$/      *) [ -n "$unread" ] || unread="$f: its checker exited $rc without finishing" ;;/'
 mutant_group ascent-governance-waivers
 GAU="$GOVP/scripts/lib/audit.awk"
 plugin_case P1370-w1-expired-waiver-in-force T11 "$GAU" 's/      if (left < 0) { state = "expired"; /      if (left < -99999) { state = "expired"; /'
@@ -2228,7 +2309,7 @@ plugin_case P1572-gov-record-gets-a-shell T11 "$GRC" 's/^allowed-tools: Read, Gr
 plugin_case P1573-gov-reference-anyone-writes-the-log T11 "$GRU" 's/Only `launch-readiness` and `review-record` write it/Any skill may write it/'
 plugin_case P1574-gov-reference-review-skill-renamed T11 "$GRU" 's/^  | `ux-review` | `ascent-ux:ux-review` |/  | `ux-review` | `ascent-ux:ux-audit` |/'
 plugin_case P1575-gov-reference-default-review-dropped T11 "$GRU" '/^  | `quality-review` | `ascent-quality:quality-review` |/d'
-plugin_case P1576-gov-readme-follows-a-branch T11 "$GRM" 's/--branch v0\.4\.24 https/--branch main https/'
+plugin_case P1576-gov-readme-follows-a-branch T11 "$GRM" 's/--branch v[0-9][0-9.]* https/--branch main https/'
 plugin_case P1577-gov-readme-shallow-checkout T11 "$GRM" '/^          fetch-depth: 0 /d'
 plugin_case P1578-gov-readme-script-signs T11 "$GRM" 's/No skill, agent or script here writes after `Signed:` or `Date:`\./The skill fills in `Signed:` when asked./'
 plugin_case P1579-gov-readme-rule-family-missing T11 "$GRM" 's/GOV-W1–W4 and GOV-R1–R4; /GOV-W1–W4; /'
@@ -2241,6 +2322,9 @@ plugin_case P1597-registry-copy-stale T1 plugins/ascent-governance/references/re
 plugin_case_rm P1599-registry-copy-missing T1 plugins/ascent-governance/references/registry.md
 plugin_case P1664-launch-nogo-record-written-anyway T11 "$GLS" '/^When Step 3.s answer is NO-GO, do not write the record/d'
 plugin_case P1665-record-one-id-for-many-findings T11 "$GRC" 's/, one id for each finding, separated by spaces/, separated by spaces/'
+plugin_case P1687-gov-l1-medium-row-dropped T11 "$GLS" '/^| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |$/d'
+plugin_case P1688-gov-agent-l1-one-row T11 "$GAG" 's/^| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing (GOV-L1) | High |$/| A check on the floor fails (GOV-L1) | High |/; /^| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |$/d; /^| A check on the floor fails with only Low findings (GOV-L1) | Low |$/d'
+plugin_case P1689-gov-readme-ci-any-failure T11 "$GRM" 's/a check that fails with a High finding or stops without finishing, an expired waiver/a failing check, an expired waiver/'
 
 mutant_group ascent-delivery-lenses
 DLS2=plugins/ascent-delivery/skills/delivery-loop
@@ -2330,7 +2414,11 @@ T11_FORCE=""
 # harness reported STATUS for it, so a fast mode that turned a survivor, a kill on
 # the wrong check, an anchor miss, a broken baseline or a disagreement between the
 # modes into a kill fails here. The other controls break fast mode in
-# make/test-plugins.sh and must be caught by T14, its self-test.
+# make/test-plugins.sh, the order file's script and the harness's baselines, and
+# must be caught by T14, its self-test. P359, P360, P362 and P373 reach a full-mode
+# rerun by design; MUTANT_FULL scopes each rerun to the sections it needs (P360: T10
+# too, the check its edit fails), so the self-test does not run the whole gate
+# four times over (ADR-029).
 mutant_group harness
 ARCHT=plugins/ascent-architecture/scripts/estimate-cost.sh
 GATEP=make/test-plugins.sh
@@ -2346,7 +2434,11 @@ expect_run() {
   if [ "$want" = "CONTROL FAIL" ]; then
     plugin_copy "$WORK/p-$1" || { copy_failed "$1" "$WORK/p-$1"; return; }
     sed -i.mut-bak -e "$4" "$WORK/p-$1/$3" && rm -f "$WORK/p-$1/$3.mut-bak"
-    out=$(plugin_baseline "$1" "$WORK/p-$1" || true); rm -rf "$WORK/p-$1" "$WORK/p-$1.out"
+    # a T11 control's broken copy fails the baseline that runs the behavior tests:
+    # in fast mode, the fast-mode one (ADR-029)
+    if [ "$MODE" = fast ] && [ "$2" = T11 ]; then out=$(plugin_fast_baseline "$1" "$WORK/p-$1" || true)
+    else out=$(plugin_baseline "$1" "$WORK/p-$1" || true); fi
+    rm -rf "$WORK/p-$1" "$WORK/p-$1.out"
   else
     out=$(control_run edit "$@")
   fi
@@ -2361,17 +2453,17 @@ expect_run() {
     printf '%s\n' "$out" | sed 's/^/  /'
   fi
 }
-expect_case SURVIVED P359-harness-survivor T5 docs/framework/PHILOSOPHY.md '$a\
+MUTANT_FULL=T5 expect_case SURVIVED P359-harness-survivor T5 docs/framework/PHILOSOPHY.md '$a\
 A line that no gate check reads.'
-expect_case SURVIVED P360-harness-wrong-check T11 plugins/ascent-architecture/README.md '$a\
+MUTANT_FULL=T10,T11 expect_case SURVIVED P360-harness-wrong-check T11 plugins/ascent-architecture/README.md '$a\
 A plugin edit without a version bump fails T10, not the T11 this control names.'
 expect_case "ANCHOR MISS" P361-harness-anchor-miss T11 "$ARCHT" 's/text that is not in the file/x/'
-MUTANT_FAULT=fast-pass expect_case "MODES DIFFER" P362-harness-modes-differ T11 "$ARCHT" 's/^      f = fr\[k\] + 0$/      f = 0/'
+MUTANT_FAULT=fast-pass MUTANT_FULL=T11 expect_case "MODES DIFFER" P362-harness-modes-differ T11 "$ARCHT" 's/^      f = fr\[k\] + 0$/      f = 0/'
 expect_case "CONTROL FAIL" P363-harness-baseline-broken T2 plugins/ascent-architecture/README.md '$a\
 <<UNRENDERED>>'
 MUTANT_FAULT=copy-fail expect_case "COPY FAIL" P611-harness-copy-fail T5 docs/framework/PHILOSOPHY.md '$a\
 A copy that fails is an infrastructure error, never a verdict.'
-expect_case SURVIVED P373-harness-other-subcheck T13.4 docs/framework/OWNERSHIP.md '/^| HTML, JSX, Vue or Svelte templates/d'
+MUTANT_FULL=T13 expect_case SURVIVED P373-harness-other-subcheck T13.4 docs/framework/OWNERSHIP.md '/^| HTML, JSX, Vue or Svelte templates/d'
 T14_SELFTEST=1 plugin_case P364-fast-never-stops-test T14.G2 "$GATEP" 's/kill -TERM -- "-\$pid"/true/'
 T14_SELFTEST=1 plugin_case P365-fail-line-exit-0-passes T14.G5 "$GATEP" "s/if grep -q '^FAIL' \"\$WORK\/t11.out\"; then/if false; then/"
 T14_SELFTEST=1 plugin_case P366-unknown-label-accepted T14.G8 "$GATEP" 's/ >&2; exit 2 ;; esac$/ >\&2 ;; esac/'
@@ -2389,6 +2481,28 @@ T14_SELFTEST=1 plugin_case P375-frontmatter-field-pipe T14.G12 "$FMQA" 's/if ! g
 T14_SELFTEST=1 plugin_case P376-frontmatter-description-pipe T14.G12 "$FMQA" 's/desc=\$(awk /desc=$(printf "%s\\n" "$fm" | awk /; s/}'\'' <<< "\$fm" | tr /}'\'' | tr /'
 T14_SELFTEST=1 plugin_case P833-only-list-first-label T14.G13 "$GATEP" 's/^for l in \${ASCENT_ONLY:-}; do$/for l in ${ASCENT_ONLY%% *}; do/'
 T14_SELFTEST=1 plugin_case P834-t11-only-first-plugin T14.G14 "$GATEP" 's/case " \$ASCENT_T11_ONLY " in/case " ${ASCENT_T11_ONLY%% *} " in/'
+T14_SELFTEST=1 plugin_case P1668-t11-lead-ignored T14.G15 "$GATEP" 's/^  if \[ "\$FAST" = 1 \] && \[ -n "\${ASCENT_T11_LEAD:-}" \]; then$/  if false; then/'
+T14_SELFTEST=1 plugin_case P1669-t11-lead-last T14.G15 "$GATEP" 's/^    TESTS="\$L \$O"$/    TESTS="$O $L"/'
+T14_SELFTEST=1 plugin_case P1670-t11-lead-in-full-mode T14.G15 "$GATEP" 's/^  if \[ "\$FAST" = 1 \] && \[ -n "\${ASCENT_T11_LEAD:-}" \]; then$/  if [ -n "${ASCENT_T11_LEAD:-}" ]; then/'
+MORD=make/mutant-order.sh
+T14_SELFTEST=1 plugin_case P1671-order-catcher-last-entry T14.G16 "$MORD" 's/match(\$0, \/ test-\[/match($0, \/.* test-[/'
+T14_SELFTEST=1 plugin_case P1672-order-catcher-any-entry T14.G16 "$MORD" 's/ failed:\/))/ \/))/; s/RLENGTH - 9/RLENGTH - 2/'
+T14_SELFTEST=1 plugin_case P1673-order-merge-drops-kept-rows T14.G17 "$MORD" 's/; if (!(\$1 in row)) row\[\$1\] = \$2; next }/; next }/'
+T14_SELFTEST=1 plugin_case P1674-order-merge-keeps-deleted T14.G17 "$MORD" 's/for (k in row) if (k in want) print/for (k in row) print/'
+T14_SELFTEST=1 plugin_case P1675-order-merge-six-columns T14.G17 "$MORD" 's/ok = (NF == 7 && \$7 == "caught by")/ok = 1/'
+T14_SELFTEST=1 plugin_case P1676-order-stale-row-fatal T14.G17 "$MORD" 's/END { print led + 0, t11 + 0, stale + 0 }/END { print led + 0, t11 + 0, stale + 0; exit (stale > 0) }/'
+T14_SELFTEST=1 plugin_case P1677-order-stale-rows-uncounted T14.G17 "$MORD" 's/stale++/stale += 0/g'
+MUTH=make/test-mutants.sh
+T14_SELFTEST=1 plugin_case P1678-baseline-runs-t11-again T14.G18 "$MUTH" 's/^\(    BASE_ONLY=.*\)if (s != "T11" && !(s in seen))/\1if (!(s in seen))/'
+T14_SELFTEST=1 plugin_case P1679-baseline-empty-scope T14.G18 "$MUTH" 's/^  if \[ "\$MODE" = full \] || \[ -n "\$BASE_ONLY" \]; then LAUNCH_BASE=1; fi$/  LAUNCH_BASE=1/'
+T14_SELFTEST=1 plugin_case P1680-mixed-run-no-fast-baseline T14.G18 "$MUTH" 's/^  if \[ "\$MODE" = fast \] && \[ "\$HAS_T11" = 1 \]; then LAUNCH_FAST=1; fi$/  if [ "$MODE" = fast ] \&\& [ "$HAS_T11" = 1 ] \&\& [ -z "$BASE_ONLY" ]; then LAUNCH_FAST=1; fi/'
+T14_SELFTEST=1 plugin_case P1681-mutant-full-not-refused T14.G19 "$MUTH" 's/^if \[ -n "\$BADFULL" \]; then$/if false; then/'
+T14_SELFTEST=1 plugin_case P1690-t11-passing-lead-ends-t11 T14.G15 "$GATEP" 's/^    TESTS="\$L \$O"$/    TESTS="${L:-$O}"/'
+T14_SELFTEST=1 plugin_case P1691-mutant-full-env-allowed T14.G19 "$MUTH" 's/^if \[ -n "\${MUTANT_FULL:-}" \]; then$/if false; then/'
+T14_SELFTEST=1 plugin_case P1692-mutant-full-export-allowed T14.G19 "$MUTH" 's/(export\[ \\t]+)?//'
+T14_SELFTEST=1 plugin_case P1693-mutant-full-group-line-allowed T14.G19 "$MUTH" 's/)\*MUTANT_FULL=\/ {$/)*MUTANT_FULL=[^ ]*[ \\t]+(plugin_case|plugin_case_rm|expect_case) \/ {/'
+T14_SELFTEST=1 plugin_case P1696-order-write-private T14.G20 "$MORD" 's/^  chmod 644 "\$tmp"; mv "\$tmp" "\$ord"$/  mv "$tmp" "$ord"/'
+T14_SELFTEST=1 plugin_case P1697-order-write-no-controls T14.G20 "$MORD" 's/\$3 == "T11" { print \$2 }/$3 == "T99" { print $2 }/'
 # The baseline runs the behavior tests of the plugins the run's T11 controls edit: a
 # copy with a broken behavior test must fail it (the harness reports CONTROL FAIL).
 expect_case "CONTROL FAIL" P835-harness-baseline-t11 T11 "$ARCHT" 's/^      f = fr\[k\] + 0$/      f = 0/'
@@ -2450,7 +2564,7 @@ done
 # as killed, and MODES DIFFER and CONTROL FAIL as survived; COPY FAIL is neither),
 # what was not killed, the time and the three slowest controls.
 if [ "$total" -gt 0 ]; then
-  cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v dot="$DOT" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" '
+  cat "$WORK/done-core" "$WORK/done" | awk -F'\t' -v rule="$RULE" -v dot="$DOT" -v group="$GROUP" -v mode="$MODE" -v jobs="$JOBS" -v time="$(clock $((SECONDS - T0)))" -v order="$ORDER_LINE" '
     function rep(n,  r) { r = ""; while (n-- > 0) r = r rule; return r }
     { if ($2 == "killed" || $2 == "confirmed") k++; else if ($2 == "control") c++; else if ($2 == "ANCHOR MISS") a++
       else if ($2 == "MODES DIFFER") d++; else if ($2 == "CONTROL FAIL") f++; else if ($2 == "COPY FAIL") x++; else s++
@@ -2473,6 +2587,7 @@ if [ "$total" -gt 0 ]; then
       printf " killed   %d   control %d   survived %d\n", k, c, s
       printf " modes differ %d   anchor miss %d   control fail %d   copy fail %d\n", d, a, f, x
       if (cached) printf " cached   %d kills reused, not rerun (ASCENT_MUTANT_CACHE)\n", cached
+      if (order != "") printf " order    %s\n", order
       for (j = 1; j <= 3 && j <= nt; j++) {
         m = 0; for (i = 1; i <= nt; i++) if (!(i in used) && (m == 0 || t[i] > t[m])) m = i
         used[m] = 1; printf " %-8s %-30s %ds\n", (j == 1 ? "slowest" : ""), id[m], t[m]
@@ -2484,7 +2599,7 @@ if [ "$total" -gt 0 ]; then
     }'
 fi
 if [ -n "$TIMES" ]; then
-  { printf 'seconds\tstatus\tid\tgroup\tcheck\tcached\n'; LC_ALL=C sort -t "$(printf '\t')" -k1,1nr "$WORK/done"; } > "$TIMES"
+  { printf 'seconds\tstatus\tid\tgroup\tcheck\tcached\tcaught by\n'; LC_ALL=C sort -t "$(printf '\t')" -k1,1nr "$WORK/done"; } > "$TIMES"
   echo "test-mutants: times of $(wc -l < "$WORK/done" | tr -d ' ') controls written to $TIMES" >&2
 fi
 [ "$total" -gt 0 ] || echo "test-mutants: group '$GROUP' ran no controls"

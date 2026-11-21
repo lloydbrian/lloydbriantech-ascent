@@ -42,7 +42,9 @@
 #   GOV-S2  Medium  every check in the floor can be run: it has an adapter, and
 #                   its checker accepts the options the adapter gives it
 #   GOV-L1  High    every checker in the floor passes (one that stops without
-#                   finishing has not passed)
+#                   finishing has not passed); a checker whose findings are all
+#                   Medium or Low makes GOV-L1 Medium or Low, as its most severe
+#                   finding is (ADR-029)
 #   GOV-L2  Low     every check in the floor is measured: its plugin is
 #                   available, the contract gives the input it needs, and it had
 #                   something it could check (N/A is never a pass)
@@ -415,12 +417,21 @@ last_launch() {  # prints the date of the newest signed launch record of this en
 }
 # the checker's findings, the most severe first: up to three, then how many more
 fails_of() {
-  awk '/^FAIL / { sub(/^FAIL  */, ""); gsub(/   */, " "); n++; L[n] = substr($0, 1, 160); R[n] = ($2 == "High" ? 1 : ($2 == "Medium" ? 2 : 3)) }
+  awk '/^FAIL / { sub(/^FAIL  */, ""); gsub(/   */, " "); n++; L[n] = substr($0, 1, 160); R[n] = ($2 == "Medium" ? 2 : ($2 == "Low" ? 3 : 1)) }
     END { for (r = 1; r <= 3; r++) for (i = 1; i <= n; i++) if (R[i] == r && k < 3) { printf "%s%s", (k ? "; " : ""), L[i]; k++ }
           if (n > 3) printf " (and %d more)", n - 3 }' "$1"
 }
+# the severity of a check that failed: its most severe finding; High when it printed
+# none, or one whose severity is not High, Medium or Low (ADR-029)
+sev_of() {
+  awk '/^FAIL / { n++; if ($3 == "High") h = 1; else if ($3 == "Medium") m = 1; else if ($3 != "Low") h = 1 }
+    END { print (h || n == 0 ? "High" : (m ? "Medium" : "Low")) }' "$1"
+}
+worse() {  # NEW OLD: whether NEW is more severe than OLD (an empty OLD is no failure yet)
+  case "$1:$2" in *:|High:Medium|High:Low|Medium:Low) return 0 ;; *) return 1 ;; esac
+}
 run_each() {  # CHECK CHECKER: the checker once for each dated record since the last signed launch
-  local c="$1" f b n=0 all=0 rc since why="" failed="" unread=""
+  local c="$1" f b n=0 all=0 rc since why="" failed="" fsev="" sev unread=""
   since=$(last_launch)
   for f in "$EACH_DIR"/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md; do
     [ -f "$f" ] || continue
@@ -430,9 +441,10 @@ run_each() {  # CHECK CHECKER: the checker once for each dated record since the 
     bash "$2" ${ARGS[@]+"${ARGS[@]}"} "$f" > "$T/run.out" 2>&1 </dev/null || rc=$?
     case "$rc" in
       0) ;;
-      1) [ -n "$failed" ] || failed="$f: $(fails_of "$T/run.out")" ;;
+      # the most severe finding across the records, cited from the first record that has it
+      1) sev=$(sev_of "$T/run.out"); if worse "$sev" "$fsev"; then failed="$f: $(fails_of "$T/run.out")"; fsev=$sev; fi ;;
       2) [ -n "$unread" ] || unread="$f: $(head -1 "$T/run.out" | cut -c1-120)" ;;
-      *) [ -n "$failed" ] || failed="$f: its checker exited $rc without finishing" ;;
+      *) if worse High "$fsev"; then failed="$f: its checker exited $rc without finishing"; fsev=High; fi ;;
     esac
   done
   [ -n "$since" ] && why=" since the launch signed on $since"
@@ -440,7 +452,7 @@ run_each() {  # CHECK CHECKER: the checker once for each dated record since the 
   elif [ "$n" -eq 0 ]; then item check GOV-L1 na - "$c" "$c: no acceptance record$why"
   elif [ -z "$failed$unread" ]; then item check GOV-L1 pass - "$c" "$c passes ($n record$([ "$n" -eq 1 ] || echo s)$why)"
   else   # one record that cannot be read never hides another that fails
-    [ -z "$failed" ] || item check GOV-L1 fail High "$c" "$c failed: $failed"
+    [ -z "$failed" ] || item check GOV-L1 fail "$fsev" "$c" "$c failed: $failed"
     [ -z "$unread" ] || item check GOV-S2 fail Medium "$c" "$c could not be run: its checker exited with a usage error ($unread); fix the record or the contract value it names, or the adapter"
   fi
 }
@@ -467,7 +479,7 @@ run_check() {  # CHECK
        if [ -n "$na" ] && ! grep -q '^PASS ' "$T/run.out"; then item check GOV-L2 unmeasured Low "$c" "$c is unmeasured: it had nothing it could check here ($na)"
        elif [ -n "$na" ]; then item check GOV-L1 pass - "$c" "$c passes (not checked here: $na)"
        else item check GOV-L1 pass - "$c" "$c passes"; fi ;;
-    1) item check GOV-L1 fail High "$c" "$c failed: $(fails_of "$T/run.out")" ;;
+    1) item check GOV-L1 fail "$(sev_of "$T/run.out")" "$c" "$c failed: $(fails_of "$T/run.out")" ;;
     2) item check GOV-S2 fail Medium "$c" "$c could not be run: its checker exited with a usage error ($(head -1 "$T/run.out" | cut -c1-120)); fix the contract value it names, or the adapter" ;;
     *) item check GOV-L1 fail High "$c" "$c failed: its checker exited $rc without finishing ($(head -1 "$T/run.out" | cut -c1-120))" ;;
   esac
