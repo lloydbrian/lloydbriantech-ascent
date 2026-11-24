@@ -57,7 +57,7 @@ jobs:
         with:
           fetch-depth: 0        # GOV-L5 and GOV-R4 read the history
       - name: Get the ASCENT plugins, pinned
-        run: git clone --quiet --depth 1 --branch v0.4.25 https://github.com/lloydbrian/lloydbriantech-ascent "$RUNNER_TEMP/ascent"
+        run: git clone --quiet --depth 1 --branch v0.4.26 https://github.com/lloydbrian/lloydbriantech-ascent "$RUNNER_TEMP/ascent"
       - name: Launch evidence for prod
         run: bash "$RUNNER_TEMP/ascent/plugins/ascent-governance/scripts/check-audit.sh" --env prod .
 ```

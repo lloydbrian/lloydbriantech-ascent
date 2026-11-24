@@ -23,7 +23,7 @@ You are an independent reader of a project's launch evidence. You can only read 
 | Finding | Severity |
 |---|---|
 | A governance section with a key this version does not read, a value of the wrong kind, or an environment, a check or a review age that cannot be read (GOV-S1) | High |
-| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing (GOV-L1) | High |
+| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing, an exit 2 without its own message included (GOV-L1) | High |
 | A rung with sign-off whose newest launch record is missing, unsigned, undated or NO-GO (GOV-L3) | High |
 | A launch record signed by someone who is not in the contract's approvers (GOV-L4) | High |
 | Something other than launch records and the review log changed since the commit the signed record names (GOV-L5) | High |
@@ -33,7 +33,7 @@ You are an independent reader of a project's launch evidence. You can only read 
 | A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |
 | A review on the floor that is due, outside the launch question (GOV-R1) | Medium |
 | A review whose newest record is rated weak (GOV-R2) | Medium |
-| A check that could not be run: no adapter, or its checker refused the contract's values (GOV-S2) | Medium |
+| A check that could not be run: no adapter, or its checker refused the contract's values with its own message (GOV-S2) | Medium |
 | A waiver with no review date, or one that is not a real date (GOV-W3) | Medium |
 | A waiver that does not say what it skips, or whose id is not an accepted ADR (GOV-W4) | Medium |
 | A row of the review log that cannot be read (GOV-R3) | Medium |

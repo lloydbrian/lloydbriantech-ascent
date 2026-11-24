@@ -17,7 +17,8 @@
 # into the order file and counts its rows; and that make/test-mutants.sh
 # --baselines launches one test-suite baseline: in fast mode the fast-mode
 # baseline runs the behavior tests, and P00-baseline the other checks only; and
-# that the harness refuses MUTANT_FULL outside its own group (ADR-029).
+# that the harness refuses MUTANT_FULL and MUTANT_FAULT outside its own group
+# (ADR-029, ADR-030).
 #
 # Usage: test-gate-fast.sh [GATE]   (defaults to make/test-plugins.sh)
 # Prints "test-gate-fast: N/N PASS" last (make/test-plugins.sh T14). A failing case
@@ -337,30 +338,43 @@ baselines_of "P00-baseline${T}all${T}all" P361-harness-anchor-miss full
 
 # --- G19 MUTANT_FULL scopes a full-mode rerun, so only the harness group's own
 # controls may set it: a copy of the harness with it on a real group's control
-# stops before any control, and the real harness lists its own group
+# stops before any control, and the real harness lists its own group; MUTANT_FAULT,
+# which breaks the harness on purpose, is refused the same ways (ADR-030)
 mkdir -p "$WORK/h/make"
 awk '!done && /^plugin_case P[0-9]/ && g == "ascent-security" { sub(/^/, "MUTANT_FULL=T5 "); done = 1 }
   /^mutant_group / { g = $2 } { print }' "$HARN" > "$WORK/h/make/test-mutants.sh"
 RC=0; env ASCENT_MUTANT_GROUP=core ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= bash "$WORK/h/make/test-mutants.sh" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
 if [ "$RC" -eq 2 ] && grep -q "^test-mutants: MUTANT_FULL is only for the harness group's own controls; P[0-9]*-[a-z0-9-]* in group ascent-security sets it$" "$WORK/g19.out"; then ok
 else bad "G19 MUTANT_FULL on a real group's control was not refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
-RC=0; env ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
+RC=0; env ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= MUTANT_FAULT= bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
 if [ "$RC" -eq 0 ] && grep -q 'P359-harness-survivor' "$WORK/g19.out"; then ok
 else bad "G19 the harness group's own MUTANT_FULL controls were refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
+# and its own MUTANT_FAULT controls (ADR-030)
+for id in P362-harness-modes-differ P611-harness-copy-fail; do
+  if [ "$RC" -eq 0 ] && grep -q "$id" "$WORK/g19.out"; then ok
+  else bad "G19 the harness group's own MUTANT_FAULT control $id was refused or not listed (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
+done
 # Every other way of setting it is refused too: from the environment, on a line of
 # its own, exported, and as a prefix followed by two spaces
 RC=0; env ASCENT_MUTANT_GROUP=ascent-docs ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL=T5 bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
 if [ "$RC" -eq 2 ] && grep -q "^test-mutants: MUTANT_FULL is set in the environment; only the harness group's own controls may set it$" "$WORK/g19.out"; then ok
 else bad "G19 MUTANT_FULL from the environment was not refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
-full_form() {  # WANT LINE — a copy of the harness with LINE after ascent-security's group line must be refused, naming WANT
+# MUTANT_FAULT, the harness's other test-only variable, is refused the same ways (ADR-030)
+RC=0; env ASCENT_MUTANT_GROUP=ascent-docs ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= MUTANT_FAULT=fast-pass bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
+if [ "$RC" -eq 2 ] && grep -q "^test-mutants: MUTANT_FAULT is set in the environment; only the harness group's own controls may set it$" "$WORK/g19.out"; then ok
+else bad "G19 MUTANT_FAULT from the environment was not refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
+full_form() {  # WANT LINE [VAR] — a copy of the harness with LINE after ascent-security's group line must be refused, naming VAR (MUTANT_FULL) and WANT
   awk -v line="$2" '{ print } /^mutant_group ascent-security$/ { print line }' "$HARN" > "$WORK/h/make/test-mutants.sh"
-  RC=0; env ASCENT_MUTANT_GROUP=core ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= bash "$WORK/h/make/test-mutants.sh" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
-  if [ "$RC" -eq 2 ] && grep -q "^test-mutants: MUTANT_FULL is only for the harness group's own controls; $1 in group ascent-security sets it$" "$WORK/g19.out"; then ok
+  RC=0; env ASCENT_MUTANT_GROUP=core ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= MUTANT_FAULT= bash "$WORK/h/make/test-mutants.sh" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
+  if [ "$RC" -eq 2 ] && grep -q "^test-mutants: ${3:-MUTANT_FULL} is only for the harness group's own controls; $1 in group ascent-security sets it$" "$WORK/g19.out"; then ok
   else bad "G19 '$2' in a real group was not refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
 }
 full_form 'line [0-9]*' 'MUTANT_FULL=T11'
 full_form 'line [0-9]*' 'export MUTANT_FULL=T5'
 full_form 'P9999-x' 'MUTANT_FULL=T5  plugin_case P9999-x T11 f s/a/b/'
+full_form 'line [0-9]*' 'MUTANT_FAULT=copy-fail' MUTANT_FAULT
+full_form 'line [0-9]*' 'export MUTANT_FAULT=fast-pass' MUTANT_FAULT
+full_form 'P9999-x' 'MUTANT_FAULT=copy-fail  plugin_case P9999-x T11 f s/a/b/' MUTANT_FAULT
 
 # --- G20 make/mutant-order.sh write merges a times file into the repository's order
 # file, with the controls --list has, readable by everyone; a bad times file changes nothing

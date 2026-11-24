@@ -37,6 +37,10 @@ on:
     branches: [main]
   # Weekly full-mode run of every negative control (ADR-018): fast mode is kept
   # honest by its guards, and this catches anything they miss.
+  # A job GitHub could not start fails with "The job was not acquired by Runner of
+  # type hosted even after multiple attempts" and runs no step: macOS runner
+  # capacity, not a failure of the job (2 and 16 November 2026). gh run rerun
+  # <run id> --failed reruns the run's failed jobs, these among them.
   schedule:
     - cron: '17 6 * * 1'
   workflow_dispatch:
@@ -254,13 +258,15 @@ jobs:
     # Fast mode (ADR-018) on pull requests and pushes, 25 minutes: slow macOS
     # runners took one group 4 to over 15 minutes on the same code (ADR-022
     # decision 10); a group that needs more is split. Full mode, weekly and on
-    # request, takes up to about 50 s a control on macOS, hence 40 minutes. The
-    # condition is MODE's, below.
+    # request, was predicted at up to about 100 minutes a group on macOS, hence
+    # 150, and the harness group, whose controls each rerun the whole gate, at
+    # about 150, hence 240 (ADR-030); GitHub allows 360. The condition is MODE's,
+    # below.
     name: Negative controls (${{ matrix.os }}, ${{ matrix.target.name }})
     needs: scope
     if: needs.scope.outputs.targets != '[]'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && 40 || 25 }}
+    timeout-minutes: ${{ (github.event_name == 'schedule' || inputs.mode == 'full') && (matrix.target.group == 'harness' && 240 || 150) || 25 }}
     strategy:
       fail-fast: false
       matrix:

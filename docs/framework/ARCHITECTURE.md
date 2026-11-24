@@ -225,8 +225,8 @@ Every plugin goes through the delivery loop: hardened source, behavior tests, ne
 
 Lockstep across layers, with `FRAMEWORK_VERSION` in the `Makefile` as the reference; T13.11 fails when the `SKILL.md` version or the capability map disagrees with it:
 
-- Layer 1: git tag on the meta-repo (`v0.4.25`)
-- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.25`)
+- Layer 1: git tag on the meta-repo (`v0.4.26`)
+- Layer 2: `version:` field in `SKILL.md` frontmatter (`0.4.26`)
 - Layer 3: git tag on the starter repo (`v0.3.0`), force-pushed by CI (from Phase 6)
 - Layer 4: `framework_version` field in `.ascent-meta.json`
 

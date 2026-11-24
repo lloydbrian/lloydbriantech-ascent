@@ -93,6 +93,31 @@ matrix() {
   # GOV-S2: a broken adapter is not a NO-GO
   stubs; mk s2-usage; stub_rc ascent-docs/check-docs 2; chk s2-usage --env beta; expect_only s2-usage GOV-S2 Medium
   has s2-usage 'GO WITH CONDITIONS'; lacks s2-usage 'FAIL  GOV-L1'
+  # exit 2 is a usage error only when its first line is the checker's own message,
+  # <name>: or Usage: <name>.sh; awk and bash also exit 2 when they fail (ADR-030)
+  x2_out() {  # NAME LINES — check-docs exits 2 and prints LINES (a printf format) on stderr
+    stubs; mk "$1"; stub_rc ascent-docs/check-docs 2; printf "$2" > "$WORK/ctl/ascent-docs__check-docs.out"
+  }
+  x2_out l1-crash-2 'awk: division by zero\n source line number 3\n'
+  chk l1-crash-2 --env beta; expect_only l1-crash-2 GOV-L1 High; has l1-crash-2 'check-audit: beta: NO-GO, '
+  has l1-crash-2 'exited 2 without finishing (awk: division by zero)'
+  x2_out l1-crash-2-bash "$WORK/stubs/ascent-docs/scripts/check-docs.sh: line 9: syntax error near unexpected token\n"
+  chk l1-crash-2-bash --env beta; expect_only l1-crash-2-bash GOV-L1 High
+  x2_out l1-crash-2-bash-bare 'check-docs.sh: line 9: syntax error near unexpected token\n'
+  chk l1-crash-2-bash-bare --env beta; expect_only l1-crash-2-bash-bare GOV-L1 High
+  x2_out l1-crash-2-silent ''
+  chk l1-crash-2-silent --env beta; expect_only l1-crash-2-silent GOV-L1 High; has l1-crash-2-silent 'exited 2 without finishing'
+  x2_out s2-own-name "check-docs: --maturity: unknown value 'x'\n"
+  chk s2-own-name --env beta; expect_only s2-own-name GOV-S2 Medium; has s2-own-name 'GO WITH CONDITIONS'
+  has s2-own-name "usage error (check-docs: --maturity: unknown value 'x')"
+  x2_out s2-other-name 'check-env: unknown option --x\n'
+  chk s2-other-name --env beta; expect_only s2-other-name GOV-L1 High
+  x2_out s2-other-usage 'Usage: check-env.sh [--no-git] [REPO]\n'
+  chk s2-other-usage --env beta; expect_only s2-other-usage GOV-L1 High
+  # the known limit (ADR-030): only the first line is read, so a crash after a line
+  # that starts with the checker's name still reads as a usage error
+  x2_out l1-crash-after-summary 'check-docs: 0 failure(s)\nawk: run time error\n'
+  chk l1-crash-after-summary --env beta; expect_only l1-crash-after-summary GOV-S2 Medium
   stubs; mk s2-no-adapter; edit s2-no-adapter $CON "$(subst 'ascent-docs/check-docs]' 'ascent-docs/check-docs, ascent-ops/check-ops-scripts]')" \
     && chk s2-no-adapter --env beta && expect_only s2-no-adapter GOV-S2 Medium
   has s2-no-adapter 'ascent-ops/check-ops-scripts'

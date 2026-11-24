@@ -46,8 +46,8 @@
 #   T14 the fast-mode self-test (ADR-018, ADR-029): tests/meta/test-gate-fast.sh runs
 #       this gate on fixture plugins and checks that fast mode stops where it should
 #       and runs the lead test first, then checks make/mutant-order.sh, the baselines a
-#       run launches and the refusal of MUTANT_FULL outside the harness group; each
-#       failing case reports as its own result, T14.G<n>
+#       run launches and the refusal of MUTANT_FULL and MUTANT_FAULT outside the
+#       harness group; each failing case reports as its own result, T14.G<n>
 #   T15 the scope self-test (ADR-023): tests/meta/test-gate-scope.sh checks which
 #       slow checks make/gate-scope.sh runs for fixture changes, and the
 #       repository's list of negative controls it reads

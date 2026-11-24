@@ -40,11 +40,14 @@
 #                   is a positive number of days, every check is named
 #                   <plugin>/<script>
 #   GOV-S2  Medium  every check in the floor can be run: it has an adapter, and
-#                   its checker accepts the options the adapter gives it
+#                   its checker accepts the options the adapter gives it (it
+#                   refuses them with an exit 2 whose first line is its own
+#                   message: <name>: or Usage: <name>.sh, ADR-030)
 #   GOV-L1  High    every checker in the floor passes (one that stops without
-#                   finishing has not passed); a checker whose findings are all
-#                   Medium or Low makes GOV-L1 Medium or Low, as its most severe
-#                   finding is (ADR-029)
+#                   finishing has not passed, and an exit 2 without the
+#                   checker's own message is one, ADR-030); a checker whose
+#                   findings are all Medium or Low makes GOV-L1 Medium or Low,
+#                   as its most severe finding is (ADR-029)
 #   GOV-L2  Low     every check in the floor is measured: its plugin is
 #                   available, the contract gives the input it needs, and it had
 #                   something it could check (N/A is never a pass)
@@ -430,8 +433,16 @@ sev_of() {
 worse() {  # NEW OLD: whether NEW is more severe than OLD (an empty OLD is no failure yet)
   case "$1:$2" in *:|High:Medium|High:Low|Medium:Low) return 0 ;; *) return 1 ;; esac
 }
+# whether an exit 2 is the checker's own usage error: its first line is its own
+# message, NAME: or Usage: NAME.sh; awk and bash also exit 2 when they fail (ADR-030)
+own_usage() {  # OUT NAME
+  local first=""
+  IFS= read -r first < "$1" || :
+  case "$first" in "$2: "*|"Usage: $2.sh"*) return 0 ;; *) return 1 ;; esac
+}
 run_each() {  # CHECK CHECKER: the checker once for each dated record since the last signed launch
-  local c="$1" f b n=0 all=0 rc since why="" failed="" fsev="" sev unread=""
+  local c="$1" f b n=0 all=0 rc since why="" failed="" fsev="" sev unread="" name="${2##*/}"
+  name="${name%.sh}"
   since=$(last_launch)
   for f in "$EACH_DIR"/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md; do
     [ -f "$f" ] || continue
@@ -443,7 +454,8 @@ run_each() {  # CHECK CHECKER: the checker once for each dated record since the 
       0) ;;
       # the most severe finding across the records, cited from the first record that has it
       1) sev=$(sev_of "$T/run.out"); if worse "$sev" "$fsev"; then failed="$f: $(fails_of "$T/run.out")"; fsev=$sev; fi ;;
-      2) [ -n "$unread" ] || unread="$f: $(head -1 "$T/run.out" | cut -c1-120)" ;;
+      2) if own_usage "$T/run.out" "$name"; then [ -n "$unread" ] || unread="$f: $(head -1 "$T/run.out" | cut -c1-120)"
+         elif worse High "$fsev"; then failed="$f: its checker exited 2 without finishing"; fsev=High; fi ;;
       *) if worse High "$fsev"; then failed="$f: its checker exited $rc without finishing"; fsev=High; fi ;;
     esac
   done
@@ -480,7 +492,8 @@ run_check() {  # CHECK
        elif [ -n "$na" ]; then item check GOV-L1 pass - "$c" "$c passes (not checked here: $na)"
        else item check GOV-L1 pass - "$c" "$c passes"; fi ;;
     1) item check GOV-L1 fail "$(sev_of "$T/run.out")" "$c" "$c failed: $(fails_of "$T/run.out")" ;;
-    2) item check GOV-S2 fail Medium "$c" "$c could not be run: its checker exited with a usage error ($(head -1 "$T/run.out" | cut -c1-120)); fix the contract value it names, or the adapter" ;;
+    2) if own_usage "$T/run.out" "$script"; then item check GOV-S2 fail Medium "$c" "$c could not be run: its checker exited with a usage error ($(head -1 "$T/run.out" | cut -c1-120)); fix the contract value it names, or the adapter"
+       else item check GOV-L1 fail High "$c" "$c failed: its checker exited 2 without finishing ($(head -1 "$T/run.out" | cut -c1-120))"; fi ;;
     *) item check GOV-L1 fail High "$c" "$c failed: its checker exited $rc without finishing ($(head -1 "$T/run.out" | cut -c1-120))" ;;
   esac
 }
