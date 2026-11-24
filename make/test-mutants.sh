@@ -67,17 +67,26 @@ trap 'trap "" INT TERM; kill -TERM 0 2>/dev/null; exit 130' INT TERM
 GROUPS_ALL="core $(awk '/^mutant_group [a-z0-9-]+$/ { print $2 }' "$0" | tr '\n' ' ' | sed 's/ $//')"
 # MUTANT_FULL=<labels> scopes a control's full-mode rerun to those sections: only the
 # harness group's own controls may set it (ADR-029), so a real control's full-mode
-# rerun is always the whole gate. A value from the environment, and any line that
-# sets it outside the harness group (a prefix, a line of its own, an export), stop the run
+# rerun is always the whole gate. MUTANT_FAULT=<fault> breaks the harness on purpose
+# (copy-fail, fast-pass), and the same holds for it (ADR-030). A value of either from
+# the environment, and any line that sets one outside the harness group (a prefix, a
+# line of its own, an export), stop the run
 if [ -n "${MUTANT_FULL:-}" ]; then
   echo "test-mutants: MUTANT_FULL is set in the environment; only the harness group's own controls may set it" >&2; exit 2
 fi
+if [ -n "${MUTANT_FAULT:-}" ]; then
+  echo "test-mutants: MUTANT_FAULT is set in the environment; only the harness group's own controls may set it" >&2; exit 2
+fi
 BADFULL=$(awk '/^mutant_group [a-z0-9-]+$/ { g = $2; next }
-  g != "harness" && /^[ \t]*(export[ \t]+)?([A-Z0-9_]+=[^ \t]*[ \t]+)*MUTANT_FULL=/ {
-    id = "line " NR; for (i = 1; i <= NF; i++) if ($i ~ /^P[0-9]+-/) { id = $i; break }
-    print id " in group " (g == "" ? "core" : g); exit }' "$0")
+  g != "harness" && /^[ \t]*(export[ \t]+)?([A-Z0-9_]+=[^ \t]*[ \t]+)*MUTANT_(FULL|FAULT)=/ {
+    id = "line " NR; v = ""
+    for (i = 1; i <= NF; i++) {
+      if (v == "" && $i ~ /^MUTANT_(FULL|FAULT)=/) v = substr($i, 1, index($i, "=") - 1)
+      if ($i ~ /^P[0-9]+-/) { id = $i; break }
+    }
+    print v " " id " in group " (g == "" ? "core" : g); exit }' "$0")
 if [ -n "$BADFULL" ]; then
-  echo "test-mutants: MUTANT_FULL is only for the harness group's own controls; $BADFULL sets it" >&2; exit 2
+  echo "test-mutants: ${BADFULL%% *} is only for the harness group's own controls; ${BADFULL#* } sets it" >&2; exit 2
 fi
 if [ "${1:-}" = --groups-json ]; then
   printf '%s\n' "$GROUPS_ALL" | awk '{ s = "["; for (i = 1; i <= NF; i++) s = s (i > 1 ? "," : "") "\"" $i "\""; print s "]" }'
@@ -216,7 +225,8 @@ fi
 # A copy that fails (a full disk: tar's "Write error") is an infrastructure error,
 # not a verdict: tar's messages go to DIR.copy-err, never into the control's result,
 # and the control is reported as COPY FAIL, counted apart, and fails the run.
-# MUTANT_FAULT=copy-fail makes every copy fail: only the harness group sets it.
+# MUTANT_FAULT=copy-fail makes every copy fail: only the harness group's own controls
+# may set it, and the harness refuses it anywhere else (ADR-030).
 # MUTANT_FULL=<labels>, joined by commas, makes a control's full-mode run check only
 # those sections (ASCENT_ONLY) instead of the whole gate: only the harness group's
 # own controls may set it, and the harness refuses it anywhere else (ADR-029).
@@ -1932,6 +1942,13 @@ plugin_case P1684-gov-l1-unknown-severity-low T11 "$GCS" 's/ else if (\$3 != "Lo
 plugin_case P1685-gov-l1-no-finding-low T11 "$GCS" 's/END { print (h || n == 0 ? "High"/END { print (h ? "High"/'
 plugin_case P1686-gov-l1-first-record-only T11 "$GCS" 's/; if worse "\$sev" "\$fsev"; then failed=/; if [ -z "$fsev" ]; then failed=/'
 plugin_case P1694-gov-l1-unknown-cited-last T11 "$GCS" 's/R\[n\] = (\$2 == "Medium" ? 2 : (\$2 == "Low" ? 3 : 1)) }/R[n] = ($2 == "High" ? 1 : ($2 == "Medium" ? 2 : 3)) }/'
+# an exit 2 is a usage error only when its first line is the checker's own message (ADR-030)
+plugin_case P1698-gov-own-usage-always T11 "$GCS" 's/^  case "\$first" in "\$2: "\*|"Usage: \$2\.sh"\*) return 0 ;; \*) return 1 ;; esac$/  return 0/'
+plugin_case P1699-gov-own-usage-never T11 "$GCS" 's/^  case "\$first" in "\$2: "\*|"Usage: \$2\.sh"\*) return 0 ;; \*) return 1 ;; esac$/  return 1/'
+plugin_case P1700-gov-own-usage-any-name T11 "$GCS" 's/ in "\$2: "\*|"Usage: / in *": "*|"Usage: /'
+plugin_case P1701-gov-own-usage-name-prefix T11 "$GCS" 's/ in "\$2: "\*|"Usage: / in "$2"*|"Usage: /'
+plugin_case P1702-gov-own-usage-any-usage T11 "$GCS" 's/|"Usage: \$2\.sh"\*) return 0/|"Usage: "*) return 0/'
+plugin_case P1703-gov-own-usage-no-usage-arm T11 "$GCS" 's/|"Usage: \$2\.sh"\*) return 0/) return 0/'
 plugin_case P1695-gov-l1-stderr-ignored T11 "$GCS" 's/^  bash "\$path" \(.*\) > "\$T\/run.out" 2>&1 </  bash "$path" \1 > "$T\/run.out" 2>\/dev\/null </'
 plugin_case P1269-gov-l2-missing-plugin-fails T11 "$GCS" 's/item check GOV-L2 unmeasured Low "\$c" "\$c is unmeasured: \$plugin is not available here"/item check GOV-L1 fail High "$c" "$c is unmeasured: $plugin is not available here"/'
 plugin_case P1270-gov-plugins-dir-not-exclusive T11 "$GCS" 's/ \[ -f "\$p" \] \&\& { printf '"'"'%s'"'"' "\$p"; return 0; }; return 1; fi$/ [ -f "$p" ] \&\& { printf '"'"'%s'"'"' "$p"; return 0; }; fi/'
@@ -1979,7 +1996,7 @@ plugin_case P1619-gov-reviews-not-a-map T11 "$GCS" 's/) why = "is not a map of e
 plugin_case P1620-gov-env-name-unchecked T11 "$GCS" 's/^if \[ -n "\$BADENV" \]; then$/if false; then/'
 plugin_case P1621-gov-env-two-names-accepted T11 "$GCS" 's/^ONLADDER=0; for e in \$LADDER; do .*$/ONLADDER=0; case " $LADDER" in *" $ENVNAME "*) ONLADDER=1 ;; esac/'
 plugin_case P1622-gov-one-rung-local-only T11 "$GCS" 's/\[ "\$NRUNGS" -le 2 \] \&\& default_tier B/[ "$NRUNGS" -eq 2 ] \&\& default_tier B/'
-plugin_case P1623-gov-crash-is-a-usage-error T11 "$GCS" 's/^    2) item check GOV-S2 fail Medium "\$c" "\$c could not be run/    *) item check GOV-S2 fail Medium "$c" "$c could not be run/'
+plugin_case P1623-gov-crash-is-a-usage-error T11 "$GCS" 's/^    2) if own_usage "\$T\/run.out" "\$script"; then item check GOV-S2 fail Medium/    *) if :; then item check GOV-S2 fail Medium/'
 plugin_case P1624-gov-nothing-checked-passes T11 "$GCS" 's/^       if \[ -n "\$na" \] \&\& ! grep -q .*; then item check GOV-L2/       if false; then item check GOV-L2/'
 plugin_case P1625-gov-left-out-rules-not-named T11 "$GCS" 's/^       elif \[ -n "\$na" \]; then item check GOV-L1 pass/       elif false; then item check GOV-L1 pass/'
 plugin_case P1626-gov-gate-runs-inside-itself T11 "$GCS" 's/^    \[ -z "\${ASCENT_GOVERNANCE_GATE:-}" \] || {/    true || {/'
@@ -2039,14 +2056,18 @@ plugin_case P1362-each-older-launch-wins T11 "$GCS" 's/if signed "\$f" \&\& \[ "
 plugin_case P1363-each-no-records-fails T11 "$GCS" 's/^  if \[ "\$all" -eq 0 \]; then item check GOV-L2 unmeasured Low /  if [ "$all" -eq 0 ]; then item check GOV-L1 fail High /'
 plugin_case P1364-each-none-since-unmeasured T11 "$GCS" 's/^  elif \[ "\$n" -eq 0 \]; then item check GOV-L1 na - /  elif [ "$n" -eq 0 ]; then item check GOV-L2 unmeasured Low /'
 plugin_case P1365-each-record-failure-lost T11 "$GCS" 's/^      1) sev=\$(sev_of "\$T\/run.out"); if worse .* ;;$/      1) : ;;/'
-plugin_case P1366-each-usage-error-a-failure T11 "$GCS" 's/^      2) \[ -n "\$unread" \] || unread="\$f: /      2) [ -n "$failed" ] || failed="$f: /'
+plugin_case P1366-each-usage-error-a-failure T11 "$GCS" 's/; then \[ -n "\$unread" \] || unread="\$f: /; then [ -n "$failed" ] || failed="$f: /'
 plugin_case P1367-each-undated-files-run T11 "$GCS" 's/^  for f in "\$EACH_DIR"\/\[0-9\]\[0-9\]\[0-9\]\[0-9\]-\[0-9\]\[0-9\]-\[0-9\]\[0-9\]-\*\.md; do$/  for f in "$EACH_DIR"\/*.md; do/'
 plugin_case P1368-gov-l1-first-findings-cited T11 "$GCS" 's/R\[n\] = (\$2 == "Medium" ? 2 : (\$2 == "Low" ? 3 : 1)) }/R[n] = 1 }/'
 plugin_case P1369-gov-l1-more-findings-not-counted T11 "$GCS" 's/if (n > 3) printf " (and %d more)", n - 3 }/}/'
 plugin_case P1610-adapt-pages-unset-is-an-error T11 "$GAA" 's/print "U\\t" key }/print "E\\t" key }/'
 plugin_case P1611-gov-pages-unset-still-run T11 "$GCS" 's/^      U) UNSET="\$a" ;;$/      U) : ;;/'
-plugin_case P1612-each-usage-error-drops-with-failure T11 "$GCS" 's/^      2) \[ -n "\$unread" \] || unread=/      2) [ -n "$failed$unread" ] || unread=/'
+plugin_case P1612-each-usage-error-drops-with-failure T11 "$GCS" 's/; then \[ -n "\$unread" \] || unread=/; then [ -n "$failed$unread" ] || unread=/'
 plugin_case P1633-each-failure-hidden-by-usage-error T11 "$GCS" 's/^    \[ -z "\$failed" \] || item check GOV-L1/    [ -n "$unread" ] || item check GOV-L1/'
+plugin_case P1704-each-exit-2-always-unread T11 "$GCS" 's/^      2) if own_usage "\$T\/run.out" "\$name"; then/      2) if :; then/'
+plugin_case P1705-each-own-usage-wrong-name T11 "$GCS" 's/^  name="\${name%\.sh}"$/  :/'
+T11_FORCE=ascent-governance plugin_case P1706-adapt-checker-usage-unnamed T11 plugins/ascent-docs/scripts/check-docs.sh 's/^    -\*) bad "unknown option \$1" ;;$/    -*) echo "unknown option $1" >\&2; exit 2 ;;/'
+T11_FORCE=ascent-governance plugin_case P1711-adapt-checker-value-error-unnamed T11 plugins/ascent-ops/scripts/check-drills.sh 's/|| bad "--rto and --rpo are durations such as 4h, 30m or 1h30m, got .\$t."$/|| { echo "--rto: bad duration" >\&2; exit 2; }/'
 plugin_case P1634-each-crash-is-a-usage-error T11 "$GCS" 's/^      \*) if worse High "\$fsev"; then failed="\$f: its checker exited \$rc without finishing"; fsev=High; fi ;;$/      *) [ -n "$unread" ] || unread="$f: its checker exited $rc without finishing" ;;/'
 mutant_group ascent-governance-waivers
 GAU="$GOVP/scripts/lib/audit.awk"
@@ -2323,8 +2344,10 @@ plugin_case_rm P1599-registry-copy-missing T1 plugins/ascent-governance/referenc
 plugin_case P1664-launch-nogo-record-written-anyway T11 "$GLS" '/^When Step 3.s answer is NO-GO, do not write the record/d'
 plugin_case P1665-record-one-id-for-many-findings T11 "$GRC" 's/, one id for each finding, separated by spaces/, separated by spaces/'
 plugin_case P1687-gov-l1-medium-row-dropped T11 "$GLS" '/^| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |$/d'
-plugin_case P1688-gov-agent-l1-one-row T11 "$GAG" 's/^| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing (GOV-L1) | High |$/| A check on the floor fails (GOV-L1) | High |/; /^| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |$/d; /^| A check on the floor fails with only Low findings (GOV-L1) | Low |$/d'
+plugin_case P1688-gov-agent-l1-one-row T11 "$GAG" 's/^| A check on the floor fails with a High finding, a finding of no known severity or none, or its checker stops without finishing, an exit 2 without its own message included (GOV-L1) | High |$/| A check on the floor fails (GOV-L1) | High |/; /^| A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |$/d; /^| A check on the floor fails with only Low findings (GOV-L1) | Low |$/d'
 plugin_case P1689-gov-readme-ci-any-failure T11 "$GRM" 's/a check that fails with a High finding or stops without finishing, an expired waiver/a failing check, an expired waiver/'
+plugin_case P1707-gov-agent-s2-row-unchanged T11 "$GAG" 's/ values with its own message (GOV-S2) | Medium |$/ values (GOV-S2) | Medium |/'
+plugin_case P1708-gov-reference-refusal-unsaid T11 "$GRU" 's/\. A refusal is an exit 2 whose first line is the checker.s own message (ADR-030) |/ |/'
 
 mutant_group ascent-delivery-lenses
 DLS2=plugins/ascent-delivery/skills/delivery-loop
@@ -2500,7 +2523,9 @@ T14_SELFTEST=1 plugin_case P1681-mutant-full-not-refused T14.G19 "$MUTH" 's/^if 
 T14_SELFTEST=1 plugin_case P1690-t11-passing-lead-ends-t11 T14.G15 "$GATEP" 's/^    TESTS="\$L \$O"$/    TESTS="${L:-$O}"/'
 T14_SELFTEST=1 plugin_case P1691-mutant-full-env-allowed T14.G19 "$MUTH" 's/^if \[ -n "\${MUTANT_FULL:-}" \]; then$/if false; then/'
 T14_SELFTEST=1 plugin_case P1692-mutant-full-export-allowed T14.G19 "$MUTH" 's/(export\[ \\t]+)?//'
-T14_SELFTEST=1 plugin_case P1693-mutant-full-group-line-allowed T14.G19 "$MUTH" 's/)\*MUTANT_FULL=\/ {$/)*MUTANT_FULL=[^ ]*[ \\t]+(plugin_case|plugin_case_rm|expect_case) \/ {/'
+T14_SELFTEST=1 plugin_case P1693-mutant-full-group-line-allowed T14.G19 "$MUTH" 's/)\*MUTANT_(FULL|FAULT)=\/ {$/)*MUTANT_(FULL|FAULT)=[^ ]*[ \\t]+(plugin_case|plugin_case_rm|expect_case) \/ {/'
+T14_SELFTEST=1 plugin_case P1709-mutant-fault-env-allowed T14.G19 "$MUTH" 's/^if \[ -n "\${MUTANT_FAULT:-}" \]; then$/if false; then/'
+T14_SELFTEST=1 plugin_case P1710-mutant-fault-line-allowed T14.G19 "$MUTH" 's/)\*MUTANT_(FULL|FAULT)=\/ {$/)*MUTANT_FULL=\/ {/'
 T14_SELFTEST=1 plugin_case P1696-order-write-private T14.G20 "$MORD" 's/^  chmod 644 "\$tmp"; mv "\$tmp" "\$ord"$/  mv "$tmp" "$ord"/'
 T14_SELFTEST=1 plugin_case P1697-order-write-no-controls T14.G20 "$MORD" 's/\$3 == "T11" { print \$2 }/$3 == "T99" { print $2 }/'
 # The baseline runs the behavior tests of the plugins the run's T11 controls edit: a

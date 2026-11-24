@@ -4,7 +4,8 @@
 # arguments separated by " | ". Exits with the number in
 # $STUB_CTL/<plugin>__<script>.rc (default 0); on 1 it prints a FAIL line, as a
 # real checker does (or the lines in $STUB_CTL/<plugin>__<script>.out), on 2 a
-# usage line, and on 0 a PASS line (or the .out lines). A file
+# usage line on stderr (or the .out lines, there), and on 0 a PASS line (or the
+# .out lines). A file
 # $STUB_CTL/<plugin>__<script>.rc.<name> gives the exit code of the run whose
 # last argument is a file of that name, and $STUB_CTL/<plugin>__<script>.out.<name>
 # the lines it prints.
@@ -17,7 +18,7 @@ out="${STUB_CTL:-/nonexistent}/$me.out"                          # and its own l
 [ -n "$last" ] && [ -f "${STUB_CTL:-/nonexistent}/$me.out.${last##*/}" ] && out="$STUB_CTL/$me.out.${last##*/}"
 case "$rc" in
   1) if [ -f "$out" ]; then cat "$out"; else echo "FAIL  XX-S1  High   src/app.js:3  the stub $me found a fault"; fi; echo "$me: 1 failure(s)" ;;
-  2) echo "Usage: $(basename "$0") [--flag] PATH" >&2 ;;
+  2) if [ -f "$out" ]; then cat "$out" >&2; else echo "Usage: $(basename "$0") [--flag] PATH" >&2; fi ;;
   0) if [ -f "$out" ]; then cat "$out"; else echo "PASS  XX-S1  the stub passes"; fi; echo "$me: 0 failure(s)" ;;
   *) echo "the stub $me did not finish" >&2 ;;
 esac

@@ -139,6 +139,33 @@ matrix() {
   if [ "$rows" -ge 50 ]; then ok; else bad "usage-drift: only $rows adapter rows were read"; fi
   for c in $STUBS; do if grep -q "^$c$TAB" "$TABLE"; then ok; else bad "usage-drift: $c has no adapter row"; fi; done
 
+  # --- every checker the table names refuses an unknown option in its own name ---
+  # check-audit.sh reads an exit 2 as a usage error only when the first line is the
+  # checker's own message (ADR-030); the list comes from the table, so a checker
+  # added to it is held to that from the start
+  mkdir -p "$WORK/usage-empty"; n=0
+  for c in $(awk -F'\t' '$1 != "" && $1 !~ /^#/ { print $1 }' "$TABLE" | LC_ALL=C sort -u); do
+    n=$((n + 1)); real="$REAL/${c%/*}/scripts/${c#*/}.sh"; name="${c#*/}"; rc=0
+    bash "$real" --no-such-option "$WORK/usage-empty" > "$WORK/usage.out" 2>&1 </dev/null || rc=$?
+    first=$(head -1 "$WORK/usage.out")
+    if [ "$rc" -ne 2 ]; then bad "usage-first-line: $c exited $rc on an unknown option, not 2"
+    else case "$first" in "$name: "*|"Usage: $name.sh"*) ok ;; *) bad "usage-first-line: $c's first line on an unknown option is not its own message: $first" ;; esac; fi
+  done
+  if [ "$n" -ge 9 ]; then ok; else bad "usage-first-line: only $n checkers were read from the table"; fi
+  # ... and a bad value for each option the table gives it: a bad contract value is
+  # the usage error GOV-S2 is for; an option that takes any value exits 0 or 1
+  n=0
+  while IFS="$TAB" read -r chkname flag kind path def; do
+    case "$chkname" in ''|'#'*) continue ;; esac
+    case "$flag:$kind" in -:*|*:nogit) continue ;; esac
+    real="$REAL/${chkname%/*}/scripts/${chkname#*/}.sh"; name="${chkname#*/}"; rc=0
+    bash "$real" "$flag" 'x!' "$WORK/usage-empty" > "$WORK/usage.out" 2>&1 </dev/null || rc=$?
+    [ "$rc" -eq 2 ] || continue
+    n=$((n + 1)); first=$(head -1 "$WORK/usage.out")
+    case "$first" in "$name: "*|"Usage: $name.sh"*) ok ;; *) bad "usage-first-line: $chkname's first line on a bad $flag value is not its own message: $first" ;; esac
+  done < "$TABLE"
+  if [ "$n" -ge 40 ]; then ok; else bad "usage-first-line: only $n bad option values exited 2"; fi
+
   # --- acceptance records, one run each, since the last signed launch -------
   full acc; record acc records/acceptance/2026-10-01-old.md; record acc records/acceptance/2026-11-28-new.md
   printf '# Acceptance records\n' > "$WORK/acc/records/acceptance/README.md"
@@ -199,6 +226,13 @@ matrix() {
   expect_only acc-medium-low GOV-L1 Medium; has acc-medium-low '2026-11-20-scores.md: DEL-A2 Medium a.md:5 medium one'; lacks acc-medium-low 'low one'
   acc_sev acc-low-crash 1 'FAIL  DEL-A3  Low    a.md:5  low one\n' 139 ''
   expect_only acc-low-crash GOV-L1 High; has acc-low-crash 'exited 139'
+  # an exit 2 without the checker's own message is a crash on that record (ADR-030),
+  # and a real usage error on another record is still reported beside it
+  acc_sev acc-crash-2 0 '' 2 'awk: run time error\n'
+  expect_only acc-crash-2 GOV-L1 High; has acc-crash-2 '2026-11-28-new.md: its checker exited 2 without finishing'
+  acc_sev acc-usage-and-crash-2 2 'Usage: check-acceptance.sh [--root DIR] RECORD\n' 2 'awk: run time error\n'
+  expect_rc acc-usage-and-crash-2 1; has acc-usage-and-crash-2 'FAIL  GOV-L1  High   ascent-delivery/check-acceptance'
+  has acc-usage-and-crash-2 'FAIL  GOV-S2  Medium ascent-delivery/check-acceptance'; has acc-usage-and-crash-2 '2026-11-20-scores.md: Usage: check-acceptance.sh'
 
   # --- the good fixture through the real checkers: no usage error -----------
   mk real; realfiles real

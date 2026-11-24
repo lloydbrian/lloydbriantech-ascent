@@ -94,6 +94,8 @@ if cmp -s "$WORK/script-ids" "$WORK/code-ids"; then ok; else bad "R2 the script'
 has R2 "$LAUNCH" '**Verdict:** NO-GO: any High. GO WITH CONDITIONS: no High, and any Medium, Low or unmeasured item. GO: none of them.'
 has R2 "$LAUNCH" 'Rate only with the severity table below.'
 has R2 "$LAUNCH" 'Other observations (unrated)'
+has R2 "$RULES" 'A refusal is an exit 2 whose first line is the checker'"'"'s own message (ADR-030)'
+has R2 "$RULES" 'An exit 2 without the checker'"'"'s own message is a checker that stopped without finishing (ADR-030).'
 
 # R3 — one table
 table "$LAUNCH" > "$WORK/t1"; table "$AGENT" > "$WORK/t2"

@@ -11,7 +11,7 @@ description: >-
   GOV-L1–L5, GOV-W1–W4, GOV-R1–R4), and reports what is due, what is
   expiring and what is broken, with the date each one becomes a problem.
   Read-only: it writes nothing and runs no review.
-version: 0.2.0
+version: 0.2.1
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

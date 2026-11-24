@@ -12,7 +12,7 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Next, `ascent-node-stack` (decisions 2026-10-18; order confirmed 2026-10-24 and 2026-11-16)
+- Next, `ascent-ai` (a working name): evidence checks across the AI lifecycle, with four related changes in `ascent-delivery`, `ascent-security` and `ascent-governance`; then Phase 4 and Phase 5; then `ascent-node-stack` (order set 2026-11-22)
 - Token trims that keep every description whole: browser-pass evidence gathering in `ascent-ux`, each checked before and after so no finding is lost, when the operator schedules them (ADR-027)
 - `ascent-security`: authenticated live checks, and a trial of the three scanner images against a real target, when a project needs them (ADR-026)
 - Tests: the `edit()` helpers of `test-check-drills.sh`, `test-check-ops-manuals.sh` and `test-check-iac-config.sh` do not fail a case when their awk edit fails, as `test-check-threat-model.sh` now does
@@ -26,6 +26,59 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.26] — 2026-11-23
+
+**A checker that crashes is a NO-GO, and the harness refuses both of its test-only variables.** Three gaps found during v0.4.25 ([ADR-030](docs/framework/DECISIONS/ADR-030-exit-2-usage-errors-and-test-only-variables.md)). First, `check-audit.sh` read every exit 2 from a floor checker as a usage error, so a checker that crashed in awk or bash gave conditions instead of a NO-GO. Second, the harness refused `MUTANT_FULL` from the environment but not `MUTANT_FAULT`. Third, the weekly full-mode run's red macOS jobs, which GitHub never started, went unexplained, and full mode, once measured, no longer fits its 40-minute limit.
+
+### Added
+
+- ADR-030
+- `own_usage` in `check-audit.sh`: an exit 2 is the checker's own usage error only when its first line is `<name>: …` or `Usage: <name>.sh …`
+- Tests:
+  - `test-check-audit.sh`: eight cases. They cover an awk error at exit 2, bash's error in its path and bare forms, exit 2 with no output, another checker's name or usage line, the checker's own message, and the known limit after a summary line.
+  - `test-adapters.sh`: `usage-first-line` runs every checker `lib/adapters.tsv` names with an unknown option, and with a bad value for each option the table gives it, and requires its own message first whenever it exits 2 (42 bad values do today). Two more cases test a per-record crash at exit 2, alone and beside a real usage error.
+  - `test-governance-rules.sh`: two R2 checks of the reference's wording.
+  - `test-gate-fast.sh` G19 (6 → 12 cases; the suite 64 → 70): `MUTANT_FAULT` from the environment, on a line of its own, exported and as a prefix, and the harness group's own P362 and P611 still listed.
+- Controls P1698–P1711, which break:
+  - the first-line rule: always true, never true, any name, the name as a bare prefix, any usage line, or no usage arm;
+  - the per-record exit 2: always read as a usage error, or the checker's name read with `.sh`;
+  - a real checker's unknown-option message, and its message for a bad `--rto`, without its name;
+  - the agent's GOV-S2 row and the reference's sentence;
+  - the `MUTANT_FAULT` refusal, from the environment and on a line.
+- `validate-skills.yml`: a comment beside the weekly schedule on the jobs GitHub never starts ("The job was not acquired by Runner of type hosted even after multiple attempts"), with `gh run rerun <run id> --failed`
+
+### Changed
+
+- Framework 0.4.25 → 0.4.26; `ascent-governance` 0.2.0 → 0.2.1; the other plugins stay as they are
+- `GOV-S2` is now an exit 2 with the checker's own message only, and stays Medium.
+  - Any other exit 2 is `GOV-L1` High: "its checker exited 2 without finishing (<first line>)".
+  - For a checker run once per record, such an exit ranks High, like any crash. A real usage error on another record is still listed apart.
+  - The script's header, the reference, and the severity tables in `launch-readiness` and `governance-conductor` say so.
+- The test stub prints its `.out` lines on stderr when it exits 2
+- `make/test-mutants.sh` refuses `MUTANT_FAULT` from the environment and on any line outside the harness group, as it refuses `MUTANT_FULL`. It exits 2 with a message that names the variable.
+- The negative-control jobs' full-mode limit goes from 40 to 150 minutes, and to 240 for the harness group, whose controls each rerun the whole gate; fast mode keeps 25
+- P1623, P1366, P1612, P1688 and P1693 move to the new code and text, with the same ids and intent
+- Release docs updated for 0.4.26:
+  - the README, with v0.4.17 moved under Earlier releases;
+  - CLAUDE.md;
+  - the ROADMAP: the current state, the order set on 2026-11-22, a planned `ascent-ai` row and the v0.4.26 section;
+  - ARCHITECTURE, the capability map and the banners.
+
+  The control figure is 1776 (1762 plus P1698–P1711), and the decision figure is 30.
+
+### Notes
+
+- The 49 exit-2 sites of the nine adapted checkers, two of them in a library `check-test-evidence` calls, all print their own message first, so no checker changes
+- Full mode, measured on 2026-11-22 with one control from each group, and on 2026-11-23 with the whole harness group:
+  - the harness group is predicted at about 147 minutes on macOS, the slowest group, and `ascent-governance-adapters` at about 102 at this release's counts;
+  - eleven groups are predicted over 40 minutes;
+  - the whole run is about 1,460 macOS job-minutes.
+
+  The release runbook dispatches a full-mode run on `main` after the tag.
+- The weekly runs of 2 and 16 November came before v0.4.24's governance controls, and their red jobs never started
 
 ---
 
