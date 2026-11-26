@@ -2402,7 +2402,9 @@ plugin_case P1707-gov-agent-s2-row-unchanged T11 "$GAG" 's/ values with its own 
 plugin_case P1708-gov-reference-refusal-unsaid T11 "$GRU" 's/\. A refusal is an exit 2 whose first line is the checker.s own message (ADR-030) |/ |/'
 plugin_case P2057-gov-reference-crash-unsaid T11 "$GRU" 's/ An exit 2 without the checker.s own message is a checker that stopped without finishing (ADR-030)\.//'
 
-mutant_group ascent-governance-ai
+# The AI risk-tier records and the per-application runs, in three groups so each macOS
+# job keeps inside 25 minutes
+mutant_group ascent-governance-ai-1
 # the AI risk-tier records, GOV-A1–A5 (ADR-031)
 GAT="$GOVP/scripts/lib/ai-tier.awk"
 GAR="$GOVP/references/ai-tier-template.md"
@@ -2439,6 +2441,7 @@ plugin_case P1741-gov-a-skill-writes-without-approval T11 "$GLS" 's/ Show the dr
 plugin_case P1742-gov-a-skill-lowers-the-tier T11 "$GLS" 's/, never lowered to fit\./, or lowered to fit./'
 plugin_case P1743-gov-a-template-claude-signs T11 "$GAR" 's/ and never fills in those two\./ and may fill in those two./'
 plugin_case P1744-gov-a-skill-links-a-missing-template T6 "$GLS" 's|references/ai-tier-template.md)|references/ai-tier.md)|'
+mutant_group ascent-governance-ai-2
 # check-audit.sh runs ascent-ai once for each application (ADR-031)
 GAD="$GOVP/scripts/lib/adapt.awk"
 GAA="$GOVP/scripts/lib/adapters.tsv"
@@ -2463,6 +2466,7 @@ plugin_case P1996-gov-item-runs-unnamed T11 "$GAU" 's/judge "\$c" "\$c \[\$n\]"/
 plugin_case P1997-gov-no-application-passes T11 "$GAU" 's/\[ "\$total" -gt 0 \] || { item check GOV-L2/[ "$total" -gt 0 ] || { return 0; item check GOV-L2/'
 plugin_case P1998-gov-ai-design-row-missing T11 "$GAA" '/^ascent-ai\/check-ai-design.--design.itemfmt/d'
 plugin_case P1999-gov-retrieval-targets-row-missing T11 "$GAA" '/^ascent-ai\/check-ai-evidence.--retrieval-target/d'
+mutant_group ascent-governance-ai-3
 plugin_case P2000-gov-detect-given-no-roots T11 "$GAU" 's/APPROOTS+=(--app "\$n=\$r")/:/'
 plugin_case P2001-gov-implicit-app-root-wrong T11 "$GAU" "s/printf 'ai.applications\[0\].name\\\\t%s\\\\t0\\\\nai.applications\[0\].root\\\\t.\\\\t0\\\\n'/printf 'ai.applications[0].name\\\\t%s\\\\t0\\\\n'/"
 plugin_case P2002-gov-field-default-ignored T11 "$GAD" 's/v = field(item "." substr(tok, 1, q - 1)); out = out (v != "" ? v : substr(tok, q + 1))/out = out field(item "." substr(tok, 1, q - 1))/'
