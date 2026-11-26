@@ -6,10 +6,12 @@ description: >-
   endpoints need sign-in?", "is the AI endpoint injectable or unlimited?",
   "rate our ZAP, nuclei or dalfox report", or before a first production
   deploy. Writes the runbook for live checks the operator runs against a
-  local or beta target (SEC-L1–L8), and the scanner commands in pinned
-  containers, then rates the results and the reports (SEC-L9, SEC-L10).
+  local or beta target (SEC-L1–L8), the scanner commands in pinned
+  containers, and, for an AI application, the garak or Promptfoo red team,
+  then rates the results and the reports (SEC-L9, SEC-L10) and the red-team
+  results (SEC-R1–R3).
   Never sends a request to anything but the test fixture on 127.0.0.1.
-version: 0.4.0
+version: 0.5.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -18,13 +20,13 @@ allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 The live check of the `ascent-security` plugin. It answers what no file can: how does the running application answer a hostile request? The operator sends the requests; Claude writes the runbook and reads what came back.
 
 Shared sources:
-- [live-rules.md](../../references/live-rules.md): SEC-L1–L10, the probes, the results file and the endpoint list
+- [live-rules.md](../../references/live-rules.md): SEC-L1–L10, the probes, the results file and the endpoint list; SEC-R1–R3, the red-team results
 - [contract-template.yml](../../references/contract-template.yml): the `security:` section of `.ascent/contract.yml`
 - The `threat-model` skill: the entry points this check tests
 
 ## Rules
 
-- **The operator runs every request.** Claude never runs `run-live-checks.sh`, ZAP, nuclei or dalfox against a target; the script refuses anything but loopback when it runs inside Claude Code. Claude writes the runbook, and reads the results file and reports the operator commits.
+- **The operator runs every request.** Claude never runs `run-live-checks.sh`, ZAP, nuclei or dalfox against a target, and never runs garak or `promptfoo redteam`: a red team calls a model, spends money and uses provider keys; the script refuses anything but loopback when it runs inside Claude Code. Claude writes the runbook, and reads the results file and reports the operator commits.
 - **Local or beta, never production by default.** A target named `prod` or `production`, or marked `prod: yes`, runs only when the contract says `allow_prod: yes`, and the runbook says so in a ⚠ line.
 - **Disposable data for writes, a budget for AI.** `--allow-writes` sends unauthenticated writes that change data if the endpoint fails to check them; use it only where the data can be thrown away. `--allow-ai` sends requests a model may answer and bill. Ask before putting either in the runbook.
 - **No credentials anywhere.** The checks are unauthenticated: never put a token, cookie or password in the runbook, the contract or a command. The results file holds no response body.
@@ -40,6 +42,7 @@ Every live and threat-model finding carries one of these severities. The `securi
 <!-- live-severity:start -->
 | Finding | Severity |
 |---|---|
+| A red-team attack that succeeded in a prompt-injection or data-leak category, at every tier (SEC-R2, SEC-R3) | Critical |
 | A write endpoint that requires sign-in accepted a request without it (SEC-L4) | High |
 | A traversal payload returned a system file (SEC-L3) | High |
 | An AI endpoint followed an injected instruction (SEC-L7) | High |
@@ -62,16 +65,22 @@ Every live and threat-model finding carries one of these severities. The `securi
 | A mitigation that names no file, an accepted threat without its ADR, or an unknown STRIDE letter or status (SEC-T3) | Low |
 | A threat model not reviewed by a person within review_max_age_days (SEC-T4) | Low |
 | A live target missing from the contract ("unmeasured") | Low |
+| No red-team result for an AI application, or one older than redteam.max_age_days (SEC-R1) | High |
+| A red-team category whose attack success is above redteam.max_attack_success (SEC-R2) | High |
+| A successful red-team attack neither fixed nor waived by an ADR whose review date has not passed (SEC-R3) | High |
+| An AI application's threat model with no model-input entry point, or without one of the four AI threats answered (SEC-T5) | High |
 | A finding covered by a waiver ADR | Info |
 <!-- live-severity:end -->
 
-**Rating:** **strong**: no High and no Medium. **moderate**: no High, one or more Medium. **weak**: one or more High.
+SEC-R severities other than Critical are for an application at AI risk tier 3; at tier 2 they are one level lighter, at tier 1 two, never below Low (the tier record is `ascent-governance`'s).
+
+**Rating:** **strong**: no Critical, High or Medium. **moderate**: no Critical or High, one or more Medium. **weak**: one or more Critical or High.
 
 ## Steps
 
 ### Step 0 — Load or propose the contract
 
-Read `.ascent/contract.yml`, or `.claude/contract.yml` where ASCENT-named files are not allowed, and use its `security:` section: `endpoints`, `live` (`targets`, `allow_prod`, `results_dir`, `max_age_days`, `max_body_bytes`, `scan_threshold`), `threat_model`, `adr_dir` and `waivers`.
+Read `.ascent/contract.yml`, or `.claude/contract.yml` where ASCENT-named files are not allowed, and use its `security:` section: `endpoints`, `live` (`targets`, `allow_prod`, `results_dir`, `max_age_days`, `max_body_bytes`, `scan_threshold`), `threat_model`, `redteam` (`max_age_days`, `max_attack_success`), `adr_dir` and `waivers`, and each `ai.applications` item's `redteam_results`.
 
 If `endpoints` or `live` is missing, **detect, don't ask.** Propose the endpoints from the routes in the code (Express, Fastify, Flask, FastAPI, Django, Go `http.HandleFunc`, Spring mappings, an OpenAPI file), each with its methods, whether it requires sign-in (a guard or middleware on the route), whether it writes, and whether it calls a model; propose `targets` from `.env.example` base URLs, Compose ports and the README. Mark each detected value `# detected: <path:line>` and each guess `# guess`. Show the proposal once and ask the operator to confirm it. Write nothing: the operator commits the file. Until it is confirmed, each target the contract lacks is a Low "unmeasured" finding.
 
@@ -112,8 +121,14 @@ Write the runbook the operator runs, to the runbook standard (pre-flight, number
    podman run --rm -v "$PWD/<results_dir>/reports:/out:rw" docker.io/projectdiscovery/nuclei:v3.11.1 -u <url> -severity low,medium,high,critical -jsonl -o /out/<date>-<target>-nuclei.jsonl -no-interactsh -disable-update-check -timeout 10
    podman run --rm -v "$PWD/<results_dir>/reports:/out:rw" docker.io/hahwul/dalfox:v3.3.0 scan <url> -f jsonl -o /out/<date>-<target>-dalfox.jsonl
    ```
-4. **Post-flight:** the results file opens with `# ascent-live-results 1`, holds no token or password (`grep -Ei 'bearer|password=|secret=' <file>` prints nothing), and the target still answers. Stop any server the runbook started.
-5. **Commit** the results and reports on a branch, through the delivery loop. Claude never commits them.
+4. **The red team, for each AI application** (`ai.applications`, from `ascent-ai`), writing to its `redteam_results` folder (default `evidence/<name>/redteam/`), with an explicit output path so the file lands where the check reads it. The provider key is read with `read -rs`, never written in the runbook. Either tool:
+   ```bash
+   garak --target_type <openai|huggingface|rest|...> --target_name <model> --probes promptinject,latentinjection,dan,leakreplay,xss --report_prefix <redteam_results>/<date>-<name>
+   promptfoo redteam run -c <redteam config> -o <redteam_results>/<date>-<name>-promptfoo.json
+   ```
+   garak writes `<prefix>.report.jsonl` and, when an attack succeeds, `<prefix>.hitlog.jsonl`; both are committed. A red team against a provider costs money on every run: the runbook says so in a ⚠ line.
+5. **Post-flight:** the results file opens with `# ascent-live-results 1`, holds no token or password (`grep -Ei 'bearer|password=|secret=' <file>` prints nothing), and the target still answers. Stop any server the runbook started.
+6. **Commit** the results, reports and red-team files on a branch, through the delivery loop. Claude never commits them.
 
 ### Step 4 — Rate the results
 
@@ -124,6 +139,14 @@ bash "$PLUGIN_ROOT/scripts/check-live-results.sh" --target <name> --url <url> --
 ```
 
 It applies SEC-L1–L10. Then read what the script cannot judge: for each SEC-L4, which handler lacks the guard (`file:line`); for SEC-L1, where the headers should be set (the proxy, the framework's middleware); for each SEC-L9 alert, whether it is a real finding or a scanner false positive, and say why. A waiver needs an ADR in `adr_dir` that names the id (`SEC-L4:/api/items/{id}`, a ZAP `pluginid`, a nuclei `template-id`, `dalfox:<param>`) and a `review_by` date that has not passed.
+
+For each AI application, rate its red-team results and include the output verbatim:
+
+```bash
+bash "$PLUGIN_ROOT/scripts/check-redteam.sh" --app <name> --max-age <redteam.max_age_days> --max-attack-success <redteam.max_attack_success> --tier-record <ai_tier_dir>/<name>.md [--waiver '<ADR id> <review_by> <id>,...']... <redteam_results>
+```
+
+It applies SEC-R1–R3 to the newest garak or Promptfoo run in the folder. A successful attack's id is `garak:<probe>` or `promptfoo:<pluginId>`; a waiver ADR names it under `security.waivers` `advisories` and has a `review_by` date. Then say, for each successful attack, what the model did and where the defence belongs (the prompt, an output filter, a tool's limit in code).
 
 ### Step 5 — Report
 

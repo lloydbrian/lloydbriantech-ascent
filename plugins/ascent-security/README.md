@@ -69,7 +69,8 @@ npm and Python get every manifest rule; Go and Cargo get the lockfile and source
 |---|---|---|
 | `scripts/run-live-checks.sh` | sends the probes: headers, TRACE and CONNECT, path traversal, disclosure, and with opt-in unauthenticated writes, an oversized and a malformed body, a prompt-injection canary and an AI burst | you, against a local or beta target |
 | `scripts/check-live-results.sh` | SEC-L1–L10: rates the results file and the ZAP (JSON), nuclei (JSONL) and dalfox (v3 JSONL) reports | Claude, read-only |
-| `scripts/check-threat-model.sh` | SEC-T1–T4: the model is complete, every endpoint is an entry point with threats, every threat is mitigated in a file or accepted in an ADR, and a person reviewed it recently | Claude, read-only |
+| `scripts/check-threat-model.sh` | SEC-T1–T4: the model is complete, every endpoint is an entry point with threats, every threat is mitigated in a file or accepted in an ADR, and a person reviewed it recently; with `--ai`, SEC-T5: a model-input entry point and the four AI threats answered | Claude, read-only |
+| `scripts/check-redteam.sh` | SEC-R1–R3: each AI application has a recent garak or Promptfoo red-team run, no category's attack success is above the share the contract allows, and every successful attack is waived by a current ADR; prompt injection and data leaks are Critical at every tier | Claude, read-only |
 
 The scanners run in pinned containers from the runbook: `zaproxy/zap-stable:2.17.0` (baseline), `projectdiscovery/nuclei:v3.11.1` and `hahwul/dalfox:v3.3.0`. See [ADR-026](../../docs/framework/DECISIONS/ADR-026-live-security-testing-and-threat-model.md).
 

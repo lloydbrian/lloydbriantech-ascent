@@ -6,6 +6,8 @@
 # SEC-T1–T4. Each check then gets negative controls: a copy broken in exactly one
 # way fails that check and no other. Also covers path parameters written as {id}
 # or :id, the STRIDE note, prototype maturity, an absent model and bad input.
+# With --ai (an AI application), SEC-T5: a model-input entry point and the four
+# AI threats, each answered.
 #
 # Runs with the default awk and every other awk found (mawk, gawk, BWK awk).
 # Prints "test-check-threat-model: N/N PASS" last (make/test-plugins.sh T11 requires it).
@@ -105,6 +107,31 @@ matrix() {
   mk t4-claude; edit t4-claude "$(subst '| reviewed_by | Jane Doe |' '| reviewed_by | Claude |')" && chk t4-claude && expect_only t4-claude SEC-T4 Low
   mk t4-blank; edit t4-blank "$(subst '| reviewed_by | Jane Doe |' '| reviewed_by | — |')" && chk t4-blank && expect_only t4-blank SEC-T4 Low
   mk t4-future; edit t4-future "$(subst '| reviewed_on | 2026-11-10 |' '| reviewed_on | 2026-12-10 |')" && chk t4-future && expect_only t4-future SEC-T4 Low
+
+  # SEC-T5 — with --ai: a model input, and the four AI threats answered
+  ai_rows() {  # COPY: the AI threats TH-3 does not already name
+    edit "$1" "$(after '| TH-7 | all |' '| TH-10 | EP-2 | D | Unbounded consumption: one conversation loops on the model | Rate limit in `src/http/limits.ts` | mitigated |')" &&
+    edit "$1" "$(after '| TH-7 | all |' '| TH-9 | EP-2 | E | Excessive agency: the model cancels an order nobody asked to cancel | — | accepted (ADR-012) |')" &&
+    edit "$1" "$(after '| TH-7 | all |' '| TH-8 | EP-2 | I | Sensitive information disclosure: the model repeats another customer'"'"'s order | Output filter in `src/chat/guard.ts` | mitigated |')"
+  }
+  lacks good 'SEC-T5'
+  mk t5-good; ai_rows t5-good && chk t5-good --ai && expect_pass t5-good; has t5-good 'PASS  SEC-T5  the AI threats are recorded and answered (1 checked)'
+  mk t5-plain; ai_rows t5-plain && chk t5-plain; expect_pass t5-plain; lacks t5-plain 'SEC-T5'
+  mk t5-none; chk t5-none --ai; expect_only t5-none SEC-T5 High; has t5-none 'no threat names excessive agency'; has t5-none 'no threat names unbounded consumption'
+  lacks t5-none 'no threat names prompt injection'
+  mk t5-agency; ai_rows t5-agency && edit t5-agency "$(drop '| TH-9 |')" && chk t5-agency --ai && expect_only t5-agency SEC-T5 High
+  has t5-agency 'no threat names excessive agency (an AI application'
+  mk t5-inject; ai_rows t5-inject && edit t5-inject "$(subst 'A prompt injection reveals' 'An injected instruction reveals')" && chk t5-inject --ai && expect_only t5-inject SEC-T5 High
+  has t5-inject 'no threat names prompt injection'
+  mk t5-ep; ai_rows t5-ep && edit t5-ep "$(subst 'internet → api → model provider' 'internet → api')" && chk t5-ep --ai && expect_only t5-ep SEC-T5 High
+  has t5-ep 'no entry point for a model input'
+  mk t5-input; ai_rows t5-input && edit t5-input "$(subst '| EP-2 | POST /api/chat | internet → api → model provider |' '| EP-2 | model input: POST /api/chat | internet → api |')" && chk t5-input --ai --endpoint 'POST /api/chat required ai' && expect_pass t5-input
+  mk t5-models; ai_rows t5-models && edit t5-models "$(subst 'internet → api → model provider' 'internet → api → models-service')" && chk t5-models --ai && expect_only t5-models SEC-T5 High
+  mk t5-data; ai_rows t5-data && edit t5-data "$(subst 'Sensitive information disclosure:' 'Sensitive data disclosure:')" && chk t5-data --ai && expect_pass t5-data
+  mk t5-open; ai_rows t5-open && edit t5-open "$(subst '| — | accepted (ADR-012) |' '| — | open |')" && chk t5-open --ai
+  has t5-open 'FAIL  SEC-T5  High'; has t5-open 'the excessive agency threat is neither mitigated nor accepted'; has t5-open 'FAIL  SEC-T3  Medium'
+  mkdir -p "$WORK/t5-absent"; chk t5-absent --ai; expect_only t5-absent SEC-T1 Medium; has t5-absent 'N/A   SEC-T5  the AI threats are recorded and answered (no threat model)'
+  mk t5-proto; MATURITY=prototype chk t5-proto --ai; expect_pass t5-proto; has t5-proto 'NOTE  SEC-T5'
 
   # maturity
   mk proto; MATURITY=prototype chk proto --endpoint 'POST /api/orders required write'

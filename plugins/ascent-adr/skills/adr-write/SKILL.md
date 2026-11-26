@@ -10,7 +10,7 @@ description: >-
   ADR and writes it only after approval, with its index row; when
   superseding, changes only the old ADR's status line. Never edits an
   accepted ADR's body and never commits.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

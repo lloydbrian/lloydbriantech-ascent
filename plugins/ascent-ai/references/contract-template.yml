@@ -1,0 +1,34 @@
+# The ai: section of .ascent/contract.yml (or .claude/contract.yml), for ascent-ai.
+#
+# One list item per AI application: a product whose own code calls a model. A
+# repository with one application and no list is one application rooted at the
+# repository root, named after its folder. Each item holds flat keys only; paths
+# are relative to the repository root. ai-design drafts this section with the
+# operator's approval; ascent-governance's check-audit.sh turns each key into an
+# option of the ascent-ai checkers (they never read the contract themselves).
+#
+# Never write credentials, account ids or personal data here.
+
+ai:
+  applications:
+  - name: support-assistant               # its tier record is docs/governance/ai-tier/support-assistant.md
+    root: services/support/               # the folder that holds its code
+    design_record: services/support/docs/ai/design.md      # autonomy, model, tools, limits, off switch (references/design-record-template.md)
+    prompts_dir: services/support/prompts/                 # one file per prompt
+    golden_set: services/support/tests/evals/golden/       # Promptfoo test files with metadata.slice, and VERSION
+    eval_results: evidence/support-assistant/evals/latest.json   # what promptfoo eval -o wrote, in a runbook the operator ran
+    eval_format: promptfoo                                 # promptfoo | ascent-evidence-v1
+    eval_pass_rate: 0.90                                   # the share of golden cases that pass; errors count as failures
+    eval_attack_pass_rate: 1.0                             # the attack slice's own target
+    eval_max_age_days: 14                                  # the results are no older than this
+    # retrieval_results: evidence/support-assistant/retrieval/latest.json   # omit when there is no retrieval
+    # retrieval_targets: "faithfulness=0.90 context_recall=0.85"
+    # retrieval_sources: services/support/docs/ai/sources.md                # each source with an owner and a review date
+    redteam_results: evidence/support-assistant/redteam/   # read by ascent-security (SEC-R)
+    capture_policy: services/support/docs/ai/capture-policy.md   # what prompt and output content is stored, redacted or dropped
+    # gateway_policy: deploy/gateway/policy.yaml           # omit with gateway none in the design record
+    pilot_result: services/support/docs/ai/pilot.md        # before a prod launch: the pilot measured against the baseline
+    # model_selection: services/support/docs/ai/model-bake-off.md   # tier 3: why this model
+    # fine_tune_runbook: docs/operations/fine-tune.md      # omit when there is no fine-tuning
+    review_by: 2027-02-01                                  # when a person looks at the application's evidence again
+    review_notes: services/support/docs/ai/reviews.md      # one row a review: the date, the regression cases then, the new failures it flagged

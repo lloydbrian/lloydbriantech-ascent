@@ -117,6 +117,9 @@ Apply these checks, which mirror the plugin's skills step for step. Read
      you can read; an `accepted (ADR-NNN)` threat's ADR exists in `security.adr_dir`
    - SEC-T4: `reviewed_on` is a date within `review_max_age_days` (default 180)
      and `reviewed_by` names a person
+   - SEC-T5 (when the repository has an AI application): an entry point for a
+     model input, and threats naming prompt injection, sensitive information
+     disclosure, excessive agency and unbounded consumption, each answered
 10. **Live results** (security-test Step 4), by reading the newest
    `<results_dir>/<date>-<target>.tsv` the operator committed for each target in
    `security.live.targets`, and its reports in `<results_dir>/reports/`. A row is
@@ -131,6 +134,22 @@ Apply these checks, which mirror the plugin's skills step for step. Read
    the live checks as "not checked here — the operator runs the security-test
    runbook".
    Rate checks 9 and 10 with the live table below, not the shared table.
+11. **Red-team results** (security-test Step 4), by reading the newest garak
+   (`<prefix>.report.jsonl`, `<prefix>.hitlog.jsonl`) or Promptfoo red-team JSON
+   in each AI application's `redteam_results` folder (live-rules.md, Red-team
+   results): SEC-R1 no run, or one older than `redteam.max_age_days`; SEC-R2 a
+   category whose `fails / total_evaluated` (garak) or share of `success: false`
+   rows (Promptfoo) is above `redteam.max_attack_success`; SEC-R3 a successful
+   attack no waiver with a current `review_by` names. Rate them with the live
+   table. Never run a red team or a model.
+12. **AI code**, by reading the code that calls a model, with checks 3 and 7
+   applied to it: a credential in a prompt or a prompt file is check 3; model
+   output passed to `eval`, a shell, SQL or a template is check 7. Also look
+   for untrusted text (a user's message, a retrieved document, a tool result)
+   placed in the instruction position, in the system prompt or above it, and
+   model output used without validation (parsed as code, a URL fetched, a tool
+   called from it). Those two go under **Other observations**, with the
+   `file:line`, unless check 3 or 7 applies.
 
 Vulnerability scanning (SEC-D7–D9, dependency-check Step 3) needs a shell and
 a scanner: report it as "not checked here — run the dependency-check skill in the
@@ -181,12 +200,13 @@ Severity section, copied here exactly:
 
 They count toward the same posture and verdict.
 
-Threat-model and live findings (checks 9 and 10) use the table in the
+Threat-model, live and red-team findings (checks 9 to 11) use the table in the
 security-test skill's Severity section, copied here exactly:
 
 <!-- live-severity:start -->
 | Finding | Severity |
 |---|---|
+| A red-team attack that succeeded in a prompt-injection or data-leak category, at every tier (SEC-R2, SEC-R3) | Critical |
 | A write endpoint that requires sign-in accepted a request without it (SEC-L4) | High |
 | A traversal payload returned a system file (SEC-L3) | High |
 | An AI endpoint followed an injected instruction (SEC-L7) | High |
@@ -209,12 +229,20 @@ security-test skill's Severity section, copied here exactly:
 | A mitigation that names no file, an accepted threat without its ADR, or an unknown STRIDE letter or status (SEC-T3) | Low |
 | A threat model not reviewed by a person within review_max_age_days (SEC-T4) | Low |
 | A live target missing from the contract ("unmeasured") | Low |
+| No red-team result for an AI application, or one older than redteam.max_age_days (SEC-R1) | High |
+| A red-team category whose attack success is above redteam.max_attack_success (SEC-R2) | High |
+| A successful red-team attack neither fixed nor waived by an ADR whose review date has not passed (SEC-R3) | High |
+| An AI application's threat model with no model-input entry point, or without one of the four AI threats answered (SEC-T5) | High |
 | A finding covered by a waiver ADR | Info |
 <!-- live-severity:end -->
 
+SEC-R severities other than Critical are for an application at AI risk tier 3; at tier 2 they are one level lighter, at tier 1 two, never below Low (the tier record is `ascent-governance`'s).
+
 They count toward the same posture and verdict.
 
-Only findings from checks 1–10 get a severity and count toward the posture and
+A Critical finding counts with the High ones in the posture and the verdict.
+
+Only findings from checks 1–12 get a severity and count toward the posture and
 the verdict. Anything else you notice (other unsafe code patterns, secrets
 shorter than 4 characters or under key names without a credential word,
 identifiers in docs, deploy scripts) goes under **Other observations**,

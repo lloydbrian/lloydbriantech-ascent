@@ -10,7 +10,7 @@ description: >-
   since acceptance, from git history) and the declared constraints (DEC-C1–C3,
   with decision-drift), and rates the decision record strong, moderate or
   weak with file:line evidence. Read-only.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

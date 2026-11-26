@@ -92,10 +92,20 @@ security:
     path: docs/security/THREAT-MODEL.md
     review_max_age_days: 180
 
+  # Red-team results for each AI application (security-test, SEC-R1–R3): the garak
+  # or Promptfoo runs the operator commits to each ai.applications item's
+  # redteam_results (default evidence/<name>/redteam/). A newest run older than
+  # max_age_days is SEC-R1; a category whose share of successful attacks is above
+  # max_attack_success (0 to 1) is SEC-R2.
+  redteam:
+    max_age_days: 30
+    max_attack_success: 0
+
   adr_dir: docs/adr/
   # Accepted risks: a scanner ignore entry (SEC-D10), an advisory (SEC-D7, SEC-D9) or
   # a live or threat finding (SEC-L4:/api/items/{id}, a ZAP pluginid, a nuclei
-  # template-id, dalfox:<param>) whose id is listed under an ADR here is Info.
+  # template-id, dalfox:<param>) or a red-team attack (garak:<probe>,
+  # promptfoo:<pluginId>) whose id is listed under an ADR here is Info.
   # review_by is when it is looked at again.
   waivers: []
   # waivers:

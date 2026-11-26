@@ -4,7 +4,9 @@ description: >-
   Use when asked to "check AI eval coverage" or "validate eval scenarios", or
   after a prompt changes. Checks tests/evals/ scenario structure and that
   every prompt has a matching eval. Does nothing when the project has no eval
-  suite.
+  suite. For the evidence itself (eval results against their targets, the
+  golden set's slices, retrieval, tracing and spend limits) and for a rating of
+  the AI application, use the ascent-ai plugin's ai-review.
 version: <<PROJECT_VERSION>>
 allowed-tools:
   - Read

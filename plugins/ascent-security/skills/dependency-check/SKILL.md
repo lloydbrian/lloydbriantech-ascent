@@ -10,7 +10,7 @@ description: >-
   (SEC-D7–D9), and checks scanner ignore entries for waivers (SEC-D10).
   Read-only; anything that uses the network runs only after the operator
   agrees.
-version: 0.4.0
+version: 0.5.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

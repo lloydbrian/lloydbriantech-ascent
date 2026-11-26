@@ -321,12 +321,13 @@ count_of '0 3 0' "$G17/header"
 # would launch, without running anything. In fast mode P00-fast-baseline is the only
 # one that runs the behavior tests; P00-baseline runs the other checks, and is not
 # launched when T11 is the only one; full mode runs one baseline, the whole gate.
-# The run's own ASCENT_MUTANT_* settings are reset: T14 runs inside a control's gate
+# The run's own ASCENT_MUTANT_* settings, MUTANT_FULL and MUTANT_FAULT are reset: T14 runs
+# inside a control's gate, and a developer may have either exported
 HARN="$(dirname "$GATE")/test-mutants.sh"
 baselines_of() {  # baselines_of WANT IDS [MODE]
   local start=$SECONDS
   RC=0; GOT=$(env ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS="$2" ASCENT_MUTANT_MODE="${3:-}" ASCENT_MUTANT_TIMES= \
-    ASCENT_MUTANT_CACHE= ASCENT_MUTANT_JOBS= ASCENT_MUTANT_RAW= MUTANT_FULL= bash "$HARN" --baselines 2>&1 </dev/null) || RC=$?
+    ASCENT_MUTANT_CACHE= ASCENT_MUTANT_JOBS= ASCENT_MUTANT_RAW= MUTANT_FULL= MUTANT_FAULT= bash "$HARN" --baselines 2>&1 </dev/null) || RC=$?
   if [ "$RC" -eq 0 ] && [ "$GOT" = "$1" ] && [ $((SECONDS - start)) -lt 10 ]; then ok
   else bad "G18 --baselines for '$2' ${3:-fast} gave (rc $RC, $((SECONDS - start))s): $(printf '%s' "$GOT" | tr '\t\n' ' ;')"; fi
 }
@@ -343,7 +344,7 @@ baselines_of "P00-baseline${T}all${T}all" P361-harness-anchor-miss full
 mkdir -p "$WORK/h/make"
 awk '!done && /^plugin_case P[0-9]/ && g == "ascent-security" { sub(/^/, "MUTANT_FULL=T5 "); done = 1 }
   /^mutant_group / { g = $2 } { print }' "$HARN" > "$WORK/h/make/test-mutants.sh"
-RC=0; env ASCENT_MUTANT_GROUP=core ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= bash "$WORK/h/make/test-mutants.sh" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
+RC=0; env ASCENT_MUTANT_GROUP=core ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= MUTANT_FAULT= bash "$WORK/h/make/test-mutants.sh" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
 if [ "$RC" -eq 2 ] && grep -q "^test-mutants: MUTANT_FULL is only for the harness group's own controls; P[0-9]*-[a-z0-9-]* in group ascent-security sets it$" "$WORK/g19.out"; then ok
 else bad "G19 MUTANT_FULL on a real group's control was not refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
 RC=0; env ASCENT_MUTANT_GROUP=harness ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL= MUTANT_FAULT= bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
@@ -356,7 +357,7 @@ for id in P362-harness-modes-differ P611-harness-copy-fail; do
 done
 # Every other way of setting it is refused too: from the environment, on a line of
 # its own, exported, and as a prefix followed by two spaces
-RC=0; env ASCENT_MUTANT_GROUP=ascent-docs ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL=T5 bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
+RC=0; env ASCENT_MUTANT_GROUP=ascent-docs ASCENT_MUTANT_IDS= ASCENT_MUTANT_MODE= MUTANT_FULL=T5 MUTANT_FAULT= bash "$HARN" --list > "$WORK/g19.out" 2>&1 </dev/null || RC=$?
 if [ "$RC" -eq 2 ] && grep -q "^test-mutants: MUTANT_FULL is set in the environment; only the harness group's own controls may set it$" "$WORK/g19.out"; then ok
 else bad "G19 MUTANT_FULL from the environment was not refused (rc $RC): $(head -2 "$WORK/g19.out" | tr '\n' ';')"; fi
 # MUTANT_FAULT, the harness's other test-only variable, is refused the same ways (ADR-030)

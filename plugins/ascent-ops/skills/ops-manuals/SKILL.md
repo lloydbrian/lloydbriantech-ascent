@@ -8,7 +8,7 @@ description: >-
   repository, with Mermaid C4 diagrams (context, containers, deployment), a
   dependency map with versions and a symptom table; checks whether they are
   current. Writes only those two files, with surgical edits; never commits.
-version: 0.3.1
+version: 0.3.2
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 

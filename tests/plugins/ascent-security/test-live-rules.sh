@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Rule test for the ascent-security security-test and threat-model skills, their
-# three scripts and the security-auditor agent's checks 9 and 10 (ADR-026):
+# four scripts and the security-auditor agent's checks 9 to 12 (ADR-026, ADR-031):
 #   R1  every $PLUGIN_ROOT/<path> the skills name exists
 #   R2  every id a script header rates is in the live-severity table, at a severity
 #       that table gives it, and every SEC-L and SEC-T id is in the table
-#   R3  the rules reference and the script headers cover SEC-L1–L10 and SEC-T1–T4
+#   R3  the rules reference and the script headers cover SEC-L1–L10, SEC-T1–T5
+#       and SEC-R1–R3
 #   R4  run-live-checks.sh sends no credential (no -u, --user, Authorization,
 #       Cookie or token option), refuses non-loopback targets inside Claude Code,
 #       refuses production without --allow-prod, and gates writes and AI calls
@@ -16,7 +17,7 @@
 #       the contract template is named in the security-test skill
 #   R8  the agent rates live findings only from committed results, with the live
 #       table, and cites existing steps
-#   R9  the three scripts parse and print usage under the system /bin/bash
+#   R9  the four scripts parse and print usage under the system /bin/bash
 #
 # Prints "test-live-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -36,7 +37,8 @@ README="$PLUGIN/README.md"
 RUN="$PLUGIN/scripts/run-live-checks.sh"
 CLR="$PLUGIN/scripts/check-live-results.sh"
 CTM="$PLUGIN/scripts/check-threat-model.sh"
-for f in "$ST" "$TM" "$AGENT" "$RULES" "$CT" "$README" "$RUN" "$CLR" "$CTM"; do
+CRT="$PLUGIN/scripts/check-redteam.sh"
+for f in "$ST" "$TM" "$AGENT" "$RULES" "$CT" "$README" "$RUN" "$CLR" "$CTM" "$CRT"; do
   [ -f "$f" ] || { echo "test-live-rules: missing $f"; echo "test-live-rules: 0/1 PASS"; exit 1; }
 done
 
@@ -55,23 +57,31 @@ for s in "$ST" "$TM"; do
 done
 
 # R2 — header severities agree with the table, and the table covers every id
-for s in "$CLR" "$CTM"; do
-  grep -E '^#   SEC-[LT][0-9]+ +(High|Medium|Low) ' "$s" | while read -r _ id sev _; do
+for s in "$CLR" "$CTM" "$CRT"; do
+  grep -E '^#   SEC-[LTR][0-9]+ +(High|Medium|Low) ' "$s" | while read -r _ id sev _; do
     if printf '%s\n' "$TABLE" | grep -E "\| $sev \|$" | grep -qE "\($id[,)]|\($id\)|$id\)"; then echo ok; else echo "bad R2 ${s##*/}: $id is $sev in the header, but no $sev row of the live-severity table names it"; fi
   done
 done > "$WORK/r2" 2>&1
 while read -r l; do case "$l" in ok) ok ;; *) bad "${l#bad }" ;; esac; done < "$WORK/r2"
 for n in 1 2 3 4 5 6 7 8 9 10; do printf '%s\n' "$TABLE" | grep -q "SEC-L$n[,)]" && ok || bad "R2 the live-severity table names no SEC-L$n"; done
-for n in 1 2 3 4; do printf '%s\n' "$TABLE" | grep -q "SEC-T$n)" && ok || bad "R2 the live-severity table names no SEC-T$n"; done
+for n in 1 2 3 4 5; do printf '%s\n' "$TABLE" | grep -q "SEC-T$n)" && ok || bad "R2 the live-severity table names no SEC-T$n"; done
+for n in 1 2 3; do printf '%s\n' "$TABLE" | grep -q "SEC-R$n[,)]" && ok || bad "R2 the live-severity table names no SEC-R$n"; done
+# prompt injection and data leaks are Critical at every tier, in the table and the checker
+printf '%s\n' "$TABLE" | grep -E '\| Critical \|$' | grep -q '(SEC-R2, SEC-R3)' && ok || bad "R2 the live-severity table has no Critical row for SEC-R2 and SEC-R3"
+has "$CRT" '# Prompt-injection and data-leak categories are Critical, fixed: garak promptinject,'
 
 # R3 — every rule documented
 for n in 1 2 3 4 5 6 7 8 9 10; do
   grep -q "^| SEC-L$n |" "$RULES" && ok || bad "R3 live-rules.md has no row for SEC-L$n"
   grep -q "^#   SEC-L$n " "$CLR" && ok || bad "R3 check-live-results.sh header has no SEC-L$n"
 done
-for n in 1 2 3 4; do
+for n in 1 2 3 4 5; do
   grep -q "^| SEC-T$n |" "$RULES" && ok || bad "R3 live-rules.md has no row for SEC-T$n"
   grep -q "^#   SEC-T$n " "$CTM" && ok || bad "R3 check-threat-model.sh header has no SEC-T$n"
+done
+for n in 1 2 3; do
+  grep -q "^| SEC-R$n |" "$RULES" && ok || bad "R3 live-rules.md has no row for SEC-R$n"
+  grep -q "^#   SEC-R$n " "$CRT" && ok || bad "R3 check-redteam.sh header has no SEC-R$n"
 done
 
 # R4 — the live script's guards
@@ -99,6 +109,8 @@ if grep -nE ':latest\b' "$ST" "$TM" "$README" "$RULES" >/dev/null; then bad "R5 
 has "$ST" 'Claude never runs `run-live-checks.sh`, ZAP, nuclei or dalfox against a target'
 has "$ST" 'Never sends a request to anything but the test fixture on 127.0.0.1.'
 has "$ST" 'Claude never commits them.'
+has "$ST" 'and never runs garak or `promptfoo redteam`'
+has "$AGENT" 'Never run a red team or a model.'
 has "$TM" 'Never fill in `reviewed_on` or `reviewed_by`'
 has "$TM" 'This skill writes `security.threat_model.path` (default `docs/security/THREAT-MODEL.md`) and nothing else'
 has "$TM" 'never write it.'
@@ -110,6 +122,8 @@ for k in endpoints targets allow_prod results_dir max_age_days max_body_bytes sc
 done
 for k in path review_max_age_days; do grep -qE "^ *$k:" "$CT" && ok || bad "R7 the contract template has no threat_model.$k"; done
 has "$TM" '`review_max_age_days`'
+for k in redteam max_attack_success; do grep -qE "^ *$k:" "$CT" && ok || bad "R7 the contract template has no $k key"; has "$ST" "\`$k\`"; done
+has "$ST" '`redteam_results`'
 
 # R8 — the agent
 has "$AGENT" '(security-test Step 4)'
@@ -120,7 +134,7 @@ grep -q '^### Step 4 ' "$ST" && ok || bad "R8 security-test has no Step 4, which
 grep -q '^### Step 4 ' "$TM" && ok || bad "R8 threat-model has no Step 4, which the agent cites"
 
 # R9 — the system bash
-for s in "$RUN" "$CLR" "$CTM"; do
+for s in "$RUN" "$CLR" "$CTM" "$CRT"; do
   /bin/bash -n "$s" 2>/dev/null && ok || bad "R9 ${s##*/} does not parse under /bin/bash"
   /bin/bash "$s" --help 2>/dev/null | grep -q "^Usage: ${s##*/}" && ok || bad "R9 ${s##*/} --help prints no usage under /bin/bash"
 done

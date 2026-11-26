@@ -72,6 +72,25 @@
 #   GOV-R3  Medium  every row of the review log can be read
 #   GOV-R4  Medium  rows of the review log are only added: none was removed or
 #                   changed in the git history
+#   GOV-A1  High    every AI application (ai.applications) has a risk-tier record,
+#                   <governance.ai_tier_dir>/<name>.md, and no AI code sits
+#                   outside every declared application (ascent-ai's detect-ai.sh)
+#   GOV-A2  High    the record has every field, a tier of 1, 2 or 3, its reasons
+#                   in their fixed values, and the application's own name
+#   GOV-A3  High    a person decided the tier: decided_by is in governance.approvers
+#                   (any name when that list is empty), decided_on a real date
+#                   that is not after today
+#   GOV-A4  Medium  the record's review_by is not past
+#   GOV-A5  High    the tier is not below the floor its own reasons imply
+#                   (irreversible or financial actions, or decisions about
+#                   people: 3; an external audience or reversible actions: 2)
+# GOV-A runs on every rung above the lowest, whatever governance.floors says,
+# when the contract declares an AI application. With no ai.applications, AI code
+# that ascent-ai finds makes the repository one application, named after its
+# folder. With an AI application, the default beta floor gains
+# ascent-ai/check-ai-design (and the threat model, which then needs SEC-T5), and
+# prod gains check-ai-evidence, check-ai-runtime, ascent-security/check-redteam
+# and the ai-review review; each of those checkers runs once for each application.
 # A waiver is an entry of any section's waivers list. Each is listed with what it
 # skips and the days it has left; decisions.acknowledged_changes entries are
 # listed too, and are not waivers.
@@ -118,7 +137,7 @@ REPO="${POS[0]:-.}"
 [ -n "$TODAY" ] || TODAY=$(date +%Y-%m-%d)
 
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/.." && pwd)"; LIB="$HERE/lib"
-for f in contract.awk adapt.awk audit.awk log-rows.awk render.awk md-html.awk adapters.tsv; do [ -f "$LIB/$f" ] || bad "missing $LIB/$f"; done
+for f in contract.awk adapt.awk audit.awk ai-tier.awk log-rows.awk render.awk md-html.awk adapters.tsv; do [ -f "$LIB/$f" ] || bad "missing $LIB/$f"; done
 [ -z "$PLUGINS" ] || [ -d "$PLUGINS" ] || bad "--plugins $PLUGINS is not a directory"
 [ -z "$PLUGINS" ] || PLUGINS="$(cd "$PLUGINS" && pwd)"
 if [ -n "$CONTRACT" ]; then
@@ -201,6 +220,33 @@ if [ "$(rank "$MATURITY")" -eq 0 ]; then
   fi
 fi
 
+find_checker() {  # PLUGIN SCRIPT: prints the checker's path
+  local p
+  if [ -n "$PLUGINS" ]; then p="$PLUGINS/$1/scripts/$2.sh"; [ -f "$p" ] && { printf '%s' "$p"; return 0; }; return 1; fi
+  p="$ROOT/../$1/scripts/$2.sh"; [ -f "$p" ] && { printf '%s' "$p"; return 0; }
+  p=$(ls -d "$ROOT"/../../"$1"/*/scripts/"$2".sh 2>/dev/null | awk -F/ '{ print $(NF - 2) "\t" $0 }' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -f2-) || true
+  [ -n "$p" ] && [ -f "$p" ] && { printf '%s' "$p"; return 0; }
+  return 1
+}
+
+# --- the AI applications ------------------------------------------------------
+# the contract's ai.applications; with none, when ascent-ai finds AI code, the
+# repository is one application, named after the origin remote's repository or its
+# folder (detect-ai.sh names it). detect-ai.sh also names
+# AI code outside every declared application's root (GOV-A1)
+APPROOTS=(); IMPLICIT=""; : > "$T/detect"
+while IFS="$TAB" read -r n r; do [ -n "$n" ] && [ -n "$r" ] && APPROOTS+=(--app "$n=$r"); done < <(awk -F '\t' '
+  $1 ~ /^ai\.applications\[[0-9]+\]\.(name|root)$/ { m = $1; sub(/^ai\.applications\[/, "", m); f = m; sub(/\].*$/, "", m); sub(/^[0-9]+\]\./, "", f); V[m, f] = $2; if (!(m in S)) { S[m] = 1; O[++n] = m } }
+  END { for (i = 1; i <= n; i++) print V[O[i], "name"] "\t" V[O[i], "root"] }' "$T/c.tsv")
+if DETECT=$(find_checker ascent-ai detect-ai); then
+  bash "$DETECT" ${APPROOTS[@]+"${APPROOTS[@]}"} . > "$T/detect" 2>/dev/null </dev/null || : > "$T/detect"
+fi
+if ! chas ai.applications[ && grep -q "^app$TAB" "$T/detect"; then
+  IFS="$TAB" read -r _ IMPLICIT _ < <(grep -m1 "^app$TAB" "$T/detect")
+  printf 'ai.applications[0].name\t%s\t0\nai.applications[0].root\t.\t0\n' "$IMPLICIT" >> "$T/c.tsv"
+fi
+HAS_AI=0; chas ai.applications[ && HAS_AI=1
+
 # --- the floor: check<TAB>name<TAB>rung, review<TAB>name<TAB>age<TAB>rung, signoff<TAB>rung
 : > "$T/floor.tsv"
 has_file() {  # NAME-PATTERN...: a file with one of these names, outside dependency and build folders
@@ -217,8 +263,10 @@ shows() {  # whether the repository shows the signal an item's plugin checks
     ascent-docs/*) [ -f README.md ] || [ -d docs ] ;;
     ascent-delivery/check-acceptance) local d; d=$(cget delivery.acceptance_dir); [ -d "${d:-docs/delivery/acceptance}" ] ;;
     ascent-security/check-dependencies) has_file package.json requirements.txt pyproject.toml go.mod Cargo.toml ;;
-    ascent-security/check-threat-model) local m; m=$(cget security.threat_model.path); [ -f "${m:-docs/security/THREAT-MODEL.md}" ] || chas security.endpoints ;;
+    ascent-security/check-threat-model) local m; m=$(cget security.threat_model.path); [ -f "${m:-docs/security/THREAT-MODEL.md}" ] || chas security.endpoints || [ "$HAS_AI" -eq 1 ] ;;
+    ascent-security/check-redteam) [ "$HAS_AI" -eq 1 ] ;;
     delivery/gate) [ -n "$(cget delivery.gate)" ] ;;
+    ascent-ai/*|ai-review) [ "$HAS_AI" -eq 1 ] ;;
     *) return 0 ;;
   esac
 }
@@ -226,11 +274,11 @@ default_tier() {  # TIER RUNG: the default floor, for what the repository shows
   local it
   case "$1" in
     L) for it in ascent-security/check-env delivery/gate; do shows "$it" && printf 'check\t%s\t%s\n' "$it" "$2"; done ;;
-    B) for it in ascent-security/check-dependencies ascent-security/check-threat-model ascent-ux/check-flow-integrity ascent-docs/check-docs; do shows "$it" && printf 'check\t%s\t%s\n' "$it" "$2"; done
+    B) for it in ascent-security/check-dependencies ascent-security/check-threat-model ascent-ux/check-flow-integrity ascent-docs/check-docs ascent-ai/check-ai-design; do shows "$it" && printf 'check\t%s\t%s\n' "$it" "$2"; done
        printf 'review\tsec-posture\t30\t%s\n' "$2"
        shows ux-review && printf 'review\tux-review\t60\t%s\n' "$2" ;;
-    P) for it in ascent-delivery/check-acceptance ascent-ops/check-drills ascent-quality/check-test-evidence ascent-adr/check-adrs; do shows "$it" && printf 'check\t%s\t%s\n' "$it" "$2"; done
-       for it in architecture-review ops-review quality-review; do shows "$it" && printf 'review\t%s\t90\t%s\n' "$it" "$2"; done
+    P) for it in ascent-delivery/check-acceptance ascent-ops/check-drills ascent-quality/check-test-evidence ascent-adr/check-adrs ascent-ai/check-ai-evidence ascent-ai/check-ai-runtime ascent-security/check-redteam; do shows "$it" && printf 'check\t%s\t%s\n' "$it" "$2"; done
+       for it in architecture-review ops-review quality-review ai-review; do shows "$it" && printf 'review\t%s\t90\t%s\n' "$it" "$2"; done
        printf 'signoff\t%s\n' "$2" ;;
   esac
   return 0
@@ -246,7 +294,7 @@ done < <(awk -F '\t' '
     if (k == "governance") why = "is " q v q "; the section is a map of keys"
     else if (k == "governance.maturity_target") { if (v != "prototype" && v != "standard" && v != "enterprise") why = "is " q v q "; it is prototype, standard or enterprise, in lower case" }
     else if (k ~ /^governance\.environments\[[0-9]+\]$/ || k ~ /^governance\.approvers\[[0-9]+\]$/ || k == "governance.adr_dir") { }
-    else if (k == "governance.review_log" || k == "governance.launch_dir") { if (v ~ /^\// || v ~ /(^|\/)\.\.(\/|$)/) why = "is " q v q "; it is a path inside the repository" }
+    else if (k == "governance.review_log" || k == "governance.launch_dir" || k == "governance.ai_tier_dir") { if (v ~ /^\// || v ~ /(^|\/)\.\.(\/|$)/) why = "is " q v q "; it is a path inside the repository" }
     else if (k ~ /^governance\.waivers\[[0-9]+\]/) { }
     else if (k ~ /^governance\.floors\.[^.[]+\.checks\[[0-9]+\]$/ || k ~ /^governance\.floors\.[^.[]+\.reviews\.[^.[]+$/) { }
     else if (k ~ /^governance\.floors\.[^.[]+\.sign_off$/) { if (v != "true" && v != "false") why = "is " q v q "; write true or false" }
@@ -291,16 +339,9 @@ item setup - note - "$CNAME" "maturity $MATURITY ($MSRC); floor from $FSRC; ladd
 [ "$S1" -eq 0 ] && item setup GOV-S1 pass - "$CNAME" "the governance section is well formed"
 
 # --- the checks -------------------------------------------------------------
-find_checker() {  # PLUGIN SCRIPT: prints the checker's path
-  local p
-  if [ -n "$PLUGINS" ]; then p="$PLUGINS/$1/scripts/$2.sh"; [ -f "$p" ] && { printf '%s' "$p"; return 0; }; return 1; fi
-  p="$ROOT/../$1/scripts/$2.sh"; [ -f "$p" ] && { printf '%s' "$p"; return 0; }
-  p=$(ls -d "$ROOT"/../../"$1"/*/scripts/"$2".sh 2>/dev/null | awk -F/ '{ print $(NF - 2) "\t" $0 }' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -f2-) || true
-  [ -n "$p" ] && [ -f "$p" ] && { printf '%s' "$p"; return 0; }
-  return 1
-}
-adapt() {  # CHECK: fills ARGS, INPUTS, EACH_DIR and UNSET from the adapter table; 1 when the check has no row
-  ARGS=(); INPUTS=(); EACH_DIR=""; UNSET=""; local tag a b f found=1
+TOPRUNG=$(printf '%s' "$LADDER" | awk '{ print $NF }')
+adapt() {  # CHECK [ITEM]: fills ARGS, INPUTS, EACH_DIR, UNSET, NITEMS and ADAPT_ERR from the adapter table; 1 when the check has no row
+  ARGS=(); INPUTS=(); EACH_DIR=""; UNSET=""; NITEMS=""; ADAPT_ERR=0; local tag a b f found=1
   while IFS="$TAB" read -r tag a b; do
     case "$tag" in
       K) found=0 ;;
@@ -309,9 +350,10 @@ adapt() {  # CHECK: fills ARGS, INPUTS, EACH_DIR and UNSET from the adapter tabl
       X) for f in $b; do [ -f "$f" ] && ARGS+=("$a" "$f"); done ;;
       D) EACH_DIR="${a%/}" ;;
       U) UNSET="$a" ;;
-      E) item check GOV-S2 fail Medium "$1" "$a" ;;
+      I) NITEMS="$a" ;;
+      E) ADAPT_ERR=1; item check GOV-S2 fail Medium "$1" "$a" ;;
     esac
-  done < <(awk -F '\t' -v check="$1" -v today="$TODAY" -v nogit="$NOGIT" -f "$LIB/adapt.awk" "$T/c.tsv" "$LIB/adapters.tsv")
+  done < <(awk -F '\t' -v check="$1" -v item="${2:-}" -v envname="$ENVNAME" -v toprung="$TOPRUNG" -v today="$TODAY" -v nogit="$NOGIT" -f "$LIB/adapt.awk" "$T/c.tsv" "$LIB/adapters.tsv")
   return $found
 }
 LAUNCH_DIR=$(cget governance.launch_dir); LAUNCH_DIR="${LAUNCH_DIR:-docs/governance/launches/}"; LAUNCH_DIR="${LAUNCH_DIR%/}"; LAUNCH_DIR="${LAUNCH_DIR#./}"
@@ -469,7 +511,7 @@ run_each() {  # CHECK CHECKER: the checker once for each dated record since the 
   fi
 }
 run_check() {  # CHECK
-  local c="$1" plugin="${1%/*}" script="${1#*/}" rc=0 path cmd na
+  local c="$1" plugin="${1%/*}" script="${1#*/}" rc=0 path cmd
   case "$SKIP" in *" $c "*) item check - note - "$c" "$c was skipped (--skip)"; return 0 ;; esac
   if [ "$c" = delivery/gate ]; then
     cmd=$(cget delivery.gate)
@@ -485,17 +527,35 @@ run_check() {  # CHECK
   path=$(find_checker "$plugin" "$script") || { item check GOV-L2 unmeasured Low "$c" "$c is unmeasured: $plugin is not available here"; return 0; }
   [ -z "$UNSET" ] || { item check GOV-L2 unmeasured Low "$c" "$c is unmeasured: the contract has no $UNSET, so which files are the pages is not known; set $UNSET to where they are (for example [\"src/**\"])"; return 0; }
   if [ -n "$EACH_DIR" ]; then run_each "$c" "$path"; return 0; fi
+  if [ -n "$NITEMS" ]; then run_items "$c" "$path" "$script"; return 0; fi
   bash "$path" ${ARGS[@]+"${ARGS[@]}"} ${INPUTS[@]+"${INPUTS[@]}"} > "$T/run.out" 2>&1 </dev/null || rc=$?
+  judge "$c" "$c" "$rc" "$script"
+}
+judge() {  # CHECK LABEL RC SCRIPT: one result from the checker's exit code and $T/run.out
+  local c="$1" l="$2" rc="$3" script="$4" na
   case "$rc" in
     0) na=$(awk '/^N\/A / && !($2 in S) { S[$2] = 1; printf "%s%s", (n++ ? ", " : ""), $2 }' "$T/run.out")   # N/A is never a pass
-       if [ -n "$na" ] && ! grep -q '^PASS ' "$T/run.out"; then item check GOV-L2 unmeasured Low "$c" "$c is unmeasured: it had nothing it could check here ($na)"
-       elif [ -n "$na" ]; then item check GOV-L1 pass - "$c" "$c passes (not checked here: $na)"
-       else item check GOV-L1 pass - "$c" "$c passes"; fi ;;
-    1) item check GOV-L1 fail "$(sev_of "$T/run.out")" "$c" "$c failed: $(fails_of "$T/run.out")" ;;
-    2) if own_usage "$T/run.out" "$script"; then item check GOV-S2 fail Medium "$c" "$c could not be run: its checker exited with a usage error ($(head -1 "$T/run.out" | cut -c1-120)); fix the contract value it names, or the adapter"
-       else item check GOV-L1 fail High "$c" "$c failed: its checker exited 2 without finishing ($(head -1 "$T/run.out" | cut -c1-120))"; fi ;;
-    *) item check GOV-L1 fail High "$c" "$c failed: its checker exited $rc without finishing ($(head -1 "$T/run.out" | cut -c1-120))" ;;
+       if [ -n "$na" ] && ! grep -q '^PASS ' "$T/run.out"; then item check GOV-L2 unmeasured Low "$c" "$l is unmeasured: it had nothing it could check here ($na)"
+       elif [ -n "$na" ]; then item check GOV-L1 pass - "$c" "$l passes (not checked here: $na)"
+       else item check GOV-L1 pass - "$c" "$l passes"; fi ;;
+    1) item check GOV-L1 fail "$(sev_of "$T/run.out")" "$c" "$l failed: $(fails_of "$T/run.out")" ;;
+    2) if own_usage "$T/run.out" "$script"; then item check GOV-S2 fail Medium "$c" "$l could not be run: its checker exited with a usage error ($(head -1 "$T/run.out" | cut -c1-120)); fix the contract value it names, or the adapter"
+       else item check GOV-L1 fail High "$c" "$l failed: its checker exited 2 without finishing ($(head -1 "$T/run.out" | cut -c1-120))"; fi ;;
+    *) item check GOV-L1 fail High "$c" "$l failed: its checker exited $rc without finishing ($(head -1 "$T/run.out" | cut -c1-120))" ;;
   esac
+}
+run_items() {  # CHECK CHECKER SCRIPT: the checker once for each AI application, each judged on its own
+  local c="$1" m=0 rc n total="$NITEMS"   # adapt, run for one item, clears NITEMS
+  [ "$total" -gt 0 ] || { item check GOV-L2 unmeasured Low "$c" "$c is unmeasured: the contract declares no AI application (ai.applications)"; return 0; }
+  while [ "$m" -lt "$total" ]; do
+    n=$(cget "ai.applications[$m].name"); n="${n:-item $((m + 1))}"
+    adapt "$c" "$m" || :
+    if [ "$ADAPT_ERR" -eq 0 ]; then
+      rc=0; bash "$2" ${ARGS[@]+"${ARGS[@]}"} ${INPUTS[@]+"${INPUTS[@]}"} > "$T/run.out" 2>&1 </dev/null || rc=$?
+      judge "$c" "$c [$n]" "$rc" "$3"
+    fi
+    m=$((m + 1))
+  done
 }
 : > "$T/seen"
 while IFS="$TAB" read -r kind name rung rest; do
@@ -504,6 +564,23 @@ while IFS="$TAB" read -r kind name rung rest; do
   echo "$name" >> "$T/seen"
   run_check "$name"
 done < "$T/floor.tsv"
+
+# --- the AI risk-tier records (GOV-A) -----------------------------------------
+# on every rung above the lowest (the only rung of a one-rung ladder), whatever the floors say
+AI_TIER_DIR=$(cget governance.ai_tier_dir); AI_TIER_DIR="${AI_TIER_DIR:-docs/governance/ai-tier/}"; AI_TIER_DIR="${AI_TIER_DIR#./}"
+awk -F '\t' '$1 ~ /^ai\.applications\[[0-9]+\]\.name$/ { print $2 "\t" $3 }' "$T/c.tsv" | while IFS="$TAB" read -r n ln; do
+  if [ -n "$IMPLICIT" ]; then printf '%s\tthe repository (ascent-ai found AI code; ai.applications declares none)\n' "$n"; else printf '%s\t%s:%s\n' "$n" "$CNAME" "$ln"; fi
+done > "$T/apps.tsv"
+case "$AI_TIER_DIR" in /*|..|../*|*/..|*/../*) : > "$T/apps.tsv" ;; esac   # GOV-S1 reports it; no record is read from outside the repository
+if [ -s "$T/apps.tsv" ] && { [ "$ENVNAME" != "${LADDER%% *}" ] || [ "$NRUNGS" -eq 1 ]; }; then
+  awk -F '\t' -v today="$TODAY" -v dir="$AI_TIER_DIR" -v cname="${CNAME:-the contract}" -f "$LIB/ai-tier.awk" "$T/c.tsv" "$T/apps.tsv" >> "$T/items.tsv"
+fi
+# AI code under no declared application's root belongs to no application: no record, no checks
+awk -F '\t' '$1 == "orphan" { print $2 }' "$T/detect" | LC_ALL=C sort -u > "$T/orphans"
+if [ -s "$T/orphans" ] && { [ "$ENVNAME" != "${LADDER%% *}" ] || [ "$NRUNGS" -eq 1 ]; }; then
+  no=$(wc -l < "$T/orphans" | tr -d ' ')
+  item launch GOV-A1 fail High "$(head -1 "$T/orphans")" "AI code outside every application ai.applications declares: $(head -3 "$T/orphans" | tr '\n' ' ' | sed 's/ $//; s/ /, /g')$([ "$no" -le 3 ] || echo " (and $((no - 3)) more)"); it would ship with no tier record and no AI checks. Put it under an application's root, or declare it as an application with its own tier record"
+fi
 
 # --- sign-off -----------------------------------------------------------------
 # A rung with sign_off, or above one, needs the newest launch record of the

@@ -8,7 +8,7 @@ description: >-
   UX-R, UX-P) with the contract's values, walks each core flow in the browser,
   repeats it in every engine the contract lists, and reports with file:line
   evidence. Read-only.
-version: 0.3.2
+version: 0.3.3
 allowed-tools: Read, Grep, Glob
 ---
 

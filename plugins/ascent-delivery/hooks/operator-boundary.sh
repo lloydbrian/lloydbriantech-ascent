@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# ascent-delivery — operator boundary (PreToolUse hook on the Bash tool). ADR-010.
+# ascent-delivery — operator boundary (PreToolUse hook on the Bash tool and MCP
+# tools). ADR-010, ADR-031.
 #
 # Claude never runs git write operations or deploys. The operator does, from the
 # hand-off runbook (delivery-loop Step 6). This hook enforces that mechanically in
 # every session where the plugin is enabled, whatever the instructions say.
 #
 # Input:  the PreToolUse JSON on stdin ({"tool_name":"Bash","cwd":…,
-#         "tool_input":{"command":…}}).
+#         "tool_input":{"command":…}}, or an MCP tool's, "tool_name":"mcp__<server>__<action>").
 # Output: exit 0 = allow; exit 2 = block, with the reason on stderr (Claude Code
 #         shows it to Claude); exit 1 = hook error, non-blocking, reported on stderr.
 #
@@ -45,6 +46,21 @@
 #     az … deploy, pulumi up, terragrunt apply, helmfile apply|sync, cargo/uv/
 #     poetry publish, twine upload, gem push, mvn deploy, gradle publish,
 #     changeset publish, semantic-release). Dry runs are blocked too, by design.
+#   paid compute — commands that start paid model or GPU work: aws sagemaker
+#     create-training-job|create-hyper-parameter-tuning-job|create-processing-job|
+#     create-transform-job|create-endpoint, aws bedrock create-model-customization-job|
+#     create-provisioned-model-throughput|create-model-invocation-job, gcloud ai
+#     custom-jobs|hp-tuning-jobs create and endpoints deploy-model, az ml job create,
+#     openai api fine_tuning.jobs.create and openai fine_tuning jobs create, together
+#     fine-tuning create, hf|huggingface-cli jobs run, modal run|deploy, sky launch|
+#     jobs launch, runpodctl create pod, promptfoo eval|redteam run|redteam eval,
+#     garak and lighteval with any option but help, version and listings. A run
+#     against a local model is blocked too: there is no allow list.
+#   MCP tools — GitHub writes. A tool named mcp__<server>__<action>, on a server
+#     that is GitHub's (github, or github joined to other words by _ or -: github_<x>,
+#     <x>_github, github-mcp-server, as plugins and users name it), is
+#     allowed only when the action's first word is get, list, search or view; every
+#     other MCP server passes. Only the tool name is read, never its input.
 #
 # Known limits (documented in the plugin README): commands hidden inside scripts,
 # make targets or npm scripts are only caught when the contract lists them; a
@@ -490,7 +506,8 @@ function segment(    k, r) {
   if (NB == "git" || NB == "hub") return git_rule(k)
   if (NB ~ /^git-/ && has(GIT_WRITE, substr(NB, 5))) return gw(substr(NB, 5))
   if (NB == "gh") return gh_rule(k)
-  return deploy_rule(NB, k)
+  r = deploy_rule(NB, k); if (r != "") return r
+  return paid_rule(NB, k)
 }
 
 # ---------- git ----------
@@ -636,6 +653,57 @@ function positionals(k, valopts,    j, w) {
 function anyw(k, list,    j) { for (j = k + 1; j <= SN; j++) if (has(list, SW[j])) return 1; return 0 }
 function anyre(k, re,    j) { for (j = k + 1; j <= SN; j++) if (SW[j] ~ re) return 1; return 0 }
 function dep(what) { return what " — a deploy or publish command" }
+function paid(what) { return what " — submits paid compute; the operator runs it from a runbook" }
+# ---------- paid compute ----------
+function paid_rule(b, k,    j, o) {
+  if (b == "aws") {
+    positionals(k, AWS_VALOPTS)
+    if (POS[1] == "sagemaker" && has(" create-training-job create-hyper-parameter-tuning-job create-processing-job create-transform-job create-endpoint ", POS[2])) return paid("aws sagemaker " POS[2])
+    if (POS[1] == "bedrock" && has(" create-model-customization-job create-provisioned-model-throughput create-model-invocation-job ", POS[2])) return paid("aws bedrock " POS[2])
+    return ""
+  }
+  if (b == "gcloud") {
+    positionals(k, " --project --region --account --configuration --display-name --config --worker-pool-spec ")
+    o = (POS[1] == "alpha" || POS[1] == "beta") ? 1 : 0
+    if (POS[1 + o] == "ai" && has(" custom-jobs hp-tuning-jobs ", POS[2 + o]) && POS[3 + o] == "create") return paid("gcloud ai " POS[2 + o] " create")
+    if (POS[1 + o] == "ai" && POS[2 + o] == "endpoints" && POS[3 + o] == "deploy-model") return paid("gcloud ai endpoints deploy-model")
+    return ""
+  }
+  if (b == "az") { positionals(k, " -g --resource-group -w --workspace-name -f --file --subscription "); return (POS[1] == "ml" && POS[2] == "job" && POS[3] == "create") ? paid("az ml job create") : "" }
+  if (b == "openai") {
+    positionals(k, " -m --model -t --training_file -v --validation_file ")
+    if (POS[1] == "api" && (POS[2] == "fine_tuning.jobs.create" || POS[2] == "fine_tunes.create")) return paid("openai api " POS[2])
+    if (POS[1] == "fine_tuning" && POS[2] == "jobs" && POS[3] == "create") return paid("openai fine_tuning jobs create")
+    return ""
+  }
+  if (b == "together") { positionals(k, " --model --training-file --n-epochs "); return (POS[1] == "fine-tuning" && POS[2] == "create") ? paid("together fine-tuning create") : "" }
+  if (b == "hf" || b == "huggingface-cli") { positionals(k, " --flavor --namespace --timeout -e --env -s --secrets "); return (POS[1] == "jobs" && (POS[2] == "run" || POS[2] == "uv")) ? paid(b " jobs " POS[2]) : "" }
+  if (b == "modal") { positionals(k, " --env -e --name -n "); return has(" run deploy ", POS[1]) ? paid("modal " POS[1]) : "" }
+  if (b == "sky") { positionals(k, " -c --cluster --cloud --gpus --env --name -n "); return (POS[1] == "launch" || (POS[1] == "jobs" && POS[2] == "launch")) ? paid("sky " (POS[1] == "jobs" ? "jobs launch" : "launch")) : "" }
+  if (b == "runpodctl") { positionals(k, " --name --gpuType --imageName --gpuCount "); return (POS[1] == "create" && (POS[2] == "pod" || POS[2] == "pods")) ? paid("runpodctl create " POS[2]) : "" }
+  if (b == "promptfoo") {
+    positionals(k, " -c --config -o --output -j --max-concurrency --env-file --env-path -t --tests --filter-pattern ")
+    if (POS[1] == "eval") return paid("promptfoo eval")
+    if (POS[1] == "redteam" && has(" run eval ", POS[2])) return paid("promptfoo redteam " POS[2])
+    return ""
+  }
+  if (b == "garak" || b == "lighteval") {   # anything but help, version and listings runs a model
+    if (b == "lighteval" && SW[k + 1] == "tasks") return ""
+    for (j = k + 1; j <= SN; j++) if (!has(" -h --help -V --version --list_probes --list_detectors --list_generators --list_buffs --plugin_info ", SW[j])) return paid(b)
+    return ""
+  }
+  return ""
+}
+# ---------- MCP tools: GitHub writes ----------
+function mcp_rule(tn,    rest, i, server, action, verb) {
+  rest = substr(tn, 6); i = index(rest, "__")
+  if (i == 0) return ""
+  server = tolower(substr(rest, 1, i - 1)); action = tolower(substr(rest, i + 2))
+  if (server !~ /(^|[_-])github([_-]|$)/) return ""   # github, github_<x>, <x>_github, github-<x>, <x>-github
+  verb = action; sub(/_.*$/, "", verb)
+  if (has(" get list search view ", verb)) return ""
+  return tn " — a GitHub write through MCP; the operator does it"
+}
 function deploy_rule(b, k,    j) {
   if (b == "tofu") b = "terraform"
   if (b == "terraform" || b == "terragrunt") {
@@ -839,6 +907,7 @@ BEGIN {
   }
   json(split(raw, R, ""))
   split("", R); raw = ""
+  if (TN ~ /^mcp__/) { r = mcp_rule(TN); if (r != "") { print "BLOCK\t" r; exit 0 } print "ALLOW"; exit 0 }
   if (TN != "" && TN != "Bash") { print "ALLOW"; exit 0 }
   if (!HAVECMD || CMD == "") { print "ALLOW"; exit 0 }
   load_contract()
@@ -860,7 +929,7 @@ case "$verdict" in
     reason=${verdict#BLOCK?}
     {
       printf 'ascent-delivery operator boundary: blocked — %s.\n' "$reason"
-      printf 'Claude never runs git write operations or deploys; the operator does. Do not retry or work around this. '
+      printf 'Claude never runs git write operations, deploys, paid compute or GitHub writes; the operator does. Do not retry or work around this. '
       printf 'Put the command in the operator runbook (delivery-loop Step 6) with its Expect list and Stop-if condition, and hand it to the operator. '
       printf 'Read-only git (status, diff, log, show) and gh (pr view/list/checks) are allowed.\n'
     } >&2

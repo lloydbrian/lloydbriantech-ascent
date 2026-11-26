@@ -23,8 +23,8 @@ Ask "are we ready for prod?" or run `/ascent-governance:launch-readiness`. Betwe
 | `governance-review` | skill | every environment, as CI sees it: what is due, expiring or broken, and when. Read-only |
 | `review-record` | skill | one row in the review log for a review that was just run; rows are only added |
 | `governance-conductor` | agent | read-only second opinion on the launch evidence, by reading; never signs |
-| `check-audit.sh` | script | GOV-S1–S2, GOV-L1–L5, GOV-W1–W4 and GOV-R1–R4; `--record` writes the unsigned launch record, `--html` one page that stands alone |
-| `references/` | references | the governance rules, the contract template, and generated copies of the plugin registry |
+| `check-audit.sh` | script | GOV-S1–S2, GOV-L1–L5, GOV-W1–W4, GOV-R1–R4 and GOV-A1–A5; `--record` writes the unsigned launch record, `--html` one page that stands alone |
+| `references/` | references | the governance rules, the contract template, the AI risk-tier record template, and generated copies of the plugin registry |
 
 ## The ladder
 
@@ -37,6 +37,18 @@ Ask "are we ready for prod?" or run `/ascent-governance:launch-readiness`. Betwe
 | prod | real users | acceptance, drills, test evidence, ADRs | architecture, ops and quality reviews within 90 days | yes |
 
 A prototype needs only the local floor. A floor is a floor, never a ceiling: every other check and review stays usable.
+
+## AI applications: the risk tier
+
+A project that declares AI applications (`ai.applications`, from `ascent-ai`; with none, AI code `ascent-ai` finds makes the repository one application) keeps one risk-tier record for each, `docs/governance/ai-tier/<name>.md` by default ([the template](references/ai-tier-template.md)). A person decides the tier and signs; Claude may draft the reasons. On every environment above the lowest, whatever the floors say, `check-audit.sh` checks that each application has its record, and that no AI code sits outside every declared application (GOV-A1), that the record is complete (GOV-A2) and signed by an approver (GOV-A3), that it is not past its review date (GOV-A4), and that the tier is not below what its own reasons imply (GOV-A5):
+
+| Tier | Meaning |
+|---|---|
+| 1 | internal use; a person reviews every output before it has any effect; no tool that changes anything |
+| 2 | users outside the team see outputs, or the AI acts through reversible tools |
+| 3 | the AI can take irreversible, financial or external actions, or informs decisions about people (employment, credit, health, legal, education, access to services) |
+
+`ascent-ai` and `ascent-security` read the same record to scale their severities: the lower the tier, the lighter the findings.
 
 ## One result, three views
 
@@ -57,7 +69,7 @@ jobs:
         with:
           fetch-depth: 0        # GOV-L5 and GOV-R4 read the history
       - name: Get the ASCENT plugins, pinned
-        run: git clone --quiet --depth 1 --branch v0.4.26 https://github.com/lloydbrian/lloydbriantech-ascent "$RUNNER_TEMP/ascent"
+        run: git clone --quiet --depth 1 --branch v0.4.27 https://github.com/lloydbrian/lloydbriantech-ascent "$RUNNER_TEMP/ascent"
       - name: Launch evidence for prod
         run: bash "$RUNNER_TEMP/ascent/plugins/ascent-governance/scripts/check-audit.sh" --env prod .
 ```

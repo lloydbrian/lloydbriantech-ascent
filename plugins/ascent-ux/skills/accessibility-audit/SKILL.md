@@ -7,7 +7,7 @@ description: >-
   checks ARIA widgets against the Authoring Practices, runs the static checks,
   the Playwright browser pass and axe-core when the project has it, and
   returns a criterion table with evidence. Read-only.
-version: 0.3.2
+version: 0.3.3
 allowed-tools: Read, Grep, Glob
 ---
 

@@ -12,49 +12,49 @@
       "name": "ascent-security",
       "source": "./plugins/ascent-security",
       "description": "Security checks for any repository: .env discipline, hardcoded credentials, container privilege, nginx security headers, production URLs, dynamic code execution, dependencies (lockfiles, pinning, sources, licences, offline vulnerability scans of packages and local images), a STRIDE threat model, and live checks of a running application the operator runs (headers, verbs, traversal, unauthenticated writes, body limits, disclosure, prompt injection, AI rate limits, ZAP, nuclei and dalfox reports), plus a security-auditor agent.",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-delivery",
       "source": "./plugins/ascent-delivery",
       "description": "The ASCENT delivery loop for any repository: build, test with negative controls, gate, independent review with a finding verifier, and an operator runbook. A hook blocks git writes and deploys for Claude.",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-architecture",
       "source": "./plugins/ascent-architecture",
       "description": "Architecture review for any repository: quality attributes against measurable targets, design principles, deployment options with dated cost estimates, a CloudFormation static-site blueprint with template checks, and a read-only architecture-reviewer agent.",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-ux",
       "source": "./plugins/ascent-ux",
       "description": "UX review for any web UI on four principles, functional, reliable, accessible and pleasant: flow-integrity and reliability checks with a browser walk of each core flow, WCAG 2.2 AA evidence with static checks and a Playwright browser pass, design-token contrast checks, five accessible design directions shown as mocks, and a read-only ux-reviewer agent.",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-ops",
       "source": "./plugins/ascent-ops",
       "description": "Operations review for any repository: infrastructure as code with secure-by-design configuration, zero-touch scripts and runbooks with pre-flight and post-flight checks, Maintenance and Operations and Troubleshooting manuals kept current with diagrams and a dependency map, recovery drills and readiness exercises proven by the operator's records, and a read-only ops-reviewer agent.",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-quality",
       "source": "./plugins/ascent-quality",
       "description": "Test strategy review for any repository: which test types exist and whether CI runs them, which integration boundaries no test reaches, acceptance criteria and core rules traced to tests, test hygiene (focused, skipped, assertion-less and retried tests), load tests against the latency and throughput targets, and mutation evidence, plus a read-only quality-reviewer agent.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-adr",
       "source": "./plugins/ascent-adr",
       "description": "Architecture decision records for any repository: write ADRs in the repository's own format (ASCENT, Nygard and adr-tools, MADR) with real alternatives and costs, check the record (sections, numbers, index, status, supersession both ways, dates, accepted ADRs unchanged since acceptance), check the code against the constraints accepted ADRs declare, plus a read-only decision-reviewer agent.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "license": "MIT OR Apache-2.0"
     },
     {
@@ -68,14 +68,21 @@
       "name": "ascent-docs",
       "source": "./plugins/ascent-docs",
       "description": "Documentation that can be found and stays true, for any repository: a rated documentation review (links and anchors, stale markers and documents older than what they describe, dated by git, the README, persona entry points and how many links away each document is), drift checks for what documents name that the repository no longer has (paths, make targets, package scripts, environment variables, the version, pinned runtimes), new documents from stubs with guidance in every section (tutorial, how-to, reference, explanation, persona entry point), a read-only onboarding walkthrough, plus a read-only docs-reviewer agent.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "license": "MIT OR Apache-2.0"
     },
     {
       "name": "ascent-governance",
       "source": "./plugins/ascent-governance",
-      "description": "Launch readiness and auditability for any repository: answers \"are we ready for local, beta or prod?\" with GO, NO-GO or GO WITH CONDITIONS and a cited reason for each, from the other plugins' checkers run fresh, dated review records with a maximum age, every waiver with its expiry date, and a launch record Claude drafts and only a person signs; a bash checker (check-audit.sh) a project can run in its own CI at no token cost, with a CI job summary and a one-file HTML copy; plus a read-only governance-conductor agent.",
-      "version": "0.2.1",
+      "description": "Launch readiness and auditability for any repository: answers \"are we ready for local, beta or prod?\" with GO, NO-GO or GO WITH CONDITIONS and a cited reason for each, from the other plugins' checkers run fresh, dated review records with a maximum age, every waiver with its expiry date, and a launch record Claude drafts and only a person signs, and an AI risk-tier record for each AI application that a person decides and signs; a bash checker (check-audit.sh) a project can run in its own CI at no token cost, with a CI job summary and a one-file HTML copy; plus a read-only governance-conductor agent.",
+      "version": "0.3.0",
+      "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "ascent-ai",
+      "source": "./plugins/ascent-ai",
+      "description": "AI applications that earn their place, for any repository whose own code calls a model: a design skill that recommends the least autonomy that does the job (a single prompt, a fixed workflow, or an agent only when the steps cannot be known in advance) with its tools, limits, model and fallback, eval plan and off switch, and drafts the AI design record, the ai: contract section and an ADR; bash checkers a project can run in its own CI at no token cost that hold the declarations to the code (a value baseline and target, models named in one place with a fallback, autonomy, tools and limits that match the code, irreversible tools behind a person's approval, prompts covered by evals, an off switch, a spend cap before fine-tuning), the eval and retrieval results to their targets (a golden set with typical, edge, attack and regression slices, fresh Promptfoo or self-reported results, the attack slice held to its own target, sources with owners and review dates), and the running safeguards (tracing, a capture policy, a gateway with a budget and rate limits, a cost-per-task alert), every severity scaled by the application's AI risk tier, several applications per repository; plus a read-only ai-reviewer agent for the delivery loop's AI behavior lens. It checks evidence only: it never runs a model, an eval or a network call.",
+      "version": "0.1.0",
       "license": "MIT OR Apache-2.0"
     }
   ]

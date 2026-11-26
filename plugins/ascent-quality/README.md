@@ -34,7 +34,7 @@ Start with `/ascent-quality:quality-review`, or ask "review our tests". For an i
 
 - **Running tests** is the operator's: the plugin never runs the suite, a test file, a load test, a mutation tool or CI. A fix goes through `ascent-delivery` and its runbook.
 - **Load targets** are `ascent-architecture`'s: `p95_latency_ms` and `peak_rps` are read from `architecture.quality_targets`, never copied.
-- **Other plugins' tests:** accessibility, navigation and front-end performance are `ascent-ux`'s; recovery drills and readiness exercises `ascent-ops`'s; smoke tests and user-acceptance sign-off `ascent-delivery`'s; security tests and scans `ascent-security`'s ([ADR-014](../../docs/framework/DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md) decision 1).
+- **Other plugins' tests:** accessibility, navigation and front-end performance are `ascent-ux`'s; recovery drills and readiness exercises `ascent-ops`'s; smoke tests and user-acceptance sign-off `ascent-delivery`'s; security tests and scans `ascent-security`'s; AI evals, golden sets and their results `ascent-ai`'s ([ADR-014](../../docs/framework/DECISIONS/ADR-014-testing-ownership-and-dependency-scan.md) decision 1).
 - **Coverage figures** are out of scope: they say which lines ran, not which behaviour is checked.
 - **Code health** (coupling, complexity) is `ascent-architecture`'s.
 

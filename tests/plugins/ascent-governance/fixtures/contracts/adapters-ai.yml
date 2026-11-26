@@ -1,0 +1,49 @@
+version: 1
+
+governance:
+  environments: [local, prod]
+  floors:
+    prod:
+      checks: [ascent-ai/check-ai-design, ascent-ai/check-ai-evidence, ascent-ai/check-ai-runtime,
+               ascent-security/check-redteam, ascent-security/check-threat-model]
+  approvers: [ana-lopez]
+  ai_tier_dir: records/tiers
+
+security:
+  redteam:
+    max_age_days: 21
+    max_attack_success: 0.05
+  waivers:
+    - id: ADR-031
+      skips: a known jailbreak in the support assistant, until the model change
+      advisories: [garak:dan.DanInTheWild, promptfoo:hijacking]
+      review_by: 2027-01-15
+    - id: ADR-032
+      skips: a lodash advisory in a build tool
+      advisories: [GHSA-35jh-r3h4-6jhm]
+
+ai:
+  applications:
+  - name: support-assistant
+    root: services/support/
+    design_record: services/support/docs/ai/design-record.md
+    prompts_dir: services/support/prompts/
+    golden_set: services/support/tests/evals/golden/
+    eval_results: evidence/support-assistant/evals/latest.json
+    eval_format: promptfoo
+    eval_pass_rate: 0.90
+    eval_attack_pass_rate: 1.0
+    eval_max_age_days: 14
+    retrieval_results: evidence/support-assistant/retrieval/latest.json
+    retrieval_targets: "faithfulness=0.90 context_recall=0.85"
+    retrieval_sources: services/support/docs/ai/sources.md
+    redteam_results: evidence/support-assistant/redteam/
+    capture_policy: services/support/docs/ai/capture-policy.md
+    gateway_policy: deploy/gateway/policy.yaml
+    pilot_result: services/support/docs/ai/pilot.md
+    model_selection: services/support/docs/ai/model-bake-off.md
+    fine_tune_runbook: docs/operations/fine-tune.md
+    review_by: 2027-02-01
+    review_notes: services/support/docs/ai/reviews.md
+  - name: screening-tool
+    root: services/screening/

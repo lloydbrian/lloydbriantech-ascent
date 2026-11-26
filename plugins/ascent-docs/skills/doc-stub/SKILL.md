@@ -10,7 +10,7 @@ description: >-
   a stub with guidance in every section after approval, and links it from
   the page its reader starts on. Never overwrites a document and never
   commits.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

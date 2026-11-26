@@ -12,7 +12,7 @@ Dates are in **America/New_York** timezone.
 
 ### Planned
 
-- Next, `ascent-ai` (a working name): evidence checks across the AI lifecycle, with four related changes in `ascent-delivery`, `ascent-security` and `ascent-governance`; then Phase 4 and Phase 5; then `ascent-node-stack` (order set 2026-11-22)
+- Next, Phase 4 and Phase 5; then `ascent-node-stack` (order set 2026-11-22)
 - Token trims that keep every description whole: browser-pass evidence gathering in `ascent-ux`, each checked before and after so no finding is lost, when the operator schedules them (ADR-027)
 - `ascent-security`: authenticated live checks, and a trial of the three scanner images against a real target, when a project needs them (ADR-026)
 - Tests: the `edit()` helpers of `test-check-drills.sh`, `test-check-ops-manuals.sh` and `test-check-iac-config.sh` do not fail a case when their awk edit fails, as `test-check-threat-model.sh` now does
@@ -26,6 +26,53 @@ Dates are in **America/New_York** timezone.
 - Phase 7: first production project scaffolded from ASCENT
 
 See [`docs/framework/ROADMAP.md`](docs/framework/ROADMAP.md) for the full roadmap.
+
+---
+
+## [0.4.27] — 2026-11-25
+
+**The AI lifecycle, and an ASCENT code reviewer.** The five actions of the 2026-11-22 review of ASCENT against a 12-stage AI lifecycle, in one release so CI runs once ([ADR-031](docs/framework/DECISIONS/ADR-031-ascent-ai-and-the-ai-lifecycle.md), [ADR-032](docs/framework/DECISIONS/ADR-032-code-reviewer-and-the-code-review-lens.md)). A new plugin, `ascent-ai` 0.1.0, checks AI applications by evidence, from the least autonomy that does the job to evals, tracing and spend. `ascent-governance` 0.3.0 adds an AI risk tier that a person signs and that scales every AI rule. `ascent-security` 0.5.0 adds red-team results and the AI threats. The operator-boundary hook now blocks paid compute and GitHub writes through MCP tools. `ascent-delivery` 0.3.0's `code-reviewer` gives the last lens without an ASCENT reviewer one, renamed Code review.
+
+### Added
+
+- ADR-031 and ADR-032
+- `ascent-ai` 0.1.0, hand-written, code `AI`:
+  - `ai-design`: recommends a single prompt, a fixed workflow or an agent, least autonomy first, with tools, limits, model and fallback, eval plan and off switch; drafts the design record, the `ai:` contract section and an ADR, written only after the operator approves
+  - `ai-review`: rates an application strong, moderate or weak by lifecycle stage
+  - `check-ai-design.sh` (`AI-V1`–`V2`, `AI-M1`–`M3`, `AI-A1`–`A5`, `AI-P1`, `AI-K1`, `AI-F1`): the declarations against the code
+  - `check-ai-evidence.sh` (`AI-G1`, `AI-E1`–`E5`, `AI-R1`–`R2`, `AI-L1`–`L2`): the golden set, Promptfoo or `ascent-evidence-v1` results, the attack slice and retrieval sources against their targets; results are stale when a prompt or golden-set change was committed after them and written after the run, so a prompt committed with its results, or a rebase, is not
+  - `check-ai-runtime.sh` (`AI-O1`–`O2`, `AI-C1`–`C3`): tracing, a capture policy, a gateway with a budget and rate limits, a cost-per-task alert
+  - `detect-ai.sh`: what counts as an AI application, from the contract, a model SDK, a `prompts/` folder that holds more than code, or `tests/evals/`; several per repository; test data is skipped; a manifest, test code, prompts or evals outside every root belong to the one application below them, so a src layout has no orphans; with none declared, the application is named after the origin remote
+  - a read-only `ai-reviewer` agent, first provider of a new delivery-loop lens, AI behavior
+  - every severity scaled by the application's tier: tier 3 is the base, tier 2 one level lower, tier 1 two
+- `ascent-governance` 0.3.0: the AI risk-tier record, `docs/governance/ai-tier/<application>.md` (`GOV-A1`–`A5`), on every environment above the lowest; adapter kinds that run a checker once per application (`item`, `itemfmt`, `others`, `words`, `env`, `toprung`, `when`); with an AI application the default floors gain the AI checks, the threat model with SEC-T5, `check-redteam` and the `ai-review` review
+- `ascent-security` 0.5.0: `check-redteam.sh` (`SEC-R1`–`R3`): fresh garak or Promptfoo red-team results, attack success rates against `security.redteam.max_attack_success`, every hit fixed or waived, and an errored attack (a rate limit, a timeout) counted apart, never as a success; `check-threat-model.sh --ai` adds `SEC-T5`, the four AI threats
+- `ascent-delivery` 0.3.0: `code-reviewer`, a read-only agent that reads a change in seven passes (intent, changed lines, callers and contracts, project rules, environments, hot-path performance, maintainability), keeps only findings with a failure scenario, and never posts
+- The operator-boundary hook blocks paid compute (SageMaker, Bedrock, Vertex AI, Azure ML, OpenAI and Together fine-tuning, `hf jobs`, `modal`, `sky`, `runpodctl`, `promptfoo eval` and `redteam run`, `garak`, `lighteval`) and, through a second matcher `mcp__.*`, every GitHub MCP tool but get, list, search and view, on any server whose name joins `github` to other words by `_` or `-`
+- Tests: `test-detect-ai.sh` (306), `test-check-ai-design.sh` (480), `test-check-ai-evidence.sh` (378), `test-check-ai-runtime.sh` (297), `test-ai-rules.sh` (175), `test-check-redteam.sh` (316), `test-ai-tier.sh` (210); `test-adapters.sh` 1500, `test-check-audit.sh` 735, `test-operator-boundary.sh` 852, `test-delivery-rules.sh` D10 and D11; suites 74 → 81
+- Controls P1712–P2161 in the groups `ascent-governance-ai`, `ascent-ai-detect`, `ascent-ai-design`, `ascent-ai-evidence`, `ascent-ai-runtime`, `ascent-ai-rules`, `ascent-security-redteam` and `ascent-delivery-review`, and in existing groups; the figure goes 1776 → 2204
+
+### Changed
+
+- Framework 0.4.26 → 0.4.27; `ascent-security` 0.4.0 → 0.5.0; `ascent-delivery` 0.2.2 → 0.3.0; `ascent-governance` 0.2.1 → 0.3.0; `ascent-ai` 0.1.0 (new); `ascent-architecture` 0.2.3, `ascent-ux` 0.3.3, `ascent-ops` 0.3.2, `ascent-quality` 0.2.2, `ascent-adr` 0.1.2 and `ascent-docs` 0.1.2 for their regenerated `plugin-signals.md`; `ascent-session` stays 0.1.0
+- The Correctness lens is now Code review, in all four lens tables; its fallback prompt names the seven passes and the filter; `review-lenses.md` forbids passing a provider an option that posts, comments or edits
+- The adapters pass `--threshold Low` to the four tier-scaled checkers, so a tier-2 Medium finding reaches the verdict as a condition
+- `ascent-quality`'s scope says AI evals are `ascent-ai`'s
+- Release docs: README, CLAUDE.md, ROADMAP, ARCHITECTURE, the capability map and both banners (11 plugins, 55 components, 81 suites, 2204 controls, 32 decisions)
+
+### Fixed
+
+- F8: `test-gate-fast.sh` G18 and G19 clear `MUTANT_FAULT`, so a developer with it exported sees a pass, not the refusal
+- F9: a control for the R2 check of the GOV-L1 sentence in `governance-rules.md` (P2057)
+- `adapt.awk`: the per-item format kind reused the `item` variable, so a later row lost its application
+
+### Notes
+
+- Trials, all read-only:
+  - `detect-ai.sh` on four repositories, the three checkers on two AI repositories, `ai-design` on one. Every false positive found was fixed test-first with a control: a Bedrock client counted only with an AWS SDK import, a token limit in a variable named near the call, test data skipped, and `ai-design` told to read hand-built loops and notebooks, ask for the baseline on existing code, and rate a read-only tool reversible.
+  - `code-reviewer`, against `engineering:code-review` and the v0.4.26 fallback prompt, on five seeded bugs from ASCENT's own history and a JavaScript repository, two seeded maintainability defects and a correct past change: correctness 5/5 for all three; maintainability 2/2, 1/2 and 0/2; on the correct change one Low finding, confirmed by `finding-verifier` (F8, fixed here). The gate passed with no calibration round.
+- Known limits: `check-ai-design.sh` does not see an agent loop built by hand as a step graph, or code in notebooks; a GitHub MCP server whose name has no `github` word is not recognized
+- CI: in fast mode the bundle's groups took 4 to 24 minutes each locally (`ascent-governance-ai`, 70 controls, the longest), under the 95-minute guide. `make/mutant-order.tsv` is not refreshed this release: the local full-mode run was stopped at 1543 of 2182 controls, with no survivor and two stale anchors (P1266, P1617, since retargeted), to fix the final review's findings; the full-mode run dispatched after the tag measures every job
 
 ---
 

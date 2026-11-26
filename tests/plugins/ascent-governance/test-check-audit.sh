@@ -174,6 +174,16 @@ EOF
   chk defaults --env prod; has defaults 'maturity standard'; has defaults 'docs.maturity_target'
   ran defaults ascent-security/check-env; ran defaults ascent-security/check-dependencies; ran defaults ascent-docs/check-docs; ran defaults ascent-adr/check-adrs
   notran defaults ascent-ux/check-flow-integrity; notran defaults ascent-ops/check-drills; notran defaults ascent-quality/check-test-evidence
+  notran defaults ascent-ai/check-ai-design; notran defaults ascent-ai/check-ai-evidence; notran defaults ascent-ai/check-ai-runtime; lacks defaults 'ai-review'
+  notran defaults ascent-security/check-redteam; notran defaults ascent-security/check-threat-model
+  lacks defaults ascent-security/check-redteam   # not even as unmeasured: with no AI application it is off the floor
+  # an AI application adds the AI checks to the default floors: check-ai-design at beta, the evidence, the runtime and ai-review at prod
+  stubs; rm -rf "${WORK:?}/defaults-ai"; cp -R "$WORK/defaults" "$WORK/defaults-ai"; printf 'from openai import OpenAI\n' > "$WORK/defaults-ai/src/ask.py"
+  chk defaults-ai --env prod; ran defaults-ai ascent-ai/check-ai-design; ran defaults-ai ascent-ai/check-ai-evidence; ran defaults-ai ascent-ai/check-ai-runtime
+  has defaults-ai 'ai-review'; has defaults-ai 'ascent-ai/check-ai-design [defaults-ai] passes'
+  ran defaults-ai ascent-security/check-redteam; ran defaults-ai ascent-security/check-threat-model; has defaults-ai 'ascent-security/check-redteam [defaults-ai] passes'
+  stubs; chk defaults-ai --env beta; ran defaults-ai-beta ascent-ai/check-ai-design; notran defaults-ai-beta ascent-ai/check-ai-evidence; notran defaults-ai-beta ascent-ai/check-ai-runtime
+  notran defaults-ai-beta ascent-security/check-redteam; ran defaults-ai-beta ascent-security/check-threat-model
   lacks defaults 'ascent-ux'; lacks defaults 'ux-review'
   stubs; printf '<html></html>\n' > "$WORK/defaults/src/index.html"; chk defaults --env prod; notran defaults-ui ascent-ux/check-flow-integrity
   has defaults-ui 'ascent-ux/check-flow-integrity is unmeasured: the contract has no ux.pages'; lacks defaults-ui 'FAIL  GOV-L1'
@@ -193,6 +203,32 @@ security:
   maturity_target: enterprise
 EOF
   chk defaults-order --env prod; has defaults-order 'maturity standard (docs.maturity_target, the most lenient)'
+
+  # each ascent-ai checker runs once for each application, and each run is judged on its own
+  ai_floor() {  # NAME: the two-application fixture, with the AI checks on its beta floor
+    mk "$1" ai-tier-multi
+    edit "$1" $CON "$(subst 'ascent-ux/check-flow-integrity, ascent-docs/check-docs]' 'ascent-ux/check-flow-integrity, ascent-docs/check-docs, ascent-ai/check-ai-design, ascent-ai/check-ai-evidence, ascent-ai/check-ai-runtime, ascent-security/check-redteam]')"
+  }
+  runs_of() { grep -c "^$(printf '%s' "$2" | sed 's|/|__|') .*--app | $3 |" "$WORK/log" || true; }
+  twice() { local c; for c in ascent-ai/check-ai-design ascent-ai/check-ai-evidence ascent-ai/check-ai-runtime; do
+    if [ "$(runs_of "$1" "$c" support-assistant)" -eq 1 ] && [ "$(runs_of "$1" "$c" screening-tool)" -eq "$2" ]; then ok; else bad "$1: $c ran $(runs_of "$1" "$c" support-assistant) time(s) for support-assistant and $(runs_of "$1" "$c" screening-tool) for screening-tool"; fi; done; }
+  stubs; ai_floor items; chk items --env beta; expect_pass items; twice items 1
+  for a in support-assistant screening-tool; do [ "$(runs_of items ascent-security/check-redteam $a)" -eq 1 ] && ok || bad "items: check-redteam should run once for $a"; done
+  has items 'PASS  GOV-L1  ascent-ai/check-ai-design [support-assistant] passes'
+  has items 'ascent-ai/check-ai-runtime [screening-tool] passes'
+  stubs; ai_floor items-one; printf 'FAIL  AI-A3  Critical  [screening-tool] src/refund.py:4  an irreversible tool with no approval\n' > "$WORK/ctl/ascent-ai__check-ai-design.out"
+  stub_rc ascent-ai/check-ai-design 1; chk items-one --env beta; expect_only items-one GOV-L1 High
+  has items-one 'ascent-ai/check-ai-design [screening-tool] failed: AI-A3 Critical [screening-tool] src/refund.py:4'
+  # an item with a required key missing is GOV-S2 and is not run; the other applications still are
+  stubs; ai_floor items-key; edit items-key $CON "$(drop '    root: services/screening/')"; chk items-key --env beta
+  expect_only items-key GOV-S2 Medium; has items-key 'ai.applications[1] has no root, so ascent-ai/check-ai-design was not given it (--design)'
+  twice items-key 0
+  # ascent-ai not installed: each AI check is unmeasured, never a pass
+  stubs; no_ai; ai_floor items-none; chk items-none --env beta; expect_only items-none GOV-L2 Low
+  has items-none 'ascent-ai/check-ai-design is unmeasured: ascent-ai is not available here'; lacks items-none 'check-ai-design [support-assistant] passes'
+  # an AI check on a floor with no AI application is unmeasured, never a pass
+  stubs; mk items-zero; edit items-zero $CON "$(subst '      checks: [ascent-security/check-env, delivery/gate]' '      checks: [ascent-security/check-env, delivery/gate, ascent-ai/check-ai-design]')"
+  chk items-zero; expect_only items-zero GOV-L2 Low; has items-zero 'ascent-ai/check-ai-design is unmeasured: the contract declares no AI application (ai.applications)'
 
   # custom ladders
   stubs; mkdir -p "$WORK/ladder-two"; contract ladder-two <<'EOF'

@@ -1,0 +1,214 @@
+{
+  "evalId": "eval-fixture-2026-11-20T14:02:00",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-11-20T14:02:00.000Z",
+    "prompts": [
+      {
+        "raw": "Reply to: {{ticket}}",
+        "label": "reply",
+        "id": "p0",
+        "provider": "openai:gpt-4o-mini"
+      }
+    ],
+    "results": [
+      {
+        "id": "row-0",
+        "promptIdx": 0,
+        "testIdx": 0,
+        "promptId": "p0",
+        "provider": {
+          "id": "openai:gpt-4o-mini",
+          "label": ""
+        },
+        "prompt": {
+          "raw": "Reply to: {{ticket}}",
+          "label": "reply"
+        },
+        "vars": {
+          "ticket": "case 0"
+        },
+        "response": {
+          "output": "draft reply 0"
+        },
+        "success": true,
+        "score": 1,
+        "latencyMs": 120,
+        "namedScores": {},
+        "failureReason": 0,
+        "testCase": {
+          "vars": {
+            "ticket": "case 0"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "value": "polite and correct"
+            }
+          ],
+          "options": {},
+          "metadata": {
+            "golden_version": "7",
+            "slice": "typical",
+            "prompt": "reply"
+          }
+        },
+        "metadata": {}
+      },
+      {
+        "id": "row-1",
+        "promptIdx": 0,
+        "testIdx": 1,
+        "promptId": "p0",
+        "provider": {
+          "id": "openai:gpt-4o-mini",
+          "label": ""
+        },
+        "prompt": {
+          "raw": "Reply to: {{ticket}}",
+          "label": "reply"
+        },
+        "vars": {
+          "ticket": "case 1"
+        },
+        "response": {
+          "output": "draft reply 1"
+        },
+        "success": true,
+        "score": 1,
+        "latencyMs": 120,
+        "namedScores": {},
+        "failureReason": 0,
+        "testCase": {
+          "vars": {
+            "ticket": "case 1"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "value": "polite and correct"
+            }
+          ],
+          "options": {},
+          "metadata": {
+            "golden_version": "7",
+            "slice": "edge",
+            "prompt": "reply"
+          }
+        },
+        "metadata": {}
+      },
+      {
+        "id": "row-2",
+        "promptIdx": 0,
+        "testIdx": 2,
+        "promptId": "p0",
+        "provider": {
+          "id": "openai:gpt-4o-mini",
+          "label": ""
+        },
+        "prompt": {
+          "raw": "Reply to: {{ticket}}",
+          "label": "reply"
+        },
+        "vars": {
+          "ticket": "case 2"
+        },
+        "response": {
+          "output": "draft reply 2"
+        },
+        "success": true,
+        "score": 1,
+        "latencyMs": 120,
+        "namedScores": {},
+        "failureReason": 0,
+        "testCase": {
+          "vars": {
+            "ticket": "case 2"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "value": "polite and correct"
+            }
+          ],
+          "options": {},
+          "metadata": {
+            "golden_version": "7",
+            "slice": "attack",
+            "prompt": "reply"
+          }
+        },
+        "metadata": {}
+      },
+      {
+        "id": "row-3",
+        "promptIdx": 0,
+        "testIdx": 3,
+        "promptId": "p0",
+        "provider": {
+          "id": "openai:gpt-4o-mini",
+          "label": ""
+        },
+        "prompt": {
+          "raw": "Reply to: {{ticket}}",
+          "label": "reply"
+        },
+        "vars": {
+          "ticket": "case 3"
+        },
+        "response": {
+          "output": "draft reply 3"
+        },
+        "success": true,
+        "score": 1,
+        "latencyMs": 120,
+        "namedScores": {},
+        "failureReason": 0,
+        "testCase": {
+          "vars": {
+            "ticket": "case 3"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "value": "polite and correct"
+            }
+          ],
+          "options": {},
+          "metadata": {
+            "golden_version": "7",
+            "slice": "regression",
+            "prompt": "reply"
+          }
+        },
+        "metadata": {}
+      }
+    ],
+    "stats": {
+      "successes": 4,
+      "failures": 0,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 400,
+        "completion": 200,
+        "cached": 0,
+        "total": 600,
+        "numRequests": 4
+      }
+    }
+  },
+  "config": {
+    "description": "support-assistant golden set",
+    "defaultTest": {
+      "metadata": {
+        "golden_version": "7"
+      }
+    }
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.118.14",
+    "exportedAt": "2026-11-20T14:03:00.000Z"
+  }
+}

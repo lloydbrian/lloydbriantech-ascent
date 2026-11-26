@@ -8,7 +8,7 @@ description: >-
   configuration stores, scripts, runbooks, manuals and health endpoints,
   checks six lenses, runs the IaC, script, manual and drill checks, and
   reports strong, moderate or weak with file:line evidence. Read-only.
-version: 0.3.1
+version: 0.3.2
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 

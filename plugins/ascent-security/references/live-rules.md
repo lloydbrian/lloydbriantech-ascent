@@ -102,6 +102,18 @@ A status of `000` means no answer (timeout or connection refused).
 - **STRIDE** is one letter: S spoofing, T tampering, R repudiation, I information disclosure, D denial of service, E elevation of privilege.
 - **Status** is `mitigated` (the mitigation names a file in the repository, in backticks), `accepted (ADR-NNN)` (the ADR exists in `security.adr_dir`), or `open`.
 - `reviewed_by` is the person who reviewed it. Claude drafts the model but never fills in `reviewed_on` or `reviewed_by`.
+- **An AI application** (SEC-T5) records each model input as an entry point whose trust boundary names the model (`user → api → model`), or writes it `model input: <what>`: the user's text, retrieved documents, tool results. Its threats name, in the Threat cell, `prompt injection`, `sensitive information disclosure` (or `sensitive data disclosure`), `excessive agency` and `unbounded consumption`, each mitigated or accepted. The checker cannot see which inputs an application has; the threat-model skill asks.
+
+## Red-team results
+
+`check-redteam.sh` reads one AI application's `redteam_results` folder (default `evidence/<name>/redteam/`), and the newest run in it, by the time the run records:
+
+| Tool | Files | When it ran | A category | An attack succeeded |
+|---|---|---|---|---|
+| garak | `<prefix>.report.jsonl`, `<prefix>.hitlog.jsonl` | the `init` row's `start_time` | a probe's module (`promptinject` in `promptinject.HijackHateHumans`); per `eval` row, `fails` of `total_evaluated` | a `hitlog` row |
+| Promptfoo | `promptfoo redteam run -o <file>.json` | `results.timestamp` | `testCase.metadata.pluginId` | `success` is `false` |
+
+The formats are `ascent-ai`'s [evidence-formats.md](../../ascent-ai/references/evidence-formats.md) records, checked against real files. A successful attack's id, for a waiver, is `garak:<probe>` or `promptfoo:<pluginId>`. Prompt-injection and data-leak categories are Critical at every tier: garak `promptinject`, `latentinjection`, `dan`, `leakreplay` and `xss`; Promptfoo `indirect-prompt-injection` and `pii` (`pii:direct` and the other `pii:` plugins). Other categories are High at tier 3, scaled by the application's AI risk tier as `ascent-ai` scales its rules.
 
 ## Rules
 
@@ -123,5 +135,9 @@ Severities come from the `live-severity` table in `security-test`, copied into `
 | SEC-T2 | Every endpoint in the contract is an entry point, and every entry point has a threat | the model, `--endpoint` |
 | SEC-T3 | Every threat is mitigated (the file exists) or accepted (the ADR exists); none is open | the model |
 | SEC-T4 | The model was reviewed by a person within `review_max_age_days` | the model |
+| SEC-T5 | With an AI application (`--ai`): an entry point for a model input, and threats for prompt injection, sensitive information disclosure, excessive agency and unbounded consumption, each mitigated or accepted | the model |
+| SEC-R1 | Each AI application has a red-team result in a known format, no older than `redteam.max_age_days` | the application's `redteam_results` |
+| SEC-R2 | No red-team category's attack success (successful attacks / attacks) is above `redteam.max_attack_success` | the newest run |
+| SEC-R3 | Every successful attack in the newest run is waived by an ADR whose `review_by` has not passed | the newest run |
 
 A scanner finding or a live finding whose id (a ZAP `pluginid`, a nuclei `template-id`, or a rule id with its path, `SEC-L4:/api/items/{id}`) is listed under a waiver ADR is Info. At prototype maturity every finding is a NOTE.

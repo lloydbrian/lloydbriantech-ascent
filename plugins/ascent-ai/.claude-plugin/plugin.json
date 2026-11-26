@@ -1,0 +1,12 @@
+{
+  "name": "ascent-ai",
+  "version": "0.1.0",
+  "description": "AI applications that earn their place, for any repository whose own code calls a model: a design skill that recommends the least autonomy that does the job (a single prompt, a fixed workflow, or an agent only when the steps cannot be known in advance) with its tools, limits, model and fallback, eval plan and off switch, and drafts the AI design record, the ai: contract section and an ADR; bash checkers a project can run in its own CI at no token cost that hold the declarations to the code (a value baseline and target, models named in one place with a fallback, autonomy, tools and limits that match the code, irreversible tools behind a person's approval, prompts covered by evals, an off switch, a spend cap before fine-tuning), the eval and retrieval results to their targets (a golden set with typical, edge, attack and regression slices, fresh Promptfoo or self-reported results, the attack slice held to its own target, sources with owners and review dates), and the running safeguards (tracing, a capture policy, a gateway with a budget and rate limits, a cost-per-task alert), every severity scaled by the application's AI risk tier, several applications per repository; plus a read-only ai-reviewer agent for the delivery loop's AI behavior lens. It checks evidence only: it never runs a model, an eval or a network call.",
+  "author": {
+    "name": "lloydbriantech"
+  },
+  "homepage": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "repository": "https://github.com/lloydbrian/lloydbriantech-ascent",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["ai", "llm", "agents", "evals", "rag", "promptfoo", "guardrails", "ascent"]
+}

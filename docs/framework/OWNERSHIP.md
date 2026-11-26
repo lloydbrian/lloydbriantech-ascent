@@ -30,6 +30,7 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | Markdown documentation (`README.md`, `CONTRIBUTING.md`, `docs/`), or a change that renames what documents name | `ascent-docs` | documents reachable from the README and persona entry points, links that resolve, stale markers and lag dated by git, names that still exist, new documents of the right kind for one reader |
 | a working memory, a session state or a handoff (`docs/delivery/`), or work that spans sessions or changes hands | `ascent-session` | sessions resumed from cited records, state and decisions captured before closing, a working memory only appended to, personal state kept out of git, a current handoff |
 | a `.ascent/contract.yml` with more than one section, waivers, a beta or production launch ahead, or CI that should hold a deploy until the evidence is current | `ascent-governance` | one answer per environment, "are we ready for local, beta or prod?", from the other plugins' checks, dated review records, waivers with expiry dates and a launch record a person signs |
+| a model SDK (OpenAI, Anthropic, LangChain, LlamaIndex, LiteLLM, Google Gen AI, Bedrock, the Vercel AI SDK), a `prompts/` folder, `tests/evals/`, a vector store, an `ai:` section in the contract | `ascent-ai` | the least autonomy that does the job, declarations that match the code, evals and retrieval results against their targets, tracing and spend limits, each scaled by the application's risk tier |
 <!-- ownership:signals:end -->
 
 ---
@@ -51,9 +52,10 @@ Install the plugins whose signals your repository shows. Each one works on its o
 | `ascent-session` | `SES` | released | hand-written | `session` | `ses-severity` |
 | `ascent-docs` | `DOC` | released | hand-written | `docs` | `doc-severity` |
 | `ascent-governance` | `GOV` | released | hand-written | `governance` | `gov-severity` |
+| `ascent-ai` | `AI` | released | hand-written | `ai` | `ai-severity` |
 <!-- ownership:plugins:end -->
 
-`ascent-delivery` reads the `delivery` section of `.ascent/contract.yml` since 0.2.0 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)). Its older contract, `.delivery-loop.yml`, still works, and the operator-boundary hook blocks the deploy commands of both. `ascent-delivery` rates no findings, so it has no severity marker: any `DEL-A` failure stops prod.
+`ascent-delivery` reads the `delivery` section of `.ascent/contract.yml` since 0.2.0 ([ADR-024](DECISIONS/ADR-024-acceptance-sign-off-and-delivery-contract-section.md)). Its older contract, `.delivery-loop.yml`, still works, and the operator-boundary hook blocks the deploy commands of both. `ascent-delivery`'s code reviewer rates findings by the impact of their scenario, as `finding-verifier` re-rates them; the plugin has no severity table, so it has no severity marker, and any `DEL-A` failure stops prod.
 
 ## Components
 
@@ -71,6 +73,7 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-security` | agent | `security-auditor` |
 | `ascent-delivery` | skill | `delivery-loop` |
 | `ascent-delivery` | agent | `finding-verifier` |
+| `ascent-delivery` | agent | `code-reviewer` |
 | `ascent-delivery` | hook | `operator-boundary` |
 | `ascent-architecture` | skill | `architecture-review` |
 | `ascent-architecture` | skill | `quality-attributes` |
@@ -110,6 +113,12 @@ Every skill, agent and hook a released plugin ships.
 | `ascent-governance` | skill | `governance-review` |
 | `ascent-governance` | skill | `review-record` |
 | `ascent-governance` | agent | `governance-conductor` |
+| `ascent-ai` | skill | `ai-design` |
+| `ascent-ai` | skill | `ai-review` |
+| `ascent-ai` | skill | `ai-design-check` |
+| `ascent-ai` | skill | `ai-evidence-check` |
+| `ascent-ai` | skill | `ai-runtime-check` |
+| `ascent-ai` | agent | `ai-reviewer` |
 <!-- ownership:components:end -->
 
 ## Rule-id families
@@ -145,11 +154,25 @@ A rule id is `<CODE>-<family><n>`, for example `OPS-S3` or `UX-D2`. A **rule** p
 | `SEC-E` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-env.sh` |
 | `SEC-L` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
 | `SEC-T` | `ascent-security` | rule | `plugins/ascent-security/references/live-rules.md` |
+| `SEC-R` | `ascent-security` | rule | `plugins/ascent-security/scripts/check-redteam.sh` |
 | `SES-S` | `ascent-session` | rule | `plugins/ascent-session/scripts/check-session.sh` |
 | `GOV-S` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
 | `GOV-L` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
 | `GOV-W` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
 | `GOV-R` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
+| `GOV-A` | `ascent-governance` | rule | `plugins/ascent-governance/scripts/check-audit.sh` |
+| `AI-V` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-M` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-A` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-P` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-K` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-F` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-G` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-E` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-R` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-L` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-O` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
+| `AI-C` | `ascent-ai` | rule | `plugins/ascent-ai/references/ai-rules.md` |
 | `UX-U` | `ascent-ux` | rule | `plugins/ascent-ux/scripts/check-web-accessibility.sh` |
 | `UX-H` | `ascent-ux` | catalogue | `plugins/ascent-ux/references/usability-heuristics.md` |
 | `UX-D` | `ascent-ux` | catalogue | `plugins/ascent-ux/skills/design-directions/SKILL.md` |
@@ -183,6 +206,7 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | dependency vulnerabilities and supply chain | `ascent-security` | `ascent-security` | released |
 | threat model | `ascent-security` | `ascent-security` | released |
 | security testing (live, operator-run) | `ascent-security` | `ascent-security` | released |
+| LLM red-team evidence | `ascent-security` | `ascent-security` | released |
 | change delivery and the operator boundary | `ascent-delivery` | `ascent-delivery` | released |
 | smoke tests after a deploy | `ascent-delivery` | `ascent-delivery` | released |
 | user acceptance sign-off | `ascent-delivery` | `ascent-delivery` | released |
@@ -209,7 +233,13 @@ Each domain has up to three owners: the plugin that sets the **target**, the plu
 | session continuity and handoff | `ascent-session` | `ascent-session` | released |
 | documentation findability and drift | `ascent-docs` | `ascent-docs` | released |
 | launch readiness | `ascent-governance` | `ascent-governance` | released |
-| AI behavior evals | — | `ascent-ai-evals` | released |
+| AI risk tier | `ascent-governance` | `ascent-governance` | released |
+| AI behavior evals | `ascent-ai` | `ascent-ai` | released |
+| AI value evidence (baseline and pilot) | `ascent-ai` | `ascent-ai` | released |
+| model selection and fallback | `ascent-ai` | `ascent-ai` | released |
+| retrieval evidence | `ascent-ai` | `ascent-ai` | released |
+| AI tracing readiness | `ascent-ai` | `ascent-ai` | released |
+| model spend policy | `ascent-ai` | `ascent-ai` | released |
 <!-- ownership:domains:end -->
 
 ## Review lenses
@@ -219,13 +249,14 @@ The delivery loop (`ascent-delivery`, Step 4) runs one reviewer per lens. It use
 <!-- ownership:lenses:start -->
 | Lens | Providers, first installed wins | Fallback |
 |---|---|---|
-| Correctness | `engineering:code-review` | fallback prompt |
+| Code review | `ascent-delivery:code-reviewer`, `engineering:code-review` | fallback prompt |
 | Security and privacy | `ascent-security:security-auditor` | fallback prompt |
 | Architecture and cost | `ascent-architecture:architecture-reviewer` | fallback prompt |
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | fallback prompt |
 | UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | fallback prompt |
+| AI behavior | `ascent-ai:ai-reviewer` | fallback prompt |
 | Decisions | `ascent-adr:decision-reviewer` | fallback prompt |
 | Documentation | `ascent-docs:docs-reviewer` | fallback prompt |
 <!-- ownership:lenses:end -->

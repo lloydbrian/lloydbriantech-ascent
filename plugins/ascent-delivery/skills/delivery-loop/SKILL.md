@@ -8,7 +8,7 @@ description: >-
   finding verifier, fix and re-test, definition of done, an operator runbook,
   beta verification, a person's acceptance sign-off, prod and a release record.
   Claude never runs git writes or deploys: the operator does, from the runbook.
-version: 0.2.2
+version: 0.3.0
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -22,6 +22,8 @@ The loop is ASCENT's delivery standard in executable form. It works the same in 
 
 - **Claude NEVER runs git write operations**: commit, push, tag, merge, rebase, reset, revert, cherry-pick, stash, checkout or switch, branch create or delete, add, rm, mv, pull, worktree changes, config writes. It also never runs `gh` writes (pr create or merge, release create, workflow run, secret set, `gh api` writes).
 - **Claude NEVER deploys or publishes.** That covers everything under `deploy_beta` and `deploy_prod` in every contract the project has (Step 0), and well-known deploy verbs (`terraform apply`, `kubectl apply`, `helm upgrade`, `aws s3 sync … s3://`, `npm publish`, `docker push`, `cdk deploy` and the like).
+- **Claude NEVER starts paid compute**: training, tuning, batch and endpoint jobs (`aws sagemaker create-training-job`, `aws bedrock create-model-customization-job`, `gcloud ai custom-jobs create`, `az ml job create`, `openai fine_tuning jobs create`), GPU job platforms (`hf jobs run`, `modal run`, `sky launch`, `runpodctl create pod`), and evaluation or red-team runs (`promptfoo eval`, `promptfoo redteam run`, `garak`, `lighteval`). They spend money on every run and use provider keys.
+- **Claude NEVER writes to GitHub through an MCP tool**: comments, reviews, merges, pushes, file edits, and creating or updating branches, issues, pull requests, releases and labels. Only tools that get, list, search or view are allowed.
 - There is no "unless asked" exception. If the operator asks Claude to push or deploy, Claude writes the runbook step instead.
 - The plugin's `PreToolUse` hook enforces this mechanically and blocks such commands. If a command is blocked, do not retry it, rephrase it, or route it through a script, `python -c` or another tool. Put it in the runbook (Step 6).
 - Read-only git and gh are fine: `git status`, `diff`, `log`, `show`, `blame`, `fetch`; `gh pr view`, `pr checks`, `run view`.
@@ -84,17 +86,18 @@ Then launch reviewers **in parallel**, one lens each, against the diff and the a
 
 | Lens | Providers, first installed wins | Otherwise |
 |---|---|---|
-| Correctness | `engineering:code-review` | fallback prompt |
+| Code review | `ascent-delivery:code-reviewer`, `engineering:code-review` | fallback prompt |
 | Security and privacy | `ascent-security:security-auditor` | fallback prompt |
 | Architecture and cost | `ascent-architecture:architecture-reviewer` | fallback prompt |
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | fallback prompt |
 | UX and navigation | `ascent-ux:ux-reviewer` | fallback prompt |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | fallback prompt |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | fallback prompt |
+| AI behavior | `ascent-ai:ai-reviewer` | fallback prompt |
 | Decisions | `ascent-adr:decision-reviewer` | fallback prompt |
 | Documentation | `ascent-docs:docs-reviewer` | fallback prompt |
 
-Skip a lens only when it cannot apply (no UI means no accessibility lens; a change that records no decision and touches no ADR has no decisions lens; one that renames nothing a document names and edits no document has no documentation lens), and say so. A provider's output is passed through unedited, under a thin header naming the lens and the provider.
+Skip a lens only when it cannot apply (no UI means no accessibility lens; a change that records no decision and touches no ADR has no decisions lens; one that renames nothing a document names and edits no document has no documentation lens; one that touches no prompt, tool definition, model call, eval file, retrieval code or `ai:` section has no AI behavior lens), and say so. A provider's output is passed through unedited, under a thin header naming the lens and the provider.
 
 Every finding needs `file:line` and a concrete failure scenario. Then give all findings to the **`finding-verifier` agent** (`ascent-delivery:finding-verifier`). It is read-only and returns CONFIRMED, REJECTED or UNCONFIRMED for each finding, with evidence.
 

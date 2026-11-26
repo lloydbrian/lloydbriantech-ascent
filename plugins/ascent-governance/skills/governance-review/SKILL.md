@@ -11,7 +11,7 @@ description: >-
   GOV-L1–L5, GOV-W1–W4, GOV-R1–R4), and reports what is due, what is
   expiring and what is broken, with the date each one becomes a problem.
   Read-only: it writes nothing and runs no review.
-version: 0.2.1
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -38,7 +38,7 @@ Shared sources:
 
 ### Step 0 — Load the contract
 
-Read `.ascent/contract.yml` (or `.claude/contract.yml`): `governance.environments`, `floors`, `approvers`, `review_log`, `launch_dir`, `maturity_target`. With no `governance` section, say that default floors apply and which maturity they follow, and propose the section once from the contract template, with every guessed value marked `# guess`. The proposal is text for the operator; never write it.
+Read `.ascent/contract.yml` (or `.claude/contract.yml`): `governance.environments`, `floors`, `approvers`, `review_log`, `launch_dir`, `ai_tier_dir`, `maturity_target`. With no `governance` section, say that default floors apply and which maturity they follow, and propose the section once from the contract template, with every guessed value marked `# guess`. The proposal is text for the operator; never write it.
 
 ### Step 1 — Run every environment
 
@@ -56,7 +56,7 @@ From the review log (`governance.review_log`) and the floors, work out for each 
 
 ### Step 3 — Read the records the lines cite
 
-For a GOV-L3, GOV-L4 or GOV-L5 line, read the launch record it names and say in one sentence what is wrong with it. For a GOV-R3 or GOV-R4 line, read the row or `git log -p -- <review log>` around the commit it names. For a GOV-S1 line, read the contract line it cites.
+For a GOV-L3, GOV-L4 or GOV-L5 line, read the launch record it names and say in one sentence what is wrong with it. For a GOV-R3 or GOV-R4 line, read the row or `git log -p -- <review log>` around the commit it names. For a GOV-S1 line, read the contract line it cites. For a GOV-A line, read the AI risk-tier record it names and say which field is wrong; a GOV-A4 record's `review_by` is also a date for Step 2's list.
 
 ### Step 4 — Report
 
