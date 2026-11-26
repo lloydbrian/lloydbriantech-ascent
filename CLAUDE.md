@@ -8,8 +8,8 @@
 
 **Project:** `lloydbriantech-ascent`, the ASCENT engineering framework
 **Repository:** `lloydbrian/lloydbriantech-ascent`
-**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops, quality, adr, session, docs and governance released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16; its figures in the README banner since v0.4.17; CI scoped to what a change can affect since v0.4.18; acceptance sign-off since v0.4.20; faster local verification since v0.4.21; live security testing and the threat model since v0.4.22; decision records, session continuity and documentation since v0.4.23; launch readiness and auditability since v0.4.24; faster negative controls, and conditions for Medium and Low check failures, since v0.4.25; crashing checkers rated as crashes since v0.4.26). Phase 4 awaits its go-signal.
-**Version:** 0.4.26
+**Phase:** Phase 3 complete; the plugin roadmap is in progress (security, delivery, architecture, ux, ops, quality, adr, session, docs, governance and ai released; ownership registry since v0.4.8; dependency checks since v0.4.9; fast negative controls since v0.4.10; test strategy since v0.4.11; recovery drills since v0.4.12; load and mutation evidence since v0.4.13; copy failures reported apart since v0.4.14; flow integrity and reliability since v0.4.15; a checked capability map since v0.4.16; its figures in the README banner since v0.4.17; CI scoped to what a change can affect since v0.4.18; acceptance sign-off since v0.4.20; faster local verification since v0.4.21; live security testing and the threat model since v0.4.22; decision records, session continuity and documentation since v0.4.23; launch readiness and auditability since v0.4.24; faster negative controls, and conditions for Medium and Low check failures, since v0.4.25; crashing checkers rated as crashes since v0.4.26; the AI lifecycle and an ASCENT code reviewer since v0.4.27). Phase 4 awaits its go-signal.
+**Version:** 0.4.27
 **Owner:** lloydbriantech
 **Created:** May 14, 2026 (America/New_York)
 
@@ -73,7 +73,8 @@ lloydbriantech-ascent/
 │   └── lloydbriantech-ascent/         # Parent skill: SKILL.md, references/, assets/template/
 ├── plugins/                           # ascent-security (hybrid), ascent-delivery,
 │                                      # ascent-architecture, ascent-ux, ascent-ops, ascent-quality,
-│                                      # ascent-adr, ascent-session, ascent-docs, ascent-governance
+│                                      # ascent-adr, ascent-session, ascent-docs, ascent-governance,
+│                                      # ascent-ai
 │                                      # (hand-written)
 ├── .ascent/contract.yml               # This repository's own contract (decisions: read by T16,
 │                                      # governance: by T17)

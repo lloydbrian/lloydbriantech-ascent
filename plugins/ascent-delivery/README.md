@@ -10,6 +10,7 @@ It is part of the [ASCENT framework](../../README.md), and you don't need an ASC
 |---|---|---|
 | `delivery-loop` | skill | The loop, Steps 0–7, with the project contract, the definition of done and the release record. Use it with "run the delivery loop", "ship this change" or "write the hand-off runbook". |
 | `finding-verifier` | agent (read-only) | Re-checks every reviewer finding against the code. Returns CONFIRMED, REJECTED or UNCONFIRMED with `file:line` evidence. |
+| `code-reviewer` | agent (read-only) | The Code review lens: intent, changed lines, callers and contracts in unchanged files, project rules, environments, hot-path performance and maintainability, filtered to findings a senior engineer would act on. Never posts to a pull request. |
 | `operator-boundary` | hook (`PreToolUse`, Bash) | Blocks git writes, gh writes and deploys before they run, and tells Claude to put them in the runbook. |
 | `check-acceptance.sh` | script (read-only) | Checks an acceptance record: every criterion has evidence (DEL-A1), a person accepted it by name and date (DEL-A2), and that person is a listed acceptor (DEL-A3). `--draft` checks the evidence only. Any failure stops prod. |
 | `contract-template.yml` | reference | The `delivery:` section of `.ascent/contract.yml`. |
@@ -32,13 +33,15 @@ Call the skill as `/ascent-delivery:delivery-loop`. Claude also loads it when yo
 
 ## The operator boundary
 
-Claude **never** runs git write operations or deploys, in any project where this plugin is enabled. The operator commits, pushes, merges, tags and deploys, from the runbook Claude writes. There is no "unless asked" exception.
+Claude **never** runs git write operations, deploys or paid compute, and never writes to GitHub through an MCP tool, in any project where this plugin is enabled. The operator commits, pushes, merges, tags and deploys, from the runbook Claude writes. There is no "unless asked" exception.
 
-This is enforced by a hook, not just by the instructions. **The hook applies to every session where the plugin is enabled, whether or not the delivery loop is running.** It inspects each Bash command before it runs, and blocks with a reason (exit code 2) when the command contains any of these:
+This is enforced by a hook, not just by the instructions. **The hook applies to every session where the plugin is enabled, whether or not the delivery loop is running.** It inspects each Bash command and each MCP tool call before it runs, and blocks with a reason (exit code 2) when the command contains any of these:
 
 - **git writes**: commit, push, tag creation or deletion, merge, rebase, reset, revert, cherry-pick, am, apply, stash, checkout or switch, branch create/delete/rename, clean, restore, rm, mv, add, pull, worktree add/remove, update-ref, config writes, and any git subcommand or alias that is not on the read-only list.
 - **gh writes**: pr create/merge/close/edit/review, release create/delete/edit, repo create/delete/edit, workflow run, secret set, `gh api` with a write method or fields (which imply POST), GraphQL mutations, and `gh auth token`, which would print a credential.
 - **deploys**: every command under `deploy_beta` and `deploy_prod` in the project's contracts, all of them (the `delivery:` section of `.ascent/contract.yml` and of `.claude/contract.yml`, and `.delivery-loop.yml`), and well-known deploy and publish verbs. These include terraform/tofu apply, destroy and import; kubectl/oc writes and `rollout restart`; helm install, upgrade, uninstall and rollback; aws cloudformation deploy and `*-stack`; `aws s3 cp|sync|mv` to `s3://`; npm/pnpm/yarn/bun publish; docker/podman push; cdk, sam and serverless deploy; `vercel --prod`; `netlify deploy --prod`; firebase, fly and wrangler deploy; `gcloud … deploy`; cargo publish; twine upload; gem push; and mvn deploy.
+- **paid compute** (0.3.0, [ADR-031](../../docs/framework/DECISIONS/ADR-031-ascent-ai-and-the-ai-lifecycle.md)): training, tuning, batch and endpoint jobs (`aws sagemaker create-training-job`, `create-hyper-parameter-tuning-job`, `create-processing-job`, `create-transform-job` and `create-endpoint`; `aws bedrock create-model-customization-job`, `create-provisioned-model-throughput` and `create-model-invocation-job`; `gcloud ai custom-jobs create`, `hp-tuning-jobs create` and `endpoints deploy-model`; `az ml job create`; `openai api fine_tuning.jobs.create` and `openai fine_tuning jobs create`; `together fine-tuning create`), GPU job platforms (`hf jobs run`, `huggingface-cli jobs run`, `modal run` and `deploy`, `sky launch` and `sky jobs launch`, `runpodctl create pod`), and evaluation and red-team runs (`promptfoo eval`, `promptfoo redteam run` and `eval`, `garak` and `lighteval` with anything but their help, version and listing options). A run against a local model is blocked too: there is no allow list, and the runbook carries it.
+- **GitHub writes through MCP tools** (0.3.0): any tool `mcp__<server>__<action>` on a GitHub server (`github`, or a server name with `github` joined to other words by `_` or `-`, such as `github_<x>`, `<x>_github` or `github-mcp-server`) whose action does not start with `get`, `list`, `search` or `view`. That covers comments, inline comments, reviews, merges, pushes, file edits and creating or updating branches, issues, pull requests and releases. Only the tool name is read, never its input. Other MCP servers pass.
 
 It **allows** read-only git (status, diff, log, show, blame, grep, ls-files, rev-parse, describe, branch and tag listing, `remote -v`, config reads, `stash list`, and `fetch` without a refspec that writes a local branch) and read-only gh (pr view/list/checks/diff/status; issue, run, workflow, release and repo view and list; search; `gh api` GET).
 
@@ -54,7 +57,7 @@ Commands over 512 KB are blocked with a request to split them, so a slow check c
 
 - Commands hidden inside scripts, make targets or npm scripts are blocked only when the contract lists them. Add your deploy entry points to `deploy_beta` and `deploy_prod`.
 - A command word built at run time (`$GIT push`, shell aliases, functions) is not resolved.
-- Other interpreters (`python -c`, `node -e`) and tools that are not Bash (MCP servers) are not inspected.
+- Other interpreters (`python -c`, `node -e`) are not inspected. Of the MCP tools, only GitHub's are checked, by name: a GitHub server registered under a name with no `github` word is not recognized.
 - Dry runs of deploy verbs (`npm publish --dry-run`, `kubectl apply --dry-run=client`) are blocked too. That is conservative by design: the hook does not trust flags to make a deploy harmless, so the runbook carries the dry run as well.
 - Contract entries match by command name plus the entry's positional words, wherever they appear and whatever flags surround them. For an `&&` or `;` chain, only the last command is a deploy rule. A command that reaches the deploy under a different name, or a make target that depends on the deploy target, is not caught.
 - Not resolved: brace expansion (`{git,push}`), arrays used as commands (`"${cmd[@]}"`), commands built from variables, and `xargs`/`parallel` input that supplies the subcommand.
@@ -64,17 +67,18 @@ To lift the boundary you have to disable the plugin. There is no bypass variable
 
 ## Review providers it wraps
 
-At the review step, the skill uses the first provider of each lens that is installed, and a built-in single-lens prompt when none is. The ASCENT agents come from [ascent-security](../ascent-security/README.md), [ascent-architecture](../ascent-architecture/README.md), [ascent-ux](../ascent-ux/README.md), [ascent-ops](../ascent-ops/README.md) and [ascent-quality](../ascent-quality/README.md). Provider output is passed through under a thin header, not rewritten:
+At the review step, the skill uses the first provider of each lens that is installed, and a built-in single-lens prompt when none is. The ASCENT agents are this plugin's `code-reviewer` and those of [ascent-security](../ascent-security/README.md), [ascent-architecture](../ascent-architecture/README.md), [ascent-ux](../ascent-ux/README.md), [ascent-ops](../ascent-ops/README.md), [ascent-quality](../ascent-quality/README.md) and [ascent-ai](../ascent-ai/README.md). Provider output is passed through under a thin header, not rewritten:
 
 | Lens | Providers, first installed wins |
 |---|---|
-| Correctness | `engineering:code-review` |
+| Code review | `ascent-delivery:code-reviewer`, `engineering:code-review` |
 | Security and privacy | `ascent-security:security-auditor` |
 | Architecture and cost | `ascent-architecture:architecture-reviewer` |
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` |
 | UX and navigation | `ascent-ux:ux-reviewer` |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` |
+| AI behavior | `ascent-ai:ai-reviewer` |
 | Decisions | `ascent-adr:decision-reviewer` |
 | Documentation | `ascent-docs:docs-reviewer` |
 

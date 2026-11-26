@@ -3,7 +3,7 @@
 # of the ascent-security plugin (threat-model Step 4, security-test Step 1).
 # Read-only.
 #
-# Usage: check-threat-model.sh [--repo DIR] [--adr-dir DIR] [--today YYYY-MM-DD] [--max-age DAYS] [--maturity LEVEL] [--endpoint 'METHODS PATH AUTH FLAGS']... MODEL
+# Usage: check-threat-model.sh [--repo DIR] [--adr-dir DIR] [--today YYYY-MM-DD] [--max-age DAYS] [--maturity LEVEL] [--endpoint 'METHODS PATH AUTH FLAGS']... [--ai] MODEL
 #
 # MODEL is the threat model (security.threat_model.path, default
 # docs/security/THREAT-MODEL.md; references/live-rules.md has its format). --repo is
@@ -11,6 +11,8 @@
 # accepted threats' ADRs live (security.adr_dir, default docs/adr), --max-age the
 # days a review stays current (security.threat_model.review_max_age_days, default
 # 180), --endpoint each of security.endpoints, --maturity security.maturity_target.
+# --ai says the repository has an AI application (ai.applications, or AI code
+# ascent-ai finds); only then is SEC-T5 checked.
 #
 # Checks (severity from the live-severity table in security-test):
 #   SEC-T1  Medium  the model exists, with its field table (method STRIDE), an
@@ -22,6 +24,11 @@
 #                   missing, or a row with an unknown STRIDE letter or status
 #   SEC-T4  Low     reviewed_on is a date within --max-age days, and reviewed_by
 #                   names a person
+#   SEC-T5  High    with --ai: an entry point for a model input (its trust
+#                   boundary names a model, or it is written "model input: ..."),
+#                   and a threat, mitigated or accepted, for each of prompt
+#                   injection, sensitive information disclosure, excessive agency
+#                   and unbounded consumption (named in the Threat cell)
 # At prototype maturity every finding is a NOTE. A NOTE lists the STRIDE categories
 # no threat covers.
 #
@@ -34,7 +41,7 @@
 set -euo pipefail
 
 usage() { sed -n '6p' "$0" | sed 's/^# //'; }
-REPO="."; ADR=docs/adr; TODAY=""; MAXAGE=180; MATURITY=enterprise; EPS=(); POS=()
+REPO="."; ADR=docs/adr; TODAY=""; MAXAGE=180; MATURITY=enterprise; AI=0; EPS=(); POS=()
 need() { [ "$1" -ge 2 ] || { usage >&2; exit 2; }; }
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -44,6 +51,7 @@ while [ $# -gt 0 ]; do
     --max-age) need $#; MAXAGE="$2"; shift 2 ;;
     --maturity) need $#; MATURITY="$2"; shift 2 ;;
     --endpoint) need $#; EPS+=("$2"); shift 2 ;;
+    --ai) AI=1; shift ;;
     -h|--help) usage; exit 0 ;;
     -*) echo "check-threat-model: unknown option $1" >&2; exit 2 ;;
     *) POS+=("$1"); shift ;;
@@ -87,5 +95,5 @@ dot() { case "$1" in /*|./*) printf '%s' "$1" ;; *) printf './%s' "$1" ;; esac; 
 if [ -f "$MODEL" ]; then IN=$(dot "$MODEL"); else IN=/dev/null; fi
 PROG="$(cd "$(dirname "$0")" && pwd)/lib/check-threat-model.awk"
 [ -f "$PROG" ] || bad "missing $PROG"
-CTM_TODAY="$TODAY" CTM_MAXAGE="$MAXAGE" CTM_MATURITY="$MATURITY" CTM_EPS="$EPL" CTM_FOUND="$FOUND" CTM_ADRS="$ADRS" CTM_MODEL="$MODEL" CTM_ADR="$ADR" \
+CTM_TODAY="$TODAY" CTM_MAXAGE="$MAXAGE" CTM_MATURITY="$MATURITY" CTM_EPS="$EPL" CTM_FOUND="$FOUND" CTM_ADRS="$ADRS" CTM_MODEL="$MODEL" CTM_ADR="$ADR" CTM_AI="$AI" \
   LC_ALL=C awk -f "$PROG" "$IN"

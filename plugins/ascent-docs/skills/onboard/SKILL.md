@@ -9,7 +9,7 @@ description: >-
   run the project, where the decisions and conventions are, and who to ask,
   citing the document and line for every step; checks the path for broken
   links and missing pages on the way and reports the gaps it hit. Read-only.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

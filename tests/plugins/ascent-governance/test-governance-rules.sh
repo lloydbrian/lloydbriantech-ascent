@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rule test for the ascent-governance skills, agent and references (ADR-028):
 #   R1  every $PLUGIN_ROOT/<path> a skill names exists
-#   R2  every rule id check-audit.sh's header lists is in the gov-severity table and
+#   R2  every rule id check-audit.sh's header lists (GOV-A from lib/ai-tier.awk too) is in the gov-severity table and
 #       in references/governance-rules.md at the same severity; every rule and
 #       severity the code can report has a row in the table; the table and the
 #       reference name no id the script does not list
@@ -44,7 +44,8 @@ RULES="$PLUGIN/references/governance-rules.md"
 README="$PLUGIN/README.md"
 SCRIPT="$PLUGIN/scripts/check-audit.sh"
 AWKF="$PLUGIN/scripts/lib/audit.awk"
-for f in "$LAUNCH" "$REVIEW" "$RECORD" "$AGENT" "$TEMPLATE" "$RULES" "$README" "$SCRIPT" "$AWKF"; do
+TIERF="$PLUGIN/scripts/lib/ai-tier.awk"
+for f in "$LAUNCH" "$REVIEW" "$RECORD" "$AGENT" "$TEMPLATE" "$RULES" "$README" "$SCRIPT" "$AWKF" "$TIERF"; do
   [ -f "$f" ] || { echo "FAIL  test-governance-rules: missing $f"; echo "test-governance-rules: 0/1 PASS"; exit 1; }
 done
 
@@ -66,17 +67,18 @@ done
 
 # R2 — the script's ids, the severity table and the reference agree
 table() { awk '/<!-- gov-severity:start/{on=1; next} /<!-- gov-severity:end/{on=0} on' "$1"; }
-awk 'NR > 1 && !/^#/ { exit } { print }' "$SCRIPT" | grep -Eo 'GOV-[SLWR][0-9]+  (High|Medium|Low)' > "$WORK/ids" || true
+awk 'NR > 1 && !/^#/ { exit } { print }' "$SCRIPT" | grep -Eo 'GOV-[SLWRA][0-9]+  (High|Medium|Low)' > "$WORK/ids" || true
 [ "$(wc -l < "$WORK/ids" | tr -d ' ')" -ge 15 ] || bad "R2 check-audit.sh: fewer than 15 rule ids in its header"
 while read -r id sev; do
   if table "$LAUNCH" | grep -E "\\($id[ )]" | grep -q "| $sev |\$"; then ok; else bad "R2 $id is not $sev in the gov-severity table"; fi
   if grep -q "^| $id | $sev |" "$RULES"; then ok; else bad "R2 $id is not $sev in references/governance-rules.md"; fi
 done < "$WORK/ids"
 # what the code can report: item ... GOV-Xn fail|due|unmeasured SEV, fail(n, "SEV" (GOV-W), rfail(n, ..., "SEV" (GOV-R)
-{ grep -Eo 'item [a-z]+ GOV-[SLWR][0-9]+ (fail|due|unmeasured) (High|Medium|Low)' "$SCRIPT" | awk '{ print $3, $5 }'
+{ grep -Eo 'item [a-z]+ GOV-[SLWRA][0-9]+ (fail|due|unmeasured) (High|Medium|Low)' "$SCRIPT" | awk '{ print $3, $5 }'
   grep -Eo '[^r]fail\([0-9], "(High|Medium|Low)"' "$AWKF" | sed -E 's/.*fail\(([0-9]), "([A-Za-z]+)"/GOV-W\1 \2/'
   grep -Eo 'rfail\([0-9], "fail", "(High|Medium|Low)"' "$AWKF" | sed -E 's/rfail\(([0-9]), "fail", "([A-Za-z]+)"/GOV-R\1 \2/'
   grep -q 'sev = launch ? "High" : "Medium"' "$AWKF" && printf 'GOV-R1 High\nGOV-R1 Medium\n'
+  grep -Eo 'afail\([0-9], "(High|Medium|Low)"' "$TIERF" | sed -E 's/afail\(([0-9]), "([A-Za-z]+)"/GOV-A\1 \2/'
   # GOV-L1 takes the most severe finding of the check that failed (ADR-029)
   grep -q 'item check GOV-L1 fail "\$(sev_of ' "$SCRIPT" && printf 'GOV-L1 High\nGOV-L1 Medium\nGOV-L1 Low\n'
 } | LC_ALL=C sort -u > "$WORK/code"
@@ -85,8 +87,8 @@ while read -r id sev; do
   if table "$LAUNCH" | grep -E "\\($id[ )]" | grep -q "| $sev |\$"; then ok; else bad "R2 the code reports $id at $sev, which the gov-severity table does not list"; fi
 done < "$WORK/code"
 cut -d' ' -f1 "$WORK/ids" | LC_ALL=C sort -u > "$WORK/script-ids"
-table "$LAUNCH" | grep -Eo 'GOV-[SLWR][0-9]+' | LC_ALL=C sort -u > "$WORK/table-ids"
-grep -Eo '^\| GOV-[SLWR][0-9]+' "$RULES" | sed 's/^| //' | LC_ALL=C sort -u > "$WORK/rule-ids"
+table "$LAUNCH" | grep -Eo 'GOV-[SLWRA][0-9]+' | LC_ALL=C sort -u > "$WORK/table-ids"
+grep -Eo '^\| GOV-[SLWRA][0-9]+' "$RULES" | sed 's/^| //' | LC_ALL=C sort -u > "$WORK/rule-ids"
 cut -d' ' -f1 "$WORK/code" | LC_ALL=C sort -u > "$WORK/code-ids"
 if cmp -s "$WORK/script-ids" "$WORK/table-ids"; then ok; else bad "R2 the severity table and the script name different ids: $(diff "$WORK/script-ids" "$WORK/table-ids" | grep '^[<>]' | tr '\n' ' ')"; fi
 if cmp -s "$WORK/script-ids" "$WORK/rule-ids"; then ok; else bad "R2 governance-rules.md and the script name different ids: $(diff "$WORK/script-ids" "$WORK/rule-ids" | grep '^[<>]' | tr '\n' ' ')"; fi
@@ -132,6 +134,10 @@ has R6 "$LAUNCH" 'Never write anything after `Signed:` or `Date:` in a launch re
 has R6 "$LAUNCH" 'I never sign.'
 has R6 "$AGENT" 'Never sign, and never suggest a name or a date for `Signed:` or `Date:`.'
 has R6 "$README" 'No skill, agent or script here writes after `Signed:` or `Date:`.'
+has R6 "$LAUNCH" 'Leave `decided_by` and `decided_on` empty: a person decides the tier, may raise it, and fills them in.'
+has R6 "$LAUNCH" 'Show the draft first and write it only after the operator approves.'
+has R6 "$LAUNCH" 'never lowered to fit.'
+has R6 "$PLUGIN/references/ai-tier-template.md" 'Claude may draft the reasons, marked `# guess` in the Note cell, and never fills in those two.'
 for f in $SKILLS "$AGENT" "$README" "$RULES"; do
   n=$(grep -F 'Signed:' "$f" | grep -Evc 'ever |person|your name|^\*\*Signed:\*\*$|ana-lopez' || true)
   if [ "$n" -eq 0 ]; then ok; else bad "R6 $(rel "$f") names Signed: on a line that does not say a person signs: $(grep -F 'Signed:' "$f" | grep -Ev 'ever |person|your name|^\*\*Signed:\*\*$|ana-lopez' | head -1 | cut -c1-120)"; fi

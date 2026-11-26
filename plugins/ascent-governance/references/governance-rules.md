@@ -16,7 +16,7 @@ A floor has three kinds of item:
 | `reviews` | reviews that need Claude's reading, each with the most days its newest record may be old | read from the review log; never run by the script |
 | `sign_off` | a person signs the launch record | the newest launch record of the environment, its signer, and what changed since |
 
-With no `floors`, default floors follow `governance.maturity_target` (else the most lenient `maturity_target` in the contract, else `prototype`) and what the repository contains: no UI files, no UX items; no infrastructure code, no operations items. At `prototype` only the local floor applies, and the local floor is `ascent-security/check-env`, plus `delivery/gate` when the contract has a `delivery.gate`.
+With no `floors`, default floors follow `governance.maturity_target` (else the most lenient `maturity_target` in the contract, else `prototype`) and what the repository contains: no UI files, no UX items; no infrastructure code, no operations items; no AI application, no AI items. With an AI application (`ai.applications`, or AI code `ascent-ai` finds), the beta floor gains `ascent-ai/check-ai-design` and `ascent-security/check-threat-model` (with SEC-T5, the AI threats, checked), and prod gains `ascent-ai/check-ai-evidence`, `ascent-ai/check-ai-runtime`, `ascent-security/check-redteam` and the `ai-review` review; each `ascent-ai` checker and `check-redteam` runs once for each application, and each run is judged on its own. At `prototype` only the local floor applies, and the local floor is `ascent-security/check-env`, plus `delivery/gate` when the contract has a `delivery.gate`.
 
 ## The review log
 
@@ -37,6 +37,7 @@ With no `floors`, default floors follow `governance.maturity_target` (else the m
   | `architecture-review` | `ascent-architecture:architecture-review` |
   | `ops-review` | `ascent-ops:ops-review` |
   | `quality-review` | `ascent-quality:quality-review` |
+  | `ai-review` | `ascent-ai:ai-review` |
 
   A project may name any other review in a floor; its row is recorded the same way.
 - **Commit** is the commit the review read, 7 to 40 hex digits.
@@ -73,6 +74,10 @@ A waiver is an entry of any section's `waivers` list in the contract (`security.
 
 A signed record holds while nothing but launch records and the review log changes after the commit it names. Any other change needs a new record and a new signature. The same result is written to the CI job summary when `$GITHUB_STEP_SUMMARY` is set, and `--html` writes it, or a record (`--from`), as one page that stands alone.
 
+## AI risk-tier records
+
+Each AI application the contract declares (`ai.applications`) has one record, `<ai_tier_dir>/<name>.md`, from [ai-tier-template.md](ai-tier-template.md): the tier (1, 2 or 3), four reasons with fixed values (`audience`, `actions`, `decisions_about_people`, `personal_data`), who decided it and when, and a review date. A person decides the tier; GOV-A5 holds that choice to the reasons the record gives, and does not choose it. GOV-A runs on every environment above the lowest, whatever `floors` says, like the waivers: a custom ladder cannot skip it by accident. Comparing the record with the tools the application actually declares is `ascent-ai`'s job (AI-A5).
+
 ## Rules
 
 | Id | Severity | Rule | Checked by |
@@ -92,6 +97,11 @@ A signed record holds while nothing but launch records and the review log change
 | GOV-R2 | High | the newest row of each review names the rule of every open High finding, and none is a rule that no waiver covers; Medium when it is rated weak | `check-audit.sh` |
 | GOV-R3 | Medium | every row of the review log can be read | `check-audit.sh` |
 | GOV-R4 | Medium | rows of the review log are only added: none was removed or changed since the newest signed launch | `check-audit.sh` (git) |
+| GOV-A1 | High | every AI application the contract declares (`ai.applications`) has a risk-tier record, `<governance.ai_tier_dir>/<name>.md`, and no AI code sits outside every declared application (`ascent-ai`'s `detect-ai.sh`); with no `ai.applications`, AI code that `ascent-ai` finds is one application named after the repository's folder | `check-audit.sh` |
+| GOV-A2 | High | the record has every field, a tier of 1, 2 or 3, its four reasons in their fixed values, and the application's own name | `check-audit.sh` |
+| GOV-A3 | High | a person decided the tier: `decided_by` is in `governance.approvers` (any name when that list is empty), and `decided_on` is a real date that is not after today | `check-audit.sh` |
+| GOV-A4 | Medium | the record's `review_by` is not past | `check-audit.sh` |
+| GOV-A5 | High | the tier is not below the floor its own reasons imply: irreversible or financial actions, or decisions about people, mean tier 3; an external audience or reversible actions mean at least tier 2 | `check-audit.sh` |
 
 **Verdict.** NO-GO: any High. GO WITH CONDITIONS: no High, and any Medium, Low or unmeasured item. GO: none. In a project's CI the script exits 1 only for NO-GO, so a review that is due is reported and the run stays green; `launch-readiness` asks the launch question, where it is a NO-GO. N/A is never a pass: it says there was nothing to check.
 

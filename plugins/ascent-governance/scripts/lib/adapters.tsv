@@ -14,9 +14,12 @@
 #            fmt     the option once for each entry of a list of maps, built from
 #                    the template in the last column: {k} a field; {k,} a list
 #                    field joined by commas; {k,-} the same, "-" when empty;
-#                    {k?TEXT} TEXT when the field is true. An entry with a field
-#                    missing is left out and reported (GOV-S2).
+#                    {k?TEXT} TEXT when the field is true; {k|TEXT} the field,
+#                    else TEXT. An entry with a field missing is left out and
+#                    reported (GOV-S2).
 #            const   the option, with the last column as its value
+#            when    the option (with the last column as its value, if any),
+#                    when the key has a value
 #            today   the option and the date of the run
 #            nogit   the option, when check-audit.sh itself runs with --no-git
 #            files   the option once for each of the files named in the last
@@ -29,6 +32,21 @@
 #            each    the checker runs once for each dated record
 #                    (YYYY-MM-DD-<name>.md) in the folder the key names, else in
 #                    the last column; only records since the last signed launch
+#            item    the checker runs once for each item of the list the key
+#                    names (ai.applications), its first row; in the check's
+#                    other rows, a key ai.applications[*].<k> is the current
+#                    item's field <k>, and each run's findings name the item
+#            itemfmt the option once: the key's value, else the template in the
+#                    last column filled from the current item ({k} a field,
+#                    {@key|default} a contract key or its default); an item
+#                    with a field missing is not run, and reported (GOV-S2).
+#                    With option "-", an input given by position
+#            others  the option once for each other item of the list, from the
+#                    template in the last column (an item with a field missing
+#                    is left out)
+#            words   the option once for each word of the key's value
+#            env     the option and the environment asked about (--env)
+#            toprung the option and the top environment of the ladder
 #   key      the contract key; "[*]" stands for every item of a list
 #   last     a default, a template or a list of file names, by kind
 #
@@ -50,6 +68,7 @@ ascent-security/check-threat-model	--max-age	scalar	security.threat_model.review
 ascent-security/check-threat-model	--maturity	scalar	security.maturity_target	-
 ascent-security/check-threat-model	--endpoint	fmt	security.endpoints	{methods,} {path} {auth} {flags,-}
 ascent-security/check-threat-model	--today	today	-	-
+ascent-security/check-threat-model	--ai	when	ai.applications[0].name	-
 ascent-security/check-threat-model	-	pos	security.threat_model.path	docs/security/THREAT-MODEL.md
 
 ascent-ux/check-flow-integrity	--core	list	ux.core_flows[*].pages[*]	-
@@ -103,3 +122,64 @@ ascent-adr/check-adrs	--acknowledge	fmt	decisions.acknowledged_changes	{adr}={co
 ascent-adr/check-adrs	--today	today	-	-
 ascent-adr/check-adrs	--no-git	nogit	-	-
 ascent-adr/check-adrs	-	pos	-	.
+
+# The checkers that scale severity by AI tier exit 1 only at --threshold (default
+# High); --threshold Low makes every FAIL exit 1, so a tier-2 or tier-1 finding
+# rated Medium or Low reaches check-audit as a condition, not as a pass.
+ascent-ai/check-ai-design	-	item	ai.applications	-
+ascent-ai/check-ai-design	--app	scalar	ai.applications[*].name	-
+ascent-ai/check-ai-design	--root	scalar	ai.applications[*].root	-
+ascent-ai/check-ai-design	--design	itemfmt	ai.applications[*].design_record	{root}/docs/ai/design.md
+ascent-ai/check-ai-design	--tier-record	itemfmt	-	{@governance.ai_tier_dir|docs/governance/ai-tier}/{name}.md
+ascent-ai/check-ai-design	--prompts	scalar	ai.applications[*].prompts_dir	-
+ascent-ai/check-ai-design	--golden	scalar	ai.applications[*].golden_set	-
+ascent-ai/check-ai-design	--pilot	scalar	ai.applications[*].pilot_result	-
+ascent-ai/check-ai-design	--selection	scalar	ai.applications[*].model_selection	-
+ascent-ai/check-ai-design	--fine-tune-runbook	scalar	ai.applications[*].fine_tune_runbook	-
+ascent-ai/check-ai-design	--env	env	-	-
+ascent-ai/check-ai-design	--prod-env	toprung	-	-
+ascent-ai/check-ai-design	--app-root	others	ai.applications	{name}={root}
+ascent-ai/check-ai-design	--today	today	-	-
+ascent-ai/check-ai-design	--threshold	const	-	Low
+ascent-ai/check-ai-design	-	pos	-	.
+
+ascent-ai/check-ai-evidence	-	item	ai.applications	-
+ascent-ai/check-ai-evidence	--app	scalar	ai.applications[*].name	-
+ascent-ai/check-ai-evidence	--golden	itemfmt	ai.applications[*].golden_set	{root}/tests/evals/golden/
+ascent-ai/check-ai-evidence	--results	scalar	ai.applications[*].eval_results	-
+ascent-ai/check-ai-evidence	--format	scalar	ai.applications[*].eval_format	-
+ascent-ai/check-ai-evidence	--pass-rate	scalar	ai.applications[*].eval_pass_rate	-
+ascent-ai/check-ai-evidence	--attack-pass-rate	scalar	ai.applications[*].eval_attack_pass_rate	-
+ascent-ai/check-ai-evidence	--max-age	scalar	ai.applications[*].eval_max_age_days	-
+ascent-ai/check-ai-evidence	--prompts	scalar	ai.applications[*].prompts_dir	-
+ascent-ai/check-ai-evidence	--retrieval	scalar	ai.applications[*].retrieval_results	-
+ascent-ai/check-ai-evidence	--retrieval-target	words	ai.applications[*].retrieval_targets	-
+ascent-ai/check-ai-evidence	--sources	scalar	ai.applications[*].retrieval_sources	-
+ascent-ai/check-ai-evidence	--review-by	scalar	ai.applications[*].review_by	-
+ascent-ai/check-ai-evidence	--review-notes	scalar	ai.applications[*].review_notes	-
+ascent-ai/check-ai-evidence	--tier-record	itemfmt	-	{@governance.ai_tier_dir|docs/governance/ai-tier}/{name}.md
+ascent-ai/check-ai-evidence	--today	today	-	-
+ascent-ai/check-ai-evidence	--no-git	nogit	-	-
+ascent-ai/check-ai-evidence	--threshold	const	-	Low
+ascent-ai/check-ai-evidence	-	pos	-	.
+
+ascent-ai/check-ai-runtime	-	item	ai.applications	-
+ascent-ai/check-ai-runtime	--app	scalar	ai.applications[*].name	-
+ascent-ai/check-ai-runtime	--root	scalar	ai.applications[*].root	-
+ascent-ai/check-ai-runtime	--design	itemfmt	ai.applications[*].design_record	{root}/docs/ai/design.md
+ascent-ai/check-ai-runtime	--capture-policy	scalar	ai.applications[*].capture_policy	-
+ascent-ai/check-ai-runtime	--gateway-policy	scalar	ai.applications[*].gateway_policy	-
+ascent-ai/check-ai-runtime	--tier-record	itemfmt	-	{@governance.ai_tier_dir|docs/governance/ai-tier}/{name}.md
+ascent-ai/check-ai-runtime	--app-root	others	ai.applications	{name}={root}
+ascent-ai/check-ai-runtime	--threshold	const	-	Low
+ascent-ai/check-ai-runtime	-	pos	-	.
+
+ascent-security/check-redteam	-	item	ai.applications	-
+ascent-security/check-redteam	--app	scalar	ai.applications[*].name	-
+ascent-security/check-redteam	--max-age	scalar	security.redteam.max_age_days	-
+ascent-security/check-redteam	--max-attack-success	scalar	security.redteam.max_attack_success	-
+ascent-security/check-redteam	--tier-record	itemfmt	-	{@governance.ai_tier_dir|docs/governance/ai-tier}/{name}.md
+ascent-security/check-redteam	--waiver	fmt	security.waivers	{id} {review_by|-} {advisories,-}
+ascent-security/check-redteam	--today	today	-	-
+ascent-security/check-redteam	--threshold	const	-	Low
+ascent-security/check-redteam	-	itemfmt	ai.applications[*].redteam_results	evidence/{name}/redteam/

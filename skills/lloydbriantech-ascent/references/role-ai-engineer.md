@@ -28,6 +28,28 @@ Specific responsibilities:
 
 ## Key practices
 
+The `ascent-ai` plugin checks these practices from the repository's files: `ai-design` recommends the design, `ai-review` rates the result, scaled by the application's risk tier ([ai-design-guide.md](../../../plugins/ascent-ai/references/ai-design-guide.md)).
+
+### Value and the baseline
+
+Before any design, record how the work is done and measured today (the baseline, with the date it was measured) and the target the AI must reach. A pilot measures the AI against that baseline, the same way, before a production launch. Without a baseline, "it works" means "it runs".
+
+### Least autonomy
+
+Choose the lowest rung that does the job: a single prompt; a fixed workflow whose steps are known in advance; an agent only when the steps cannot be known in advance. Say why each lower rung does not fit. An agent loop that always runs the same steps is a workflow.
+
+### Rules in code, not in prompts
+
+Every tool the model can call is declared: whether it can be undone, whether a person approves it, and the file whose code enforces its limit. "Never refund more than 50" in a prompt is a request; a check in code that refuses is a limit. An irreversible tool makes the application tier 3.
+
+### Caps and the off switch
+
+Every model call sets an output token limit; a workflow or agent caps its steps, tokens and seconds per task; a flag turns the AI off without a deploy, and the code reads it.
+
+### The improvement loop and the review date
+
+Every failure found in production becomes a regression case in the golden set. A person looks at the evidence again by a review date, and the tier record has its own.
+
 ### Prompt engineering
 
 Prompts are code. They live in version control. They evolve through PRs. They have tests (evals).
@@ -116,4 +138,5 @@ The `ascent-cost-posture` skill aggregates the daily AI spend; the AI engineer r
 - `external-services-integration.md` — the pattern AI integration specializes
 - `feature-lifecycle.md` Stage 2 — when AI-touching changes engage this role
 - The `ascent-ai-evals` skill — automated eval runs in AI-using scaffolded projects
+- The `ascent-ai` plugin — the design (`ai-design`), the rating (`ai-review`) and the checks of declarations, evidence and running safeguards
 - The `ascent-cost-posture` skill — AI spend visibility

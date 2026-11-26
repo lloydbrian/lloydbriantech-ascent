@@ -9,7 +9,7 @@ description: >-
   and that a mutation tool is configured, run by CI and backed by a current
   score in the repository (QA-M1–M4). Read-only; never runs a load test or a
   mutation tool.
-version: 0.2.1
+version: 0.2.2
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 

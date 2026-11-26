@@ -10,7 +10,7 @@ description: >-
   findings, and who asked for it. Refuses without a rating and a commit, never
   changes or removes an earlier row, and shows the row for approval before it
   writes. Writes only the review log; never commits.
-version: 0.2.1
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

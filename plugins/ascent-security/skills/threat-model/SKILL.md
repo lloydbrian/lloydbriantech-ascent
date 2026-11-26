@@ -9,7 +9,7 @@ description: >-
   threats to each, with a mitigation in code or an accepted ADR, and checks
   it (SEC-T1–T4). Writes only that file, with surgical edits; a person
   reviews and dates it.
-version: 0.4.0
+version: 0.5.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -55,6 +55,15 @@ For each entry point, go through the six STRIDE categories and keep only the thr
 | D | Denial of service | Can a request exhaust something? (unbounded queries, body size, model spend, rate limits) |
 | E | Elevation of privilege | Can a user reach what their role should not? (object ownership, admin routes, prompt injection into tools) |
 
+When the repository has an AI application (`ai.applications`, or code that calls a model), add its model inputs as entry points (the user's text, retrieved documents, tool results), each with a trust boundary that names the model, and ask the operator which of the three it has. Then draft, for those entry points, a threat for each of the four AI threats, by name (SEC-T5):
+
+| Threat | Ask |
+|---|---|
+| Prompt injection | Can text the model reads (a message, a retrieved page, a tool result) give it instructions? Is untrusted text kept out of the instruction position? |
+| Sensitive information disclosure | Can the model repeat another user's data, a secret or its own prompt? Is its output filtered, and are secrets kept out of prompts? |
+| Excessive agency | Can the model take an action nobody asked for? Does every irreversible tool have a limit in code and a person's approval? |
+| Unbounded consumption | Can one request or one conversation run up tokens, steps or spend? Are there limits in code and at the gateway? |
+
 For each threat, find the mitigation in the code and cite its file. When there is none, the threat is `open`, with a one-line fix. Keep threats concrete: "A user deletes another user's item through `DELETE /api/items/{id}`", not "authorisation issues".
 
 ### Step 3 — Draft or update the model
@@ -66,10 +75,10 @@ Show the operator the proposed model, or for an existing one, only the rows to a
 Run the check and include its output verbatim:
 
 ```bash
-bash "$PLUGIN_ROOT/scripts/check-threat-model.sh" --adr-dir <adr_dir> --max-age <review_max_age_days> --maturity <target> [--endpoint '...']... <path>
+bash "$PLUGIN_ROOT/scripts/check-threat-model.sh" --adr-dir <adr_dir> --max-age <review_max_age_days> --maturity <target> [--endpoint '...']... [--ai] <path>
 ```
 
-It applies SEC-T1–T4, and a NOTE names the STRIDE categories no threat covers: say for each whether it truly does not apply.
+It applies SEC-T1–T4, and with `--ai` (when the repository has an AI application) SEC-T5; a NOTE names the STRIDE categories no threat covers: say for each whether it truly does not apply.
 
 ### Step 5 — Report
 

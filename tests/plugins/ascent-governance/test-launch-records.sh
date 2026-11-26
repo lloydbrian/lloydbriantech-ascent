@@ -22,6 +22,7 @@ NAME=test-launch-records
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/lib.sh"
 CHECK="$PLUGIN/scripts/check-audit.sh"
+GOVVER=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$PLUGIN/.claude-plugin/plugin.json" | head -1)   # the record names the plugin's own version
 need "$CHECK" "$PLUGIN/scripts/lib/render.awk" "$FIX/stub-checker.sh"
 LD=docs/governance/launches
 REC=$LD/2026-12-02-prod.md
@@ -63,7 +64,7 @@ matrix() {
   # --record writes the record, unsigned
   repo record-written; h=$(head_of record-written); rec record-written; expect_rc record-written 0
   has record-written "wrote $REC"; has record-written 'awaiting signature'; lacks record-written 'GOV-L3'
-  for s in '# Launch record: record-written, prod' "2026-12-02 · commit $h · maturity prototype (no maturity_target in .ascent/contract.yml) · ascent-governance 0.2.1" \
+  for s in '# Launch record: record-written, prod' "2026-12-02 · commit $h · maturity prototype (no maturity_target in .ascent/contract.yml) · ascent-governance $GOVVER" \
            '**Verdict:** GO' '## In plain words' '<!-- summary: written by launch-readiness -->' '## Evidence' '| What | Kind | Result | Source |' \
            '| ascent-docs/check-docs passes | check | pass | ascent-docs/check-docs |' '## Waivers in force' '## Conditions' '## Sign-off'; do file_has record-written "$REC" "$s"; done
   file_line record-written "$REC" '**Signed:**'; file_line record-written "$REC" '**Date:**'; file_line record-written "$REC" '**Verdict:** GO'

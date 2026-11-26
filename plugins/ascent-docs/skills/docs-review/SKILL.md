@@ -11,7 +11,7 @@ description: >-
   that the repository no longer has (DOC-R1–R6, with doc-drift); reads the
   newest documents for what scripts cannot judge; and rates the
   documentation strong, moderate or weak with file:line evidence. Read-only.
-version: 0.1.1
+version: 0.1.2
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 

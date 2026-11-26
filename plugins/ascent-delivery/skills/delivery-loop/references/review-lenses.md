@@ -6,13 +6,14 @@ Delivery-loop Step 4 runs one reviewer per lens, in parallel, against the diff a
 
 | Lens | Providers, first installed wins | Fallback |
 |---|---|---|
-| Correctness | `engineering:code-review` | [Correctness](#correctness) |
+| Code review | `ascent-delivery:code-reviewer`, `engineering:code-review` | [Code review](#code-review) |
 | Security and privacy | `ascent-security:security-auditor` | [Security and privacy](#security-and-privacy) |
 | Architecture and cost | `ascent-architecture:architecture-reviewer` | [Architecture and cost](#architecture-and-cost) |
 | Accessibility | `ascent-ux:ux-reviewer`, `design:accessibility-review` | [Accessibility](#accessibility) |
 | UX and navigation | `ascent-ux:ux-reviewer` | [UX and navigation](#ux-and-navigation) |
 | Operational and deploy impact | `ascent-ops:ops-reviewer`, `engineering:deploy-checklist` | [Operational and deploy impact](#operational-and-deploy-impact) |
 | Tests | `ascent-quality:quality-reviewer`, `engineering:testing-strategy` | [Tests](#tests) |
+| AI behavior | `ascent-ai:ai-reviewer` | [AI behavior](#ai-behavior) |
 | Decisions | `ascent-adr:decision-reviewer` | [Decisions](#decisions) |
 | Documentation | `ascent-docs:docs-reviewer` | [Documentation](#documentation) |
 
@@ -30,6 +31,8 @@ Run each lens as its own subagent, so the reviewers cannot see each other's find
 A fallback reviewer's output goes under `#### <Lens> — built-in fallback`. Then extract each finding into the shared format below for the verifier. Keep the provider's own wording in the description.
 
 Skip a lens only when it cannot apply, and say why in one line (for example, "Accessibility — skipped: no user interface in this change").
+
+**Never let a review write.** Never pass a provider an option that posts, comments or edits (`--comment`, `--post`, `--fix`), and never run a provider that needs a pull request at Step 4: the review runs before one exists, and its findings go to the verifier and the operator only.
 
 ## Finding format (every lens)
 
@@ -49,9 +52,9 @@ Give each fallback reviewer the diff, the acceptance criteria, its prompt, and t
 
 > You are an independent reviewer with one lens. Read the diff and the files it touches. Report only problems you can tie to a specific `file:line`, each with a concrete failure scenario. Do not edit files, run git or deploy. Do not report style preferences. If you find nothing, say "no findings" and list what you checked.
 
-### Correctness
+### Code review
 
-> Lens: correctness. Check every acceptance criterion against the code. Look for wrong conditions and off-by-one errors; unhandled errors, nulls and empty inputs; races and ordering assumptions; and resources that are not released. Check that changed function contracts still hold for every caller (search for callers), and that behavior differs between environments (OS, locale, time zone) only where intended.
+> Lens: code review, in seven passes. **Intent:** check every acceptance criterion against the code. **Changed lines:** wrong conditions and off-by-one errors; unhandled errors, nulls, empty inputs and exit codes; code that will not parse or resolve; races and ordering assumptions; resources not released. **Callers and contracts:** for each changed function, script, output format or exit code, search for its callers and readers in unchanged files and check the contract still holds for each. **Project rules:** a `CLAUDE.md`, `AGENTS.md` or `CONTRIBUTING.md` rule you can quote, broken by a line you can point at. **Environments:** behavior that differs between supported platforms (OS, shell version, BSD and GNU tools, locale, time zone, line endings) where it is not meant to. **Hot-path performance:** N+1 queries, quadratic work, I/O repeated in a loop. **Maintainability:** misleading names, functions doing unrelated things, duplicated logic that will drift, dead code left behind, error messages that do not say what to do, a simpler way to write the change. Drop what was there before the change, what a linter reports, nitpicks, what another lens owns (security, architecture and cost, accessibility, UX, operations, tests, AI behavior, decisions, documentation) and what the code silences on purpose.
 
 ### Security and privacy
 
@@ -76,6 +79,10 @@ Give each fallback reviewer the diff, the acceptance criteria, its prompt, and t
 ### Tests
 
 > Lens: tests. Map each acceptance criterion to a test, and list the criteria without one. Check that each new rule has a negative control that makes a named test fail. Look for tests that cannot fail (asserting on their own fixture, no assertion, platform-skip branches that pass), tests that grep documentation instead of exercising behavior, and flaky timing or ordering assumptions.
+
+### AI behavior
+
+> Lens: AI behavior. Apply this lens only when the change touches a prompt, a tool the model can call, a model call, an eval or golden-set file, retrieval code or the `ai:` contract section. Check the change against the AI design record: every tool the code defines is declared, with whether it can be undone, who approves it and the file whose code limits it; every model call caps its output tokens; a workflow or agent caps its steps; the model is named only where the record says. Then judge three things the files cannot settle: whether the job needs this much autonomy (a loop that always runs the same steps is a workflow), whether each tool's description and error messages tell the model when not to call it and what to do next, and whether a changed prompt or a fixed failure needs a new golden case. Leave code quality, prompt injection and data leaks, hosting cost and the test suite to their own lenses.
 
 ### Decisions
 

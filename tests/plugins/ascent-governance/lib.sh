@@ -45,17 +45,22 @@ head_of() { (cd "$WORK/$1" && HOME="$WORK/home" GIT_CONFIG_NOSYSTEM=1 git log -1
 
 # --- check-audit.sh with stand-in checkers --------------------------------------
 # stubs builds $WORK/stubs/<plugin>/scripts/<script>.sh from fixtures/stub-checker.sh
-# and clears the log; stub_rc CHECK N makes one of them exit N; chk NAME [ARGS] runs
+# (and copies ascent-ai's real detect-ai.sh) and clears the log; no_ai removes
+# ascent-ai; stub_rc CHECK N makes one of them exit N; chk NAME [ARGS] runs
 # check-audit.sh in $WORK/NAME on 2026-12-02 with those stand-ins (PLUGINS_DIR picks
 # another plugins folder, GIT=1 leaves git on, STEP_SUMMARY is the job summary file:
 # the CI job's own is never written to); ran and notran read the log.
 CON=.ascent/contract.yml
-STUBS="ascent-security/check-env ascent-security/check-dependencies ascent-security/check-threat-model ascent-ux/check-flow-integrity ascent-docs/check-docs ascent-delivery/check-acceptance ascent-ops/check-drills ascent-quality/check-test-evidence ascent-adr/check-adrs"
+STUBS="ascent-ai/check-ai-design ascent-ai/check-ai-evidence ascent-ai/check-ai-runtime ascent-security/check-env ascent-security/check-dependencies ascent-security/check-threat-model ascent-security/check-redteam ascent-ux/check-flow-integrity ascent-docs/check-docs ascent-delivery/check-acceptance ascent-ops/check-drills ascent-quality/check-test-evidence ascent-adr/check-adrs"
 
 stubs() {  # builds $WORK/stubs and clears the control folder and the log
   rm -rf "${WORK:?}/stubs" "${WORK:?}/ctl"; mkdir -p "$WORK/ctl"; : > "$WORK/log"
   for s in $STUBS; do mkdir -p "$WORK/stubs/${s%/*}/scripts"; cp "$FIX/stub-checker.sh" "$WORK/stubs/${s%/*}/scripts/${s#*/}.sh"; done
+  # ascent-ai's detection is the real one: GOV-A1 reads which code belongs to which application
+  mkdir -p "$WORK/stubs/ascent-ai/scripts/lib"; cp "$HERE/../../../plugins/ascent-ai/scripts/detect-ai.sh" "$WORK/stubs/ascent-ai/scripts/"
+  cp "$HERE/../../../plugins/ascent-ai/scripts/lib/detect.awk" "$WORK/stubs/ascent-ai/scripts/lib/"
 }
+no_ai() { rm -rf "${WORK:?}/stubs/ascent-ai"; }   # ascent-ai is not installed
 stub_rc() { echo "$2" > "$WORK/ctl/$(printf '%s' "$1" | sed 's|/|__|').rc"; }
 chk() {  # NAME [ARGS]
   local n="$1"; shift

@@ -8,7 +8,7 @@ BEGIN {
   for (i = 1; i <= n; i++) if (e[i] != "") { NE++; EPM[NE] = e[i]; sub(/ .*/, "", EPM[NE]); EPP[NE] = e[i]; sub(/^[^ ]* /, "", EPP[NE]) }
   n = split(ENVIRON["CTM_FOUND"], f, "\n"); for (i = 1; i <= n; i++) if (f[i] != "") FOUND[f[i]] = 1
   n = split(ENVIRON["CTM_ADRS"], f, "\n"); for (i = 1; i <= n; i++) if (f[i] != "") ADRS[f[i]] = 1
-  SEC = "head"; NEP = 0; NTH = 0
+  SEC = "head"; NEP = 0; NTH = 0; AI = ENVIRON["CTM_AI"] + 0
   sub(/^\.\//, "", MODEL)
 }
 function fail(k, sev, l, msg,   w) {
@@ -36,6 +36,7 @@ FILENAME == "/dev/null" { next }
   if (SEC == "head" && n >= 2) { FIELD[tolower(C[1])] = C[2]; FL[tolower(C[1])] = NR; NFIELD++ }
   else if (SEC == "ep" && n >= 4) {
     NEP++; EID[NEP] = C[1]; ETXT[NEP] = C[2]; EL[NEP] = NR; ISEP[C[1]] = NEP
+    if (tolower(C[3]) ~ /(^|[^a-z])model([^a-z]|$)/ || tolower(C[2]) ~ /^model input:/) MODELEP++
     t = C[2]; while (match(t, /\/[^ ,;|`]*/)) { EPATH[norm(substr(t, RSTART, RLENGTH))] = NEP; t = substr(t, RSTART + RLENGTH) }
   } else if (SEC == "th" && n >= 6) { NTH++; TID[NTH] = C[1]; TEP[NTH] = C[2]; TS[NTH] = C[3]; TT[NTH] = C[4]; TM[NTH] = C[5]; TST[NTH] = tolower(C[6]); TL[NTH] = NR }
   else if (SEC == "ep" || SEC == "th") { BADROW[++NBAD] = NR; BADSEC[NBAD] = SEC }
@@ -86,14 +87,25 @@ END {
     r = FIELD["reviewed_by"]
     if (r == "" || r ~ /^(-|—|tbd|TBD|n\/a|N\/A|<.*>|claude|Claude)$/) fail("T4", "Low", (FL["reviewed_by"] ? FL["reviewed_by"] : 1), "reviewed_by names no person")
   }
+  # SEC-T5: with --ai, a model input and the four AI threats, each answered
+  if (AI && SEEN) {
+    CHK["T5"]++
+    if (!MODELEP) fail("T5", "High", (EPSEC ? EPSEC : 1), "no entry point for a model input: record user text, retrieved documents and tool results as entry points whose trust boundary names the model")
+    n = split("prompt injection|sensitive information disclosure|excessive agency|unbounded consumption", AT, "|")
+    for (i = 1; i <= n; i++) {
+      got = 0; open_ = 0
+      for (j = 1; j <= NTH; j++) if (index(tolower(TT[j]), AT[i]) || (AT[i] == "sensitive information disclosure" && index(tolower(TT[j]), "sensitive data disclosure"))) { if (TST[j] == "mitigated" || TST[j] ~ /^accepted/) got = 1; else open_ = TL[j] }
+      if (!got) fail("T5", "High", (open_ ? open_ : (THSEC ? THSEC : 1)), (open_ ? "the " AT[i] " threat is neither mitigated nor accepted" : "no threat names " AT[i] " (an AI application's threats: prompt injection, sensitive information disclosure, excessive agency, unbounded consumption)"))
+    }
+  } else if (AI) CHK["T5"] = 0
   if (NTH > 0) { miss = ""; for (i = 1; i <= 6; i++) { c = substr("STRIDE", i, 1); if (!(c in COVER)) miss = miss c } if (miss != "") NOTES = NOTES sprintf("NOTE  SEC-T3  -      %s  no threat in STRIDE categor%s %s: consider whether any applies\n", MODEL, (length(miss) > 1 ? "ies" : "y"), miss) }
-  D["T1"] = "threat model present and well formed"; D["T2"] = "endpoints are entry points with threats"; D["T3"] = "threats mitigated or accepted"; D["T4"] = "reviewed by a person recently"
+  D["T1"] = "threat model present and well formed"; D["T2"] = "endpoints are entry points with threats"; D["T3"] = "threats mitigated or accepted"; D["T4"] = "reviewed by a person recently"; D["T5"] = "the AI threats are recorded and answered"
   NFAIL = 0
-  for (i = 1; i <= 4; i++) {
+  for (i = 1; i <= (AI ? 5 : 4); i++) {
     k = "T" i
     if (NF_[k] > 0) { printf "%s", OUT[k]; NFAIL += NF_[k] }
     else if (CHK[k] > 0) printf "PASS  %-7s %s (%d checked)\n", "SEC-" k, D[k], CHK[k]
-    else printf "N/A   %-7s %s (%s)\n", "SEC-" k, D[k], (!SEEN ? "no threat model" : (k == "T2" ? "no endpoint and no entry point" : "no threat"))
+    else printf "N/A   %-7s %s (%s)\n", "SEC-" k, D[k], (!SEEN ? "no threat model" : (k == "T2" ? "no endpoint and no entry point" : (k == "T5" ? "no threat model" : "no threat")))
   }
   printf "%s", NOTES
   printf "check-threat-model: %s, %d entry point(s), %d threat(s), %d endpoint(s), %d failure(s); it checks that threats are recorded and answered, not that the answers are right\n", (SEEN ? MODEL : "no model"), NEP, NTH, NE, NFAIL

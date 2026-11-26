@@ -14,6 +14,12 @@
 #       .claude/contract.yml); .delivery-loop.yml still works; the hook blocks both
 #   D7  every runbook step is labelled [C] (read-only) or [O] (writes, deploys)
 #   D8  the acceptance template's columns are the ones check-acceptance.sh reads
+#   0.3.0 (ADR-032):
+#   D10 the code-reviewer agent names its seven passes, the filter's five drops,
+#       the shared finding format, the never-post rule and the lenses it leaves
+#       to others, AI behavior included; review-lenses forbids posting options
+#   D11 the hook runs on MCP tool calls as well as Bash (hooks.json), and the skill
+#       names paid compute and GitHub writes through MCP as the operator's
 #
 # Prints "test-delivery-rules: N/N PASS" last (make/test-plugins.sh T11 requires it).
 # Portable: bash 3.2+, GNU/Linux and BSD/macOS.
@@ -27,7 +33,10 @@ TEMPLATE="$PLUGIN/skills/delivery-loop/references/runbook-template.md"
 HOOK="$PLUGIN/hooks/operator-boundary.sh"
 ACCEPT="$PLUGIN/skills/delivery-loop/references/acceptance-template.md"
 CONTRACT="$PLUGIN/references/contract-template.yml"
-for f in "$SKILL" "$TEMPLATE" "$HOOK" "$ACCEPT" "$CONTRACT"; do
+CR="$PLUGIN/agents/code-reviewer.md"
+LENSES="$PLUGIN/skills/delivery-loop/references/review-lenses.md"
+HJ="$PLUGIN/hooks/hooks.json"
+for f in "$SKILL" "$TEMPLATE" "$HOOK" "$ACCEPT" "$CONTRACT" "$CR" "$LENSES" "$HJ"; do
   [ -f "$f" ] || { echo "test-delivery-rules: missing $f"; echo "test-delivery-rules: 0/1 PASS"; exit 1; }
 done
 
@@ -107,6 +116,26 @@ has D9 "$SKILL" 'When `ascent-governance` isn'"'"'t available, say so and skip i
 has D9 "$SKILL" '$PLUGIN_ROOT/../ascent-governance/scripts/check-audit.sh'
 has D9 "$SKILL" '- the launch evidence check prints `NO-GO`, or exits with anything but 0 (Step 7);'
 if [ -f "$PLUGIN/../ascent-governance/scripts/check-audit.sh" ]; then ok; else bad "D9 the path the skill names for check-audit.sh does not exist in a checkout"; fi
+
+# D10 — the code reviewer (ADR-032): seven passes, the filter, the format, never posting
+for p in '1. **Intent.**' '2. **Changed lines.**' '3. **Callers and contracts.**' '4. **Project rules.**' '5. **Environments.**' '6. **Performance on a hot path.**' '7. **Maintainability a reviewer would act on.**'; do has D10 "$CR" "$p"; done
+for d in '- **there before the change**' '- **what a linter or compiler reports**' '- **a nitpick**' "- **another lens's**" '- **silenced on purpose**'; do has D10 "$CR" "$d"; done
+has D10 "$CR" 'F<n>  <severity: Critical | High | Medium | Low>  <file>:<line>'
+has D10 "$CR" '      Lens: Code review (<pass>)'
+has D10 "$CR" 'Passes: intent <n>, changed lines <n>, callers and contracts <n>, project rules <n>, environments <n>, hot-path performance <n>, maintainability <n>'
+has D10 "$CR" '- Never post, comment, approve or open anything on a pull request, an issue or a chat, and never ask the main session to.'
+has D10 "$CR" 'security and privacy, architecture and cost (timeouts, retries, limits), accessibility, UX, operations and deploys, tests, AI behavior (prompts, tools, evals, model calls), decisions and documentation each have their own reviewer'
+has D10 "$CR" 'Formatting, and anything a linter or formatter reports, stay out.'
+has D10 "$LENSES" '**Never let a review write.** Never pass a provider an option that posts, comments or edits (`--comment`, `--post`, `--fix`), and never run a provider that needs a pull request at Step 4'
+has D10 "$LENSES" '**Intent:**'; has D10 "$LENSES" '**Maintainability:**'
+has D10 "$SKILL" '| Code review | `ascent-delivery:code-reviewer`, `engineering:code-review` | fallback prompt |'
+
+# D11 — the hook's reach (ADR-031): both matchers run the hook; the skill states both rules
+has D11 "$HJ" '"matcher": "Bash",'
+has D11 "$HJ" '"matcher": "mcp__.*",'
+if [ "$(grep -c 'hooks/operator-boundary.sh' "$HJ")" -eq 2 ]; then ok; else bad "D11 hooks.json does not run operator-boundary.sh for both matchers"; fi
+has D11 "$SKILL" '- **Claude NEVER starts paid compute**'
+has D11 "$SKILL" '- **Claude NEVER writes to GitHub through an MCP tool**'
 
 printf "test-delivery-rules: %s/%s PASS\n" "$PASS" "$((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]

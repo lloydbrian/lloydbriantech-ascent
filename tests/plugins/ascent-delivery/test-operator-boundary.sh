@@ -7,7 +7,8 @@
 # commands, quoting, heredocs, git global options, env prefixes, substitutions,
 # gh API methods, built-in deploy verbs and deploys listed in a fixture
 # .delivery-loop.yml found through the hook's cwd input, and (0.2.0) in the delivery:
-# section of .ascent/contract.yml or .claude/contract.yml, all of them together.
+# section of .ascent/contract.yml or .claude/contract.yml, all of them together;
+# (0.3.0, ADR-031) commands that start paid compute, and GitHub writes through MCP tools.
 #
 # The matrix runs once with the default awk and once more with every other awk
 # found on PATH (mawk, gawk, original-awk/BWK as on macOS), so the hook's
@@ -54,6 +55,9 @@ check() {  # NAME EXPECT(allow|block) REASON-SUBSTRING
 }
 t() {  # EXPECT CMD [REASON] [CWD]
   run_raw "$(payload "$2" "${4:-$PLAIN}")"; check "$2" "$1" "${3:-}"
+}
+m() {  # EXPECT TOOL_NAME [REASON] — an MCP tool call; its input is never read
+  run_raw "{\"session_id\":\"t\",\"cwd\":\"$PLAIN\",\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"$2\",\"tool_input\":{\"owner\":\"o\",\"repo\":\"r\",\"body\":\"git push\"}}"; check "mcp $2" "$1" "${3:-}"
 }
 
 # Fixtures: a project with a contract, a nested directory inside it, and a
@@ -334,6 +338,85 @@ git push' 'git push'
   t block 'kubectl --request-timeout 5s apply -f k.yml' 'kubectl apply'
   t block 'docker buildx build --output type=registry -t r/app .' 'buildx'
   t block 'npm publish --dry-run' 'npm publish'
+
+  # --- 0.3.0 (ADR-031): paid compute is the operator's
+  P='submits paid compute'
+  t block 'aws sagemaker create-training-job --training-job-name j --role-arn r' "aws sagemaker create-training-job — $P"
+  t block 'aws --region us-east-1 sagemaker create-hyper-parameter-tuning-job --cli-input-json file://t.json' 'aws sagemaker create-hyper-parameter-tuning-job'
+  t block 'aws sagemaker create-processing-job --cli-input-json file://p.json' 'aws sagemaker create-processing-job'
+  t block 'aws sagemaker create-transform-job --cli-input-json file://t.json' 'aws sagemaker create-transform-job'
+  t block 'aws sagemaker create-endpoint --endpoint-name e --endpoint-config-name c' 'aws sagemaker create-endpoint'
+  t allow 'aws sagemaker list-training-jobs'
+  t allow 'aws sagemaker describe-training-job --training-job-name j'
+  t block 'aws bedrock create-model-customization-job --cli-input-json file://c.json' 'aws bedrock create-model-customization-job'
+  t block 'aws bedrock create-provisioned-model-throughput --model-units 1' 'aws bedrock create-provisioned-model-throughput'
+  t block 'aws bedrock create-model-invocation-job --cli-input-json file://b.json' 'aws bedrock create-model-invocation-job'
+  t allow 'aws bedrock list-foundation-models'
+  t block 'gcloud ai custom-jobs create --region=us-central1 --display-name=t --config=c.yaml' "gcloud ai custom-jobs create — $P"
+  t block 'gcloud beta ai hp-tuning-jobs create --region us-central1 --config c.yaml' 'gcloud ai hp-tuning-jobs create'
+  t block 'gcloud ai endpoints deploy-model 123 --region=us-central1 --model=m' 'gcloud ai endpoints deploy-model'
+  t allow 'gcloud ai custom-jobs list --region=us-central1'
+  t block 'az ml job create -f job.yml -g rg -w ws' "az ml job create — $P"
+  t allow 'az ml job list -g rg -w ws'
+  t block 'openai api fine_tuning.jobs.create -t file-abc -m gpt-4o-mini' 'openai api fine_tuning.jobs.create'
+  t block 'openai fine_tuning jobs create -t file-abc -m gpt-4o-mini' 'openai fine_tuning jobs create'
+  t allow 'openai api fine_tuning.jobs.list'
+  t block 'together fine-tuning create --training-file f --model m' 'together fine-tuning create'
+  t allow 'together fine-tuning list'
+  t block 'hf jobs run --flavor a10g-small python:3.12 python train.py' 'hf jobs run'
+  t block 'huggingface-cli jobs run ubuntu echo hi' 'huggingface-cli jobs run'
+  t allow 'hf jobs ps'
+  t block 'modal run train.py' "modal run — $P"
+  t block 'modal deploy app.py' 'modal deploy'
+  t allow 'modal app list'
+  t block 'sky launch -c gpu task.yaml' 'sky launch'
+  t block 'sky jobs launch task.yaml' 'sky jobs launch'
+  t allow 'sky status'
+  t block 'runpodctl create pod --gpuType "NVIDIA A40" --imageName img' 'runpodctl create pod'
+  t allow 'runpodctl get pod'
+  t block 'npx promptfoo eval -c promptfooconfig.yaml' "promptfoo eval — $P"
+  t block 'promptfoo redteam run' 'promptfoo redteam run'
+  t block 'promptfoo redteam eval -o out.json' 'promptfoo redteam eval'
+  t allow 'promptfoo view'
+  t allow 'promptfoo redteam init'
+  t block 'garak --model_type openai --model_name gpt-4o-mini --probes dan' "garak — $P"
+  t block 'python -m garak --model_type huggingface --model_name gpt2' 'garak'
+  t allow 'garak --list_probes'
+  t allow 'python -m garak --help'
+  t allow 'garak'
+  t block 'lighteval accelerate "model_name=gpt2" "leaderboard|truthfulqa:mc|0|0"' 'lighteval'
+  t allow 'lighteval tasks list'
+  t allow 'lighteval --help'
+  t block 'echo ok && modal run train.py' 'modal run'
+  t block 'bash -c "sky launch task.yaml"' 'sky launch'
+
+  # --- 0.3.0 (ADR-031): GitHub writes through MCP tools; only the tool name is read
+  G='a GitHub write through MCP'
+  m block mcp__github__add_issue_comment "mcp__github__add_issue_comment — $G"
+  m block mcp__github__create_pull_request "$G"
+  m block mcp__github__merge_pull_request "$G"
+  m block mcp__github__push_files "$G"
+  m block mcp__github__create_or_update_file "$G"
+  m block mcp__github__update_issue "$G"
+  m block mcp__github__create_pending_pull_request_review "$G"
+  m block mcp__github_inline_comment__create_inline_comment "$G"
+  m block mcp__plugin_github_github__create_branch "$G"
+  m block mcp__GitHub__Add_Issue_Comment "$G"
+  m block mcp__github-mcp-server__create_pull_request "$G"
+  m block mcp__github-enterprise__merge_pull_request "$G"
+  m block mcp__my-github__push_files "$G"
+  m allow mcp__github__get_file_contents
+  m allow mcp__github__list_pull_requests
+  m allow mcp__github__search_code
+  m allow mcp__github__view_repository
+  m allow mcp__plugin_github_github__get_pull_request_diff
+  m allow mcp__githubber__create_thing
+  m allow mcp__notes__github_sync_status
+  m allow mcp__github-mcp-server__get_me
+  m allow mcp__githubby-tools__create_thing
+  m allow mcp__slack__post_message
+  m allow mcp__playwright__browser_click
+  m allow mcp__github
 
   # --- 0.2.0: the delivery: section of the project contract, and the union of contracts
   t block './scripts/release.sh --yes beta' 'delivery.deploy_beta in .ascent/contract.yml' "$PROJ3"

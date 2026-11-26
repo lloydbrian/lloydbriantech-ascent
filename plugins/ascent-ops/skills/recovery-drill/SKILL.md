@@ -8,7 +8,7 @@ description: >-
   dry-run drills (OPS-R1–R8, OPS-X1–X3) against the rto and rpo targets and
   the contract, and writes the drill runbooks the operator runs. Never runs a
   drill and never writes a drill record.
-version: 0.3.1
+version: 0.3.2
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 

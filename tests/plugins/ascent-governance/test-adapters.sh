@@ -125,6 +125,27 @@ matrix() {
   exact bare ascent-adr/check-adrs ' | --today | 2026-12-02 | --no-git | .'
   : > "$WORK/log"; GIT=1 chk bare; noarg bare-git ascent-docs/check-docs --no-git; noarg bare-git ascent-adr/check-adrs --no-git; noarg bare-git ascent-security/check-env --no-git
 
+  # --- ascent-ai: once for each application, every key of the item ---------
+  stubs; mk ai ai-tier-multi; cp "$FIX/contracts/adapters-ai.yml" "$WORK/ai/$CON"; mkdir -p "$WORK/ai/records/tiers"
+  # the fixture's second waiver has no review_by on purpose: check-redteam is given "-", and governance flags it (GOV-W3)
+  cp "$WORK/ai/docs/governance/ai-tier/"*.md "$WORK/ai/records/tiers/"; chk ai --env prod; expect_only ai GOV-W3 Medium
+  app_line() { grep "^$(printf '%s' "$1" | sed 's|/|__|') | --app | $2 |" "$WORK/log" | tail -1; }
+  app_exact() { if [ "$(app_line "$2" "$3")" = "$(printf '%s' "$2" | sed 's|/|__|') | --app | $3$4" ]; then ok; else bad "$1: $2 [$3] expected exactly '$4', got: $(app_line "$2" "$3" | cut -c1-400)"; fi; }
+  app_exact ai ascent-ai/check-ai-design support-assistant ' | --root | services/support/ | --design | services/support/docs/ai/design-record.md | --tier-record | records/tiers/support-assistant.md | --prompts | services/support/prompts/ | --golden | services/support/tests/evals/golden/ | --pilot | services/support/docs/ai/pilot.md | --selection | services/support/docs/ai/model-bake-off.md | --fine-tune-runbook | docs/operations/fine-tune.md | --env | prod | --prod-env | prod | --app-root | screening-tool=services/screening/ | --today | 2026-12-02 | --threshold | Low | .'
+  app_exact ai ascent-ai/check-ai-design screening-tool ' | --root | services/screening/ | --design | services/screening/docs/ai/design.md | --tier-record | records/tiers/screening-tool.md | --env | prod | --prod-env | prod | --app-root | support-assistant=services/support/ | --today | 2026-12-02 | --threshold | Low | .'
+  app_exact ai ascent-ai/check-ai-evidence support-assistant ' | --golden | services/support/tests/evals/golden/ | --results | evidence/support-assistant/evals/latest.json | --format | promptfoo | --pass-rate | 0.90 | --attack-pass-rate | 1.0 | --max-age | 14 | --prompts | services/support/prompts/ | --retrieval | evidence/support-assistant/retrieval/latest.json | --retrieval-target | faithfulness=0.90 | --retrieval-target | context_recall=0.85 | --sources | services/support/docs/ai/sources.md | --review-by | 2027-02-01 | --review-notes | services/support/docs/ai/reviews.md | --tier-record | records/tiers/support-assistant.md | --today | 2026-12-02 | --no-git | --threshold | Low | .'
+  app_exact ai ascent-ai/check-ai-evidence screening-tool ' | --golden | services/screening/tests/evals/golden/ | --tier-record | records/tiers/screening-tool.md | --today | 2026-12-02 | --no-git | --threshold | Low | .'
+  app_exact ai ascent-ai/check-ai-runtime support-assistant ' | --root | services/support/ | --design | services/support/docs/ai/design-record.md | --capture-policy | services/support/docs/ai/capture-policy.md | --gateway-policy | deploy/gateway/policy.yaml | --tier-record | records/tiers/support-assistant.md | --app-root | screening-tool=services/screening/ | --threshold | Low | .'
+  app_exact ai ascent-ai/check-ai-runtime screening-tool ' | --root | services/screening/ | --design | services/screening/docs/ai/design.md | --tier-record | records/tiers/screening-tool.md | --app-root | support-assistant=services/support/ | --threshold | Low | .'
+  W=' | --waiver | ADR-031 2027-01-15 garak:dan.DanInTheWild,promptfoo:hijacking | --waiver | ADR-032 - GHSA-35jh-r3h4-6jhm'
+  app_exact ai ascent-security/check-redteam support-assistant " | --max-age | 21 | --max-attack-success | 0.05 | --tier-record | records/tiers/support-assistant.md$W | --today | 2026-12-02 | --threshold | Low | evidence/support-assistant/redteam/"
+  app_exact ai ascent-security/check-redteam screening-tool " | --max-age | 21 | --max-attack-success | 0.05 | --tier-record | records/tiers/screening-tool.md$W | --today | 2026-12-02 | --threshold | Low | evidence/screening-tool/redteam/"
+  # the threat model is checked for the AI threats when there is an AI application, and only then
+  arg ai ascent-security/check-threat-model --ai
+  # with no ai_tier_dir, the default folder
+  stubs; edit ai $CON "$(drop 'ai_tier_dir:')"; chk ai --env prod
+  case "$(app_line ascent-ai/check-ai-design screening-tool)" in *"| --tier-record | docs/governance/ai-tier/screening-tool.md |"*) ok ;; *) bad "ai-tier-default: $(app_line ascent-ai/check-ai-design screening-tool | cut -c1-200)" ;; esac
+
   # --- every option in the table is one the real checker names --------------
   rows=0
   while IFS="$TAB" read -r chkname flag kind path def; do
@@ -132,9 +153,9 @@ matrix() {
     rows=$((rows + 1))
     real="$REAL/${chkname%/*}/scripts/${chkname#*/}.sh"
     if [ ! -f "$real" ]; then bad "usage-drift: $chkname has no checker at $real"; continue; fi
-    case "$kind" in scalar|list|csv|fmt|const|today|nogit|files|pos|posdir|each) ok ;; *) bad "usage-drift: $chkname has an unknown kind '$kind'" ;; esac
+    case "$kind" in scalar|list|csv|fmt|const|today|nogit|files|pos|posdir|each|item|itemfmt|others|words|env|toprung|when) ok ;; *) bad "usage-drift: $chkname has an unknown kind '$kind'" ;; esac
     [ "$flag" = - ] && continue
-    if sed -n '1,/^set -/p' "$real" | grep '^# Usage:' | grep -qF -- "[$flag"; then ok; else bad "usage-drift: $chkname is given $flag, which its usage line does not name"; fi
+    if sed -n '1,/^set -/p' "$real" | grep '^# Usage:' | grep -qE -- "(\\[| )$flag( |\\]|$)"; then ok; else bad "usage-drift: $chkname is given $flag, which its usage line does not name"; fi
   done < "$TABLE"
   if [ "$rows" -ge 50 ]; then ok; else bad "usage-drift: only $rows adapter rows were read"; fi
   for c in $STUBS; do if grep -q "^$c$TAB" "$TABLE"; then ok; else bad "usage-drift: $c has no adapter row"; fi; done
@@ -240,12 +261,17 @@ matrix() {
   # the fixture has no dependency manifest and its contract names no drill: those two checks have nothing to check, which is unmeasured, never a pass
   l2=$(printf '%s\n' "$OUT" | grep -c 'GOV-L2' || true); if [ "$l2" -eq 2 ]; then ok; else bad "real: expected 2 unmeasured checks, got $l2"; fi
   has real 'ascent-security/check-dependencies is unmeasured: it had nothing it could check here (SEC-D1,'; has real 'ascent-ops/check-drills is unmeasured: it had nothing it could check here (OPS-R1,'
-  for c in $STUBS; do has real "$c"; done
+  for c in $STUBS; do case "$c" in ascent-ai/*|ascent-security/check-redteam) continue ;; esac; has real "$c"; done
   has real 'PASS  GOV-L1  ascent-delivery/check-acceptance passes (1 record since the launch signed on 2026-01-05)'; has real 'PASS  GOV-L3'; has real 'PASS  GOV-L1  ascent-security/check-env passes (not checked here: SEC-E1, SEC-E2)'
   cp "$FIX/contracts/adapters-full.yml" "$WORK/real/$CON"; record real records/acceptance/2026-11-20-scores.md
   PLUGINS_DIR="$REAL" chk real; lacks real-full 'GOV-S2'
   l2=$(printf '%s\n' "$OUT" | grep -c 'GOV-L2' || true); if [ "$l2" -eq 1 ]; then ok; else bad "real-full: expected 1 unmeasured check, got $l2"; fi
-  for c in $STUBS; do has real-full "$c"; done
+  for c in $STUBS; do case "$c" in ascent-ai/*|ascent-security/check-redteam) continue ;; esac; has real-full "$c"; done
   has real-full 'OPS-R1 Medium absent orders-db (restore): runbook docs/ops/restore.md not found'
+  # ascent-ai's real checkers, once for each application of the two-application fixture: no usage error, no crash
+  mk real-ai ai-tier-multi; cp "$FIX/contracts/adapters-ai.yml" "$WORK/real-ai/$CON"; mkdir -p "$WORK/real-ai/records/tiers"; cp "$WORK/real-ai/docs/governance/ai-tier/"*.md "$WORK/real-ai/records/tiers/"; mkdir -p "$WORK/real-ai/services/support" "$WORK/real-ai/services/screening"
+  PLUGINS_DIR="$REAL" chk real-ai --env prod; lacks real-ai 'GOV-S2'; lacks real-ai 'without finishing'
+  for c in ascent-ai/check-ai-design ascent-ai/check-ai-evidence ascent-ai/check-ai-runtime ascent-security/check-redteam; do for a in support-assistant screening-tool; do has real-ai "$c [$a] "; done; done
+  has real-ai 'ascent-security/check-redteam [support-assistant] failed: SEC-R1 Medium'; has real-ai 'ascent-security/check-redteam [screening-tool] failed: SEC-R1 High'; has real-ai 'ascent-security/check-threat-model failed: SEC-T1'
 }
 run_matrix

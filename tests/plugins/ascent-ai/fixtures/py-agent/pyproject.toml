@@ -1,0 +1,7 @@
+[project]
+name = "py-agent"
+version = "0.1.0"
+dependencies = [
+    "openai>=1.40",
+    "opentelemetry-instrumentation-openai-v2>=2.0b0",
+]

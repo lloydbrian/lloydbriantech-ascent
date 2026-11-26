@@ -60,6 +60,12 @@ governance:
   # person fills in who signed it and when.
   launch_dir: docs/governance/launches/
 
+  # AI risk-tier records, one per AI application in ai.applications:
+  # <ai_tier_dir>/<name>.md (references/ai-tier-template.md). A person decides the
+  # tier and signs it; check-audit.sh checks the record on every rung above the
+  # lowest (GOV-A1–A5).
+  ai_tier_dir: docs/governance/ai-tier/
+
   # Waivers that belong to no other section. Every section's waivers are read, and
   # each needs an accepted ADR, what it skips and a review_by date. A waiver past
   # its date is a finding again.

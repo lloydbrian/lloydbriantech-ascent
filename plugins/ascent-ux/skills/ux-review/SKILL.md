@@ -10,7 +10,7 @@ description: >-
   runs the static checks and a Playwright browser pass with a walk of each core
   flow, and reports strong, moderate or weak with file:line and WCAG evidence.
   For a quick design-level critique, design:accessibility-review fits.
-version: 0.3.2
+version: 0.3.3
 allowed-tools: Read, Grep, Glob
 ---
 

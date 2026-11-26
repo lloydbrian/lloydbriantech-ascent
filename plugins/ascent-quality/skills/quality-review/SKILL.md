@@ -8,7 +8,7 @@ description: >-
   (inventory, traceability, hygiene, load, mutation), runs the inventory, test
   and evidence checks, and reports strong, moderate or weak with file:line
   evidence. Read-only.
-version: 0.2.1
+version: 0.2.2
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git ls-files:*)
 ---
 
@@ -31,7 +31,7 @@ Shared sources:
 - **Judge against the contract**, not against an ideal. A gap covered by a waiver ADR is Info, not a finding.
 - **Never "met" without a target.** A lens whose target is missing from the contract is unmeasured, never met; it is at risk instead when the evidence shows a gap.
 - **A test present is this plugin's; a test run live is the operator's.** Never run the suite to prove a test works. Where a result would help, write the command for the operator and read the redacted output they paste.
-- **Other plugins' tests stay theirs** (ADR-014 decision 1). Accessibility, navigation and front-end performance tests are `ascent-ux`'s; recovery drills and readiness exercises `ascent-ops`'s; smoke tests after a deploy and user-acceptance sign-off `ascent-delivery`'s; security tests and scans `ascent-security`'s. Mark such items `→ ascent-ux`, `→ ascent-ops`, `→ ascent-delivery` or `→ ascent-security` under Other observations.
+- **Other plugins' tests stay theirs** (ADR-014 decision 1). Accessibility, navigation and front-end performance tests are `ascent-ux`'s; recovery drills and readiness exercises `ascent-ops`'s; smoke tests after a deploy and user-acceptance sign-off `ascent-delivery`'s; security tests and scans `ascent-security`'s; AI evals, golden sets and their results `ascent-ai`'s. Mark such items `→ ascent-ux`, `→ ascent-ops`, `→ ascent-delivery`, `→ ascent-security` or `→ ascent-ai` under Other observations.
 - **Targets are read, never copied.** `p95_latency_ms` and `peak_rps` come from `architecture.quality_targets`, which `ascent-architecture` sets. Never write them into the `quality:` section; with neither, the load lens is unmeasured.
 - **Not checked here:** code health (coupling, complexity), which is `ascent-architecture`'s. Name it under Other observations only when the contract or the operator asks.
 - **Maturity gaps are always rated.** With no confirmed contract, rate them against the enterprise defaults (Step 4) and say so; never list them unrated.

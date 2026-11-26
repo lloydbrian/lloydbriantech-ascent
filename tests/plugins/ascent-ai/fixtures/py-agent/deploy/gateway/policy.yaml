@@ -1,0 +1,14 @@
+# LiteLLM proxy: the only way the support assistant reaches a model.
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params: { model: openai/gpt-4o-mini, rpm: 600, tpm: 200000 }
+  - model_name: gpt-4o
+    litellm_params: { model: openai/gpt-4o, rpm: 60, tpm: 40000 }
+litellm_settings:
+  max_budget: 300
+  budget_duration: 30d
+general_settings:
+  alerting: ["slack"]
+  alerting_threshold: 300          # seconds before a hung request alerts
+  database_url: os.environ/DATABASE_URL   # LiteLLM enforces max_budget only with a database
+  alert_to_webhook_url: { budget_alerts: "os.environ/BUDGET_WEBHOOK" }

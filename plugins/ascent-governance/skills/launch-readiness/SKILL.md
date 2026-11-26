@@ -13,7 +13,7 @@ description: >-
   with a plain-words summary for a person to sign (GOV-L3–L5). It checks that
   the evidence exists and is current, not that the system is good. Claude
   never signs.
-version: 0.2.1
+version: 0.3.0
 allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git log:*)
 ---
 
@@ -49,6 +49,10 @@ Shared sources:
 | A launch record signed by someone who is not in the contract's approvers (GOV-L4) | High |
 | Something other than launch records and the review log changed since the commit the signed record names (GOV-L5) | High |
 | A waiver past its review date (GOV-W1) | High |
+| An AI application with no risk-tier record, or AI code outside every declared application (GOV-A1) | High |
+| An AI risk-tier record missing a field, with a tier other than 1, 2 or 3, a reason outside its fixed values, or another application's name (GOV-A2) | High |
+| An AI risk-tier record that no approver decided, or whose decision date is not a real date or is after today (GOV-A3) | High |
+| An AI risk-tier record whose tier is below the floor its own reasons imply (GOV-A5) | High |
 | A review whose newest record has an open High finding that no waiver covers (GOV-R2) | High |
 | A review on the floor that is due when the launch question is asked (GOV-R1 with --launch) | High |
 | A check on the floor fails, and its most severe finding is Medium (GOV-L1) | Medium |
@@ -59,6 +63,7 @@ Shared sources:
 | A waiver that does not say what it skips, or whose id is not an accepted ADR (GOV-W4) | Medium |
 | A row of the review log that cannot be read (GOV-R3) | Medium |
 | A row of the review log removed or changed after it was recorded (GOV-R4) | Medium |
+| An AI risk-tier record past its review date (GOV-A4) | Medium |
 | A check on the floor fails with only Low findings (GOV-L1) | Low |
 | A check whose plugin is not available here, whose input the contract does not give, or that had nothing it could check: unmeasured (GOV-L2) | Low |
 | A waiver due for review within 14 days (GOV-W2) | Low |
@@ -70,7 +75,7 @@ Shared sources:
 
 ### Step 0 — Load the contract and the environment
 
-Read `.ascent/contract.yml` (or `.claude/contract.yml`): `governance.environments`, `floors`, `approvers`, `review_log`, `launch_dir`, `maturity_target`. With no `governance` section the script uses default floors for the project's maturity and for what the repository contains, and says which; propose the section once from the contract template, marking guessed values `# guess`, and go on with the defaults. Settle the environment: the one asked for, which must be on the ladder.
+Read `.ascent/contract.yml` (or `.claude/contract.yml`): `governance.environments`, `floors`, `approvers`, `review_log`, `launch_dir`, `ai_tier_dir`, `maturity_target`, and the AI applications in `ai.applications`. With no `governance` section the script uses default floors for the project's maturity and for what the repository contains, and says which; propose the section once from the contract template, marking guessed values `# guess`, and go on with the defaults. Settle the environment: the one asked for, which must be on the ladder.
 
 ### Step 1 — Ask the launch question
 
@@ -85,6 +90,8 @@ Exit 0 is GO or GO WITH CONDITIONS, exit 1 is NO-GO, exit 2 is bad input: fix th
 For each GOV-R1 line, the review is due. Offer to run it now, naming its skill (governance-rules.md lists them) and what it costs in time. When the operator agrees, run that skill, then record it as review-record Step 2 to Step 4 do: one new row, shown first, appended after approval. A review the operator declines stays due: the answer stays NO-GO for this launch, and that is the operator's call to make.
 
 For a GOV-R2 line, the review's open High finding blocks the launch until it is fixed and the review is run again, or until an accepted ADR waives it (`ascent-adr:adr-write`, then a waiver in the contract with `skips` naming the rule id and a `review_by` date). Never write the waiver yourself without the operator asking for it.
+
+For a GOV-A1 line naming AI code outside every application, propose adding that code's folder to an application's `root`, or a new `ai.applications` item with its own record; show the change and write it only after the operator approves. For a GOV-A1 line, an AI application has no risk-tier record. Offer to draft one from [ai-tier-template.md](../../references/ai-tier-template.md) at the path the line names: the application's name, and the four reasons (`audience`, `actions`, `decisions_about_people`, `personal_data`) as you read them in its code and design record, each marked `# guess` in its Note cell, with the tier their floor implies (GOV-A5). Leave `decided_by` and `decided_on` empty: a person decides the tier, may raise it, and fills them in. Show the draft first and write it only after the operator approves. A GOV-A2 to GOV-A5 line names the record and the field; a person corrects it, and a tier below its reasons' floor is raised or waived in an accepted ADR, never lowered to fit.
 
 ### Step 3 — Ask again
 
